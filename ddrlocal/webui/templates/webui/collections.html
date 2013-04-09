@@ -1,0 +1,7 @@
+<h1>webui collections</h1>
+
+<p>
+{% for c in collections %}
+<a href="{% url "webui-collection" c.1 c.2 c.3 %}">{{ c.0 }}</a><br/>
+{% endfor %}
+</p>

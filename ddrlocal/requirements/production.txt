@@ -1,0 +1,4 @@
+# dependencies for production environment
+
+# include base
+-r _base.txt

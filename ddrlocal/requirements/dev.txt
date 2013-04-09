@@ -1,0 +1,9 @@
+# dependencies for local dev environment
+
+# include base
+-r _base.txt
+
+bpython
+coverage
+nose
+sphinx

@@ -1,0 +1,6 @@
+# dependencies used in all environments
+
+beautifulsoup4
+celery
+envoy
+requests
