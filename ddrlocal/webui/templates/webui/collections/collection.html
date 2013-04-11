@@ -1,0 +1,40 @@
+{% extends "webui/collections/base.html" %}
+
+
+{% block title %}{{ collection_uid }}{% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+<li class="active">{{ collection_uid }}</li>
+{% endblock breadcrumbs %}
+
+
+{% block content %}
+
+<h1>{{ collection_uid }}</h1>
+
+<h3>Entities</h3>
+<ul>
+{% for entity in entities %}
+<li><a href="{% url "webui-entity" entity.repo entity.org entity.cid entity.eid %}">{{ entity.uid }}: {{ entity.title }}</a></li>
+{% endfor %}
+<li><a href="{% url "webui-entity-new" repo org cid %}">New Entity</a></li>
+</ul>
+
+
+<h3>EAD.xml</h3>
+<pre>
+{{ ead }}
+</pre>
+
+<h3>git status</h3>
+<pre>{{ status }}</pre>
+
+<h3>git annex status</h3>
+<pre>{{ astatus }}</pre>
+
+<h3>Changelog</h3>
+<pre>
+{{ changelog }}
+</pre>
+
+{% endblock content %}

@@ -29,7 +29,8 @@ DDR_ORG_UID = '{}-{}'.format(DDR_REPOSITORY, DDR_ORGANIZATION)
 
 # Base path to dir where the repos go
 LOCAL_BASE_PATH = config.get('local','base_path')
-DDR_BASE_PATH = os.path.join(LOCAL_BASE_PATH, DDR_ORG_UID)
+#DDR_BASE_PATH = os.path.join(LOCAL_BASE_PATH, DDR_ORG_UID)
+DDR_BASE_PATH = LOCAL_BASE_PATH
 
 # Directory in root of USB HDD that marks it as a DDR disk
 # /media/USBHDDNAME/ddr
@@ -69,16 +70,17 @@ TIME_ZONE = 'America/Los_Angeles'
 
 TEMPLATE_DIRS = (
     '/home/gjost/ddr-local/ddrlocal/ddrlocal/templates',
+    '/home/gjost/ddr-local/ddrlocal/webui/templates',
 )
 
 STATICFILES_DIRS = (
     '/home/gjost/ddr-local/ddrlocal/ddrlocal/static',
 )
 STATIC_ROOT = ''
-STATIC_URL = '/static/'
+STATIC_URL  = 'http://partner.densho.org/static/'
 
-MEDIA_ROOT  = ''
-MEDIA_URL  = ''
+MEDIA_ROOT = '/tmp/'
+MEDIA_URL  = 'file:///tmp/'
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to

@@ -1,0 +1,5 @@
+{% extends "webui/collections/base.html" %}
+
+{% block breadcrumbs %}{{ block.super }}
+<li><a href="{% url "webui-collection" repo org cid %}">{{ collection_uid }}</a></li>
+{% endblock breadcrumbs %}

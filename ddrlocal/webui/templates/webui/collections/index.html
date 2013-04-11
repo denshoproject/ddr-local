@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+
+{% block title %}Collections{% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+<li class="active">Collections</li>
+{% endblock breadcrumbs %}
+
+
+{% block content %}
+
+<h1>Collections</h1>
+
+<ul>
+{% for c in collections %}
+<li>
+<a href="{% url "webui-collection" c.1 c.2 c.3 %}">{{ c.0 }}</a>
+</li>
+{% endfor %}
+<li><a href="{% url "webui-collection-new" repo org %}">New Collection</a></li>
+</ul>
+
+{% endblock content %}

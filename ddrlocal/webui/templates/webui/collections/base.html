@@ -1,0 +1,5 @@
+{% extends "base.html" %}
+
+{% block breadcrumbs %}{{ block.super }}
+<li><a href="{% url "webui-collections" %}">Collections</a></li>
+{% endblock breadcrumbs %}

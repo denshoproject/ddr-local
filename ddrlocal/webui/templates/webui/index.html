@@ -1,3 +1,15 @@
+{% extends "base.html" %}
+
+
+{% block title %}webui index{% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+<li class="active">webui index</li>
+{% endblock breadcrumbs %}
+
+
+{% block content %}
+
 <h1>webui index</h1>
 
 <p>
@@ -7,3 +19,5 @@
 <a href="{% url "webui-collections" %}">Collections</a>
 (<a href="">new</a>)
 </p>
+
+{% endblock content %}
