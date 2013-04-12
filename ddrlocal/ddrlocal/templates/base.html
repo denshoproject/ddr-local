@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+{% load webui_tags %}<!DOCTYPE html>
 <html lang="en" class="no-js">
 <head>
 
@@ -51,7 +51,11 @@
       <li><a href="{% url "webui-index" %}">Web UI</a></li>
     </ul>
     <p id="user-info" class="navbar-text pull-right">
-{# user_info #}
+{% if username %}
+    {{ username }} / <a href="{% url "webui-logout" %}">Log out</a>
+{% else %}
+    <a href="{% url "webui-login" %}">Log in</a>
+{% endif %}
     </p>
   </div>
 </div><!-- .navbar -->

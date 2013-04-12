@@ -18,7 +18,9 @@
 <a href="{% url "webui-collection" c.1 c.2 c.3 %}">{{ c.0 }}</a>
 </li>
 {% endfor %}
+{% if username %}
 <li><a href="{% url "webui-collection-new" repo org %}">New Collection</a></li>
+{% endif %}
 </ul>
 
 {% endblock content %}

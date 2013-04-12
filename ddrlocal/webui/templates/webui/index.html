@@ -13,11 +13,8 @@
 <h1>webui index</h1>
 
 <p>
-<a href="{% url "webui-login" %}">Login</a>
-</p>
-<p>
 <a href="{% url "webui-collections" %}">Collections</a>
-(<a href="">new</a>)
+{% if username %}(<a href="">new</a>){% endif %}
 </p>
 
 {% endblock content %}

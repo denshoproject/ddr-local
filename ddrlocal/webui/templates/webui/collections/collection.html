@@ -17,7 +17,9 @@
 {% for entity in entities %}
 <li><a href="{% url "webui-entity" entity.repo entity.org entity.cid entity.eid %}">{{ entity.uid }}: {{ entity.title }}</a></li>
 {% endfor %}
+{% if username %}
 <li><a href="{% url "webui-entity-new" repo org cid %}">New Entity</a></li>
+{% endif %}
 </ul>
 
 
