@@ -3,6 +3,7 @@ import os
 from bs4 import BeautifulSoup
 
 from django.conf import settings
+from django.contrib import messages
 from django.core.context_processors import csrf
 from django.core.files import File
 from django.core.urlresolvers import reverse
@@ -11,6 +12,9 @@ from django.shortcuts import Http404, get_object_or_404, render_to_response
 from django.template import RequestContext
 
 from Kura import commands
+
+from webui.forms.entities import NewEntityForm
+
 
 # helpers --------------------------------------------------------------
 
@@ -76,7 +80,35 @@ def entity( request, repo, org, cid, eid ):
     )
 
 def entity_new( request, repo, org, cid ):
-    collection_uid = '{}-{}-{}'.format(repo, org, cid)
+    """
+    TODO webui.views.entities.entity_new: get new EID from workbench
+    """
+    if request.method == 'POST':
+        form = NewEntityForm(request.POST)
+        if form.is_valid():
+            git_name = request.session.get('git_name')
+            git_mail = request.session.get('git_mail')
+            messages.info(request, git_name)
+            messages.info(request, git_mail)
+            if git_name and git_mail:
+                eid = form.cleaned_data['eid']
+                collection_uid = '{}-{}-{}'.format(repo,org,cid)
+                collection_path = os.path.join(settings.DDR_BASE_PATH, collection_uid)
+                entity_uid = '{}-{}-{}-{}'.format(repo,org,cid,eid)
+                messages.info(request, collection_uid)
+                messages.info(request, collection_path)
+                
+                exit,status = commands.entity_create(git_name, git_mail, collection_path, entity_uid)
+                
+                if exit:
+                    messages.error(request, 'Error: {}'.format(status))
+                else:
+                    messages.success(request, 'New entity created: {}'.format(status))
+                    return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+            else:
+                messages.error(request, 'Login is required')
+    else:
+        form = NewEntityForm()
     return render_to_response(
         'webui/entities/entity-new.html',
         {'repo': repo,

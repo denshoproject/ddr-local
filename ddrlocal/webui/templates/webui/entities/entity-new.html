@@ -12,6 +12,11 @@
 
 <h1>New Entity</h1>
 
-not implemented yet
+<form name="entity-new" action="" method="POST">{% csrf_token %}
+<table>
+  {{ form.as_table }}
+</table>
+<input name="submit" type="submit" value="submit"/><br/>
+</form>
 
 {% endblock content %}
