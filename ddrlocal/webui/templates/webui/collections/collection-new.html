@@ -12,6 +12,11 @@
 
 <h1>New Collection</h1>
 
-not implemented yet
+<form name="collection-new" action="" method="POST">{% csrf_token %}
+<table>
+  {{ form.as_table }}
+</table>
+<input name="submit" type="submit" value="submit"/><br/>
+</form>
 
 {% endblock content %}

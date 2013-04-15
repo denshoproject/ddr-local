@@ -72,7 +72,14 @@ in background makes request to mits using that username/password
 gets the response
 figures out if successful/not
 if successful:
-    stores in memcached session (what do we need to store?)
+    stores in memcached session
+
+what do we need to store?
+- username
+- user name  (for git logs)
+- user email (for git logs)
+- repo
+- orgs the user belongs to
 """
 
 def login( request ):

@@ -3,6 +3,7 @@ import os
 from bs4 import BeautifulSoup
 
 from django.conf import settings
+from django.contrib import messages
 from django.core.context_processors import csrf
 from django.core.files import File
 from django.core.urlresolvers import reverse
@@ -11,6 +12,8 @@ from django.shortcuts import Http404, get_object_or_404, render_to_response
 from django.template import RequestContext
 
 from Kura import commands
+
+from webui.forms.collections import NewCollectionForm
 
 # helpers --------------------------------------------------------------
 
@@ -98,10 +101,39 @@ def collection( request, repo, org, cid ):
         context_instance=RequestContext(request, processors=[])
     )
 
-def collection_new( request, repo, org ):
+def collection_new( request ):
+    """
+    TODO webui.views.collections.collection_new: get new CID from workbench
+    """
+    if request.method == 'POST':
+        form = NewCollectionForm(request.POST)
+        if form.is_valid():
+            git_name = request.session.get('git_name')
+            git_mail = request.session.get('git_mail')
+            messages.info(request, git_name)
+            messages.info(request, git_mail)
+            if git_name and git_mail:
+                repo = form.cleaned_data['repo']
+                org = form.cleaned_data['org']
+                cid = form.cleaned_data['cid']
+                collection_uid = '{}-{}-{}'.format(repo,org,cid)
+                collection_path = os.path.join(settings.DDR_BASE_PATH, collection_uid)
+                messages.info(request, collection_uid)
+                messages.info(request, collection_path)
+                
+                exit,status = commands.create(git_name, git_mail, collection_path)
+                
+                if exit:
+                    messages.error(request, 'Error: {}'.format(status))
+                else:
+                    messages.success(request, 'New collection created: {}'.format(status))
+                    return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+            else:
+                messages.error(request, 'Login is required')
+    else:
+        form = NewCollectionForm()
     return render_to_response(
         'webui/collections/collection-new.html',
-        {'repo': repo,
-         'org': org,},
+        {'form': form,},
         context_instance=RequestContext(request, processors=[])
     )
