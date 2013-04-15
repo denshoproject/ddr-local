@@ -23,7 +23,11 @@
 </ul>
 
 
-<h3>EAD.xml</h3>
+<h3>
+EAD.xml
+&mdash;
+<a href="{% url "webui-collection-update" repo org cid %}">Edit</a>
+</h3>
 <pre>
 {{ ead }}
 </pre>
@@ -38,5 +42,9 @@
 <pre>
 {{ changelog }}
 </pre>
+
+<p>
+<a href="{{ gitweb_url }}">Gitweb</a>
+</p>
 
 {% endblock content %}

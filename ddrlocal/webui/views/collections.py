@@ -13,9 +13,15 @@ from django.template import RequestContext
 
 from Kura import commands
 
-from webui.forms.collections import NewCollectionForm
+from webui.forms.collections import NewCollectionForm, UpdateForm
 
 # helpers --------------------------------------------------------------
+
+def collection_gitweb_url(collection_uid):
+    """Returns gitweb URL for collection.
+    """
+    return '{}?p={}.git'.format(settings.GITWEB_URL, collection_uid)
+
 
 def collection_entities(soup):
     """Given a BeautifulSoup-ified EAD doc, get list of entity UIDs
@@ -97,7 +103,8 @@ def collection( request, repo, org, cid ):
          #'astatus': astatus,
          'ead': ead,
          'changelog': changelog,
-         'entities': entities,},
+         'entities': entities,
+         'gitweb_url': collection_gitweb_url(collection_uid),},
         context_instance=RequestContext(request, processors=[])
     )
 
@@ -135,5 +142,54 @@ def collection_new( request ):
     return render_to_response(
         'webui/collections/collection-new.html',
         {'form': form,},
+        context_instance=RequestContext(request, processors=[])
+    )
+
+def collection_update( request, repo, org, cid ):
+    """
+    on GET
+    - reads contents of EAD.xml
+    - puts in form, in textarea
+    - user edits XML
+    on POST
+    - write contents of field to EAD.xml
+    - commands.update
+    """
+    collection_uid = '{}-{}-{}'.format(repo, org, cid)
+    collection_path = os.path.join(settings.DDR_BASE_PATH, collection_uid)
+    ead_path_rel = 'ead.xml'
+    ead_path_abs = os.path.join(collection_path, ead_path_rel)
+    #
+    if request.method == 'POST':
+        form = UpdateForm(request.POST)
+        if form.is_valid():
+            git_name = request.session.get('git_name')
+            git_mail = request.session.get('git_mail')
+            if git_name and git_mail:
+                xml = form.cleaned_data['xml']
+                # TODO validate XML
+                with open(ead_path_abs, 'w') as f:
+                    f.write(xml)
+                
+                exit,status = commands.update(git_name, git_mail, collection_path, [ead_path_rel])
+                
+                if exit:
+                    messages.error(request, 'Error: {}'.format(status))
+                else:
+                    messages.success(request, 'Collection metadata updated')
+                    return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+            else:
+                messages.error(request, 'Login is required')
+    else:
+        with open(ead_path_abs, 'r') as f:
+            xml = f.read()
+        form = UpdateForm({'xml':xml,})
+    return render_to_response(
+        'webui/collections/collection-update.html',
+        {'repo': repo,
+         'org': org,
+         'cid': cid,
+         'collection_uid': collection_uid,
+         'form': form,},
         context_instance=RequestContext(request, processors=[])
     )

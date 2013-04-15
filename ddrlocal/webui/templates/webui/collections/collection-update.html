@@ -1,0 +1,27 @@
+{% extends "webui/collections/base.html" %}
+
+
+{% block title %}{{ collection_uid }}{% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+<li class="active">{{ collection_uid }}</li>
+{% endblock breadcrumbs %}
+
+
+{% block content %}
+
+<h1>{{ collection_uid }}</h1>
+
+<p><b>
+IMPORTANT: We are performing exactly <b>ZERO</b> validation here!<br/>
+(careful with your XML)
+</b></p>
+
+<form name="collection-new" action="" method="POST">{% csrf_token %}
+<table>
+  {{ form.as_table }}
+</table>
+<input name="submit" type="submit" value="submit"/><br/>
+</form>
+
+{% endblock content %}
