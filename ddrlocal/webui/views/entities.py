@@ -14,6 +14,7 @@ from django.template import RequestContext
 from Kura import commands
 
 from webui.forms.entities import NewEntityForm, UpdateForm, AddFileForm
+from webui.views.decorators import login_required
 
 
 # helpers --------------------------------------------------------------
@@ -92,6 +93,7 @@ def entity( request, repo, org, cid, eid ):
         context_instance=RequestContext(request, processors=[])
     )
 
+@login_required
 def entity_new( request, repo, org, cid ):
     """
     TODO webui.views.entities.entity_new: get new EID from workbench
@@ -131,6 +133,7 @@ def entity_new( request, repo, org, cid ):
         context_instance=RequestContext(request, processors=[])
     )
 
+@login_required
 def entity_update( request, repo, org, cid, eid ):
     """
     on GET
@@ -185,7 +188,10 @@ def entity_update( request, repo, org, cid, eid ):
         context_instance=RequestContext(request, processors=[])
     )
 
+@login_required
 def entity_add( request, repo, org, cid, eid ):
+    """Add an entity to collection
+    """
     collection_uid = '{}-{}-{}'.format(repo, org, cid)
     entity_uid     = '{}-{}-{}-{}'.format(repo, org, cid, eid)
     collection_abs = os.path.join(settings.DDR_BASE_PATH, collection_uid)
@@ -229,7 +235,10 @@ def entity_add( request, repo, org, cid, eid ):
         context_instance=RequestContext(request, processors=[])
     )
 
+@login_required
 def entity_file( request, repo, org, cid, eid, filenum ):
+    """Add file to entity.
+    """
     filenum = int(filenum)
     collection_uid = '{}-{}-{}'.format(repo, org, cid)
     entity_uid     = '{}-{}-{}-{}'.format(repo, org, cid, eid)
