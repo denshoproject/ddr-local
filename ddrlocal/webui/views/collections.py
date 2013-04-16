@@ -14,6 +14,7 @@ from django.template import RequestContext
 from Kura import commands
 
 from webui.forms.collections import NewCollectionForm, UpdateForm
+from webui.views.decorators import login_required
 
 # helpers --------------------------------------------------------------
 
@@ -108,6 +109,7 @@ def collection( request, repo, org, cid ):
         context_instance=RequestContext(request, processors=[])
     )
 
+@login_required
 def collection_sync( request, repo, org, cid ):
     collection_uid = '{}-{}-{}'.format(repo, org, cid)
     collection_path = os.path.join(settings.DDR_BASE_PATH, collection_uid)
@@ -128,6 +130,7 @@ def collection_sync( request, repo, org, cid ):
             messages.error(request, 'Login is required')
     return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
 
+@login_required
 def collection_new( request ):
     """
     TODO webui.views.collections.collection_new: get new CID from workbench
@@ -165,6 +168,7 @@ def collection_new( request ):
         context_instance=RequestContext(request, processors=[])
     )
 
+@login_required
 def collection_update( request, repo, org, cid ):
     """
     on GET
