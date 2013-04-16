@@ -108,6 +108,26 @@ def collection( request, repo, org, cid ):
         context_instance=RequestContext(request, processors=[])
     )
 
+def collection_sync( request, repo, org, cid ):
+    collection_uid = '{}-{}-{}'.format(repo, org, cid)
+    collection_path = os.path.join(settings.DDR_BASE_PATH, collection_uid)
+    #
+    if request.method == 'POST':
+        git_name = request.session.get('git_name')
+        git_mail = request.session.get('git_mail')
+        messages.info(request, git_name)
+        messages.info(request, git_mail)
+        if git_name and git_mail:
+            exit,status = commands.sync(git_name, git_mail, collection_path)
+            #
+            if exit:
+                messages.error(request, 'Error: {}'.format(status))
+            else:
+                messages.success(request, 'Collection synced with server: {}'.format(status))
+        else:
+            messages.error(request, 'Login is required')
+    return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+
 def collection_new( request ):
     """
     TODO webui.views.collections.collection_new: get new CID from workbench

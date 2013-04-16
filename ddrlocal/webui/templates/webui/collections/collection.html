@@ -19,6 +19,11 @@
 <a href="{{ gitweb_url }}" target="gitweb">Gitweb</a>
 </p>
 
+<form name="collection-sync" action="{% url "webui-collection-sync" repo org cid %}" method="POST">
+{% csrf_token %}
+<input name="sync" type="submit" value="sync"/>
+</form>
+
   </div><!-- .span12 -->
 </div><!-- .row -->
 <div class="row">
