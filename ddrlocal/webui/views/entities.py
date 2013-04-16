@@ -13,7 +13,7 @@ from django.template import RequestContext
 
 from Kura import commands
 
-from webui.forms.entities import NewEntityForm, UpdateForm
+from webui.forms.entities import NewEntityForm, UpdateForm, AddFileForm
 
 
 # helpers --------------------------------------------------------------
@@ -42,10 +42,23 @@ def entity_files(soup, collection_abs, entity_rel):
         f = {
             'abs': os.path.join(collection_abs, entity_rel, tag['href']),
             'name': os.path.join(cid, entity_rel, tag['href']),
+            'basename': os.path.basename(tag['href']),
             'size': 1234567,
         }
         files.append(f)
     return files
+
+def handle_uploaded_file(f, dest_dir):
+    if not os.path.exists(dest_dir):
+        os.makedirs(dest_dir)
+    print('dest_dir {}'.format(dest_dir))
+    dest_path_abs = os.path.join(dest_dir, f.name)
+    print('dest_path_abs {}'.format(dest_path_abs))
+    with open(dest_path_abs, 'wb+') as destination:
+        for chunk in f.chunks():
+            destination.write(chunk)
+    print('destination {}'.format(destination))
+    return dest_path_abs
 
 
 # views ----------------------------------------------------------------
@@ -169,5 +182,80 @@ def entity_update( request, repo, org, cid, eid ):
          'collection_uid': collection_uid,
          'entity_uid': entity_uid,
          'form': form,},
+        context_instance=RequestContext(request, processors=[])
+    )
+
+def entity_add( request, repo, org, cid, eid ):
+    collection_uid = '{}-{}-{}'.format(repo, org, cid)
+    entity_uid     = '{}-{}-{}-{}'.format(repo, org, cid, eid)
+    collection_abs = os.path.join(settings.DDR_BASE_PATH, collection_uid)
+    entity_abs     = os.path.join(collection_abs,'files',entity_uid)
+    entity_rel     = os.path.join('files',entity_uid)
+    entity_files_dir = os.path.join(entity_abs, 'files')
+    messages.debug(request, 'entity_files_dir: {}'.format(entity_files_dir))
+    #
+    if request.method == 'POST':
+        form = AddFileForm(request.POST, request.FILES)
+        if form.is_valid():
+            git_name = request.session.get('git_name')
+            git_mail = request.session.get('git_mail')
+            if git_name and git_mail:
+                role = form.cleaned_data['role']
+                # write file to entity files dir
+                file_abs = handle_uploaded_file(request.FILES['file'], entity_files_dir)
+                file_rel = os.path.basename(file_abs)
+                
+                exit,status = commands.entity_annex_add(git_name, git_mail, collection_abs, entity_uid, file_rel)
+                
+                if exit:
+                    messages.error(request, 'Error: {}'.format(status))
+                else:
+                    messages.success(request, 'New file added: {}'.format(status))
+                    return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+            else:
+                messages.error(request, 'Login is required')
+    else:
+        form = AddFileForm()
+    return render_to_response(
+        'webui/entities/entity-add.html',
+        {'repo': repo,
+         'org': org,
+         'cid': cid,
+         'eid': eid,
+         'collection_uid': collection_uid,
+         'entity_uid': entity_uid,
+         'form': form,
+     },
+        context_instance=RequestContext(request, processors=[])
+    )
+
+def entity_file( request, repo, org, cid, eid, filenum ):
+    filenum = int(filenum)
+    collection_uid = '{}-{}-{}'.format(repo, org, cid)
+    entity_uid     = '{}-{}-{}-{}'.format(repo, org, cid, eid)
+    collection_abs = os.path.join(settings.DDR_BASE_PATH, collection_uid)
+    entity_abs     = os.path.join(collection_abs,'files',entity_uid)
+    entity_rel     = os.path.join('files',entity_uid)
+    #
+    mets = open( os.path.join(entity_abs, 'mets.xml'), 'r').read()
+    mets_soup = BeautifulSoup(mets)
+    #
+    changelog = open( os.path.join(entity_abs, 'changelog'), 'r').read()
+    #
+    files = entity_files(mets_soup, collection_abs, entity_rel)
+    return render_to_response(
+        'webui/entities/entity-file.html',
+        {'repo': repo,
+         'org': org,
+         'cid': cid,
+         'eid': eid,
+         'collection_uid': collection_uid,
+         'entity_uid': entity_uid,
+         'collection_path': collection_abs,
+         'entity_path': entity_abs,
+         'mets': mets,
+         'changelog': changelog,
+         'files': files,
+         'file': files[filenum],},
         context_instance=RequestContext(request, processors=[])
     )

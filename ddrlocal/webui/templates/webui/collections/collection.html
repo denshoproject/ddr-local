@@ -10,18 +10,19 @@
 
 {% block content %}
 
+<div class="row">
+  <div class="span12">
+
 <h1>{{ collection_uid }}</h1>
 
-<h3>Entities</h3>
-<ul>
-{% for entity in entities %}
-<li><a href="{% url "webui-entity" entity.repo entity.org entity.cid entity.eid %}">{{ entity.uid }}: {{ entity.title }}</a></li>
-{% endfor %}
-{% if username %}
-<li><a href="{% url "webui-entity-new" repo org cid %}">New Entity</a></li>
-{% endif %}
-</ul>
+<p>
+<a href="{{ gitweb_url }}">Gitweb</a>
+</p>
 
+  </div><!-- .span12 -->
+</div><!-- .row -->
+<div class="row">
+  <div class="span8">
 
 <h3>
 EAD.xml
@@ -31,6 +32,27 @@ EAD.xml
 <pre>
 {{ ead }}
 </pre>
+
+  </div><!-- .span8 -->
+  <div class="span4">
+
+<h3>
+Entities
+&mdash;
+<a href="{% url "webui-entity-new" repo org cid %}">New</a>
+</h3>
+<ul>
+{% for entity in entities %}
+<li><a href="{% url "webui-entity" entity.repo entity.org entity.cid entity.eid %}">{{ entity.uid }}: {{ entity.title }}</a></li>
+{% endfor %}
+{% if username %}
+{% endif %}
+</ul>
+
+  </div><!-- .span4 -->
+</div><!-- .row -->
+<div class="row">
+  <div class="span12">
 
 <h3>git status</h3>
 <pre>{{ status }}</pre>
@@ -43,8 +65,8 @@ EAD.xml
 {{ changelog }}
 </pre>
 
-<p>
-<a href="{{ gitweb_url }}">Gitweb</a>
-</p>
+  </div><!-- .span12 -->
+</div><!-- .row -->
+
 
 {% endblock content %}

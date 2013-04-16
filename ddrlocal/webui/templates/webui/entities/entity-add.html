@@ -1,0 +1,23 @@
+{% extends "webui/entities/base.html" %}
+
+
+{% block title %}{{ entity_uid }}{% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+<li><a href="{% url "webui-entity" repo org cid eid %}">{{ entity_uid }}</a></li>
+<li class="active">{{ entity_uid }}</li>
+{% endblock breadcrumbs %}
+
+
+{% block content %}
+
+<h1>Add File</h1>
+
+<form name="entity-add" action="" method="POST" enctype="multipart/form-data">{% csrf_token %}
+<table>
+  {{ form.as_table }}
+</table>
+<input name="submit" type="submit" value="submit"/><br/>
+</form>
+
+{% endblock content %}

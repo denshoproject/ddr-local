@@ -10,6 +10,9 @@
 
 {% block content %}
 
+<div class="row">
+  <div class="span12">
+
 <h1>{{ entity_uid }}</h1>
 
 <p>
@@ -17,25 +20,10 @@ collection_path: {{ collection_path }}<br/>
 entity_path: {{ entity_path }}<br/>
 </p>
 
-<h3>files</h3>
-{% if files %}
-<ul>
-{% for file in files %}
-  <li>
-  <a href="{{ MEDIA_URL }}{{ file.name }}">link</a><br/>
-  <img src="{{ MEDIA_URL }}{{ file.name }}" width="100" height="100" /><br/>
-  MEDIA_URL: {{ MEDIA_URL }}<br/>
-  file.abs: {{ file.abs }}<br/>
-  file.name: {{ file.name }}<br/>
-  file.size: {{ file.size }}<br/>
-  </li>
-{% endfor %}
-</ul>
-{% else %}
-<p>
-No files
-</p>
-{% endif %}
+  </div><!-- .span12 -->
+</div><!-- .row -->
+<div class="row">
+  <div class="span8">
 
 <h3>
 METS.xml
@@ -45,8 +33,40 @@ METS.xml
 <pre>
 {{ mets }}</pre>
 
+  </div><!-- .span8 -->
+  <div class="span4">
+
+<h3>
+Files
+&mdash;
+<a href="{% url "webui-entity-add" repo org cid eid %}">Add</a>
+</h3>
+{% if files %}
+<ul>
+{% for file in files %}
+  <li>
+  <a href="{% url "webui-entity-file" repo org cid eid forloop.counter0 %}"><img src="{{ MEDIA_URL }}{{ file.name }}" width="100" height="100" /></a>
+  <br/>
+  <a href="{% url "webui-entity-file" repo org cid eid forloop.counter0 %}">{{ file.basename }}</a>
+  </li>
+{% endfor %}
+</ul>
+{% else %}
+<p>
+No files
+</p>
+{% endif %}
+
+  </div><!-- .span4 -->
+</div><!-- .row -->
+<div class="row">
+  <div class="span12">
+
 <h3>changelog</h3>
 <pre>
 {{ changelog }}</pre>
+
+  </div><!-- .span12 -->
+</div><!-- .row -->
 
 {% endblock content %}
