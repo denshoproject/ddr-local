@@ -17,3 +17,16 @@ def login_required(func):
             return HttpResponseRedirect(url)
         return func(request, *args, **kwargs)
     return inner
+
+def storage_required(func):
+    """Checks for presence of storage; redirects to mount page if absent
+    """
+    def storage_present():
+        return True
+    
+    @wraps(func, assigned=available_attrs(func))
+    def inner(request, *args, **kwargs):
+        if not storage_present():
+            return HttpResponseRedirect(reverse('webui-storage-required'))
+        return func(request, *args, **kwargs)
+    return inner

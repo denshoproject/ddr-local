@@ -122,3 +122,10 @@ def logout( request ):
     else:
         messages.warning(request, "Couldn't log out ({}).".format(status))
     return HttpResponseRedirect( reverse('webui-index') )
+
+def storage_required( request ):
+    return render_to_response(
+        'webui/storage-required.html',
+        {},
+        context_instance=RequestContext(request, processors=[])
+    )

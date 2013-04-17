@@ -14,7 +14,7 @@ from django.template import RequestContext
 from Kura import commands
 
 from webui.forms.entities import NewEntityForm, UpdateForm, AddFileForm
-from webui.views.decorators import login_required
+from webui.views.decorators import login_required, storage_required
 
 
 # helpers --------------------------------------------------------------
@@ -64,6 +64,7 @@ def handle_uploaded_file(f, dest_dir):
 
 # views ----------------------------------------------------------------
 
+@storage_required
 def entity( request, repo, org, cid, eid ):
     collection_uid = '{}-{}-{}'.format(repo, org, cid)
     entity_uid     = '{}-{}-{}-{}'.format(repo, org, cid, eid)
@@ -94,6 +95,7 @@ def entity( request, repo, org, cid, eid ):
     )
 
 @login_required
+@storage_required
 def entity_new( request, repo, org, cid ):
     """
     TODO webui.views.entities.entity_new: get new EID from workbench
@@ -134,6 +136,7 @@ def entity_new( request, repo, org, cid ):
     )
 
 @login_required
+@storage_required
 def entity_update( request, repo, org, cid, eid ):
     """
     on GET
@@ -189,6 +192,7 @@ def entity_update( request, repo, org, cid, eid ):
     )
 
 @login_required
+@storage_required
 def entity_add( request, repo, org, cid, eid ):
     """Add an entity to collection
     """
@@ -236,6 +240,7 @@ def entity_add( request, repo, org, cid, eid ):
     )
 
 @login_required
+@storage_required
 def entity_file( request, repo, org, cid, eid, filenum ):
     """Add file to entity.
     """

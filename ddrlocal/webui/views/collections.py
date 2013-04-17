@@ -14,7 +14,8 @@ from django.template import RequestContext
 from Kura import commands
 
 from webui.forms.collections import NewCollectionForm, UpdateForm
-from webui.views.decorators import login_required
+from webui.views.decorators import login_required, storage_required
+
 
 # helpers --------------------------------------------------------------
 
@@ -60,8 +61,10 @@ def collection_entities(soup):
     return entities
 
 
+
 # views ----------------------------------------------------------------
 
+@storage_required
 def collections( request ):
     collections = []
     colls = commands.collections_local(settings.DDR_BASE_PATH,
@@ -81,6 +84,7 @@ def collections( request ):
         context_instance=RequestContext(request, processors=[])
     )
 
+@storage_required
 def collection( request, repo, org, cid ):
     collection_uid = '{}-{}-{}'.format(repo, org, cid)
     collection_path = os.path.join(settings.DDR_BASE_PATH, collection_uid)
@@ -110,6 +114,7 @@ def collection( request, repo, org, cid ):
     )
 
 @login_required
+@storage_required
 def collection_sync( request, repo, org, cid ):
     collection_uid = '{}-{}-{}'.format(repo, org, cid)
     collection_path = os.path.join(settings.DDR_BASE_PATH, collection_uid)
@@ -131,6 +136,7 @@ def collection_sync( request, repo, org, cid ):
     return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
 
 @login_required
+@storage_required
 def collection_new( request ):
     """
     TODO webui.views.collections.collection_new: get new CID from workbench
@@ -169,6 +175,7 @@ def collection_new( request ):
     )
 
 @login_required
+@storage_required
 def collection_update( request, repo, org, cid ):
     """
     on GET
