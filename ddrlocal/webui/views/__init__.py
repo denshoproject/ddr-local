@@ -13,8 +13,9 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import Http404, get_object_or_404, render_to_response
 from django.template import RequestContext
 
-from Kura import commands
+from DDR import commands
 
+from webui.storage import removables, removables_mounted
 from webui.forms import LoginForm
 
 # helpers --------------------------------------------------------------
@@ -122,6 +123,16 @@ def logout( request ):
     else:
         messages.warning(request, "Couldn't log out ({}).".format(status))
     return HttpResponseRedirect( reverse('webui-index') )
+
+def storage( request ):
+    return render_to_response(
+        'webui/storage.html',
+        {
+            'removables': removables(),
+            'removables_mounted': removables_mounted(),
+        },
+        context_instance=RequestContext(request, processors=[])
+    )
 
 def storage_required( request ):
     return render_to_response(

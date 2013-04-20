@@ -51,11 +51,37 @@
       <li><a href="{% url "webui-index" %}">Web UI</a></li>
     </ul>
     <p id="user-info" class="navbar-text pull-right">
+    
 {% if username %}
     {{ username }} / <a href="{% url "webui-logout" %}">Log out</a>
 {% else %}
     <a href="{% url "webui-login" %}">Log in</a>
 {% endif %}
+        
+    &nbsp;&bull;&nbsp;
+    
+    <a href="{% url "webui-storage" %}">Storage</a>
+
+{% if storage_type %}
+<span class="label {% if storage_type == 'unknown' %}label-warning{% else %}label-info{% endif %}">
+  {{ storage_type }}
+</span>
+{% else %}
+<span class="label label-important">
+  unknown
+</span>
+{% endif %}
+
+{% if storage_status == 'ok' %}
+<span class="label label-success">
+  OK
+</span>
+{% else %}
+<span class="label label-important">
+  {{ storage_status }}
+</span>
+{% endif %} 
+   
     </p>
   </div>
 </div><!-- .navbar -->
@@ -67,6 +93,7 @@
 
 {% if messages %}
 <div class="alert alert-success">
+<button type="button" class="close" data-dismiss="alert">&times;</button>
 <ul>
   {% for message in messages %}
   <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message|safe }}</li>
