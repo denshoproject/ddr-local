@@ -13,16 +13,16 @@
 <div class="row">
   <div class="span12">
 
+<div style="float:right; margin-left:10px;">
+  <a href="{{ gitweb_url }}" target="gitweb">Gitweb</a>
+</div>
+<div style="float:right; margin-left:10px;">
+  <form name="collection-sync" action="{% url "webui-collection-sync" repo org cid %}" method="POST">{% csrf_token %}
+    <input name="sync" type="submit" value="Sync"/>
+  </form>
+</div>
+
 <h1>{{ collection_uid }}</h1>
-
-<p>
-<a href="{{ gitweb_url }}" target="gitweb">Gitweb</a>
-</p>
-
-<form name="collection-sync" action="{% url "webui-collection-sync" repo org cid %}" method="POST">
-{% csrf_token %}
-<input name="sync" type="submit" value="sync"/>
-</form>
 
   </div><!-- .span12 -->
 </div><!-- .row -->
