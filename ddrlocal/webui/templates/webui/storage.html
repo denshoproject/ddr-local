@@ -16,14 +16,16 @@
 {% if removables_mounted %}
 
 <h2>removables_mounted</h2>
+{{ removables_mounted }}
 <ul>
 {% for r in removables_mounted %}
   <li>{{ r }}</li>
 {% endfor %}
 </ul>
 <form name="umount" action="" method="post">{% csrf_token %}
+  {{ umount_form.as_p }}
 {% for r in removables_mounted %}
-  <input name="submit" type="submit" value="Unmount {{ r.mountpath }}" />
+  <input name="submit" type="submit" value="UNmount {{ r.mountpath }}" />
 {% endfor %}
 </form>
 
@@ -31,9 +33,10 @@
 
 <h2>mount one of these:</h2>
 <form name="mount" action="" method="post">{% csrf_token %}
+  {{ mount_form.as_p }}
 <ul>
 {% for r in removables %}
-  <input name="submit" type="submit" value="{{ r.label }}" />
+  <input name="submit" type="submit" value="Mount {{ r.devicefile }} {{ r.label }}" />
 {% endfor %}
 </ul>
 </form>
