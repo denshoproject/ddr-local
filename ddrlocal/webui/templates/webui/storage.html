@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+
+{% block title %}Storage{% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+<li class="active">Storage</li>
+{% endblock breadcrumbs %}
+
+
+{% block content %}
+
+<h1>Storage</h1>
+
+
+{% if removables_mounted %}
+
+<h2>removables_mounted</h2>
+{{ removables_mounted }}
+<ul>
+{% for r in removables_mounted %}
+  <li>{{ r }}</li>
+{% endfor %}
+</ul>
+<form name="umount" action="" method="post">{% csrf_token %}
+  {{ umount_form.as_p }}
+{% for r in removables_mounted %}
+  <input name="submit" type="submit" value="UNmount {{ r.mountpath }}" />
+{% endfor %}
+</form>
+
+{% else %}
+
+<h2>mount one of these:</h2>
+<form name="mount" action="" method="post">{% csrf_token %}
+  {{ mount_form.as_p }}
+<ul>
+{% for r in removables %}
+  <input name="submit" type="submit" value="Mount {{ r.devicefile }} {{ r.label }}" />
+{% endfor %}
+</ul>
+</form>
+
+{% endif %}
+
+{% endblock content %}

@@ -11,7 +11,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import Http404, get_object_or_404, render_to_response
 from django.template import RequestContext
 
-from Kura import commands
+from DDR import commands
 
 from webui.forms.collections import NewCollectionForm, UpdateForm
 from webui.views.decorators import login_required, storage_required
@@ -67,6 +67,8 @@ def collection_entities(soup):
 @storage_required
 def collections( request ):
     collections = []
+    repo = None
+    org = None
     colls = commands.collections_local(settings.DDR_BASE_PATH,
                                        settings.DDR_REPOSITORY,
                                        settings.DDR_ORGANIZATION)

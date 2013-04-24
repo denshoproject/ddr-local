@@ -11,7 +11,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import Http404, get_object_or_404, render_to_response
 from django.template import RequestContext
 
-from Kura import commands
+from DDR import commands
 
 from webui.forms.entities import NewEntityForm, UpdateForm, AddFileForm
 from webui.views.decorators import login_required, storage_required
