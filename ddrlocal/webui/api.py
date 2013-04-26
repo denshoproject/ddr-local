@@ -93,17 +93,25 @@ def collections_next( request, repo, org, num_collections=1 ):
       <tr><td><a class="collection" href="/workbench/kiroku/ddr-densho-2/">ddr-densho-2</a></td></tr>
     ...
     
-    We're screenscraping when we should be using the API.
-    Also, we're using a GET to change state.
+    TODO We're screenscraping when we should be using the API.
     """
     collections = []
     s = session(request)
-    #url = '{}/kiroku/{}-{}/'.format(settings.WORKBENCH_URL, repo, org)
-    url = settings.WORKBENCH_NEWCOL_URL.replace('REPO',repo).replace('ORG',org)
-    r = s.get(url)
-    soup = BeautifulSoup(r.text)
-    cids = []
-    for c in soup.find_all('a','collection'):
-        cids.append(c.string)
-    collections = cids[-num_collections:]
+    # get CSRF token
+    r0 = s.get('{}/kiroku/{}-{}/'.format(settings.WORKBENCH_URL, repo, org))
+    if r0.status_code == 200:
+        # get CSRF token from cookie
+        csrf_token = None
+        for c in r0.cookies:
+            if c.name == 'csrftoken':
+                csrf_token = c.value
+        if csrf_token:
+            # request new CID
+            r1 = s.post(settings.WORKBENCH_NEWCOL_URL.replace('REPO',repo).replace('ORG',org),
+                        headers={'X-CSRFToken': csrf_token},
+                        cookies={'csrftoken': csrf_token},
+                        data={'csrftoken': csrf_token},)
+            soup = BeautifulSoup(r1.text)
+            cids = [c.string for c in soup.find_all('a','collection')]
+            collections = cids[-num_collections:]
     return collections
