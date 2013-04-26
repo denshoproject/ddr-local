@@ -67,22 +67,19 @@ def collection_entities(soup):
 @storage_required
 def collections( request ):
     collections = []
-    repo = None
-    org = None
-    colls = commands.collections_local(settings.DDR_BASE_PATH,
-                                       settings.DDR_REPOSITORY,
-                                       settings.DDR_ORGANIZATION)
-    for coll in colls:
-        if coll:
-            coll = os.path.basename(coll)
-            c = coll.split('-')
-            repo,org,cid = c[0],c[1],c[2]
-            collections.append( (coll,repo,org,cid) )
+    for o in settings.DDR_ORGANIZATIONS:
+        repo,org = o.split('-')
+        colls = []
+        for coll in commands.collections_local(settings.DDR_BASE_PATH, repo, org):
+            if coll:
+                coll = os.path.basename(coll)
+                c = coll.split('-')
+                repo,org,cid = c[0],c[1],c[2]
+                colls.append( (coll,repo,org,cid) )
+        collections.append( (o,repo,org,colls) )
     return render_to_response(
         'webui/collections/index.html',
-        {'repo': repo,
-         'org': org,
-         'collections': collections,},
+        {'collections': collections,},
         context_instance=RequestContext(request, processors=[])
     )
 
