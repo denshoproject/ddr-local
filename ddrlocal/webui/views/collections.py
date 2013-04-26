@@ -61,50 +61,6 @@ def collection_entities(soup):
                           'title': tag.string.strip(),} )
     return entities
 
-def collections_latest( request, repo, org, num_collections=1 ):
-    """Get the most recent N collection IDs for the logged-in user.
-    
-    <table id="collections" class="table table-striped table-bordered table-condensed">
-      <tr><td><a class="collection" href="/workbench/kiroku/ddr-densho-1/">ddr-densho-1</a></td></tr>
-      <tr><td><a class="collection" href="/workbench/kiroku/ddr-densho-2/">ddr-densho-2</a></td></tr>
-    ...
-    
-    We're screenscraping when we should be using the API.
-    """
-    collections = []
-    s = api.session(request)
-    url = '{}/kiroku/{}-{}/'.format(settings.WORKBENCH_URL, repo, org)
-    r = s.get(url)
-    soup = BeautifulSoup(r.text)
-    cids = []
-    for c in soup.find_all('a','collection'):
-        cids.append(c.string)
-    collections = cids[-num_collections:]
-    return collections
-
-def collections_next( request, repo, org, num_collections=1 ):
-    """Generate the next N collection IDs for the logged-in user.
-    
-    <table id="collections" class="table table-striped table-bordered table-condensed">
-      <tr><td><a class="collection" href="/workbench/kiroku/ddr-densho-1/">ddr-densho-1</a></td></tr>
-      <tr><td><a class="collection" href="/workbench/kiroku/ddr-densho-2/">ddr-densho-2</a></td></tr>
-    ...
-    
-    We're screenscraping when we should be using the API.
-    Also, we're using a GET to change state.
-    """
-    collections = []
-    s = api.session(request)
-    #url = '{}/kiroku/{}-{}/'.format(settings.WORKBENCH_URL, repo, org)
-    url = settings.WORKBENCH_NEWCOL_URL.replace('REPO',repo).replace('ORG',org)
-    r = s.get(url)
-    soup = BeautifulSoup(r.text)
-    cids = []
-    for c in soup.find_all('a','collection'):
-        cids.append(c.string)
-    collections = cids[-num_collections:]
-    return collections
-
 
 # views ----------------------------------------------------------------
 
@@ -211,7 +167,7 @@ def collection_new( request, repo, org ):
                 messages.error(request, 'Login is required')
     else:
         # request the new CID
-        cids = collections_next(request, repo, org, 1)
+        cids = api.collections_next(request, repo, org, 1)
         # display in form
         cid = int(cids[-1].split('-')[2])
         cidnew = cid + 1
