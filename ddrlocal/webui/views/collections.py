@@ -13,6 +13,7 @@ from django.template import RequestContext
 
 from DDR import commands
 
+from webui import api
 from webui.forms.collections import NewCollectionForm, UpdateForm
 from webui.views.decorators import login_required, storage_required
 
@@ -60,6 +61,49 @@ def collection_entities(soup):
                           'title': tag.string.strip(),} )
     return entities
 
+def collections_latest( request, repo, org, num_collections=1 ):
+    """Get the most recent N collection IDs for the logged-in user.
+    
+    <table id="collections" class="table table-striped table-bordered table-condensed">
+      <tr><td><a class="collection" href="/workbench/kiroku/ddr-densho-1/">ddr-densho-1</a></td></tr>
+      <tr><td><a class="collection" href="/workbench/kiroku/ddr-densho-2/">ddr-densho-2</a></td></tr>
+    ...
+    
+    We're screenscraping when we should be using the API.
+    """
+    collections = []
+    s = api.session(request)
+    url = '{}/kiroku/{}-{}/'.format(settings.WORKBENCH_URL, repo, org)
+    r = s.get(url)
+    soup = BeautifulSoup(r.text)
+    cids = []
+    for c in soup.find_all('a','collection'):
+        cids.append(c.string)
+    collections = cids[-num_collections:]
+    return collections
+
+def collections_next( request, repo, org, num_collections=1 ):
+    """Generate the next N collection IDs for the logged-in user.
+    
+    <table id="collections" class="table table-striped table-bordered table-condensed">
+      <tr><td><a class="collection" href="/workbench/kiroku/ddr-densho-1/">ddr-densho-1</a></td></tr>
+      <tr><td><a class="collection" href="/workbench/kiroku/ddr-densho-2/">ddr-densho-2</a></td></tr>
+    ...
+    
+    We're screenscraping when we should be using the API.
+    Also, we're using a GET to change state.
+    """
+    collections = []
+    s = api.session(request)
+    #url = '{}/kiroku/{}-{}/'.format(settings.WORKBENCH_URL, repo, org)
+    url = settings.WORKBENCH_NEWCOL_URL.replace('REPO',repo).replace('ORG',org)
+    r = s.get(url)
+    soup = BeautifulSoup(r.text)
+    cids = []
+    for c in soup.find_all('a','collection'):
+        cids.append(c.string)
+    collections = cids[-num_collections:]
+    return collections
 
 
 # views ----------------------------------------------------------------
@@ -139,7 +183,7 @@ def collection_sync( request, repo, org, cid ):
 
 @login_required
 @storage_required
-def collection_new( request ):
+def collection_new( request, repo, org ):
     """
     TODO webui.views.collections.collection_new: get new CID from workbench
     """
@@ -156,11 +200,8 @@ def collection_new( request ):
                 cid = form.cleaned_data['cid']
                 collection_uid = '{}-{}-{}'.format(repo,org,cid)
                 collection_path = os.path.join(settings.DDR_BASE_PATH, collection_uid)
-                messages.info(request, collection_uid)
-                messages.info(request, collection_path)
-                
+                # create the new collection repo
                 exit,status = commands.create(git_name, git_mail, collection_path)
-                
                 if exit:
                     messages.error(request, 'Error: {}'.format(status))
                 else:
@@ -169,7 +210,15 @@ def collection_new( request ):
             else:
                 messages.error(request, 'Login is required')
     else:
-        form = NewCollectionForm()
+        # request the new CID
+        cids = collections_next(request, repo, org, 1)
+        # display in form
+        cid = int(cids[-1].split('-')[2])
+        cidnew = cid + 1
+        data = {'repo': repo,
+                'org': org,
+                'cid': cidnew,}
+        form = NewCollectionForm(data)
     return render_to_response(
         'webui/collections/collection-new.html',
         {'form': form,},
