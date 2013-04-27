@@ -167,10 +167,9 @@ def collection_new( request, repo, org ):
         cids = api.collections_next(request, repo, org, 1)
         # display in form
         cid = int(cids[-1].split('-')[2])
-        cidnew = cid + 1
         data = {'repo': repo,
                 'org': org,
-                'cid': cidnew,}
+                'cid': cid,}
         form = NewCollectionForm(data)
     return render_to_response(
         'webui/collections/collection-new.html',
