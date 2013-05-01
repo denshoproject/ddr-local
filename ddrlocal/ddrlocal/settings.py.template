@@ -101,6 +101,7 @@ TIME_ZONE = 'America/Los_Angeles'
 
 TEMPLATE_DIRS = (
     '.../ddr-local/ddrlocal/ddrlocal/templates',
+    '.../ddr-local/ddrlocal/storage/templates',
     '.../ddr-local/ddrlocal/webui/templates',
 )
 
@@ -155,6 +156,7 @@ INSTALLED_APPS = (
     #
     'djcelery',
     #
+    'storage',
     'webui',
 )
 
@@ -184,6 +186,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'django.core.context_processors.static',
     'django.core.context_processors.tz',
     'django.contrib.messages.context_processors.messages',
+    'storage.context_processors.sitewide',
     'webui.context_processors.sitewide',
 )
 

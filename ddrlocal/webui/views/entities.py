@@ -13,8 +13,9 @@ from django.template import RequestContext
 
 from DDR import commands
 
+from storage.decorators import storage_required
 from webui.forms.entities import NewEntityForm, UpdateForm, AddFileForm
-from webui.views.decorators import login_required, storage_required
+from webui.views.decorators import login_required
 
 
 # helpers --------------------------------------------------------------

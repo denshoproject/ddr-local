@@ -13,9 +13,10 @@ from django.template import RequestContext
 
 from DDR import commands
 
+from storage.decorators import storage_required
 from webui import api
 from webui.forms.collections import NewCollectionForm, UpdateForm
-from webui.views.decorators import login_required, storage_required
+from webui.views.decorators import login_required
 
 
 # helpers --------------------------------------------------------------

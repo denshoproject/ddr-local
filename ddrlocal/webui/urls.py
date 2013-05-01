@@ -5,8 +5,6 @@ urlpatterns = patterns(
     '',
     url(r'^login/$', 'webui.views.login', name='webui-login'),
     url(r'^logout/$', 'webui.views.logout', name='webui-logout'),
-    url(r'^storage-required/$', 'webui.views.storage_required', name='webui-storage-required'),
-    url(r'^storage/$', 'webui.views.storage', name='webui-storage'),
     url(r'^working/$', TemplateView.as_view(template_name="webui/working.html"), name='webui-working'),
 
     url(r'^collection/(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/sync/$', 'webui.views.collections.collection_sync', name='webui-collection-sync'),
