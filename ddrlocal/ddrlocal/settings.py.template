@@ -1,6 +1,6 @@
 # Django settings for ddrlocal.
 
-DEBUG = True
+DEBUG = False
 TEMPLATE_DEBUG = DEBUG
 
 # ----------------------------------------------------------------------
@@ -19,47 +19,78 @@ if not os.path.exists(CONFIG_FILE):
     raise NoConfigError('No config file!')
 config = ConfigParser.ConfigParser()
 config.read(CONFIG_FILE)
-GITOLITE = config.get('workbench','gitolite')
-GIT_REMOTE_NAME = config.get('workbench','remote')
+GITOLITE             = config.get('workbench','gitolite')
+GITWEB_URL           = config.get('workbench','gitweb_url')
+GIT_REMOTE_NAME      = config.get('workbench','remote')
+WORKBENCH_URL        = config.get('workbench','workbench_url')
+WORKBENCH_LOGIN_URL  = config.get('workbench','workbench_login_url')
+WORKBENCH_LOGOUT_URL = config.get('workbench','workbench_logout_url')
+WORKBENCH_LOGIN_TEST = config.get('workbench','login_test_url')
+WORKBENCH_NEWCOL_URL = config.get('workbench','workbench_newcol_url')
+WORKBENCH_NEWENT_URL = config.get('workbench','workbench_newent_url')
 
-DDR_REPOSITORY = config.get('local','repository')
 # Keyword of the organization represented by this install.
-DDR_ORGANIZATION = config.get('local','organization')
-DDR_ORG_UID = '{}-{}'.format(DDR_REPOSITORY, DDR_ORGANIZATION)
+DDR_ORGANIZATIONS    = config.get('local','organizations').split(',')
 
 # Base path to dir where the repos go
-LOCAL_BASE_PATH = config.get('local','base_path')
+LOCAL_BASE_PATH      = config.get('local','base_path')
 #DDR_BASE_PATH = os.path.join(LOCAL_BASE_PATH, DDR_ORG_UID)
 DDR_BASE_PATH = LOCAL_BASE_PATH
 
 # Directory in root of USB HDD that marks it as a DDR disk
 # /media/USBHDDNAME/ddr
 # USBHDDNAME will be detected and git remotes will be named USBHDDNAME
-DDR_USBHDD_BASE_DIR = DDR_ORG_UID
+#DDR_USBHDD_BASE_DIR = DDR_ORG_UID
 
 # path to SSH public key for the VM
-DDR_SSHPUB_PATH = config.get('local','ssh_pubkey')
+DDR_SSHPUB_PATH      = config.get('local','ssh_pubkey')
 
 # TODO replace with login user details
-DDR_PROTOTYPE_USER = config.get('testing','user_name')
-DDR_PROTOTYPE_MAIL = config.get('testing','user_mail')
+DDR_PROTOTYPE_USER   = config.get('testing','user_name')
+DDR_PROTOTYPE_MAIL   = config.get('testing','user_mail')
+
+# logging
+WEBUI_LOG_FILE       = config.get('webui', 'log_file')
+WEBUI_LOG_LEVEL      = config.get('webui', 'log_level')
+
+ENTITY_FILE_ROLES = (
+    ('master','master'),
+    ('mezzanine','mezzanine'),
+    ('access','access'),
+)
 
 # ----------------------------------------------------------------------
 
 ADMINS = (
-    ('geoffrey jost', 'geoffrey.jost@densho.org'),
 )
 MANAGERS = ADMINS
 
-SITE_ID = 1
-SECRET_KEY = '2a&29e10pd!(1p16oaj57rpxg%f!*u88p!1gl6sy*=2z_h!o(e'
+SITE_ID = 
+SECRET_KEY = 
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': '/home/gjost/ddr-local/ddrlocal/ddrlocal.db',
+        'NAME': ,
     }
 }
+
+CACHES = {
+    "default": {
+        "BACKEND": "redis_cache.cache.RedisCache",
+        "LOCATION": "127.0.0.1:6379:1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "redis_cache.client.DefaultClient",
+        }
+    }
+}
+
+SESSION_ENGINE = 'redis_sessions.session'
+
+MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
+
+# Celery
+BROKER_URL = 'redis://localhost:6379/0'
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False
 # See https://docs.djangoproject.com/en/1.5/ref/settings/#allowed-hosts
@@ -69,18 +100,20 @@ LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'America/Los_Angeles'
 
 TEMPLATE_DIRS = (
-    '/home/gjost/ddr-local/ddrlocal/ddrlocal/templates',
-    '/home/gjost/ddr-local/ddrlocal/webui/templates',
+    '.../ddr-local/ddrlocal/ddrlocal/templates',
+    '.../ddr-local/ddrlocal/webui/templates',
 )
 
 STATICFILES_DIRS = (
-    '/home/gjost/ddr-local/ddrlocal/ddrlocal/static',
+    '.../ddr-local/ddrlocal/ddrlocal/static',
 )
-STATIC_ROOT = ''
-STATIC_URL  = 'http://partner.densho.org/static/'
+STATIC_ROOT = '/var/www/ddr-local/'
+STATIC_URL  = 'http://127.0.0.1/static/'
+#STATIC_URL  = 'https://denshodr.pagekite.me/static/'
 
-MEDIA_ROOT = '/tmp/'
-MEDIA_URL  = 'file:///tmp/'
+MEDIA_ROOT = '/var/www/ddr/'
+MEDIA_URL  = 'http://127.0.0.1/media/'
+#MEDIA_URL  = 'https://denshodr.pagekite.me/media/'
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to
@@ -119,6 +152,9 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.admin',
+    #
+    'djcelery',
+    #
     'webui',
 )
 
@@ -138,6 +174,17 @@ TEMPLATE_LOADERS = (
     'django.template.loaders.filesystem.Loader',
     'django.template.loaders.app_directories.Loader',
 #     'django.template.loaders.eggs.Loader',
+)
+
+TEMPLATE_CONTEXT_PROCESSORS = (
+    'django.contrib.auth.context_processors.auth',
+    'django.core.context_processors.debug',
+    'django.core.context_processors.i18n',
+    'django.core.context_processors.media',
+    'django.core.context_processors.static',
+    'django.core.context_processors.tz',
+    'django.contrib.messages.context_processors.messages',
+    'webui.context_processors.sitewide',
 )
 
 MIDDLEWARE_CLASSES = (
