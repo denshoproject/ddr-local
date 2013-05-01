@@ -1,8 +1,18 @@
 # dependencies used in all environments
 
-beautifulsoup4
-celery
 django
+
+# cache, sessions, celery broker
+redis
+django-redis
+django-redis-sessions
+
+# process queue
+celery
+django-celery
+django-celery-with-redis
+
+# misc
+beautifulsoup4
 envoy
-python-memcached
 requests
