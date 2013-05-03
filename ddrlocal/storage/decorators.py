@@ -9,21 +9,27 @@ from django.utils.decorators import available_attrs
 from DDR import commands
 
 def storage_required(func):
-    """Checks for presence of storage; redirects to mount page if absent
-    """
-    def storage_present():
-        try:
-            repo,org = settings.DDR_ORGANIZATIONS[0].split('-')
-            collections = commands.collections_local(settings.DDR_BASE_PATH, repo, org)
-            return True
-        except:
-            pass
-        return False
+    """Checks for storage; if problem redirects to remount page or shows error.
     
+    Saves requested URI in session; remount view will try to retrieve and redirect.
+    NOTE: We don't remember GET/POST args!!!
+    """
     @wraps(func, assigned=available_attrs(func))
     def inner(request, *args, **kwargs):
-        if not storage_present():
-            messages.error(request, 'ERROR: Could not get list of collections. Is USB HDD plugged in?')
+        # if we can get list of collections, storage must be readable
+        repo,org = settings.DDR_ORGANIZATIONS[0].split('-')
+        try:
+            collections = commands.collections_local(settings.DDR_BASE_PATH, repo, org)
+            readable = True
+        except:
+            readable = False
+        if not readable:
+            status,msg = commands.storage_status(settings.DDR_BASE_PATH)
+            if msg == 'unmounted':
+                request.session['remount_redirect_uri'] = request.META.get('PATH_INFO',None)
+                return HttpResponseRedirect(reverse('storage-remount0'))
+            else:
+                messages.error(request, 'ERROR: Could not get list of collections. Is USB HDD plugged in?')
             return HttpResponseRedirect(reverse('storage-required'))
         return func(request, *args, **kwargs)
     return inner

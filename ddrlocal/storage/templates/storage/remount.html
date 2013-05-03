@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+
+{% block title %}Remounting{% endblock %}
+
+{% block headmeta %}
+<meta http-equiv="refresh" content="0;URL='{% url "storage-remount1" %}'">
+{% endblock headmeta %}
+
+{% block breadcrumbs %}{{ block.super }}
+<li class="active">Remounting</li>
+{% endblock breadcrumbs %}
+
+
+{% block content %}
+
+<h1>Remounting</h1>
+
+<p>
+[spinning beachball]
+</p>
+
+<p>
+If you're not redirected to <strong>{{ redirect }}</strong> in 30 seconds,
+<a href="{{ redirect }}">Click here</a>.
+</p>
+
+{% endblock content %}
