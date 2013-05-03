@@ -34,11 +34,18 @@
 <h2>mount one of these:</h2>
 <form name="mount" action="" method="post">{% csrf_token %}
   {{ mount_form.as_p }}
+{% if removables %}
 <ul>
 {% for r in removables %}
   <input name="submit" type="submit" value="Mount {{ r.devicefile }} {{ r.label }}" />
 {% endfor %}
 </ul>
+{% else %}
+<p>
+No removable devices attached to this VM.<br/>
+Select device from <em>Devices > USB Devices</em>.</br>
+</p>
+{% endif %}
 </form>
 
 {% endif %}
