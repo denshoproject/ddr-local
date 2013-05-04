@@ -127,9 +127,7 @@ def remount1( request, redirect=None ):
     We need to unmount from the old device file and remount with the new
     device file that we get from looking directly at the system's device info.
     """
-    if not redirect:
-        redirect = 'webui-index'
-        # "lost your redirect" message
+    redirect = request.session.get('remount_redirect_uri', 'webui-index')
     label = request.session.get('storage_label', None)
     # current "mounted" devicefile
     devicefile_session = request.session.get('storage_devicefile', None)
