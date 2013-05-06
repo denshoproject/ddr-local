@@ -12,6 +12,7 @@ from DDR import commands
 
 from storage.forms import MountForm, UmountForm
 
+
 # helpers --------------------------------------------------------------
 
 def mount( request, devicefile, label ):
@@ -29,7 +30,7 @@ def mount( request, devicefile, label ):
     else:
         messages.error(request, 'Problem mounting {}: {},{}'.format(label, stat,mounted))
 
-def unmount( request, devicefile, value ):
+def unmount( request, devicefile, label ):
     unmounted = None
     if devicefile:
         stat,unmounted = commands.umount(devicefile)
@@ -42,11 +43,11 @@ def unmount( request, devicefile, value ):
         except KeyError:
             pass
     if unmounted:
-        messages.success(request, 'Umounted {}'.format(value))
+        messages.success(request, 'Umounted {}'.format(label))
     elif unmounted == False:
-        messages.warning(request, 'Count not umount {}'.format(value))
+        messages.warning(request, 'Count not umount {}'.format(label))
     else:
-        messages.error(request, 'Problem unmounting {}: {},{}'.format(value, stat,unmounted))
+        messages.error(request, 'Problem unmounting {}: {},{}'.format(label, stat,unmounted))
 
 
 # views ----------------------------------------------------------------
@@ -60,36 +61,29 @@ def index( request ):
     """
     stat,removables = commands.removables()
     stat,mounted = commands.removables_mounted()
+    rdevices = [(d['devicefile'],d['label']) for d in removables]
+    mdevices = [(d['mountpath'],d['devicefile']) for d in mounted]
     if request.method == 'POST':
-        mount_form = MountForm(request.POST)
-        umount_form = UmountForm(request.POST)
+        mount_form = MountForm(request.POST, devices=rdevices)
+        umount_form = UmountForm(request.POST, devices=mdevices)
         which = request.POST.get('which','neither')
         if which == 'mount':
             if mount_form.is_valid():
-                devicefile,label,mounted = None,None,None
-                value = request.POST.get('submit',None)
-                if value:
-                    op,devicefile,label = value.split(' ')
+                raw = mount_form.cleaned_data['device']
+                devicefile,label = raw.split(' ')
                 # do it
                 mount(request, devicefile, label)
                 return HttpResponseRedirect( reverse('storage-index') )
         elif which == 'umount':
             if umount_form.is_valid():
-                mountpoint,devicefile,unmounted = None,None,None
-                value = request.POST.get('submit',None)
-                if value:
-                    mountpoint = value.split(' ')[1]
-                if mountpoint:
-                    for m in mounted:
-                        mountpath = m.get('mountpath',None)
-                        if mountpath and (mountpath == mountpoint):
-                            devicefile = m['devicefile']
+                raw = umount_form.cleaned_data['device']
+                mountpoint,devicefile = raw.split(' ')
                 # do it
-                unmount(request, devicefile, value)
+                unmount(request, devicefile, mountpoint)
                 return HttpResponseRedirect( reverse('storage-index') )
     else:
-        mount_form = MountForm()
-        umount_form = UmountForm()
+        mount_form = MountForm(devices=rdevices)
+        umount_form = UmountForm(devices=mdevices)
     return render_to_response(
         'storage/index.html',
         {'removables': removables,
@@ -141,7 +135,9 @@ def remount1( request, redirect=None ):
     if devicefile_session and label and devicefile_udisks:
         unmount(request, devicefile_session, label)
         mount(request, devicefile_udisks, label)
-    return HttpResponseRedirect(reverse(redirect))
+        return HttpResponseRedirect(reverse(redirect))
+    # remount didnt work, go to storage page
+    return HttpResponseRedirect( reverse('storage-index') )
 
 def storage_required( request ):
     return render_to_response(

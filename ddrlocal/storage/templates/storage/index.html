@@ -15,39 +15,53 @@
 
 {% if removables_mounted %}
 
-<h2>removables_mounted</h2>
-{{ removables_mounted }}
-<ul>
-{% for r in removables_mounted %}
-  <li>{{ r }}</li>
-{% endfor %}
-</ul>
-<form name="umount" action="" method="post">{% csrf_token %}
-  {{ umount_form.as_p }}
-{% for r in removables_mounted %}
-  <input name="submit" type="submit" value="UNmount {{ r.mountpath }}" />
-{% endfor %}
+<table>
+<form name="mount" action="" method="post">{% csrf_token %}
+  {{ umount_form.as_table }}
+{% if removables_mounted %}
+  <tr>
+    <td>
+      <input name="submit" type="submit" value="Un-mount selected device" />
+    </td>
+  </tr>
+</table>
+{% else %}
+<p>
+No removable devices attached to this VM.<br/>
+Plug a USB drive into your computer<br/>
+Select device from <em>Devices > USB Devices</em> from the VM menu.<br/>
+Reload this page.<br/>
+</p>
+{% endif %}
 </form>
 
 {% else %}
 
-<h2>mount one of these:</h2>
+<table>
 <form name="mount" action="" method="post">{% csrf_token %}
-  {{ mount_form.as_p }}
+  {{ mount_form.as_table }}
 {% if removables %}
-<ul>
-{% for r in removables %}
-  <input name="submit" type="submit" value="Mount {{ r.devicefile }} {{ r.label }}" />
-{% endfor %}
-</ul>
+  <tr>
+    <td>
+      <input name="submit" type="submit" value="Mount selected device" />
+    </td>
+  </tr>
+</table>
 {% else %}
 <p>
 No removable devices attached to this VM.<br/>
-Select device from <em>Devices > USB Devices</em>.</br>
+Plug a USB drive into your computer<br/>
+Select device from <em>Devices > USB Devices</em> from the VM menu.<br/>
+Reload this page.<br/>
 </p>
 {% endif %}
 </form>
 
 {% endif %}
+
+<h3>Help / Troubleshooting</h3>
+<p>
+MORE HELP TEXT HERE
+</p>
 
 {% endblock content %}
