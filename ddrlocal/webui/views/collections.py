@@ -16,6 +16,7 @@ from DDR import commands
 from storage.decorators import storage_required
 from webui import api
 from webui.forms.collections import NewCollectionForm, UpdateForm
+from webui.ead import EADHeaderForm, prep_eadheader_form, eadheader_xml
 from webui.views.decorators import login_required
 
 
@@ -221,6 +222,49 @@ def collection_update( request, repo, org, cid ):
         form = UpdateForm({'xml':xml,})
     return render_to_response(
         'webui/collections/collection-update.html',
+        {'repo': repo,
+         'org': org,
+         'cid': cid,
+         'collection_uid': collection_uid,
+         'form': form,},
+        context_instance=RequestContext(request, processors=[])
+    )
+
+@login_required
+@storage_required
+def edit_eadheader( request, repo, org, cid ):
+    """Edit the contents of <eadheader>.
+    """
+    collection_uid = '{}-{}-{}'.format(repo, org, cid)
+    collection_path = os.path.join(settings.DDR_BASE_PATH, collection_uid)
+    ead_path_rel = 'ead.xml'
+    ead_path_abs = os.path.join(collection_path, ead_path_rel)
+    with open(ead_path_abs, 'r') as f:
+        xml = f.read()
+    #
+    if request.method == 'POST':
+        form = EADHeaderForm(request.POST)
+        if form.is_valid():
+            git_name = request.session.get('git_name')
+            git_mail = request.session.get('git_mail')
+            if git_name and git_mail:
+                xml_new = eadheader_xml(form, xml)
+                # TODO validate XML
+                with open(ead_path_abs, 'w') as fnew:
+                    fnew.write(xml_new)
+                # TODO validate XML
+                exit,status = commands.update(git_name, git_mail, collection_path, [ead_path_rel])
+                if exit:
+                    messages.error(request, 'Error: {}'.format(status))
+                else:
+                    messages.success(request, 'Collection metadata updated')
+                    return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+            else:
+                messages.error(request, 'Login is required')
+    else:
+        form = prep_eadheader_form(xml)
+    return render_to_response(
+        'webui/collections/edit-eadheader.html',
         {'repo': repo,
          'org': org,
          'cid': cid,
