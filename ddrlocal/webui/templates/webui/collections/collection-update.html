@@ -4,13 +4,14 @@
 {% block title %}{{ collection_uid }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
+<li><a href="{% url "webui-collection" repo org cid %}">{{ collection_uid }}</a></li>
 <li class="active">{{ collection_uid }}</li>
 {% endblock breadcrumbs %}
 
 
 {% block content %}
 
-<h1>{{ collection_uid }}</h1>
+<h1>{{ collection_uid }} - edit</h1>
 
 <p><b>
 IMPORTANT: We are performing exactly <b>ZERO</b> validation here!<br/>
