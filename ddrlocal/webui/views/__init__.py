@@ -51,7 +51,7 @@ def login( request ):
             else:
                 messages.warning(
                     request,
-                    "Couldn't log in ({}).".format(session))
+                    "Couldn't log in ({}).".format(form.cleaned_data['username']))
             return HttpResponseRedirect( reverse('webui-index') )
     else:
         form = LoginForm()
