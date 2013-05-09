@@ -259,7 +259,7 @@ def edit_eadheader( request, repo, org, cid ):
                 if exit:
                     messages.error(request, 'Error: {}'.format(status))
                 else:
-                    messages.success(request, 'Collection metadata updated')
+                    messages.success(request, '<eadheader> updated')
                     return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
             else:
                 messages.error(request, 'Login is required')
