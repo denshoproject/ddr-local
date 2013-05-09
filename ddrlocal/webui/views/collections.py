@@ -52,15 +52,17 @@ def collection_entities(soup):
      </dsc>
     """
     entities = []
-    for tag in soup.find_all('unittitle'):
-        e = tag['eid'].split('-')
-        repo,org,cid,eid = e[0],e[1],e[2],e[3]
-        entities.append( {'uid': tag['eid'],
-                          'repo': repo,
-                          'org': org,
-                          'cid': cid,
-                          'eid': eid,
-                          'title': tag.string.strip(),} )
+    dsc = soup.find('dsc')
+    if dsc:
+        for tag in dsc.find_all('unittitle'):
+            e = tag['eid'].split('-')
+            repo,org,cid,eid = e[0],e[1],e[2],e[3]
+            entities.append( {'uid': tag['eid'],
+                              'repo': repo,
+                              'org': org,
+                              'cid': cid,
+                              'eid': eid,
+                              'title': tag.string.strip(),} )
     return entities
 
 
