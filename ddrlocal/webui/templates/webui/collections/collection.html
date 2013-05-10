@@ -33,8 +33,11 @@
 EAD.xml
 &mdash;
 <a href="{% url "webui-collection-update" repo org cid %}">Edit</a>
+(
+<a href="{% url "webui-collection-edit-eadheader" repo org cid %}">eadheader</a>
+<a href="{% url "webui-collection-edit-archdesc" repo org cid %}">archdesc</a>
+)
 </h3>
-<a href="{% url "webui-collection-edit-eadheader" repo org cid %}">Edit eadheader</a>
 <pre>
 {{ ead }}
 </pre>
