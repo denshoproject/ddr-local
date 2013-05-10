@@ -293,13 +293,12 @@ def edit_archdesc( request, repo, org, cid ):
     #
     if request.method == 'POST':
         #form = ArchdescForm(request.POST, xml=xml)
-        kwargs = archdesc_fields(ARCHDESC_XML)
+        kwargs = archdesc_fields(xml)
         form = ArchdescForm(request.POST, field_kwargs=kwargs)
         if form.is_valid():
             form_fields = form.fields
             cleaned_data = form.cleaned_data
-            ArchdescForm.process(xml, archdesc_fields(ARCHDESC_XML), form)
-            assert False
+            xml_new = ArchdescForm.process(xml, archdesc_fields(ARCHDESC_XML), form)
             # TODO validate XML
             with open(ead_path_abs, 'w') as fnew:
                 fnew.write(xml_new)
@@ -311,7 +310,7 @@ def edit_archdesc( request, repo, org, cid ):
                 messages.success(request, '<archdesc> updated')
                 return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
     else:
-        kwargs = archdesc_fields(ARCHDESC_XML, set_initial=True)
+        kwargs = archdesc_fields(xml)
         form = ArchdescForm(field_kwargs=kwargs)
     return render_to_response(
         'webui/collections/edit-archdesc.html',

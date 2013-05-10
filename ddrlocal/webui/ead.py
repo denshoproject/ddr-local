@@ -226,7 +226,7 @@ ARCHDESC_XML = """
   </archdesc>
 </ead>"""
 
-def archdesc_fields(model_xml, set_initial=False):
+def archdesc_fields(xml):
     """Prepares a set of kwargs describing fields
     Takes data from model_xml to populate initial values.
     
@@ -239,7 +239,8 @@ def archdesc_fields(model_xml, set_initial=False):
             'label':     'Head',
             'help_text': '',
             'widget':    '',
-            'initial':   'Overview of the Collection',
+            'default':   'Collection Overview',
+            'initial':   '',
             'required':  True,
         },
         {
@@ -250,7 +251,8 @@ def archdesc_fields(model_xml, set_initial=False):
             'help_text': '',
             'max_length':255,
             'widget':   '',
-            'initial':  'Blank University',
+            'default':  'Repository Name Goes Here',
+            'initial':  '',
             'required': True
         },
         {
@@ -261,7 +263,8 @@ def archdesc_fields(model_xml, set_initial=False):
             'help_text': '',
             'max_length':255,
             'widget':   '',
-            'initial':  'Brightman, Samuel C. (Samuel Charles), 1911-1992',
+            'default':  'Doe, John A. (John Doe), 1911-1992',
+            'initial':  '',
             'required': True
         },
         {
@@ -272,7 +275,8 @@ def archdesc_fields(model_xml, set_initial=False):
             'help_text': '',
             'max_length':255,
             'widget':   '',
-            'initial':  'Samuel C. Brightman Papers',
+            'default':  'John A. Doe Papers',
+            'initial':  '',
             'required': True
         },
         {
@@ -283,7 +287,8 @@ def archdesc_fields(model_xml, set_initial=False):
             'help_text': 'Start and end years (YYYY-YYYY).',
             'max_length':9,
             'widget':   '',
-            'initial':  '1932-1992',
+            'default':  '1940-1950',
+            'initial':  '',
             'required': True
         },
         {
@@ -294,7 +299,8 @@ def archdesc_fields(model_xml, set_initial=False):
             'help_text': '',
             'max_length':255,
             'widget':   '',
-            'initial':  '6 linear ft.',
+            'default':  'N linear ft.',
+            'initial':  '',
             'required': True
         },
         {
@@ -304,7 +310,8 @@ def archdesc_fields(model_xml, set_initial=False):
             'label':    'Abstract',
             'help_text': '',
             'widget':   forms.Textarea,
-            'initial':  'Papers of the American journalist including some war correspondence, political and political humor writings, and adult education material',
+            'default':  '',
+            'initial':  '',
             'required': True
         },
         {
@@ -315,28 +322,31 @@ def archdesc_fields(model_xml, set_initial=False):
             'help_text': '',
             'choices':  LANGUAGE_CHOICES,
             'widget':   '',
+            'default':  'eng',
             'initial':  '',
             'required': True
         },
     ]
-    if set_initial:
-        tree = etree.parse(StringIO.StringIO(model_xml))
-        for f in kwargs:
-            # default value from model_xml, if any
-            initial = None
-            default = None
-            defaults = tree.xpath(f['xpath'])
-            if defaults and len(defaults):
-                if (type(defaults) == type([])):
-                    default = defaults[0]
-                else:
-                    default = defaults
-            if hasattr(default, 'text'):
-                initial = default.text
-            elif type(default) == type(''):
-                initial = default
-            if initial:
-                f['initial'] = initial.strip()
+    # set initial form values from contents of xml
+    #modeltree = etree.parse(StringIO.StringIO(model_xml))
+    thistree = etree.parse(StringIO.StringIO(xml))
+    for f in kwargs:
+        f.pop('default') # not using defaults for now
+        # default value from xml, if any
+        initial = None
+        tag = None
+        tags = thistree.xpath(f['xpath'])
+        if tags and len(tags):
+            if (type(tags) == type([])):
+                tag = tags[0]
+            else:
+                tag = tags
+        if hasattr(tag, 'text'):
+            initial = tag.text
+        elif type(tag) == type(''):
+            initial = tag
+        if initial:
+            f['initial'] = initial.strip()
     return kwargs
 
 
@@ -439,5 +449,14 @@ class ArchdescForm(forms.Form):
             name = f['name']
             xpath = f['xpath']
             cleaned_data = form.cleaned_data[name]
-            tag = tree.xpath(xpath)
-            assert False
+            tags = tree.xpath(xpath)
+            if tags and len(tags):
+                if (type(tags) == type([])):
+                    tag = tags[0]
+                else:
+                    tag = tags
+            if hasattr(tag, 'text'):
+                tag.text = cleaned_data
+            elif type(tag) == type(''):
+                tag = cleaned_data
+        return etree.tostring(tree, pretty_print=True)
