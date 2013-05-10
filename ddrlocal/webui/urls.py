@@ -10,6 +10,7 @@ urlpatterns = patterns(
     url(r'^collection/(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/sync/$', 'webui.views.collections.collection_sync', name='webui-collection-sync'),
     url(r'^collection/(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/update/$', 'webui.views.collections.collection_update', name='webui-collection-update'),
     url(r'^collection/(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/edit/eadheader/$', 'webui.views.collections.edit_eadheader', name='webui-collection-edit-eadheader'),
+    url(r'^collection/(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/edit/archdesc/$', 'webui.views.collections.edit_archdesc', name='webui-collection-edit-archdesc'),
     url(r'^collection/(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/$', 'webui.views.collections.collection', name='webui-collection'),
     url(r'^collection/(?P<repo>[\w]+)-(?P<org>[\w]+)/new/$', 'webui.views.collections.collection_new', name='webui-collection-new'),
     url(r'^collections/$', 'webui.views.collections.collections', name='webui-collections'),

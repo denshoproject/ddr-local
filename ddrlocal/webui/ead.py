@@ -1,10 +1,24 @@
+import StringIO
+
 from bs4 import BeautifulSoup
+from lxml import etree
 
 from django import forms
 
 
-"""
-<eadheader audience="internal" countryencoding="iso3166-1" 
+COUNTRY_CHOICES = [['us','US'],
+                   ['ca','Canada'],
+                   ['jp','Japan'],]
+
+LANGUAGE_CHOICES = [['en','English'],
+                    ['ja','Japanese'],
+                    ['es','Spanish'],]
+
+def repository_codes():
+    return [('ddr-densho','ddr-densho'),
+            ('ddr-testing','ddr-testing'),]
+
+eadheaderxml = """<eadheader audience="internal" countryencoding="iso3166-1" 
 dateencoding="iso8601" langencoding="iso639-2b" 
 relatedencoding="DC" repositoryencoding="iso15511" 
 scriptencoding="iso15924">
@@ -28,13 +42,7 @@ scriptencoding="iso15924">
          <language encodinganalog="Language" langcode="eng">English</language>
       </langusage>
    </profiledesc>
-</eadheader>
-"""
-
-COUNTRY_CHOICES=[['us','US'],]
-LANGUAGE_CHOICES=[['en','English'],
-                  ['ja','Japanese'],
-                  ['es','Spanish'],]
+</eadheader>"""
 
 class EADHeaderForm(forms.Form):
     audience              = forms.CharField(max_length=255, required=True, initial='internal',)
@@ -178,3 +186,258 @@ def eadheader_xml(form, xml):
     
     xml_new = soup.prettify()
     return xml_new
+
+
+
+
+
+
+"""
+
+Have a master EAD.xml
+generate forms by running set of fieldname:type:required:xpath tuples through a function
+evaluate form using same list of tuples
+Ideally, prep and evaluate would be functions and not have to know anything about the XML
+Templates can be hand-coded
+
+"""
+
+
+ARCHDESC_XML = """
+<ead>
+  <archdesc level="collection" type="inventory" relatedencoding="MARC21">
+    <did>
+      <head></head>
+      <repository encodinganalog="852$a" label="Repository: "></repository>
+      <origination label="Creator: ">
+         <persname encodinganalog="100"></persname>
+      </origination>
+      <unittitle encodinganalog="245$a" label="Title: "></unittitle>
+      <unitdate encodinganalog="245$f" normal="" type="inclusive" label="Inclusive Dates: "></unitdate>
+      <physdesc encodinganalog="300$a" label="Quantity: ">
+         <extent></extent>
+      </physdesc>
+      <abstract encodinganalog="520$a" label="Abstract: "></abstract>
+      <unitid encodinganalog="099" label="Identification: " countrycode="" repositorycode=""></unitid>
+      <langmaterial label="Language: " encodinganalog="546">
+         <language langcode=""></language>
+      </langmaterial>
+    </did>
+  </archdesc>
+</ead>"""
+
+def archdesc_fields(model_xml, set_initial=False):
+    """Prepares a set of kwargs describing fields
+    Takes data from model_xml to populate initial values.
+    
+    """
+    kwargs = [
+        {
+            'name':      'head',
+            'type':      forms.CharField,
+            'xpath':     '/ead/archdesc/did/head',
+            'label':     'Head',
+            'help_text': '',
+            'widget':    '',
+            'initial':   'Overview of the Collection',
+            'required':  True,
+        },
+        {
+            'name':     'repository',
+            'type':     forms.CharField,
+            'xpath':    '/ead/archdesc/did/repository',
+            'label':    'Repository',
+            'help_text': '',
+            'max_length':255,
+            'widget':   '',
+            'initial':  'Blank University',
+            'required': True
+        },
+        {
+            'name':     'persname',
+            'type':     forms.CharField,
+            'xpath':    '/ead/archdesc/did/origination/persname',
+            'label':    'Origination Person Name',
+            'help_text': '',
+            'max_length':255,
+            'widget':   '',
+            'initial':  'Brightman, Samuel C. (Samuel Charles), 1911-1992',
+            'required': True
+        },
+        {
+            'name':     'unittitle',
+            'type':     forms.CharField,
+            'xpath':    '/ead/archdesc/did/unittitle',
+            'label':    'Unit Title',
+            'help_text': '',
+            'max_length':255,
+            'widget':   '',
+            'initial':  'Samuel C. Brightman Papers',
+            'required': True
+        },
+        {
+            'name':     'unitdate',
+            'type':     forms.CharField,
+            'xpath':    '/ead/archdesc/did/unitdate',
+            'label':    'Unit Date',
+            'help_text': 'Start and end years (YYYY-YYYY).',
+            'max_length':9,
+            'widget':   '',
+            'initial':  '1932-1992',
+            'required': True
+        },
+        {
+            'name':     'quantity',
+            'type':     forms.CharField,
+            'xpath':    '/ead/archdesc/did/physdesc/extent',
+            'label':    'Quantity',
+            'help_text': '',
+            'max_length':255,
+            'widget':   '',
+            'initial':  '6 linear ft.',
+            'required': True
+        },
+        {
+            'name':     'abstract',
+            'type':     forms.CharField,
+            'xpath':    '/ead/archdesc/did/abstract',
+            'label':    'Abstract',
+            'help_text': '',
+            'widget':   forms.Textarea,
+            'initial':  'Papers of the American journalist including some war correspondence, political and political humor writings, and adult education material',
+            'required': True
+        },
+        {
+            'name':     'langcode',
+            'type':     forms.ChoiceField,
+            'xpath':    '/ead/archdesc/did/langmaterial/language/@langcode',
+            'label':    'Language',
+            'help_text': '',
+            'choices':  LANGUAGE_CHOICES,
+            'widget':   '',
+            'initial':  '',
+            'required': True
+        },
+    ]
+    if set_initial:
+        tree = etree.parse(StringIO.StringIO(model_xml))
+        for f in kwargs:
+            # default value from model_xml, if any
+            initial = None
+            default = None
+            defaults = tree.xpath(f['xpath'])
+            if defaults and len(defaults):
+                if (type(defaults) == type([])):
+                    default = defaults[0]
+                else:
+                    default = defaults
+            if hasattr(default, 'text'):
+                initial = default.text
+            elif type(default) == type(''):
+                initial = default
+            if initial:
+                f['initial'] = initial.strip()
+    return kwargs
+
+
+
+
+widgets = {'forms.Textarea': forms.Textarea,}
+
+from django.utils.datastructures import SortedDict
+
+class ArchdescForm(forms.Form):
+    
+    def __init__(self, *args, **kwargs):
+        """Builds form from self.model_xml, self.json; populates from collection xml.
+        
+        very very loosely modeled on django.forms.models.fields_for_model
+
+        if request.GET:
+            kwargs = archdesc_fields(ARCHDESC_XML)
+            form = ArchdescForm(field_kwargs=kwargs)
+        if request.POST:
+            new_xml = ArchdescForm.process(field_kwargs=kwargs, form)
+        
+        @param xml The collection's XML document
+        """
+        if kwargs.has_key('field_kwargs'):
+            field_kwargs = kwargs.pop('field_kwargs')
+        else:
+            field_kwargs = []
+        super(ArchdescForm, self).__init__(*args, **kwargs)
+        fields = []
+        for fkwargs in field_kwargs:
+            fname = fkwargs.pop('name')
+            ftype = fkwargs.pop('type')
+            xpath = fkwargs.pop('xpath')
+            ## default value from self.model_xml, if any
+            #default = None
+            #defaults = etree.parse(StringIO.StringIO(self.model_xml)).xpath(xpath)
+            #lendefaults = len(defaults)
+            #typedefaults = type(defaults)
+            #if defaults and len(defaults):
+            #    if (type(defaults) == type([])):
+            #        default = defaults[0]
+            #    else:
+            #        default = defaults
+            #if hasattr(default, 'text') and default.text:
+            #    fkwargs['initial'] = default.text.strip()
+            #elif type(default) == type(''):
+            #    fkwargs['initial'] = default.strip()
+            
+            #dlen = len(d)
+            #dtag = d[0].tag
+            #dtext = d[0].text
+            #d0 = d[0]
+            #ltype = type([])
+            #dtype = type(d)
+            #d_is_list = (type(d) == type([]))
+            #d0type = type(d[0])
+            #d_dict = d0.__dict__
+            
+            ##    fkwargs['initial'] = self.model_xml(xpath)
+            ### initial value from collection_xml overrides that from model_xml
+            #c = etree.parse(StringIO.StringIO(collection_xml)).xpath(xpath)
+            #assert False
+            ##if collection_xml(xpath):
+            ##    fkwargs['initial'] = collection_xml(xpath)
+            fargs = []
+            fobject = ftype(*fargs, **fkwargs)
+            fields.append((fname, fobject))
+        self.fields = SortedDict(fields)
+
+    @staticmethod
+    def prep_data(model_xml):
+        """Reads in model_xml and
+        """
+        data = {}
+        for f in archdesc_fields():
+            # default value from self.model_xml, if any
+            initial = None
+            default = None
+            defaults = etree.parse(StringIO.StringIO(model_xml)).xpath(f['xpath'])
+            if defaults and len(defaults):
+                if (type(defaults) == type([])):
+                    default = defaults[0]
+                else:
+                    default = defaults
+            if default and hasattr(default, 'text') and default.text:
+                initial = default.text.strip()
+            elif type(default) == type(''):
+                initial = default.strip()
+            if initial:
+                data[f['name']] = initial
+        return data
+    
+    @staticmethod
+    def process(xml, field_kwargs, form):
+        """Set values in the XML using data from form.cleaned_data and xpaths from field_kwargs
+        """
+        tree = etree.parse(StringIO.StringIO(xml))
+        for f in field_kwargs:
+            name = f['name']
+            xpath = f['xpath']
+            cleaned_data = form.cleaned_data[name]
+            tag = tree.xpath(xpath)
+            assert False

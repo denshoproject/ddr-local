@@ -1,0 +1,23 @@
+{% extends "webui/collections/base.html" %}
+
+
+{% block title %}archdesc | {{ collection_uid }}{% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+<li><a href="{% url "webui-collection" repo org cid %}">{{ collection_uid }}</a></li>
+<li class="active">archdesc</li>
+{% endblock breadcrumbs %}
+
+
+{% block content %}
+
+<h1>{{ collection_uid }} - archdesc</h1>
+
+<form name="edit-archdesc" action="" method="POST">{% csrf_token %}
+<table>
+  {{ form.as_table }}
+</table>
+<input name="submit" type="submit" value="submit"/><br/>
+</form>
+
+{% endblock content %}
