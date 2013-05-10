@@ -22,24 +22,24 @@ eadheaderxml = """<eadheader audience="internal" countryencoding="iso3166-1"
 dateencoding="iso8601" langencoding="iso639-2b" 
 relatedencoding="DC" repositoryencoding="iso15511" 
 scriptencoding="iso15924">
-   <eadid countrycode="us" identifier="bachrach_lf" mainagencycode="NSyU">bachrach_lf</eadid>
+   <eadid countrycode="" identifier="" mainagencycode=""></eadid>
    <filedesc>
       <titlestmt>
-         <titleproper encodinganalog="Title">Louis Fabian Bachrach Papers</titleproper>
-         <subtitle>An inventory of his papers at Blank University</subtitle>
-         <author encodinganalog="Creator">Mary Smith</author>
+         <titleproper encodinganalog="Title"></titleproper>
+         <subtitle></subtitle>
+         <author encodinganalog="Creator"></author>
       </titlestmt>
       <publicationstmt>
-         <publisher encodinganalog="Publisher">Blank University</publisher>
-         <date encodinganalog="Date" normal="1981">1981</date>
+         <publisher encodinganalog="Publisher"></publisher>
+         <date encodinganalog="Date" normal=""></date>
       </publicationstmt>
    </filedesc>
    <profiledesc>
-      <creation>John Jones
-         <date normal="2006-09-13">13 Sep 2006</date>
+      <creation>
+         <date normal=""></date>
       </creation>
       <langusage>
-         <language encodinganalog="Language" langcode="eng">English</language>
+         <language encodinganalog="Language" langcode=""></language>
       </langusage>
    </profiledesc>
 </eadheader>"""
