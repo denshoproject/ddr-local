@@ -14,8 +14,8 @@ from django.template import RequestContext
 from DDR import commands
 
 from storage.decorators import storage_required
+from xmlforms.forms import XMLForm
 from webui import api
-from webui.forms import XMLForm
 from webui.forms.collections import NewCollectionForm, UpdateForm
 from webui.ead import EADHEADER_FIELDS, ARCHDESC_FIELDS
 from webui.views.decorators import login_required
