@@ -1,9 +1,10 @@
+from copy import deepcopy
 import StringIO
 
-from bs4 import BeautifulSoup
 from lxml import etree
 
 from django import forms
+from django.utils.datastructures import SortedDict
 
 
 COUNTRY_CHOICES = [['us','US'],
@@ -18,193 +19,30 @@ def repository_codes():
     return [('ddr-densho','ddr-densho'),
             ('ddr-testing','ddr-testing'),]
 
-eadheaderxml = """<eadheader audience="internal" countryencoding="iso3166-1" 
-dateencoding="iso8601" langencoding="iso639-2b" 
-relatedencoding="DC" repositoryencoding="iso15511" 
-scriptencoding="iso15924">
-   <eadid countrycode="" identifier="" mainagencycode=""></eadid>
-   <filedesc>
+
+EAD_XML = """<ead>
+  <eadheader audience="internal" countryencoding="iso3166-1" dateencoding="iso8601" langencoding="iso639-2b" relatedencoding="DC" repositoryencoding="iso15511" scriptencoding="iso15924">
+    <eadid countrycode="" identifier="" mainagencycode=""></eadid>
+    <filedesc>
       <titlestmt>
-         <titleproper encodinganalog="Title"></titleproper>
-         <subtitle></subtitle>
-         <author encodinganalog="Creator"></author>
+        <titleproper encodinganalog="Title"></titleproper>
+        <subtitle></subtitle>
+        <author encodinganalog="Creator"></author>
       </titlestmt>
       <publicationstmt>
-         <publisher encodinganalog="Publisher"></publisher>
-         <date encodinganalog="Date" normal=""></date>
+        <publisher encodinganalog="Publisher"></publisher>
+        <date encodinganalog="Date" normal=""></date>
       </publicationstmt>
-   </filedesc>
-   <profiledesc>
+    </filedesc>
+    <profiledesc>
       <creation>
-         <date normal=""></date>
+        <date normal=""></date>
       </creation>
       <langusage>
-         <language encodinganalog="Language" langcode=""></language>
+        <language encodinganalog="Language" langcode=""></language>
       </langusage>
-   </profiledesc>
-</eadheader>"""
-
-class EADHeaderForm(forms.Form):
-    audience              = forms.CharField(max_length=255, required=True, initial='internal',)
-    countryencoding       = forms.CharField(max_length=255, required=True, initial='iso3166-1',)
-    dateencoding          = forms.CharField(max_length=255, required=True, initial='iso8601',)
-    langencoding          = forms.CharField(max_length=255, required=True, initial='iso639-2b',) 
-    relatedencoding       = forms.CharField(max_length=255, required=True, initial='DC',)
-    repositoryencoding    = forms.CharField(max_length=255, required=True, initial='iso15511',)
-    scriptencoding        = forms.CharField(max_length=255, required=True, initial='iso15924',)
-    
-    eadid                 = forms.CharField(max_length=255, required=True,)
-    eadid_countrycode     = forms.ChoiceField(required=True, choices=COUNTRY_CHOICES,)
-    eadid_identifier      = forms.CharField(max_length=255, required=True,)
-    eadid_mainagencycode  = forms.CharField(max_length=255, required=True,)
-    
-    titlestmt_titleproper = forms.CharField(max_length=255, required=True,)
-    titlestmt_subtitle    = forms.CharField(max_length=255, required=True,)
-    titlestmt_author      = forms.CharField(max_length=255, required=True,)
-    
-    publicationstmt_publisher = forms.CharField(max_length=255, required=True,)
-    publicationstmt_date  = forms.CharField(max_length=255, required=True,)
-    
-    profiledesc_creation  = forms.CharField(max_length=255, required=True,)
-    profiledesc_date      = forms.DateField(required=True,)
-    
-    langcode              = forms.ChoiceField(required=True, choices=LANGUAGE_CHOICES,)
-
-
-def prep_eadheader_form(xml):
-    """Load data from existing EAD.xml into form.
-    """
-    data = {}
-    soup = BeautifulSoup(xml, 'xml')
-    soup = eadheader_expand(soup)
-    
-    data['audience']           = soup.ead.eadheader.get('audience', 'internal')
-    data['countryencoding']    = soup.ead.eadheader.get('countryencoding', 'iso3166-1')
-    data['dateencoding']       = soup.ead.eadheader.get('dateencoding', 'iso8601')
-    data['langencoding']       = soup.ead.eadheader.get('langencoding', 'iso639-2b')
-    data['relatedencoding']    = soup.ead.eadheader.get('relatedencoding', 'DC')
-    data['repositoryencoding'] = soup.ead.eadheader.get('repositoryencoding', 'iso15511')
-    data['scriptencoding']     = soup.ead.eadheader.get('scriptencoding', 'iso15924')
-
-    data['eadid_countrycode']    = soup.ead.eadid.get('eadid_countrycode', 'us')
-    data['eadid_identifier']     = soup.ead.eadid.get('eadid_identifier', None)
-    data['eadid_mainagencycode'] = soup.ead.eadid.get('eadid_mainagencycode', None)
-    data['eadid']                = soup.ead.eadid.string
-    
-    data['titlestmt_titleproper'] = soup.ead.eadheader.filedesc.titlestmt.titleproper.text
-    data['titlestmt_subtitle']    = soup.ead.eadheader.filedesc.titlestmt.subtitle.text
-    data['titlestmt_author']      = soup.ead.eadheader.filedesc.titlestmt.author.text
-    
-    data['publicationstmt_publisher'] = soup.ead.eadheader.filedesc.publicationstmt.publisher.string
-    data['publicationstmt_date']      = soup.ead.eadheader.filedesc.publicationstmt.date.string
-    
-    data['profiledesc_creation'] = soup.ead.eadheader.profiledesc.creation.string
-    data['profiledesc_date']     = soup.ead.eadheader.profiledesc.creation.date.get('normal', '')
-     
-    data['langcode'] = soup.ead.eadheader.profiledesc.langusage.language.get('langcode', '')
-
-    for key,val in data.iteritems():
-        if val:
-            data[key] = val.strip()
-    
-    form = EADHeaderForm(data)
-    return form
-
-def eadheader_expand(soup):
-    """Add tags if they're not already present.
-    """
-    if not soup.ead.eadheader:             soup.ead.append(soup.new_tag('eadheader'))
-    if not soup.ead.eadheader.eadid:       soup.ead.eadheader.append(soup.new_tag('eadid'))
-    if not soup.ead.eadheader.filedesc:    soup.ead.eadheader.append(soup.new_tag('filedesc'))
-    if not soup.ead.eadheader.profiledesc: soup.ead.eadheader.append(soup.new_tag('profiledesc'))
-    
-    if not soup.ead.eadheader.filedesc.titlestmt:
-        soup.ead.eadheader.filedesc.append(soup.new_tag('titlestmt'))
-    if not soup.ead.eadheader.filedesc.titlestmt.titleproper:
-        soup.ead.eadheader.filedesc.titlestmt.append(soup.new_tag('titleproper'))
-    if not soup.ead.eadheader.filedesc.titlestmt.subtitle:
-        soup.ead.eadheader.filedesc.titlestmt.append(soup.new_tag('subtitle'))
-    if not soup.ead.eadheader.filedesc.titlestmt.author:
-        soup.ead.eadheader.filedesc.titlestmt.append(soup.new_tag('author'))
-    
-    if not soup.ead.eadheader.filedesc.publicationstmt:
-        soup.ead.eadheader.filedesc.append(soup.new_tag('publicationstmt'))
-    if not soup.ead.eadheader.filedesc.publicationstmt.publisher:
-        soup.ead.eadheader.filedesc.publicationstmt.append(soup.new_tag('publisher'))
-    if not soup.ead.eadheader.filedesc.publicationstmt.date:
-        soup.ead.eadheader.filedesc.publicationstmt.append(soup.new_tag('date'))
-    
-    if not soup.ead.eadheader.profiledesc.creation:
-        soup.ead.eadheader.profiledesc.append(soup.new_tag('creation'))
-    if not soup.ead.eadheader.profiledesc.creation.date:
-        soup.ead.eadheader.profiledesc.creation.append(soup.new_tag('date'))
-    if not soup.ead.eadheader.profiledesc.langusage:
-        soup.ead.eadheader.profiledesc.append(soup.new_tag('langusage'))
-    if not soup.ead.eadheader.profiledesc.langusage.langusage:
-        soup.ead.eadheader.profiledesc.langusage.append(soup.new_tag('language'))
-    
-    return soup
-
-def eadheader_xml(form, xml):
-    """
-    """
-    soup = BeautifulSoup(xml, 'xml')
-    soup = eadheader_expand(soup)
-        
-    soup.ead.eadheader['audience']           = form.cleaned_data.get('audience',           'internal')
-    soup.ead.eadheader['countryencoding']    = form.cleaned_data.get('countryencoding',    'iso3166-1')
-    soup.ead.eadheader['dateencoding']       = form.cleaned_data.get('dateencoding',       'iso8601')
-    soup.ead.eadheader['langencoding']       = form.cleaned_data.get('langencoding',       'iso639-2b')
-    soup.ead.eadheader['relatedencoding']    = form.cleaned_data.get('relatedencoding',    'DC')
-    soup.ead.eadheader['repositoryencoding'] = form.cleaned_data.get('repositoryencoding', 'iso15511')
-    soup.ead.eadheader['scriptencoding']     = form.cleaned_data.get('scriptencoding',     'iso15924')
-    
-    soup.ead.eadheader.eadid['eadid_countrycode'] = form.cleaned_data.get('eadid_countrycode','us')
-    soup.ead.eadheader.eadid['eadid_identifier'] = form.cleaned_data.get('eadid_identifier','')
-    soup.ead.eadheader.eadid['eadid_mainagencycode'] = form.cleaned_data.get('eadid_mainagencycode','')
-    soup.ead.eadheader.eadid.string = form.cleaned_data.get('eadid','')
-
-    soup.ead.eadheader.filedesc.titlestmt.titleproper['encodinganalog'] = 'Title'
-    soup.ead.eadheader.filedesc.titlestmt.titleproper.string = form.cleaned_data.get('titlestmt_titleproper','')
-    soup.ead.eadheader.filedesc.titlestmt.subtitle.string = form.cleaned_data.get('titlestmt_subtitle','')
-    soup.ead.eadheader.filedesc.titlestmt.author['encodinganalog'] = 'Creator'
-    soup.ead.eadheader.filedesc.titlestmt.author.string = form.cleaned_data.get('titlestmt_author','')
-    
-    soup.ead.eadheader.filedesc.publicationstmt.publisher['encodinganalog'] = 'Publisher'
-    soup.ead.eadheader.filedesc.publicationstmt.publisher.string = form.cleaned_data.get('publicationstmt_publisher','')
-    #soup.ead.eadheader.filedesc.publicationstmt.date['encodinganalog'] = 'Date'
-    #soup.ead.eadheader.filedesc.publicationstmt.date['normal'] = form.cleaned_data.get('publicationstmt_date','')
-    #soup.ead.eadheader.filedesc.publicationstmt.date.string = form.cleaned_data.get('publicationstmt_date','')
-    
-    #soup.ead.eadheader.profiledesc.creation.date['normal'] = form.cleaned_data.get('profiledesc_date','')
-    #soup.ead.eadheader.profiledesc.creation.date.string = form.cleaned_data.get('profiledesc_date','')
-    soup.ead.eadheader.profiledesc.creation.string = form.cleaned_data.get('profiledesc_creation','')
-    
-    soup.ead.eadheader.profiledesc.langusage.language['encodinganalog'] = 'Language'
-    soup.ead.eadheader.profiledesc.langusage.language['langcode'] = form.cleaned_data.get('langcode','')
-    soup.ead.eadheader.profiledesc.langusage.language.string = form.cleaned_data.get('langcode','')
-    
-    xml_new = soup.prettify()
-    return xml_new
-
-
-
-
-
-
-"""
-
-Have a master EAD.xml
-generate forms by running set of fieldname:type:required:xpath tuples through a function
-evaluate form using same list of tuples
-Ideally, prep and evaluate would be functions and not have to know anything about the XML
-Templates can be hand-coded
-
-"""
-
-
-ARCHDESC_XML = """
-<ead>
+    </profiledesc>
+  </eadheader>
   <archdesc level="collection" type="inventory" relatedencoding="MARC21">
     <did>
       <head></head>
@@ -226,226 +64,336 @@ ARCHDESC_XML = """
   </archdesc>
 </ead>"""
 
-def archdesc_fields(xml):
-    """Prepares a set of kwargs describing fields
-    Takes data from model_xml to populate initial values.
-    
-    """
-    kwargs = [
-        {
-            'name':      'head',
-            'type':      forms.CharField,
-            'xpath':     '/ead/archdesc/did/head',
-            'label':     'Head',
-            'help_text': '',
-            'widget':    '',
-            'default':   'Collection Overview',
-            'initial':   '',
-            'required':  True,
-        },
-        {
-            'name':     'repository',
-            'type':     forms.CharField,
-            'xpath':    '/ead/archdesc/did/repository',
-            'label':    'Repository',
-            'help_text': '',
-            'max_length':255,
-            'widget':   '',
-            'default':  'Repository Name Goes Here',
-            'initial':  '',
-            'required': True
-        },
-        {
-            'name':     'persname',
-            'type':     forms.CharField,
-            'xpath':    '/ead/archdesc/did/origination/persname',
-            'label':    'Origination Person Name',
-            'help_text': '',
-            'max_length':255,
-            'widget':   '',
-            'default':  'Doe, John A. (John Doe), 1911-1992',
-            'initial':  '',
-            'required': True
-        },
-        {
-            'name':     'unittitle',
-            'type':     forms.CharField,
-            'xpath':    '/ead/archdesc/did/unittitle',
-            'label':    'Unit Title',
-            'help_text': '',
-            'max_length':255,
-            'widget':   '',
-            'default':  'John A. Doe Papers',
-            'initial':  '',
-            'required': True
-        },
-        {
-            'name':     'unitdate',
-            'type':     forms.CharField,
-            'xpath':    '/ead/archdesc/did/unitdate',
-            'label':    'Unit Date',
-            'help_text': 'Start and end years (YYYY-YYYY).',
-            'max_length':9,
-            'widget':   '',
-            'default':  '1940-1950',
-            'initial':  '',
-            'required': True
-        },
-        {
-            'name':     'quantity',
-            'type':     forms.CharField,
-            'xpath':    '/ead/archdesc/did/physdesc/extent',
-            'label':    'Quantity',
-            'help_text': '',
-            'max_length':255,
-            'widget':   '',
-            'default':  'N linear ft.',
-            'initial':  '',
-            'required': True
-        },
-        {
-            'name':     'abstract',
-            'type':     forms.CharField,
-            'xpath':    '/ead/archdesc/did/abstract',
-            'label':    'Abstract',
-            'help_text': '',
-            'widget':   forms.Textarea,
-            'default':  '',
-            'initial':  '',
-            'required': True
-        },
-        {
-            'name':     'langcode',
-            'type':     forms.ChoiceField,
-            'xpath':    '/ead/archdesc/did/langmaterial/language/@langcode',
-            'label':    'Language',
-            'help_text': '',
-            'choices':  LANGUAGE_CHOICES,
-            'widget':   '',
-            'default':  'eng',
-            'initial':  '',
-            'required': True
-        },
-    ]
-    # set initial form values from contents of xml
-    #modeltree = etree.parse(StringIO.StringIO(model_xml))
-    thistree = etree.parse(StringIO.StringIO(xml))
-    for f in kwargs:
-        f.pop('default') # not using defaults for now
-        # default value from xml, if any
-        initial = None
-        tag = None
-        tags = thistree.xpath(f['xpath'])
-        if tags and len(tags):
-            if (type(tags) == type([])):
-                tag = tags[0]
-            else:
-                tag = tags
-        if hasattr(tag, 'text'):
-            initial = tag.text
-        elif type(tag) == type(''):
-            initial = tag
-        if initial:
-            f['initial'] = initial.strip()
-    return kwargs
+EADHEADER_FIELDS = [
+    {
+        'name': 'eadid',
+        'type': forms.CharField,
+        'xpath':     '/ead/eadheader/eadid',
+        'label':     'eadid',
+        'help_text': '',
+        'widget':    '',
+        'default':   '',
+        'initial':   '',
+        'max_length': 255,
+        'required': True,
+    },
+#    {
+#        'name': 'eadid_countrycode',
+#        'type': forms.ChoiceField,
+#        'xpath':     '/ead/eadheader/eadid@countrycode',
+#        'label':     'Country',
+#        'help_text': '',
+#        'widget':    '',
+#        'choices': COUNTRY_CHOICES,
+#        'default':   '',
+#        'initial':   '',
+#        'required': True,
+#    },
+#    {
+#        'name': 'eadid_identifier',
+#        'type': forms.CharField,
+#        'xpath':     '/ead/eadheader/eadid@identifier',
+#        'label':     'eadid identifier',
+#        'help_text': '',
+#        'widget':    '',
+#        'default':   '',
+#        'initial':   '',
+#        'max_length': 255,
+#        'required': True,
+#    },
+#    {
+#        'name': 'eadid_mainagencycode',
+#        'type': forms.CharField,
+#        'xpath':     '/ead/eadheader/eadid@mainagencycode',
+#        'label':     'agency code',
+#        'help_text': '',
+#        'widget':    '',
+#        'default':   '',
+#        'initial':   '',
+#        'max_length': 255,
+#        'required': True,
+#    },
+    {
+        'name': 'titlestmt_titleproper',
+        'type': forms.CharField,
+        'xpath':     '/ead/eadheader/filedesc/titlestmt/titleproper',
+        'label':     'Title',
+        'help_text': '',
+        'widget':    '',
+        'default':   '',
+        'initial':   '',
+        'max_length': 255,
+        'required': True,
+    },
+    {
+        'name': 'titlestmt_subtitle',
+        'type': forms.CharField,
+        'xpath':     '/ead/eadheader/filedesc/titlestmt/subtitle',
+        'label':     'Subtitle',
+        'help_text': '',
+        'widget':    '',
+        'default':   '',
+        'initial':   '',
+        'max_length': 255,
+        'required': False,
+    },
+    {
+        'name': 'titlestmt_author',
+        'type': forms.CharField,
+        'xpath':     '/ead/eadheader/filedesc/titlestmt/author',
+        'label':     'Creator',
+        'help_text': '',
+        'widget':    '',
+        'default':   '',
+        'initial':   '',
+        'max_length': 255,
+        'required': True,
+    },
+    {
+        'name': 'publicationstmt_publisher',
+        'type': forms.CharField,
+        'xpath':     '/ead/eadheader/filedesc/publicationstmt/publisher',
+        'label':     'Publisher',
+        'help_text': '',
+        'widget':    '',
+        'default':   '',
+        'initial':   '',
+        'max_length': 255,
+        'required': True,
+    },
+    {
+        'name': 'publicationstmt_date',
+        'type': forms.CharField,
+        'xpath':     '/ead/eadheader/filedesc/publicationstmt/date',
+        'label':     'Publication Date',
+        'help_text': '',
+        'widget':    '',
+        'default':   '',
+        'initial':   '',
+        'max_length': 255,
+        'required': True,
+    },
+    {
+        'name': 'profiledesc_creation',
+        'type': forms.CharField,
+        'xpath':     '/ead/eadheader/profiledesc/creation',
+        'label':     'Profile Creator',
+        'help_text': '',
+        'widget':    '',
+        'default':   '',
+        'initial':   '',
+        'max_length': 255,
+        'required': True,
+    },
+#    {
+#        'name': 'profiledesc_date',
+#        'type': forms.DateField,
+#        'xpath':     '/ead/eadheader/profiledesc/date',
+#        'label':     'Profile Date',
+#        'help_text': '',
+#        'widget':    '',
+#        'default':   '',
+#        'initial':   '',
+#        'required': True,
+#    },
+#    {
+#        'name':      'langcode',
+#        'type':      forms.ChoiceField,
+#        'xpath':     '/ead/eadheader/profiledesc/langusage/language@langcode',
+#        'label':     'Language',
+#        'help_text': '',
+#        'widget':    '',
+#        'choices':   LANGUAGE_CHOICES,
+#        'default':   '',
+#        'initial':   '',
+#        'required':  True,
+#    },
+]
+
+ARCHDESC_FIELDS = [
+    {
+        'name':      'head',
+        'type':      forms.CharField,
+        'xpath':     '/ead/archdesc/did/head',
+        'label':     'Head',
+        'help_text': '',
+        'widget':    '',
+        'default':   'Collection Overview',
+        'initial':   '',
+        'required':  True,
+    },
+    {
+        'name':     'repository',
+        'type':     forms.CharField,
+        'xpath':    '/ead/archdesc/did/repository',
+        'label':    'Repository',
+        'help_text': '',
+        'max_length':255,
+        'widget':   '',
+        'default':  'Repository Name Goes Here',
+        'initial':  '',
+        'required': True
+    },
+    {
+        'name':     'persname',
+        'type':     forms.CharField,
+        'xpath':    '/ead/archdesc/did/origination/persname',
+        'label':    'Origination Person Name',
+        'help_text': '',
+        'max_length':255,
+        'widget':   '',
+        'default':  'Doe, John A. (John Doe), 1911-1992',
+        'initial':  '',
+        'required': True
+    },
+    {
+        'name':     'unittitle',
+        'type':     forms.CharField,
+        'xpath':    '/ead/archdesc/did/unittitle',
+        'label':    'Unit Title',
+        'help_text': '',
+        'max_length':255,
+        'widget':   '',
+        'default':  'John A. Doe Papers',
+        'initial':  '',
+        'required': True
+    },
+    {
+        'name':     'unitdate',
+        'type':     forms.CharField,
+        'xpath':    '/ead/archdesc/did/unitdate',
+        'label':    'Unit Date',
+        'help_text': 'Start and end years (YYYY-YYYY).',
+        'max_length':9,
+        'widget':   '',
+        'default':  '1940-1950',
+        'initial':  '',
+        'required': True
+    },
+    {
+        'name':     'quantity',
+        'type':     forms.CharField,
+        'xpath':    '/ead/archdesc/did/physdesc/extent',
+        'label':    'Quantity',
+        'help_text': '',
+        'max_length':255,
+        'widget':   '',
+        'default':  'N linear ft.',
+        'initial':  '',
+        'required': True
+    },
+    {
+        'name':     'abstract',
+        'type':     forms.CharField,
+        'xpath':    '/ead/archdesc/did/abstract',
+        'label':    'Abstract',
+        'help_text': '',
+        'widget':   forms.Textarea,
+        'default':  '',
+        'initial':  '',
+        'required': True
+    },
+    {
+        'name':     'langcode',
+        'type':     forms.ChoiceField,
+        'xpath':    '/ead/archdesc/did/langmaterial/language/@langcode',
+        'label':    'Language',
+        'help_text': '',
+        'choices':  LANGUAGE_CHOICES,
+        'widget':   '',
+        'default':  'eng',
+        'initial':  '',
+        'required': True
+    },
+]
 
 
-
-
-widgets = {'forms.Textarea': forms.Textarea,}
-
-from django.utils.datastructures import SortedDict
-
-class ArchdescForm(forms.Form):
+class XMLForm(forms.Form):
     
     def __init__(self, *args, **kwargs):
-        """Builds form from self.model_xml, self.json; populates from collection xml.
+        """Adds specified form fields
         
-        very very loosely modeled on django.forms.models.fields_for_model
-
-        if request.GET:
-            kwargs = archdesc_fields(ARCHDESC_XML)
-            form = ArchdescForm(field_kwargs=kwargs)
-        if request.POST:
-            new_xml = ArchdescForm.process(field_kwargs=kwargs, form)
+        Form fields must be provided in kwargs['fields']
+        Examples:
+            form = XMLForm(fields=fields)
+            form = XMLForm(request.POST, fields=fields)
         
-        @param xml The collection's XML document
+        fields must be in the following format:
+            fields = [
+                {
+                    'name':     'abstract',
+                    'type':     forms.CharField,
+                    'xpath':    '/ead/archdesc/did/abstract',
+                    'label':    'Abstract',
+                    'help_text': '',
+                    'widget':   forms.Textarea,
+                    'default':  '',
+                    'initial':  '',
+                    'required': True
+                },
+                ...
+            ]
+        
+        Notes:
+        - type and widget are Django forms field objects, not strings.
+        - label, help_text, widget, initial, and required are the required
+          Django field args and will be passed in directly to the Form object.
         """
-        if kwargs.has_key('field_kwargs'):
-            field_kwargs = kwargs.pop('field_kwargs')
+        if kwargs.has_key('fields'):
+            field_kwargs = kwargs.pop('fields')
         else:
             field_kwargs = []
-        super(ArchdescForm, self).__init__(*args, **kwargs)
+        super(XMLForm, self).__init__(*args, **kwargs)
         fields = []
-        for fkwargs in field_kwargs:
+        for fkwargs in deepcopy(field_kwargs): # don't modify kwargs here
+            # remove fields that Django doesn't accept
+            fargs = []
             fname = fkwargs.pop('name')
             ftype = fkwargs.pop('type')
             xpath = fkwargs.pop('xpath')
-            ## default value from self.model_xml, if any
-            #default = None
-            #defaults = etree.parse(StringIO.StringIO(self.model_xml)).xpath(xpath)
-            #lendefaults = len(defaults)
-            #typedefaults = type(defaults)
-            #if defaults and len(defaults):
-            #    if (type(defaults) == type([])):
-            #        default = defaults[0]
-            #    else:
-            #        default = defaults
-            #if hasattr(default, 'text') and default.text:
-            #    fkwargs['initial'] = default.text.strip()
-            #elif type(default) == type(''):
-            #    fkwargs['initial'] = default.strip()
-            
-            #dlen = len(d)
-            #dtag = d[0].tag
-            #dtext = d[0].text
-            #d0 = d[0]
-            #ltype = type([])
-            #dtype = type(d)
-            #d_is_list = (type(d) == type([]))
-            #d0type = type(d[0])
-            #d_dict = d0.__dict__
-            
-            ##    fkwargs['initial'] = self.model_xml(xpath)
-            ### initial value from collection_xml overrides that from model_xml
-            #c = etree.parse(StringIO.StringIO(collection_xml)).xpath(xpath)
-            #assert False
-            ##if collection_xml(xpath):
-            ##    fkwargs['initial'] = collection_xml(xpath)
-            fargs = []
+            if 'default' in fkwargs:
+                fkwargs.pop('default')
+            # instantiate Field object and to list
             fobject = ftype(*fargs, **fkwargs)
             fields.append((fname, fobject))
+        # Django Form object takes a SortedDict rather than list
         self.fields = SortedDict(fields)
 
     @staticmethod
-    def prep_data(model_xml):
-        """Reads in model_xml and
+    def prep_fields(fields, xml):
+        """Takes raw kwargs, fills in initial data from xml file.
+        
+        kwargs[*]['initial'] is used to populate form fields
         """
-        data = {}
-        for f in archdesc_fields():
-            # default value from self.model_xml, if any
+        thistree = etree.parse(StringIO.StringIO(xml))
+        for f in fields:
+            if f.get('default',None):
+                f.pop('default') # Django forms won't accept this
+            # default value from xml, if any
             initial = None
-            default = None
-            defaults = etree.parse(StringIO.StringIO(model_xml)).xpath(f['xpath'])
-            if defaults and len(defaults):
-                if (type(defaults) == type([])):
-                    default = defaults[0]
+            tag = None
+            tags = thistree.xpath(f['xpath'])
+            if tags and len(tags):
+                if (type(tags) == type([])):
+                    tag = tags[0]
                 else:
-                    default = defaults
-            if default and hasattr(default, 'text') and default.text:
-                initial = default.text.strip()
-            elif type(default) == type(''):
-                initial = default.strip()
+                    tag = tags
+            if hasattr(tag, 'text'):
+                initial = tag.text
+            elif type(tag) == type(''):
+                initial = tag
             if initial:
-                data[f['name']] = initial
-        return data
+                f['initial'] = initial.strip()
+        return fields
     
     @staticmethod
-    def process(xml, field_kwargs, form):
-        """Set values in the XML using data from form.cleaned_data and xpaths from field_kwargs
+    def process(xml, fields, form):
+        """Writes form.cleaned_data values to XML
+        
+        Uses XPaths from field_kwargs
         """
         tree = etree.parse(StringIO.StringIO(xml))
-        for f in field_kwargs:
+        for f in deepcopy(fields):
             name = f['name']
             xpath = f['xpath']
             cleaned_data = form.cleaned_data[name]

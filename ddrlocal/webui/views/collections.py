@@ -16,7 +16,8 @@ from DDR import commands
 from storage.decorators import storage_required
 from webui import api
 from webui.forms.collections import NewCollectionForm, UpdateForm
-from webui.ead import EADHeaderForm, prep_eadheader_form, eadheader_xml, ArchdescForm, ARCHDESC_XML, archdesc_fields
+from webui.ead import XMLForm
+from webui.ead import EADHEADER_FIELDS, ARCHDESC_FIELDS
 from webui.views.decorators import login_required
 
 
@@ -237,34 +238,36 @@ def collection_update( request, repo, org, cid ):
 def edit_eadheader( request, repo, org, cid ):
     """Edit the contents of <eadheader>.
     """
+    git_name = request.session.get('git_name')
+    git_mail = request.session.get('git_mail')
+    if not git_name and git_mail:
+        messages.error(request, 'Login is required')
     collection_uid = '{}-{}-{}'.format(repo, org, cid)
     collection_path = os.path.join(settings.DDR_BASE_PATH, collection_uid)
     ead_path_rel = 'ead.xml'
     ead_path_abs = os.path.join(collection_path, ead_path_rel)
     with open(ead_path_abs, 'r') as f:
         xml = f.read()
+    fields = XMLForm.prep_fields(EADHEADER_FIELDS, xml)
     #
     if request.method == 'POST':
-        form = EADHeaderForm(request.POST)
+        form = XMLForm(request.POST, fields=fields)
         if form.is_valid():
-            git_name = request.session.get('git_name')
-            git_mail = request.session.get('git_mail')
-            if git_name and git_mail:
-                xml_new = eadheader_xml(form, xml)
-                # TODO validate XML
-                with open(ead_path_abs, 'w') as fnew:
-                    fnew.write(xml_new)
-                # TODO validate XML
-                exit,status = commands.update(git_name, git_mail, collection_path, [ead_path_rel])
-                if exit:
-                    messages.error(request, 'Error: {}'.format(status))
-                else:
-                    messages.success(request, '<eadheader> updated')
-                    return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+            form_fields = form.fields
+            cleaned_data = form.cleaned_data
+            xml_new = XMLForm.process(xml, fields, form)
+            # TODO validate XML
+            with open(ead_path_abs, 'w') as fnew:
+                fnew.write(xml_new)
+            # TODO validate XML
+            exit,status = commands.update(git_name, git_mail, collection_path, [ead_path_rel])
+            if exit:
+                messages.error(request, 'Error: {}'.format(status))
             else:
-                messages.error(request, 'Login is required')
+                messages.success(request, '<eadheader> updated')
+                return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
     else:
-        form = prep_eadheader_form(xml)
+        form = XMLForm(fields=fields)
     return render_to_response(
         'webui/collections/edit-eadheader.html',
         {'repo': repo,
@@ -290,15 +293,14 @@ def edit_archdesc( request, repo, org, cid ):
     ead_path_abs = os.path.join(collection_path, ead_path_rel)
     with open(ead_path_abs, 'r') as f:
         xml = f.read()
+    fields = XMLForm.prep_fields(ARCHDESC_FIELDS, xml)
     #
     if request.method == 'POST':
-        #form = ArchdescForm(request.POST, xml=xml)
-        kwargs = archdesc_fields(xml)
-        form = ArchdescForm(request.POST, field_kwargs=kwargs)
+        form = XMLForm(request.POST, fields=fields)
         if form.is_valid():
             form_fields = form.fields
             cleaned_data = form.cleaned_data
-            xml_new = ArchdescForm.process(xml, archdesc_fields(ARCHDESC_XML), form)
+            xml_new = XMLForm.process(xml, fields, form)
             # TODO validate XML
             with open(ead_path_abs, 'w') as fnew:
                 fnew.write(xml_new)
@@ -310,8 +312,7 @@ def edit_archdesc( request, repo, org, cid ):
                 messages.success(request, '<archdesc> updated')
                 return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
     else:
-        kwargs = archdesc_fields(xml)
-        form = ArchdescForm(field_kwargs=kwargs)
+        form = XMLForm(fields=fields)
     return render_to_response(
         'webui/collections/edit-archdesc.html',
         {'repo': repo,
