@@ -3,4 +3,4 @@ INSTALL opt/ddr-local
 LICENSE opt/ddr-local
 README.rst opt/ddr-local
 env/ddr-local opt/virtualenvs
-local/ opt/ddr-local
+ddrlocal/ opt/ddr-local
