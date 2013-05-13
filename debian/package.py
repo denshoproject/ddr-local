@@ -18,7 +18,7 @@ def subcall(cmd):
         system.exit(1)
 
 PROJ_NAME='ddr-local'
-APP_NAME='local'
+APP_NAME='ddrlocal'
 ARCHITECTURE='i386'
 #print('PROJ_NAME: {}'.format(PROJ_NAME))
 #print('APP_NAME: {}'.format(APP_NAME))
