@@ -35,7 +35,7 @@ with open(changelog_path,'r') as cl:
     changelog = cl.readlines()
 versions = []
 for line in changelog:
-    match = re.search('(\d+.\d\d\d\d\d\d)', line)
+    match = re.search('(\d+.\d\d\d\d\d\d\d\d)', line)
     if match:
         versions.append(match.group(0))
 if not versions:
