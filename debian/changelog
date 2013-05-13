@@ -1,0 +1,11 @@
+ddr-local (0.20130513) UNRELEASED; urgency=low
+
+  * Setting up Debian packaging.
+
+ -- geoffrey jost <geoffrey.jost@densho.org>  Mon, 13 May 2013 12:37:00 -0800
+
+ddr-local (0.20130328) UNRELEASED; urgency=low
+
+  * Initial commit.
+
+ -- geoffrey jost <geoffrey.jost@densho.org>  Thurs, 28 Mar 2013 16:00:00 -0800

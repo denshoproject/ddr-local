@@ -1,0 +1,26 @@
+# Suppresses warnings from lintian during the package building process.
+
+
+# We are including .git in the final install. Never know when you might need it.
+diff-contains-git-control-dir
+
+# coverage, debug_toolbar, and Django include jquery.
+embedded-javascript-library
+
+# Several of ipython's dependencies include LICENSE files.
+extra-license-file
+
+# The debug_toolbar dev didn't clean out before uploading.
+macos-resource-fork-file-in-package
+
+# We're intentionally overwriting the shebang paths of scripts in localenv/bin
+# so they work on the target system.  That path probably won't exist on most
+# build systems.
+wrong-path-for-interpreter
+
+# We're intentionally installing in /opt.  This would be unacceptable for an
+# official Debian package, but we'll burn that bridge when we come to it.
+dir-or-file-in-opt
+
+# this is all third-party stuff
+script-not-executable

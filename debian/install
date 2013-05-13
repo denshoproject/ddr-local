@@ -1,0 +1,6 @@
+COPYRIGHT opt/ddr-local
+INSTALL opt/ddr-local
+LICENSE opt/ddr-local
+README.rst opt/ddr-local
+env/ddr-local opt/virtualenvs
+ddrlocal/ opt/ddr-local
