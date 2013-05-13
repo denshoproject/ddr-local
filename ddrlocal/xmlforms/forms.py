@@ -8,6 +8,28 @@ from django.utils.datastructures import SortedDict
 
 
 
+
+def _tag_type(tag):
+    """some of these checks cause errors for some reason
+    """
+    try:
+        if tag.is_text:
+            return 'text'
+    except:
+        pass
+    try:
+        if tag.is_attribute:
+            return 'attribute'
+    except:
+        pass
+    try:
+        if tag.is_tail:
+            return 'tail'
+    except:
+        pass
+    return 'unknown'
+
+
 class XMLForm(forms.Form):
     
     def __init__(self, *args, **kwargs):
@@ -58,7 +80,7 @@ class XMLForm(forms.Form):
             fields.append((fname, fobject))
         # Django Form object takes a SortedDict rather than list
         self.fields = SortedDict(fields)
-
+    
     @staticmethod
     def prep_fields(fields, xml):
         """Takes raw kwargs, fills in initial data from xml file.
@@ -72,20 +94,25 @@ class XMLForm(forms.Form):
             # default value from xml, if any
             initial = None
             tag = None
+            xpath = f['xpath']
             tags = thistree.xpath(f['xpath'])
             if tags and len(tags):
                 if (type(tags) == type([])):
                     tag = tags[0]
                 else:
                     tag = tags
+            tagtype = _tag_type(tag)
             if hasattr(tag, 'text'):
                 initial = tag.text
             elif type(tag) == type(''):
                 initial = tag
+            elif tagtype == 'attribute':
+                attr = xpath.split('@')[1]
+                initial = tag.getparent().attrib[attr]
             if initial:
                 f['initial'] = initial.strip()
         return fields
-    
+        
     @staticmethod
     def process(xml, fields, form):
         """Writes form.cleaned_data values to XML
@@ -103,8 +130,12 @@ class XMLForm(forms.Form):
                     tag = tags[0]
                 else:
                     tag = tags
-            if hasattr(tag, 'text'):
+            tagtype = _tag_type(tag)
+            if tagtype == 'text':
                 tag.text = cleaned_data
-            elif type(tag) == type(''):
+            elif tagtype == 'attribute':
+                attr = xpath.split('@')[1]
+                tag.getparent().attrib[attr] = cleaned_data
+            elif tagtype == 'tail':
                 tag = cleaned_data
         return etree.tostring(tree, pretty_print=True)
