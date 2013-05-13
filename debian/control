@@ -1,0 +1,14 @@
+Source: ddr-local
+Section: web
+Priority: optional
+Maintainer: geoffrey jost <geoffrey.jost@densho.org>
+Build-Depends: debhelper (>= 8.0.0), dpkg (>= 1.15.7.2)
+Standards-Version: 3.9.3
+Homepage: https://github.com/densho/ddr-local
+Vcs-Git: https://github.com/densho/ddr-local.git
+
+Package: ddr-local
+Architecture: i386
+Depends: ${misc:Depends}, libssl-dev, redis-server, python2.7, python-virtualenv, ${python:Depends}
+Description: Local Web UI for Densho Digital Repository
+ Longer description of ddr-local.
