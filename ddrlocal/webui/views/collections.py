@@ -19,6 +19,7 @@ from webui.forms.collections import NewCollectionForm, UpdateForm
 from webui.ead import EADHEADER_FIELDS, ARCHDESC_FIELDS
 from webui.ead import EadHeaderForm, ArchDescForm
 from webui.views.decorators import login_required
+from xmlforms.models import XMLModel
 
 
 # helpers --------------------------------------------------------------
@@ -92,6 +93,8 @@ def collections( request ):
 def collection( request, repo, org, cid ):
     collection_uid = '{}-{}-{}'.format(repo, org, cid)
     collection_path = os.path.join(settings.DDR_BASE_PATH, collection_uid)
+    ead_path_rel = 'ead.xml'
+    ead_path_abs = os.path.join(collection_path, ead_path_rel)
     #
     exit,status = commands.status(collection_path)
     #exit,astatus = commands.annex_status(collection_path)
@@ -102,6 +105,11 @@ def collection( request, repo, org, cid ):
     changelog = open( os.path.join(collection_path, 'changelog'), 'r').read()
     #
     entities = collection_entities(ead_soup)
+    
+    with open(ead_path_abs, 'r') as f:
+        xml = f.read()
+    eadheader = XMLModel(xml, EADHEADER_FIELDS)
+    archdesc = XMLModel(xml, ARCHDESC_FIELDS)
     return render_to_response(
         'webui/collections/collection.html',
         {'repo': repo,
@@ -113,7 +121,10 @@ def collection( request, repo, org, cid ):
          'ead': ead,
          'changelog': changelog,
          'entities': entities,
-         'gitweb_url': collection_gitweb_url(collection_uid),},
+         'gitweb_url': collection_gitweb_url(collection_uid),
+         'eadheader': eadheader,
+         'archdesc': archdesc,
+         },
         context_instance=RequestContext(request, processors=[])
     )
 

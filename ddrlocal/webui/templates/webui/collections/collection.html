@@ -29,18 +29,65 @@
 <div class="row">
   <div class="span8">
 
+
+<div id="eadheader">
+
 <h3>
-EAD.xml
-&mdash;
-<a href="{% url "webui-collection-update" repo org cid %}">Edit</a>
-(
-<a href="{% url "webui-collection-edit-eadheader" repo org cid %}">eadheader</a>
-<a href="{% url "webui-collection-edit-archdesc" repo org cid %}">archdesc</a>
-)
+eadheader
+(<a href="{% url "webui-collection-edit-eadheader" repo org cid %}">edit</a>)
 </h3>
+<dl class="dl-horizontal">
+  <dt>{{ eadheader.eadid.label }}</dt><dd>{{ eadheader.eadid.value }}</dd>
+  <dt>{{ eadheader.eadid.label }}_countrycode</dt><dd>{{ eadheader.eadid_countrycode.value }}</dd>
+  <dt>{{ eadheader.eadid.label }}_identifier</dt><dd>{{ eadheader.eadid_identifier.value }}</dd>
+  <dt>{{ eadheader.eadid.label }}_mainagencycode</dt><dd>{{ eadheader.eadid_mainagencycode.value }}</dd>
+  <dt>{{ eadheader.titlestmt.label }}_titleproper</dt><dd>{{ eadheader.titlestmt_titleproper.value }}</dd>
+  <dt>{{ eadheader.titlestmt.label }}_subtitle</dt><dd>{{ eadheader.titlestmt_subtitle.value }}</dd>
+  <dt>{{ eadheader.titlestmt.label }}_author</dt><dd>{{ eadheader.titlestmt_author.value }}</dd>
+  <dt>{{ eadheader.publicationstmt.label }}_publisher</dt><dd>{{ eadheader.publicationstmt_publisher.value }}</dd>
+  <dt>{{ eadheader.publicationstmt.label }}_date</dt><dd>{{ eadheader.publicationstmt_date.value }}</dd>
+  <dt>{{ eadheader.profiledesc.label }}_creation</dt><dd>{{ eadheader.profiledesc_creation.value }}</dd>
+  <dt>{{ eadheader.profiledesc.label }}_date</dt><dd>{{ eadheader.profiledesc_date.value }}</dd>
+  <dt>{{ eadheader.langcode.label }}</dt><dd>{{ eadheader.langcode.value }}</dd>
+</dl>
+
+</div>
+
+
+<div id="archdesc">
+
+<h3>
+archdesc
+(<a href="{% url "webui-collection-edit-archdesc" repo org cid %}">edit</a>)
+</h3>
+<dl class="dl-horizontal">
+  <dt>{{ archdesc.head.label }}</dt><dd>{{ archdesc.head.value }}</dd>
+  <dt>{{ archdesc.repository.label }}</dt><dd>{{ archdesc.repository.value }}</dd>
+  <dt>{{ archdesc.persname.label }}</dt><dd>{{ archdesc.persname.value }}</dd>
+  <dt>{{ archdesc.unittitle.label }}</dt><dd>{{ archdesc.unittitle.value }}</dd>
+  <dt>{{ archdesc.unitdate.label }}</dt><dd>{{ archdesc.unitdate.value }}</dd>
+  <dt>{{ archdesc.quantity.label }}</dt><dd>{{ archdesc.quantity.value }}</dd>
+  <dt>{{ archdesc.abstract.label }}</dt><dd>{{ archdesc.abstract.value }}</dd>
+  <dt>{{ archdesc.langcode.label }}</dt><dd>{{ archdesc.langcode.value }}</dd>
+</dl>
+
+
+</div>
+
+
+<div id="xml">
+
+<h3>
+Raw XML
+(<a href="{% url "webui-collection-update" repo org cid %}">edit</a>)
+</h3>
+
 <pre>
 {{ ead }}
 </pre>
+
+</div>
+
 
   </div><!-- .span8 -->
   <div class="span4">
