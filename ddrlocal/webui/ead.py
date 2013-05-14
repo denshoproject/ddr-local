@@ -1,4 +1,11 @@
+import datetime
+import StringIO
+
+from lxml import etree
+
 from django import forms
+
+from xmlforms.forms import XMLForm
 
 
 COUNTRY_CHOICES = [['us','US'],
@@ -158,9 +165,9 @@ EADHEADER_FIELDS = [
     {
         'name': 'publicationstmt_date',
         'type': forms.CharField,
-        'xpath':     '/ead/eadheader/filedesc/publicationstmt/date',
+        'xpath':     '/ead/eadheader/filedesc/publicationstmt/date/@normal',
         'label':     'Publication Date',
-        'help_text': '',
+        'help_text': 'YYYY',
         'widget':    '',
         'default':   '',
         'initial':   '',
@@ -179,17 +186,17 @@ EADHEADER_FIELDS = [
         'max_length': 255,
         'required': True,
     },
-#    {
-#        'name': 'profiledesc_date',
-#        'type': forms.DateField,
-#        'xpath':     '/ead/eadheader/profiledesc/date',
-#        'label':     'Profile Date',
-#        'help_text': '',
-#        'widget':    '',
-#        'default':   '',
-#        'initial':   '',
-#        'required': True,
-#    },
+    {
+        'name': 'profiledesc_date',
+        'type': forms.DateField,
+        'xpath':     '/ead/eadheader/profiledesc/creation/date/@normal',
+        'label':     'Profile Date',
+        'help_text': 'YYYY-MM-DD',
+        'widget':    '',
+        'default':   '',
+        'initial':   '',
+        'required': True,
+    },
     {
         'name':      'langcode',
         'type':      forms.ChoiceField,
@@ -300,3 +307,40 @@ ARCHDESC_FIELDS = [
         'required': True
     },
 ]
+
+
+class EadHeaderForm(XMLForm):
+    
+    def __init__(self, *args, **kwargs):
+        super(EadHeaderForm, self).__init__(*args, **kwargs)
+    
+    @staticmethod
+    def process(xml, fields, form):
+        """<eadheader>-specific processing
+        """
+        xml = XMLForm.process(xml, fields, form)
+        tree = etree.parse(StringIO.StringIO(xml))
+        for f in fields:
+            
+            # both the tag.text and @normal are YYYY
+            # <eadheader><eadid><filedesc><publicationstmt>
+            #   <date encodinganalog="Date" normal="1970">1970</date>
+            if f['name'] == 'publicationstmt_date':
+                tag      = tree.xpath( f['xpath'].split('/@')[0] )[0]
+                tag.text = tree.xpath( f['xpath'] )[0]
+            
+            # @normal is YYYY-MM-DD, tag.text is pretty
+            # <eadheader><eadid><profiledesc><creation>
+            #   <date normal="1970-1-1">01 Jan 1970</date>
+            if f['name'] == 'profiledesc_date':
+                attr = tree.xpath( f['xpath'] )[0]
+                ymd = attr.split('-')
+                prettydate = datetime.date(int(ymd[0]), int(ymd[1]), int(ymd[2])).strftime('%d %b %Y')
+                tag      = tree.xpath( f['xpath'].split('/@')[0] )[0]
+                tag.text = prettydate
+        
+        return etree.tostring(tree, pretty_print=True)
+
+class ArchDescForm(XMLForm):
+    def __init__(self, *args, **kwargs):
+        super(ArchDescForm, self).__init__(*args, **kwargs)

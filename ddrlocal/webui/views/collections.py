@@ -14,10 +14,10 @@ from django.template import RequestContext
 from DDR import commands
 
 from storage.decorators import storage_required
-from xmlforms.forms import XMLForm
 from webui import api
 from webui.forms.collections import NewCollectionForm, UpdateForm
 from webui.ead import EADHEADER_FIELDS, ARCHDESC_FIELDS
+from webui.ead import EadHeaderForm, ArchDescForm
 from webui.views.decorators import login_required
 
 
@@ -248,14 +248,14 @@ def edit_eadheader( request, repo, org, cid ):
     ead_path_abs = os.path.join(collection_path, ead_path_rel)
     with open(ead_path_abs, 'r') as f:
         xml = f.read()
-    fields = XMLForm.prep_fields(EADHEADER_FIELDS, xml)
+    fields = EadHeaderForm.prep_fields(EADHEADER_FIELDS, xml)
     #
     if request.method == 'POST':
-        form = XMLForm(request.POST, fields=fields)
+        form = EadHeaderForm(request.POST, fields=fields)
         if form.is_valid():
             form_fields = form.fields
             cleaned_data = form.cleaned_data
-            xml_new = XMLForm.process(xml, fields, form)
+            xml_new = EadHeaderForm.process(xml, fields, form)
             # TODO validate XML
             with open(ead_path_abs, 'w') as fnew:
                 fnew.write(xml_new)
@@ -267,7 +267,7 @@ def edit_eadheader( request, repo, org, cid ):
                 messages.success(request, '<eadheader> updated')
                 return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
     else:
-        form = XMLForm(fields=fields)
+        form = EadHeaderForm(fields=fields)
     return render_to_response(
         'webui/collections/edit-eadheader.html',
         {'repo': repo,
@@ -293,14 +293,14 @@ def edit_archdesc( request, repo, org, cid ):
     ead_path_abs = os.path.join(collection_path, ead_path_rel)
     with open(ead_path_abs, 'r') as f:
         xml = f.read()
-    fields = XMLForm.prep_fields(ARCHDESC_FIELDS, xml)
+    fields = ArchDescForm.prep_fields(ARCHDESC_FIELDS, xml)
     #
     if request.method == 'POST':
-        form = XMLForm(request.POST, fields=fields)
+        form = ArchDescForm(request.POST, fields=fields)
         if form.is_valid():
             form_fields = form.fields
             cleaned_data = form.cleaned_data
-            xml_new = XMLForm.process(xml, fields, form)
+            xml_new = ArchDescForm.process(xml, fields, form)
             # TODO validate XML
             with open(ead_path_abs, 'w') as fnew:
                 fnew.write(xml_new)
@@ -312,7 +312,7 @@ def edit_archdesc( request, repo, org, cid ):
                 messages.success(request, '<archdesc> updated')
                 return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
     else:
-        form = XMLForm(fields=fields)
+        form = ArchDescForm(fields=fields)
     return render_to_response(
         'webui/collections/edit-archdesc.html',
         {'repo': repo,
