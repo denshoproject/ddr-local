@@ -131,11 +131,11 @@ class XMLForm(forms.Form):
                 else:
                     tag = tags
             tagtype = _tag_type(tag)
-            if tagtype == 'text':
+            if hasattr(tag, 'text'):
                 tag.text = cleaned_data
+            elif type(tag) == type(''):
+                tag = cleaned_data
             elif tagtype == 'attribute':
                 attr = xpath.split('@')[1]
                 tag.getparent().attrib[attr] = cleaned_data
-            elif tagtype == 'tail':
-                tag = cleaned_data
         return etree.tostring(tree, pretty_print=True)
