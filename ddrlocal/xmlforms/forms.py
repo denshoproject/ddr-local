@@ -1,3 +1,4 @@
+from datetime import datetime, date
 from copy import deepcopy
 import StringIO
 
@@ -123,7 +124,13 @@ class XMLForm(forms.Form):
         for f in deepcopy(fields):
             name = f['name']
             xpath = f['xpath']
+            
             cleaned_data = form.cleaned_data[name]
+            if type(cleaned_data) == type(datetime(1970,1,1, 1,1,1)):
+                cleaned_data = cleaned_data.strftime('%Y-%m-%d %H:%M:%S')
+            elif type(cleaned_data) == type(date(1970,1,1)):
+                cleaned_data = cleaned_data.strftime('%Y-%m-%d')
+            
             tags = tree.xpath(xpath)
             if tags and len(tags):
                 if (type(tags) == type([])):
