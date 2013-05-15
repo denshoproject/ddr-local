@@ -16,6 +16,9 @@ from DDR import commands
 from storage.decorators import storage_required
 from webui.forms.entities import NewEntityForm, UpdateForm, AddFileForm
 from webui.views.decorators import login_required
+from webui.mets import METSHDR_FIELDS
+from webui.mets import MetshdrForm
+from xmlforms.models import XMLModel
 
 
 # helpers --------------------------------------------------------------
@@ -272,5 +275,53 @@ def entity_file( request, repo, org, cid, eid, filenum ):
          'changelog': changelog,
          'files': files,
          'file': files[filenum],},
+        context_instance=RequestContext(request, processors=[])
+    )
+
+@login_required
+@storage_required
+def edit_metshdr( request, repo, org, cid, eid ):
+    """Edit the contents of <metshdr>.
+    """
+    git_name = request.session.get('git_name')
+    git_mail = request.session.get('git_mail')
+    if not git_name and git_mail:
+        messages.error(request, 'Login is required')
+    collection_uid = '{}-{}-{}'.format(repo, org, cid)
+    entity_uid     = '{}-{}-{}-{}'.format(repo, org, cid, eid)
+    collection_abs = os.path.join(settings.DDR_BASE_PATH, collection_uid)
+    entity_abs     = os.path.join(collection_abs,'files',entity_uid)
+    entity_rel     = os.path.join('files',entity_uid)
+    xml_path_rel   = 'mets.xml'
+    xml_path_abs   = os.path.join(entity_abs, xml_path_rel)
+    with open(xml_path_abs, 'r') as f:
+        xml = f.read()
+    fields = MetshdrForm.prep_fields(METSHDR_FIELDS, xml)
+    #
+    if request.method == 'POST':
+        form = MetshdrForm(request.POST, fields=fields)
+        if form.is_valid():
+            form_fields = form.fields
+            cleaned_data = form.cleaned_data
+            xml_new = MetshdrForm.process(xml, fields, form)
+            # TODO validate XML
+            with open(xml_path_abs, 'w') as fnew:
+                fnew.write(xml_new)
+            # TODO validate XML
+            exit,status = commands.entity_update(git_name, git_mail, collection_abs, entity_uid, [xml_path_rel])
+            if exit:
+                messages.error(request, 'Error: {}'.format(status))
+            else:
+                messages.success(request, '<metshdr> updated')
+                return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+    else:
+        form = MetshdrForm(fields=fields)
+    return render_to_response(
+        'webui/entities/edit-metshdr.html',
+        {'repo': repo,
+         'org': org,
+         'cid': cid,
+         'collection_uid': collection_uid,
+         'form': form,},
         context_instance=RequestContext(request, processors=[])
     )

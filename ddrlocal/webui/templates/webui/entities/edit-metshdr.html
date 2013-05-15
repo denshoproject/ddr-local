@@ -1,0 +1,23 @@
+{% extends "webui/entities/base.html" %}
+
+
+{% block title %}metshdr | {{ entity_uid }}{% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+<li>{{ entity_uid }}</li>
+<li class="active">metshdr</li>
+{% endblock breadcrumbs %}
+
+
+{% block content %}
+
+<h1>{{ entity_uid }} - metshdr</h1>
+
+<form name="edit-metshdr" action="" method="POST">{% csrf_token %}
+<table>
+  {{ form.as_table }}
+</table>
+<input name="submit" type="submit" value="submit"/><br/>
+</form>
+
+{% endblock content %}
