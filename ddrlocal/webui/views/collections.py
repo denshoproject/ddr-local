@@ -24,10 +24,10 @@ from xmlforms.models import XMLModel
 
 # helpers --------------------------------------------------------------
 
-def collection_gitweb_url(collection_uid):
-    """Returns gitweb URL for collection.
+def collection_cgit_url(collection_uid):
+    """Returns cgit URL for collection.
     """
-    return '{}?p={}.git'.format(settings.GITWEB_URL, collection_uid)
+    return '{}/cgit.cgi/{}/'.format(settings.CGIT_URL, collection_uid)
 
 
 def collection_entities(soup):
@@ -121,7 +121,7 @@ def collection( request, repo, org, cid ):
          'ead': ead,
          'changelog': changelog,
          'entities': entities,
-         'gitweb_url': collection_gitweb_url(collection_uid),
+         'cgit_url': collection_cgit_url(collection_uid),
          'eadheader': eadheader,
          'archdesc': archdesc,
          },
