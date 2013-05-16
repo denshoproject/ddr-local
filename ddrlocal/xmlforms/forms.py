@@ -196,6 +196,7 @@ class XMLForm(forms.Form):
             elif type(cleaned_data) == type(date(1970,1,1)):
                 cleaned_data = cleaned_data.strftime('%Y-%m-%d')
             # find tags, get first one
+            tag = None
             tags = tree.xpath(f['xpath'])
             if tags and len(tags):
                 if (type(tags) == type([])):
