@@ -1,3 +1,4 @@
+import json
 import logging
 logger = logging.getLogger(__name__)
 
@@ -5,6 +6,7 @@ from bs4 import BeautifulSoup
 import requests
 
 from django.conf import settings
+from django.contrib import messages
 
 
 def logout():
@@ -51,6 +53,26 @@ def login( request, username, password ):
             request.session['workbench_sessionid'] = s.cookies.get('sessionid')
             request.session['workbench_csrftoken'] = s.cookies.get('csrftoken')
             request.session['username'] = username
+            # get user first/last name and email from workbench profile (via API)
+            url = settings.WORKBENCH_USERINFO
+            r2 = s.get(url)
+            if r2.status_code == 200:
+                data = json.loads(r2.text)
+                email = data.get('email', None)
+                if not email:
+                    messages.error(
+                        request,
+                        'Your email is invalid! Please log in to workbench and enter a valid email!')
+                firstname = data.get('firstname', '')
+                lastname = data.get('lastname', '')
+                user_name = '{} {}'.format(firstname, lastname).strip()
+                if email and (not user_name):
+                    user_name = email
+                    messages.error(
+                        request,
+                        'Please log in to workbench and enter your first/last name(s).')
+                request.session['git_name'] = user_name
+                request.session['git_mail'] = email
             return s
         else:
             return 'error: bad username or password'

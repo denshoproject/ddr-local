@@ -43,16 +43,14 @@ def login( request ):
                           form.cleaned_data['username'],
                           form.cleaned_data['password'])
             if s and (type(s) != type('')) and s.cookies.get('sessionid', None):
-                request.session['git_name'] = form.cleaned_data['git_name'] 
-                request.session['git_mail'] = form.cleaned_data['git_mail'] 
                 messages.success(
                     request,
                     'Logged in as <strong>{}</strong>.'.format(form.cleaned_data['username']))
+                return HttpResponseRedirect( reverse('webui-index') )
             else:
                 messages.warning(
                     request,
-                    "Couldn't log in ({}).".format(form.cleaned_data['username']))
-            return HttpResponseRedirect( reverse('webui-index') )
+                    "Couldn't log in. Please enter a valid username and password.")
     else:
         form = LoginForm()
     return render_to_response(
