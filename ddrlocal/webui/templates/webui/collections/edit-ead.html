@@ -13,10 +13,10 @@
 
 <h1>{{ collection_uid }} - edit</h1>
 
-<p><b>
-IMPORTANT: We are performing exactly <b>ZERO</b> validation here!<br/>
-(careful with your XML)
-</b></p>
+<div class="alert alert-block">
+  <b>IMPORTANT:</b>
+  You are editing the raw EAD.xml. Proceed at your own risk!
+</div>
 
 <form name="collection-new" action="" method="POST">{% csrf_token %}
 <table>

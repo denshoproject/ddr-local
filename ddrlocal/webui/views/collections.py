@@ -128,6 +128,18 @@ def collection( request, repo, org, cid ):
         context_instance=RequestContext(request, processors=[])
     )
 
+@storage_required
+def collection_ead_xml( request, repo, org, cid ):
+    collection_uid = '{}-{}-{}'.format(repo, org, cid)
+    collection_path = os.path.join(settings.DDR_BASE_PATH, collection_uid)
+    ead_path_rel = 'ead.xml'
+    ead_path_abs = os.path.join(collection_path, ead_path_rel)
+    xml = ''
+    with open( os.path.join(collection_path, 'ead.xml'), 'r') as f:
+        xml = f.read()
+    soup = BeautifulSoup(xml)
+    return HttpResponse(soup.prettify(), mimetype="application/xml")
+
 @login_required
 @storage_required
 def collection_sync( request, repo, org, cid ):
@@ -195,7 +207,7 @@ def collection_new( request, repo, org ):
 
 @login_required
 @storage_required
-def collection_update( request, repo, org, cid ):
+def edit_ead( request, repo, org, cid ):
     """
     on GET
     - reads contents of EAD.xml
@@ -235,7 +247,7 @@ def collection_update( request, repo, org, cid ):
             xml = f.read()
         form = UpdateForm({'xml':xml,})
     return render_to_response(
-        'webui/collections/collection-update.html',
+        'webui/collections/edit-ead.html',
         {'repo': repo,
          'org': org,
          'cid': cid,

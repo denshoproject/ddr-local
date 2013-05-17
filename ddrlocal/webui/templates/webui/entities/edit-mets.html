@@ -12,6 +12,11 @@
 
 <h1>{{ entity_uid }}</h1>
 
+<div class="alert alert-block">
+  <b>IMPORTANT:</b>
+  You are editing the raw METS.xml. Proceed at your own risk!
+</div>
+
 <form name="entity-update" action="" method="POST">{% csrf_token %}
 <table>
   {{ form.as_table }}

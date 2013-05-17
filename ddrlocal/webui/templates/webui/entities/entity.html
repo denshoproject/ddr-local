@@ -25,13 +25,12 @@ entity_path: {{ entity_path }}<br/>
 <div class="row">
   <div class="span8">
 
-<h3>
-METS.xml
-&mdash;
-<a href="{% url "webui-entity-update" repo org cid eid %}">Edit</a>
-</h3>
-<pre>
-{{ mets }}</pre>
+<div id="xml">
+METS.xml:
+<a href="{% url "webui-entity-edit-mets" repo org cid eid %}">edit</a>
+/
+<a href="{% url "webui-entity-mets-xml" repo org cid eid %}">download</a>
+</div>
 
   </div><!-- .span8 -->
   <div class="span4">

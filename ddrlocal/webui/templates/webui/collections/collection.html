@@ -30,6 +30,14 @@
   <div class="span8">
 
 
+<div id="xml">
+EAD.xml:
+<a href="{% url "webui-collection-edit-ead" repo org cid %}">edit</a>
+/
+<a href="{% url "webui-collection-ead-xml" repo org cid %}">download</a>
+</div>
+
+
 <div id="eadheader">
 
 <h3>
@@ -71,20 +79,6 @@ archdesc
   <dt>{{ archdesc.langcode.label }}</dt><dd>{{ archdesc.langcode.value }}</dd>
 </dl>
 
-
-</div>
-
-
-<div id="xml">
-
-<h3>
-Raw XML
-(<a href="{% url "webui-collection-update" repo org cid %}">edit</a>)
-</h3>
-
-<pre>
-{{ ead }}
-</pre>
 
 </div>
 

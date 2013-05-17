@@ -98,6 +98,18 @@ def entity( request, repo, org, cid, eid ):
         context_instance=RequestContext(request, processors=[])
     )
 
+@storage_required
+def entity_mets_xml( request, repo, org, cid, eid ):
+    collection_uid = '{}-{}-{}'.format(repo, org, cid)
+    entity_uid     = '{}-{}-{}-{}'.format(repo, org, cid, eid)
+    collection_abs = os.path.join(settings.DDR_BASE_PATH, collection_uid)
+    entity_abs     = os.path.join(collection_abs,'files',entity_uid)
+    xml = ''
+    with open( os.path.join(entity_abs, 'mets.xml'), 'r') as f:
+        xml = f.read()
+    soup = BeautifulSoup(xml)
+    return HttpResponse(soup.prettify(), mimetype="application/xml")
+
 @login_required
 @storage_required
 def entity_new( request, repo, org, cid ):
@@ -135,62 +147,6 @@ def entity_new( request, repo, org, cid ):
         {'repo': repo,
          'org': org,
          'cid': cid,
-         'form': form,},
-        context_instance=RequestContext(request, processors=[])
-    )
-
-@login_required
-@storage_required
-def entity_update( request, repo, org, cid, eid ):
-    """
-    on GET
-    - reads contents of EAD.xml
-    - puts in form, in textarea
-    - user edits XML
-    on POST
-    - write contents of field to EAD.xml
-    - commands.update
-    """
-    collection_uid = '{}-{}-{}'.format(repo, org, cid)
-    entity_uid     = '{}-{}-{}-{}'.format(repo, org, cid, eid)
-    collection_abs = os.path.join(settings.DDR_BASE_PATH, collection_uid)
-    entity_abs     = os.path.join(collection_abs,'files',entity_uid)
-    entity_rel     = os.path.join('files',entity_uid)
-    xml_path_rel   = 'mets.xml'
-    xml_path_abs   = os.path.join(entity_abs, xml_path_rel)
-    #
-    if request.method == 'POST':
-        form = UpdateForm(request.POST)
-        if form.is_valid():
-            git_name = request.session.get('git_name')
-            git_mail = request.session.get('git_mail')
-            if git_name and git_mail:
-                xml = form.cleaned_data['xml']
-                # TODO validate XML
-                with open(xml_path_abs, 'w') as f:
-                    f.write(xml)
-                
-                exit,status = commands.entity_update(git_name, git_mail, collection_abs, entity_uid, [xml_path_rel])
-                
-                if exit:
-                    messages.error(request, 'Error: {}'.format(status))
-                else:
-                    messages.success(request, 'Entity updated')
-                    return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
-            else:
-                messages.error(request, 'Login is required')
-    else:
-        with open(xml_path_abs, 'r') as f:
-            xml = f.read()
-        form = UpdateForm({'xml':xml,})
-    return render_to_response(
-        'webui/entities/entity-update.html',
-        {'repo': repo,
-         'org': org,
-         'cid': cid,
-         'eid': eid,
-         'collection_uid': collection_uid,
-         'entity_uid': entity_uid,
          'form': form,},
         context_instance=RequestContext(request, processors=[])
     )
@@ -275,6 +231,62 @@ def entity_file( request, repo, org, cid, eid, filenum ):
          'changelog': changelog,
          'files': files,
          'file': files[filenum],},
+        context_instance=RequestContext(request, processors=[])
+    )
+
+@login_required
+@storage_required
+def edit_mets( request, repo, org, cid, eid ):
+    """
+    on GET
+    - reads contents of EAD.xml
+    - puts in form, in textarea
+    - user edits XML
+    on POST
+    - write contents of field to EAD.xml
+    - commands.update
+    """
+    collection_uid = '{}-{}-{}'.format(repo, org, cid)
+    entity_uid     = '{}-{}-{}-{}'.format(repo, org, cid, eid)
+    collection_abs = os.path.join(settings.DDR_BASE_PATH, collection_uid)
+    entity_abs     = os.path.join(collection_abs,'files',entity_uid)
+    entity_rel     = os.path.join('files',entity_uid)
+    xml_path_rel   = 'mets.xml'
+    xml_path_abs   = os.path.join(entity_abs, xml_path_rel)
+    #
+    if request.method == 'POST':
+        form = UpdateForm(request.POST)
+        if form.is_valid():
+            git_name = request.session.get('git_name')
+            git_mail = request.session.get('git_mail')
+            if git_name and git_mail:
+                xml = form.cleaned_data['xml']
+                # TODO validate XML
+                with open(xml_path_abs, 'w') as f:
+                    f.write(xml)
+                
+                exit,status = commands.entity_update(git_name, git_mail, collection_abs, entity_uid, [xml_path_rel])
+                
+                if exit:
+                    messages.error(request, 'Error: {}'.format(status))
+                else:
+                    messages.success(request, 'Entity updated')
+                    return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+            else:
+                messages.error(request, 'Login is required')
+    else:
+        with open(xml_path_abs, 'r') as f:
+            xml = f.read()
+        form = UpdateForm({'xml':xml,})
+    return render_to_response(
+        'webui/entities/edit-mets.html',
+        {'repo': repo,
+         'org': org,
+         'cid': cid,
+         'eid': eid,
+         'collection_uid': collection_uid,
+         'entity_uid': entity_uid,
+         'form': form,},
         context_instance=RequestContext(request, processors=[])
     )
 
