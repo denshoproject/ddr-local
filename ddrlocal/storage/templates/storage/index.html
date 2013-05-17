@@ -15,13 +15,14 @@
 
 {% if removables_mounted %}
 
-<table>
+<table id="removables" class="mounted">
 <form name="mount" action="" method="post">{% csrf_token %}
   {{ umount_form.as_table }}
 {% if removables_mounted %}
   <tr>
+    <td></td>
     <td>
-      <input name="submit" type="submit" value="Un-mount selected device" />
+      <input name="submit" type="submit" value="Unmount selected device" />
     </td>
   </tr>
 </table>
@@ -37,11 +38,12 @@ Reload this page.<br/>
 
 {% else %}
 
-<table>
+<table id="removables" class="unmounted">
 <form name="mount" action="" method="post">{% csrf_token %}
   {{ mount_form.as_table }}
 {% if removables %}
   <tr>
+    <td></td>
     <td>
       <input name="submit" type="submit" value="Mount selected device" />
     </td>
@@ -59,9 +61,11 @@ Reload this page.<br/>
 
 {% endif %}
 
-<h3>Help / Troubleshooting</h3>
+<div class="muted">
+<h4>Help / Troubleshooting</h4>
 <p>
 MORE HELP TEXT HERE
 </p>
+</div>
 
 {% endblock content %}

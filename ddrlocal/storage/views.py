@@ -126,6 +126,7 @@ def remount1( request, redirect=None ):
     # current "mounted" devicefile
     devicefile_session = request.session.get('storage_devicefile', None)
     # the actual new devicefile
+    devicefile_udisks = None
     if label:
         stat,removables = commands.removables()
         for d in removables:

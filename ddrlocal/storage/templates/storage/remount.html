@@ -14,15 +14,18 @@
 
 {% block content %}
 
-<h1>Remounting</h1>
+<h1>
+Remounting
+<img src="{{ STATIC_URL }}storage/spinner.gif" />
+</h1>
 
 <p>
-[spinning beachball]
-</p>
-
-<p>
-If you're not redirected to <strong>{{ redirect }}</strong> in 30 seconds,
-<a href="{{ redirect }}">Click here</a>.
+Started {% now "jS F Y H:i:s a" %}
+<br/>
+If you are not redirected
+to <strong>{{ redirect }}</strong>
+in 30 seconds,
+<a href="{{ redirect }}">click here</a>.
 </p>
 
 {% endblock content %}
