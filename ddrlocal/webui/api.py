@@ -137,3 +137,44 @@ def collections_next( request, repo, org, num_collections=1 ):
             cids = [c.string for c in soup.find_all('a','collection')]
             collections = cids[-num_collections:]
     return collections
+
+def entities_next( request, repo, org, cid, num=1 ):
+    """Generate the next N entity IDs for the logged-in user.
+    
+    <table id="entities" class="table table-striped table-bordered table-condensed">
+    ...
+      <tr class="entity">
+        <td class="eid">ddr-testing-28-1</td>
+        <td class="timestamp">2013-05-17T18:25:12.431504-07:00</td>
+      </tr>
+      <tr class="entity">
+        <td class="eid">ddr-testing-28-2</td>
+        <td class="timestamp">2013-05-17T18:25:12.436942-07:00</td>
+      </tr>
+    ...
+    
+    TODO We're screenscraping when we should be using the API.
+    """
+    entities = []
+    s = session(request)
+    # get CSRF token
+    url_get = '{}/kiroku/{}-{}-{}/'.format(settings.WORKBENCH_URL, repo, org, cid)
+    r0 = s.get(url_get)
+    if r0.status_code == 200:
+        # get CSRF token from cookie
+        csrf_token = None
+        for c in r0.cookies:
+            if c.name == 'csrftoken':
+                csrf_token = c.value
+        if csrf_token:
+            # request new CID
+            newent_url = settings.WORKBENCH_NEWENT_URL
+            url_post = newent_url.replace('REPO',repo).replace('ORG',org).replace('CID',cid)
+            r1 = s.post(url_post,
+                        headers={'X-CSRFToken': csrf_token},
+                        cookies={'csrftoken': csrf_token},
+                        data={'csrftoken': csrf_token, 'num': num,},)
+            soup = BeautifulSoup(r1.text)
+            eids = [e.string.strip() for e in soup.find_all('td','eid')]
+            entities = eids[-num:]
+    return entities

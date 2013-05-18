@@ -14,6 +14,7 @@ from django.template import RequestContext
 from DDR import commands
 
 from storage.decorators import storage_required
+from webui import api
 from webui.forms.entities import NewEntityForm, UpdateForm, AddFileForm
 from webui.views.decorators import login_required
 from webui.mets import METSHDR_FIELDS
@@ -132,12 +133,21 @@ def entity_new( request, repo, org, cid ):
                 if exit:
                     messages.error(request, 'Error: {}'.format(status))
                 else:
-                    messages.success(request, 'New entity created: {}'.format(status))
-                    return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+                    redirect_url = reverse('webui-entity', args=[repo,org,cid,eid])
+                    messages.success(request, 'New entity created: {}'.format(entity_uid))
+                    return HttpResponseRedirect(redirect_url)
             else:
                 messages.error(request, 'Login is required')
     else:
-        form = NewEntityForm()
+        # request the new CID
+        eids = api.entities_next(request, repo, org, cid, 1)
+        # display in form
+        eid = int(eids[-1].split('-')[3])
+        data = {'repo': repo,
+                'org': org,
+                'cid': cid,
+                'eid': eid,}
+        form = NewEntityForm(data)
     return render_to_response(
         'webui/entities/entity-new.html',
         {'repo': repo,
