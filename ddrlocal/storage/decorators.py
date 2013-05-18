@@ -8,6 +8,10 @@ from django.utils.decorators import available_attrs
 
 from DDR import commands
 
+from storage import REMOUNT_POST_REDIRECT_URL_SESSION_KEY
+
+
+
 def storage_required(func):
     """Checks for storage; if problem redirects to remount page or shows error.
     
@@ -26,7 +30,9 @@ def storage_required(func):
         if not readable:
             status,msg = commands.storage_status(settings.DDR_BASE_PATH)
             if msg == 'unmounted':
-                request.session['remount_redirect_uri'] = request.META.get('PATH_INFO',None)
+                remount_uri = request.META.get('PATH_INFO',None)
+                request.session[REMOUNT_POST_REDIRECT_URL_SESSION_KEY] = remount_uri
+                messages.debug(request, '<b>{}</b>: {}'.format(REMOUNT_POST_REDIRECT_URL_SESSION_KEY, remount_uri))
                 return HttpResponseRedirect(reverse('storage-remount0'))
             else:
                 messages.error(request, 'ERROR: Could not get list of collections. Is USB HDD plugged in?')
