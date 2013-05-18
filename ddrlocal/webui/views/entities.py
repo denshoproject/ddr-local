@@ -121,15 +121,11 @@ def entity_new( request, repo, org, cid ):
         if form.is_valid():
             git_name = request.session.get('git_name')
             git_mail = request.session.get('git_mail')
-            messages.info(request, git_name)
-            messages.info(request, git_mail)
             if git_name and git_mail:
                 eid = form.cleaned_data['eid']
                 collection_uid = '{}-{}-{}'.format(repo,org,cid)
                 collection_path = os.path.join(settings.DDR_BASE_PATH, collection_uid)
                 entity_uid = '{}-{}-{}-{}'.format(repo,org,cid,eid)
-                messages.info(request, collection_uid)
-                messages.info(request, collection_path)
                 
                 exit,status = commands.entity_create(git_name, git_mail, collection_path, entity_uid)
                 

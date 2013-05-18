@@ -149,8 +149,6 @@ def collection_sync( request, repo, org, cid ):
     if request.method == 'POST':
         git_name = request.session.get('git_name')
         git_mail = request.session.get('git_mail')
-        messages.info(request, git_name)
-        messages.info(request, git_mail)
         if git_name and git_mail:
             exit,status = commands.sync(git_name, git_mail, collection_path)
             #
@@ -173,8 +171,6 @@ def collection_new( request, repo, org ):
         if form.is_valid():
             git_name = request.session.get('git_name')
             git_mail = request.session.get('git_mail')
-            messages.info(request, git_name)
-            messages.info(request, git_mail)
             if git_name and git_mail:
                 repo = form.cleaned_data['repo']
                 org = form.cleaned_data['org']
