@@ -23,9 +23,9 @@ Remounting
 Started {% now "jS F Y H:i:s a" %}
 <br/>
 If you are not redirected
-to <strong>{{ redirect }}</strong>
+to <strong>{{ remount_uri }}</strong>
 in 30 seconds,
-<a href="{{ redirect }}">click here</a>.
+<a href="{% url "storage-remount1" %}">click here</a>.
 </p>
 
 {% endblock content %}

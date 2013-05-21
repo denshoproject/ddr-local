@@ -103,9 +103,12 @@ def remount0( request ):
     This is just a static page that gives the user something to look at
     while remount1 is running.
     """
+    remount_uri = request.session.get(
+        REMOUNT_POST_REDIRECT_URL_SESSION_KEY,
+        reverse('storage-index'))
     return render_to_response(
         'storage/remount.html',
-        {},
+        {'remount_uri':remount_uri,},
         context_instance=RequestContext(request, processors=[])
     )
 
@@ -116,13 +119,10 @@ def remount1( request ):
     on mount and removed from session on unmount.
     When the VM is suspended and resumed, the device often becomes available
     with a different device file (i.e. /dev/sdc1 instead of /dev/sdb1).
-    The device is still mounted with the old device file.
+    The device is still "mounted" with the old device file.
     We need to unmount from the old device file and remount with the new
     device file that we get from looking directly at the system's device info.
     """
-    url = request.session.get(REMOUNT_POST_REDIRECT_URL_SESSION_KEY, reverse('storage-index'))
-    if url.find('remount') > -1:        # prevent looping
-        url = reverse('storage-index')  #
     # device label
     label = request.session.get('storage_label', None)
     # current "mounted" devicefile
@@ -135,10 +135,20 @@ def remount1( request ):
             if d['label'] == label:
                 devicefile_udisks = d['devicefile']
     # unmount, mount
+    unmounted,mount_path = None,None
+    remount_attempted = False
     if devicefile_session and label and devicefile_udisks:
         unmounted = unmount(request, devicefile_session, label)
         mount_path = mount(request, devicefile_udisks, label)
-    del request.session[REMOUNT_POST_REDIRECT_URL_SESSION_KEY]
+        remount_attempted = True
+    else:
+        messages.warning(request, 'Unable to attempt remount. Please remount manually.')
+    # redirect
+    url = reverse('storage-index')
+    if remount_attempted and mount_path:
+        url = request.session.get(REMOUNT_POST_REDIRECT_URL_SESSION_KEY, None)
+        if url and (not url.find('remount') > -1):
+            del request.session[REMOUNT_POST_REDIRECT_URL_SESSION_KEY]
     return redirect(url)
 
 def storage_required( request ):
