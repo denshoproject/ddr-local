@@ -63,9 +63,46 @@ Reload this page.<br/>
 
 <div class="muted">
 <h4>Help / Troubleshooting</h4>
-<p>
-MORE HELP TEXT HERE
-</p>
+
+<dl>
+
+  <dt>
+    Have you tried turning it off an on again?
+  </dt>
+  <dd>
+    This probably feels like a brush-off (we apologize) but it's often the first thing that IT professionals try, and it often works!
+    Try unmounting the drive using the form above, and then remounting.
+  </dd>
+
+  <dt>
+    You just said we need to remount the drive, and now this page says I have to unmount?
+    I don't understand&mdash;which one is it???
+  </dt>
+  <dd>
+    When you shut down the virtual machine (VM), it sometimes cannot automatically reconnect to the USB drive.
+    This program often has the information it needs to try a different method of remounting.
+    But sometimes that doesn't work either.
+    Just click "Unmount" and then "Mount" again.
+  </dd>
+
+  <dt>
+    Nothing's working! I can't get this program to see my USB drive!!! o_O
+  </dt>
+  <dd>
+    Try rebooting the Virtual Machine (VM):
+    <ol>
+      <li>Keep this browser window open.</li>
+      <li>Find the "VirtualBox Manager" window (title may be slightly different).</li>
+      <li>Find Virtual Machine</li>
+      <li>Right-click on the VM, select "Close" and then "ACPI Shutdown" from the pop-up menu.</li>
+      <li>Wait for the VM to finish shutting down.</li>
+      <li>Right-click on the VM and select "Start".</li>
+      <li>Refresh the browser window.</li>
+    </ol>
+    
+  </dd>
+
+</dl>
 </div>
 
 {% endblock content %}
