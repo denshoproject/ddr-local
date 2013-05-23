@@ -63,6 +63,7 @@ EAD_XML = """<ead>
       </langmaterial>
     </did>
   </archdesc>
+  <dsc/>
 </ead>"""
 
 EADHEADER_FIELDS = [
