@@ -117,6 +117,8 @@ def entity_new( request, repo, org, cid ):
     """
     TODO webui.views.entities.entity_new: get new EID from workbench
     """
+    collection_uid = '{}-{}-{}'.format(repo,org,cid)
+    collection_path = os.path.join(settings.DDR_BASE_PATH, collection_uid)
     if request.method == 'POST':
         form = NewEntityForm(request.POST)
         if form.is_valid():
@@ -124,8 +126,6 @@ def entity_new( request, repo, org, cid ):
             git_mail = request.session.get('git_mail')
             if git_name and git_mail:
                 eid = form.cleaned_data['eid']
-                collection_uid = '{}-{}-{}'.format(repo,org,cid)
-                collection_path = os.path.join(settings.DDR_BASE_PATH, collection_uid)
                 entity_uid = '{}-{}-{}-{}'.format(repo,org,cid,eid)
                 
                 exit,status = commands.entity_create(git_name, git_mail, collection_path, entity_uid)
@@ -153,6 +153,7 @@ def entity_new( request, repo, org, cid ):
         {'repo': repo,
          'org': org,
          'cid': cid,
+         'collection_uid': collection_uid,
          'form': form,},
         context_instance=RequestContext(request, processors=[])
     )
