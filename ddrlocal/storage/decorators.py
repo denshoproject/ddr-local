@@ -29,9 +29,9 @@ def storage_required(func):
             readable = False
         if not readable:
             status,msg = commands.storage_status(settings.DDR_BASE_PATH)
+            remount_uri = request.META.get('PATH_INFO',None)
+            request.session[REMOUNT_POST_REDIRECT_URL_SESSION_KEY] = remount_uri
             if msg == 'unmounted':
-                remount_uri = request.META.get('PATH_INFO',None)
-                request.session[REMOUNT_POST_REDIRECT_URL_SESSION_KEY] = remount_uri
                 messages.debug(request, '<b>{}</b>: {}'.format(REMOUNT_POST_REDIRECT_URL_SESSION_KEY, remount_uri))
                 return HttpResponseRedirect(reverse('storage-remount0'))
             else:
