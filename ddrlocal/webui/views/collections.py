@@ -100,7 +100,7 @@ def collection( request, repo, org, cid ):
     #exit,astatus = commands.annex_status(collection_path)
     #
     ead = open( os.path.join(collection_path, 'ead.xml'), 'r').read()
-    ead_soup = BeautifulSoup(ead)
+    ead_soup = BeautifulSoup(ead, 'xml')
     #
     changelog = open( os.path.join(collection_path, 'changelog'), 'r').read()
     #
@@ -137,7 +137,7 @@ def collection_ead_xml( request, repo, org, cid ):
     xml = ''
     with open( os.path.join(collection_path, 'ead.xml'), 'r') as f:
         xml = f.read()
-    soup = BeautifulSoup(xml)
+    soup = BeautifulSoup(xml, 'xml')
     return HttpResponse(soup.prettify(), mimetype="application/xml")
 
 @login_required

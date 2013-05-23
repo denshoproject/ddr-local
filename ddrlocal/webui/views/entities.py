@@ -43,7 +43,7 @@ def entity_files(soup, collection_abs, entity_rel):
     ...
     """
     files = []
-    for tag in soup.find_all('flocat'):
+    for tag in soup.find_all('flocat', 'xml'):
         cid = os.path.basename(collection_abs)
         f = {
             'abs': os.path.join(collection_abs, entity_rel, tag['href']),
@@ -78,7 +78,7 @@ def entity( request, repo, org, cid, eid ):
     entity_rel     = os.path.join('files',entity_uid)
     #
     mets = open( os.path.join(entity_abs, 'mets.xml'), 'r').read()
-    mets_soup = BeautifulSoup(mets)
+    mets_soup = BeautifulSoup(mets, 'xml')
     #
     changelog = open( os.path.join(entity_abs, 'changelog'), 'r').read()
     #
@@ -108,7 +108,7 @@ def entity_mets_xml( request, repo, org, cid, eid ):
     xml = ''
     with open( os.path.join(entity_abs, 'mets.xml'), 'r') as f:
         xml = f.read()
-    soup = BeautifulSoup(xml)
+    soup = BeautifulSoup(xml, 'xml')
     return HttpResponse(soup.prettify(), mimetype="application/xml")
 
 @login_required
@@ -219,7 +219,7 @@ def entity_file( request, repo, org, cid, eid, filenum ):
     entity_rel     = os.path.join('files',entity_uid)
     #
     mets = open( os.path.join(entity_abs, 'mets.xml'), 'r').read()
-    mets_soup = BeautifulSoup(mets)
+    mets_soup = BeautifulSoup(mets, 'xml')
     #
     changelog = open( os.path.join(entity_abs, 'changelog'), 'r').read()
     #
