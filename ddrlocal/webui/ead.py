@@ -1,4 +1,5 @@
 import datetime
+import os
 import StringIO
 
 from lxml import etree
