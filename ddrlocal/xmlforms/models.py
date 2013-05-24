@@ -46,3 +46,9 @@ class XMLModel(object):
             field = {'label': f['form']['label'],
                      'value': value,}
             setattr(self, f['name'], field)
+    
+    @staticmethod
+    def process(xml, fields, form):
+        xml = XMLForm.process(xml, fields, form)
+        tree = etree.parse(StringIO.StringIO(xml))
+        return etree.tostring(tree, pretty_print=True)
