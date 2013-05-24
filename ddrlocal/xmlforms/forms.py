@@ -190,12 +190,14 @@ class XMLForm(forms.Form):
         tree = etree.parse(StringIO.StringIO(xml))
         for f in deepcopy(fields):
             cleaned_data = form.cleaned_data[f['name']]
-            # non-string data
-            if type(cleaned_data) == type(datetime(1970,1,1, 1,1,1)):
+            # datetime
+            if type(cleaned_data)   == type(datetime(1970,1,1, 1,1,1)):
                 cleaned_data = cleaned_data.strftime('%Y-%m-%d %H:%M:%S')
+            # date
             elif type(cleaned_data) == type(date(1970,1,1)):
                 cleaned_data = cleaned_data.strftime('%Y-%m-%d')
             # find tags, get first one
+            # TODO handle repeating tags (possibly important...)
             tag = None
             tags = tree.xpath(f['xpath'])
             if tags and len(tags):
@@ -203,7 +205,8 @@ class XMLForm(forms.Form):
                     tag = tags[0]
                 else:
                     tag = tags
-            # tag text, attribute, or tail
+            # different ways to get the text, depending on whether it's in the
+            # tag text, tail, or an attribute
             tagtype = _tag_type(tag)
             if hasattr(tag, 'text'):
                 tag.text = cleaned_data
