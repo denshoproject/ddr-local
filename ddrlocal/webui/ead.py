@@ -21,50 +21,12 @@ def repository_codes():
             ('ddr-testing','ddr-testing'),]
 
 
-EAD_XML = """<ead>
-  <eadheader audience="internal" countryencoding="iso3166-1" dateencoding="iso8601" langencoding="iso639-2b" relatedencoding="DC" repositoryencoding="iso15511" scriptencoding="iso15924">
-    <eadid countrycode="" identifier="" mainagencycode=""></eadid>
-    <filedesc>
-      <titlestmt>
-        <titleproper encodinganalog="Title"></titleproper>
-        <subtitle></subtitle>
-        <author encodinganalog="Creator"></author>
-      </titlestmt>
-      <publicationstmt>
-        <publisher encodinganalog="Publisher"></publisher>
-        <date encodinganalog="Date" normal=""></date>
-      </publicationstmt>
-    </filedesc>
-    <profiledesc>
-      <creation>
-        <date normal=""></date>
-      </creation>
-      <langusage>
-        <language encodinganalog="Language" langcode=""></language>
-      </langusage>
-    </profiledesc>
-  </eadheader>
-  <archdesc level="collection" type="inventory" relatedencoding="MARC21">
-    <did>
-      <head></head>
-      <repository encodinganalog="852$a" label="Repository: "></repository>
-      <origination label="Creator: ">
-         <persname encodinganalog="100"></persname>
-      </origination>
-      <unittitle encodinganalog="245$a" label="Title: "></unittitle>
-      <unitdate encodinganalog="245$f" normal="" type="inclusive" label="Inclusive Dates: "></unitdate>
-      <physdesc encodinganalog="300$a" label="Quantity: ">
-         <extent></extent>
-      </physdesc>
-      <abstract encodinganalog="520$a" label="Abstract: "></abstract>
-      <unitid encodinganalog="099" label="Identification: " countrycode="" repositorycode=""></unitid>
-      <langmaterial label="Language: " encodinganalog="546">
-         <language langcode=""></language>
-      </langmaterial>
-    </did>
-  </archdesc>
-  <dsc/>
-</ead>"""
+EAD_XML = ''
+ead_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ead.xml')
+with open(ead_path, 'r') as f:
+    EAD_XML = f.read()
+
+
 
 EADHEADER_FIELDS = [
     {
