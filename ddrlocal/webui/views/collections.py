@@ -114,8 +114,6 @@ def collection( request, repo, org, cid ):
     
     with open(ead_path_abs, 'r') as f:
         xml = f.read()
-    eadheader = XMLModel(xml, EADHEADER_FIELDS)
-    archdesc = XMLModel(xml, ARCHDESC_FIELDS)
     return render_to_response(
         'webui/collections/collection.html',
         {'repo': repo,
@@ -128,8 +126,13 @@ def collection( request, repo, org, cid ):
          'changelog': changelog,
          'entities': entities,
          'cgit_url': collection_cgit_url(collection_uid),
-         'eadheader': eadheader,
-         'archdesc': archdesc,
+         'eadheader': XMLModel(xml, EADHEADER_FIELDS),
+         'archdesc': XMLModel(xml, ARCHDESC_FIELDS),
+         'overview': XMLModel(xml, COLLECTION_OVERVIEW_FIELDS),
+         'admininfo': XMLModel(xml, ADMIN_INFO_FIELDS),
+         'bioghist': XMLModel(xml, BIOG_HIST_FIELDS),
+         'scopecontent': XMLModel(xml, SCOPE_CONTENT_FIELDS),
+         'adjunctdesc': XMLModel(xml, ADJUNCT_DESCRIPTIVE_FIELDS),
          },
         context_instance=RequestContext(request, processors=[])
     )
