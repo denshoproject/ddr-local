@@ -10,6 +10,7 @@ from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import Http404, get_object_or_404, render_to_response
 from django.template import RequestContext
+from django.template.loader import get_template
 
 from DDR import commands
 
@@ -338,6 +339,61 @@ def edit_archdesc( request, repo, org, cid ):
          'org': org,
          'cid': cid,
          'collection_uid': collection_uid,
+         'form': form,},
+        context_instance=RequestContext(request, processors=[])
+    )
+
+
+
+@login_required
+@storage_required
+def edit_xml( request, repo, org, cid, slug, Form, FIELDS ):
+    """Edit the contents of <archdesc>.
+    """
+    git_name = request.session.get('git_name')
+    git_mail = request.session.get('git_mail')
+    if not git_name and git_mail:
+        messages.error(request, 'Login is required')
+    collection_uid = '{}-{}-{}'.format(repo, org, cid)
+    collection_path = os.path.join(settings.DDR_BASE_PATH, collection_uid)
+    ead_path_rel = 'ead.xml'
+    ead_path_abs = os.path.join(collection_path, ead_path_rel)
+    with open(ead_path_abs, 'r') as f:
+        xml = f.read()
+    fields = Form.prep_fields(FIELDS, xml)
+    #
+    if request.method == 'POST':
+        form = Form(request.POST, fields=fields)
+        if form.is_valid():
+            form_fields = form.fields
+            cleaned_data = form.cleaned_data
+            xml_new = Form.process(xml, fields, form)
+            # TODO validate XML
+            with open(ead_path_abs, 'w') as fnew:
+                fnew.write(xml_new)
+            # TODO validate XML
+            exit,status = commands.update(git_name, git_mail, collection_path, [ead_path_rel])
+            if exit:
+                messages.error(request, 'Error: {}'.format(status))
+            else:
+                messages.success(request, '<{}> updated'.format(slug))
+                return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+    else:
+        form = Form(fields=fields)
+    # template
+    try:
+        tf = 'webui/collections/edit-{}.html'.format(slug)
+        t = get_template(tf)
+        template_filename = tf
+    except:
+        template_filename = 'webui/collections/edit-xml.html'
+    return render_to_response(
+        template_filename,
+        {'repo': repo,
+         'org': org,
+         'cid': cid,
+         'collection_uid': collection_uid,
+         'slug': slug,
          'form': form,},
         context_instance=RequestContext(request, processors=[])
     )
