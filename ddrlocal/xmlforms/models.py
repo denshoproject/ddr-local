@@ -43,6 +43,11 @@ class XMLModel(object):
                 value = tag.getparent().attrib[attr]
             else:
                 value = None
+            # strip before/after whitespace
+            try:
+                value = value.strip()
+            except:
+                pass
             # insert into object
             field = {'label': f['form']['label'],
                      'value': value,}
