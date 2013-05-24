@@ -22,6 +22,7 @@ class XMLModel(object):
         fields = args[1]
         #super(XMLModel, self).__init__(*args, **kwargs)
         tree = etree.parse(StringIO.StringIO(xml))
+        self.fieldnames = []
         for f in fields:
             # find tags, get first one
             tag = None
@@ -46,9 +47,13 @@ class XMLModel(object):
             field = {'label': f['form']['label'],
                      'value': value,}
             setattr(self, f['name'], field)
+            self.fieldnames.append(f['name'])
     
     @staticmethod
     def process(xml, fields, form):
         xml = XMLForm.process(xml, fields, form)
         tree = etree.parse(StringIO.StringIO(xml))
         return etree.tostring(tree, pretty_print=True)
+    
+    def labels_values(self):
+        return [getattr(self, fname, '') for fname in self.fieldnames]
