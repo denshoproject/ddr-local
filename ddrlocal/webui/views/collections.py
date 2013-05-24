@@ -17,8 +17,13 @@ from DDR import commands
 from storage.decorators import storage_required
 from webui import api
 from webui.forms.collections import NewCollectionForm, UpdateForm
-from webui.ead import EADHEADER_FIELDS, ARCHDESC_FIELDS
-from webui.ead import EadHeaderForm, ArchDescForm
+from webui.ead import EADHEADER_FIELDS, EadHeaderForm
+from webui.ead import ARCHDESC_FIELDS, ArchDescForm
+from webui.ead import COLLECTION_OVERVIEW_FIELDS, CollectionOverviewForm
+from webui.ead import ADMIN_INFO_FIELDS, AdminInfoForm
+from webui.ead import BIOG_HIST_FIELDS, BiogHistForm
+from webui.ead import SCOPE_CONTENT_FIELDS, ScopeContentForm
+from webui.ead import ADJUNCT_DESCRIPTIVE_FIELDS, AdjunctDescriptiveForm
 from webui.views.decorators import login_required
 from xmlforms.models import XMLModel
 
@@ -397,3 +402,23 @@ def edit_xml( request, repo, org, cid, slug, Form, FIELDS ):
          'form': form,},
         context_instance=RequestContext(request, processors=[])
     )
+
+def edit_overview( request, repo, org, cid ):
+    return edit_xml(request, repo, org, cid,
+                    slug='overview', Form=CollectionOverviewForm, FIELDS=COLLECTION_OVERVIEW_FIELDS)
+
+def edit_admininfo( request, repo, org, cid ):
+    return edit_xml(request, repo, org, cid,
+                    slug='admininfo', Form=AdminInfoForm, FIELDS=ADMIN_INFO_FIELDS)
+
+def edit_bioghist( request, repo, org, cid ):
+    return edit_xml(request, repo, org, cid,
+                    slug='bioghist', Form=BiogHistForm, FIELDS=BIOG_HIST_FIELDS)
+
+def edit_scopecontent( request, repo, org, cid ):
+    return edit_xml(request, repo, org, cid,
+                    slug='scopecontent', Form=ScopeContentForm, FIELDS=SCOPE_CONTENT_FIELDS)
+
+def edit_adjunctdesc( request, repo, org, cid ):
+    return edit_xml(request, repo, org, cid,
+                    slug='descgrp', Form=AdjunctDescriptiveForm, FIELDS=ADJUNCT_DESCRIPTIVE_FIELDS)
