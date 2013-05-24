@@ -29,7 +29,8 @@
          <persname encodinganalog="100"></persname>
       </origination>
       <unittitle encodinganalog="245$a" label="Title: "></unittitle>
-      <unitdate encodinganalog="245$f" normal="" type="inclusive" label="Inclusive Dates: "></unitdate>
+      <unitdate encodinganalog="245$f" type="inclusive" label="Span Dates" normal=""></unitdate>
+      <unitdate encodinganalog="245$g" type="bulk"      label="Bulk Dates" normal=""></unitdate>
       <physdesc encodinganalog="300$a" label="Quantity: ">
          <extent></extent>
       </physdesc>
