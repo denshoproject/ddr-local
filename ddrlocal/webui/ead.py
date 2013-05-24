@@ -96,7 +96,7 @@ EADHEADER_FIELDS = [
         'form_type':  forms.CharField,
         'form': {
             'label':     'Title',
-            'help_text': '',
+            'help_text': 'The title of the collection. Follow basic Chicago Manual Style for titles. No period.',
             'widget':    '',
             'initial':   '',
             'max_length': 255,
@@ -210,128 +210,6 @@ EADHEADER_FIELDS = [
     },
 ]
 
-ARCHDESC_FIELDS = [
-    {
-        'name':       'head',
-        'xpath':      '/ead/archdesc/did/head',
-        'model_type': str,
-        'form_type':  forms.CharField,
-        'form': {
-            'label':     'Head',
-            'help_text': '',
-            'widget':    '',
-            'initial':   '',
-            'required':  True,
-        },
-        'default':    'Collection Overview',
-    },
-    {
-        'name':       'repository',
-        'xpath':      '/ead/archdesc/did/repository',
-        'model_type': str,
-        'form_type':  forms.CharField,
-        'form': {
-            'label':    'Repository',
-            'help_text': '',
-            'max_length':255,
-            'widget':   '',
-            'initial':  '',
-            'required': True,
-        },
-        'default':    'Repository Name Goes Here',
-    },
-    {
-        'name':       'persname',
-        'xpath':      '/ead/archdesc/did/origination/persname',
-        'model_type': str,
-        'form_type':  forms.CharField,
-        'form': {
-            'label':    'Origination Person Name',
-            'help_text': '',
-            'max_length':255,
-            'widget':   '',
-            'initial':  '',
-            'required': True,
-        },
-        'default':    'Doe, John A. (John Doe), 1911-1992',
-    },
-    {
-        'name':       'unittitle',
-        'xpath':      '/ead/archdesc/did/unittitle',
-        'model_type': str,
-        'form_type':  forms.CharField,
-        'form': {
-            'label':    'Unit Title',
-            'help_text': '',
-            'max_length':255,
-            'widget':   '',
-            'initial':  '',
-            'required': True,
-        },
-        'default':    'John A. Doe Papers',
-    },
-    {
-        'name':       'unitdate',
-        'xpath':      '/ead/archdesc/did/unitdate',
-        'model_type': str,
-        'form_type':  forms.CharField,
-        'form': {
-            'label':    'Unit Date',
-            'help_text': 'Start and end years (YYYY-YYYY).',
-            'max_length':9,
-            'widget':   '',
-            'initial':  '',
-            'required': True,
-        },
-        'default':    '1940-1950',
-    },
-    {
-        'name':       'quantity',
-        'xpath':      '/ead/archdesc/did/physdesc/extent',
-        'model_type': str,
-        'form_type':  forms.CharField,
-        'form': {
-            'label':    'Quantity',
-            'help_text': '',
-            'max_length':255,
-            'widget':   '',
-            'initial':  '',
-            'required': True,
-        },
-        'default':    'N linear ft.',
-    },
-    {
-        'name':       'abstract',
-        'xpath':      '/ead/archdesc/did/abstract',
-        'model_type': str,
-        'form_type':  forms.CharField,
-        'form': {
-            'label':    'Abstract',
-            'help_text': '',
-            'widget':   forms.Textarea,
-            'initial':  '',
-            'required': True,
-        },
-        'default':    '',
-    },
-    {
-        'name':       'langcode',
-        'xpath':      '/ead/archdesc/did/langmaterial/language/@langcode',
-        'model_type': str,
-        'form_type':  forms.ChoiceField,
-        'form': {
-            'label':    'Language',
-            'help_text': '',
-            'choices':  LANGUAGE_CHOICES,
-            'widget':   '',
-            'initial':  '',
-            'required': True,
-        },
-        'default':    'eng',
-    },
-]
-
-
 class EadHeaderForm(XMLForm):
     
     def __init__(self, *args, **kwargs):
@@ -364,6 +242,180 @@ class EadHeaderForm(XMLForm):
         
         return etree.tostring(tree, pretty_print=True)
 
+
+
+ARCHDESC_FIELDS = [
+    {
+        'name':       'head',
+        'xpath':      '/ead/archdesc/did/head',
+        'model_type': str,
+        'form_type':  forms.CharField,
+        'form': {
+            'label':     'Head',
+            'help_text': '',
+            'widget':    '',
+            'initial':   '',
+            'required':  True,
+        },
+        'default':    'Collection Overview',
+    },
+    {
+        'name':       'repository',
+        'xpath':      '/ead/archdesc/did/repository',
+        'model_type': str,
+        'form_type':  forms.CharField,
+        'form': {
+            'label':    'Contributing Institution',
+            'help_text': 'The name of the organization that owns the physical materials.  In many cases this will be the partner\'s name unless the materials were borrowed from a different organization for scanning.',
+            'max_length':255,
+            'widget':   '',
+            'initial':  '',
+            'required': True,
+        },
+        'default':    'Repository Name Goes Here',
+    },
+    {
+        'name':       'archdesc_creator',
+        'xpath':      '/ead/archdesc/did/origination',
+        'model_type': str,
+        'form_type':  forms.CharField,
+        'form': {
+            'label':    'Creator',
+            'help_text': 'The name of the person/people/organization responsible for the creation and/or assembly of the majority of materials in the collection. For individuals, "LastName, FirstName" (e.g. Adams, Ansel). Multiple creators are allowed but must be separated using a semi-colon.',
+            'max_length':255,
+            'widget':   '',
+            'initial':  '',
+            'required': True,
+        },
+        'default':    'Doe, John A. (John Doe), 1911-1992',
+    },
+    {
+        'name':       'unittitle',
+        'xpath':      '/ead/archdesc/did/unittitle',
+        'model_type': str,
+        'form_type':  forms.CharField,
+        'form': {
+            'label':    'Title',
+            'help_text': 'The title of the collection. Follow basic Chicago Manual Style for titles. No period.',
+            'max_length':255,
+            'widget':   '',
+            'initial':  '',
+            'required': True,
+        },
+        'default':    'John A. Doe Papers',
+    },
+#    {
+#        'name':       'unitdate_inclusive',
+#        'xpath':      '/ead/archdesc/did/unitdate',  attr: type="inclusive"
+#        'model_type': str,
+#        'form_type':  forms.CharField,
+#        'form': {
+#            'label':    'Inclusive Dates',
+#            'help_text': 'The date range of the oldest materials and the newest materials in the collection. Use the years separated by a dash: YYYY-YYYY. If exact dates are unknown use circa (c.).',
+#            'max_length':9,
+#            'widget':   '',
+#            'initial':  '',
+#            'required': True,
+#        },
+#        'default':    '1940-1950',
+#    },
+#    {
+#        'name':       'unitdate_bulk',
+#        'xpath':      '/ead/archdesc/did/unitdate',  attr: type="bulk"
+#        'model_type': str,
+#        'form_type':  forms.CharField,
+#        'form': {
+#            'label':    'Bulk Dates',
+#            'help_text': 'The date or date range of the majority of the materials in the collection. Use the years separated by a dash: YYYY-YYYY. If exact dates are unknown use circa (c.). Can be the same as the inclusive dates if there are no predominant dates.',
+#            'max_length':9,
+#            'widget':   '',
+#            'initial':  '',
+#            'required': True,
+#        },
+#        'default':    '1940-1950',
+#    },
+    {
+        'name':       'unitid',
+        'xpath':      '/ead/archdesc/did/unitid',
+        'model_type': str,
+        'form_type':  forms.CharField,
+        'form': {
+            'label':    'Collection ID',
+            'help_text': 'The unique identifier for the collection.	This ID will be created using the Densho ID Service.',
+            'max_length':255,
+            'widget':   '',
+            'initial':  '',
+            'required': True,
+        },
+        'default':    '',
+    },
+    {
+        'name':       'extent',
+        'xpath':      '/ead/archdesc/did/physdesc/extent',
+        'model_type': str,
+        'form_type':  forms.CharField,
+        'form': {
+            'label':    'Physical Description',
+            'help_text': 'A statement about the extent of the collection.',
+            'max_length':255,
+            'widget':   '',
+            'initial':  '',
+            'required': True,
+        },
+        'default':    'N linear ft.',
+    },
+    {
+        'name':       'abstract',
+        'xpath':      '/ead/archdesc/did/abstract',
+        'model_type': str,
+        'form_type':  forms.CharField,
+        'form': {
+            'label':    'Abstract',
+            'help_text': 'A brief statement about the creator and the scope of the collection. Brief free text following basic Chicago Manual style guidelines.',
+            'widget':   forms.Textarea,
+            'initial':  '',
+            'required': True,
+        },
+        'default':    '',
+    },
+    {
+        'name':       'notes',
+        'xpath':      '/ead/archdesc/did/note',
+        'model_type': str,
+        'form_type':  forms.CharField,
+        'form': {
+            'label':    'Notes',
+            'help_text': 'Additional information about the collection that is not appropriate for any other element.',
+            'widget':   forms.Textarea,
+            'initial':  '',
+            'required': False,
+        },
+        'default':    '',
+    },
+    {
+        'name':       'langcode',
+        'xpath':      '/ead/archdesc/did/langmaterial/language/@langcode',
+        'model_type': str,
+        'form_type':  forms.ChoiceField,
+        'form': {
+            'label':    'Language',
+            'help_text': 'The language that predominates in the original material being described.	Only needed for objects containing textual content (i.e. caption on a photograph, text of a letter). Use the Library of Congress Codes for the Representation of Names of Languages ISO 639-2 Codes (found here http://www.loc.gov/standards/iso639-2/php/code_list.php).',
+            'choices':  LANGUAGE_CHOICES,
+            'widget':   '',
+            'initial':  '',
+            'required': False,
+        },
+        'default':    'eng',
+    },
+]
+
 class ArchDescForm(XMLForm):
+    
     def __init__(self, *args, **kwargs):
         super(ArchDescForm, self).__init__(*args, **kwargs)
+    
+    @staticmethod
+    def process(xml, fields, form):
+        xml = XMLForm.process(xml, fields, form)
+        tree = etree.parse(StringIO.StringIO(xml))
+        return etree.tostring(tree, pretty_print=True)
