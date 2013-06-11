@@ -32,6 +32,8 @@
 .breadcrumb { padding:0px; }
 .breadcrumb li { margin:0; margin-right:10px; }
 
+span.bullsep { margin-left:10px; margin-right:10px; }
+
 /* storage */
 table#removables label { margin-right:20px; }
 #removables ul { list-style:inside none; margin-left:0px; }
@@ -119,7 +121,10 @@ form .helptext { color:#aaa; }
 
 
 <div id="footer">
+{% block footer %}{% endblock footer %}
 </div><!-- #footer -->
+
+
 
     </div><!-- .span12 -->
   </div><!-- .row-fluid -->

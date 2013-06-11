@@ -35,7 +35,6 @@ def collection_cgit_url(collection_uid):
     """
     return '{}/cgit.cgi/{}/'.format(settings.CGIT_URL, collection_uid)
 
-
 def collection_entities(soup):
     """Given a BeautifulSoup-ified EAD doc, get list of entity UIDs
     
@@ -73,6 +72,11 @@ def collection_entities(soup):
                               'title': tag.string.strip(),} )
     return entities
 
+def _uid_path(repo, org, cid):
+    uid = '{}-{}-{}'.format(repo, org, cid)
+    path = os.path.join(settings.DDR_BASE_PATH, uid)
+    return uid,path
+
 
 # views ----------------------------------------------------------------
 
@@ -96,51 +100,101 @@ def collections( request ):
     )
 
 @storage_required
-def collection( request, repo, org, cid ):
-    collection_uid = '{}-{}-{}'.format(repo, org, cid)
-    collection_path = os.path.join(settings.DDR_BASE_PATH, collection_uid)
+def detail( request, repo, org, cid ):
+    collection_uid,collection_path = _uid_path(repo, org, cid)
     ead_path_rel = 'ead.xml'
     ead_path_abs = os.path.join(collection_path, ead_path_rel)
-    #
-    exit,status = commands.status(collection_path)
-    #exit,astatus = commands.annex_status(collection_path)
-    #
     ead = open( os.path.join(collection_path, 'ead.xml'), 'r').read()
     ead_soup = BeautifulSoup(ead, 'xml')
-    #
-    changelog = open( os.path.join(collection_path, 'changelog'), 'r').read()
-    #
-    entities = collection_entities(ead_soup)
-    
+    entities = collection_entities(ead_soup)[:20]
     with open(ead_path_abs, 'r') as f:
         xml = f.read()
     return render_to_response(
-        'webui/collections/collection.html',
+        'webui/collections/detail.html',
         {'repo': repo,
          'org': org,
          'cid': cid,
          'collection_uid': collection_uid,
-         'status': status,
-         #'astatus': astatus,
          'ead': ead,
-         'changelog': changelog,
          'entities': entities,
          'cgit_url': collection_cgit_url(collection_uid),
-         'eadheader': XMLModel(xml, EADHEADER_FIELDS),
-         'archdesc': XMLModel(xml, ARCHDESC_FIELDS),
          'overview': XMLModel(xml, COLLECTION_OVERVIEW_FIELDS),
          'admininfo': XMLModel(xml, ADMIN_INFO_FIELDS),
          'bioghist': XMLModel(xml, BIOG_HIST_FIELDS),
          'scopecontent': XMLModel(xml, SCOPE_CONTENT_FIELDS),
          'adjunctdesc': XMLModel(xml, ADJUNCT_DESCRIPTIVE_FIELDS),
+         'workbench_url': settings.WORKBENCH_URL,
          },
         context_instance=RequestContext(request, processors=[])
     )
 
 @storage_required
-def collection_ead_xml( request, repo, org, cid ):
-    collection_uid = '{}-{}-{}'.format(repo, org, cid)
-    collection_path = os.path.join(settings.DDR_BASE_PATH, collection_uid)
+def entities( request, repo, org, cid ):
+    collection_uid,collection_path = _uid_path(repo, org, cid)
+    ead_path_rel = 'ead.xml'
+    ead_path_abs = os.path.join(collection_path, ead_path_rel)
+    ead = open( os.path.join(collection_path, 'ead.xml'), 'r').read()
+    ead_soup = BeautifulSoup(ead, 'xml')
+    entities = collection_entities(ead_soup)
+    return render_to_response(
+        'webui/collections/entities.html',
+        {'repo': repo,
+         'org': org,
+         'cid': cid,
+         'collection_uid': collection_uid,
+         'entities': entities,
+         },
+        context_instance=RequestContext(request, processors=[])
+    )
+
+@storage_required
+def changelog( request, repo, org, cid ):
+    collection_uid,collection_path = _uid_path(repo, org, cid)
+    changelog = open( os.path.join(collection_path, 'changelog'), 'r').read()
+    return render_to_response(
+        'webui/collections/changelog.html',
+        {'repo': repo,
+         'org': org,
+         'cid': cid,
+         'collection_uid': collection_uid,
+         'changelog': changelog,
+         },
+        context_instance=RequestContext(request, processors=[])
+    )
+
+@storage_required
+def git_status( request, repo, org, cid ):
+    collection_uid,collection_path = _uid_path(repo, org, cid)
+    exit,status = commands.status(collection_path)
+    return render_to_response(
+        'webui/collections/git-status.html',
+        {'repo': repo,
+         'org': org,
+         'cid': cid,
+         'collection_uid': collection_uid,
+         'status': status,
+         },
+        context_instance=RequestContext(request, processors=[])
+    )
+
+@storage_required
+def git_annex_status( request, repo, org, cid ):
+    collection_uid,collection_path = _uid_path(repo, org, cid)
+    exit,astatus = commands.annex_status(collection_path)
+    return render_to_response(
+        'webui/collections/git-annex-status.html',
+        {'repo': repo,
+         'org': org,
+         'cid': cid,
+         'collection_uid': collection_uid,
+         'astatus': astatus,
+         },
+        context_instance=RequestContext(request, processors=[])
+    )
+
+@storage_required
+def ead_xml( request, repo, org, cid ):
+    collection_uid,collection_path = _uid_path(repo, org, cid)
     ead_path_rel = 'ead.xml'
     ead_path_abs = os.path.join(collection_path, ead_path_rel)
     xml = ''
@@ -151,9 +205,8 @@ def collection_ead_xml( request, repo, org, cid ):
 
 @login_required
 @storage_required
-def collection_sync( request, repo, org, cid ):
-    collection_uid = '{}-{}-{}'.format(repo, org, cid)
-    collection_path = os.path.join(settings.DDR_BASE_PATH, collection_uid)
+def sync( request, repo, org, cid ):
+    collection_uid,collection_path = _uid_path(repo, org, cid)
     #
     if request.method == 'POST':
         git_name = request.session.get('git_name')
@@ -171,7 +224,7 @@ def collection_sync( request, repo, org, cid ):
 
 @login_required
 @storage_required
-def collection_new( request, repo, org ):
+def new( request, repo, org ):
     """
     TODO webui.views.collections.collection_new: get new CID from workbench
     """
@@ -184,8 +237,7 @@ def collection_new( request, repo, org ):
                 repo = form.cleaned_data['repo']
                 org = form.cleaned_data['org']
                 cid = form.cleaned_data['cid']
-                collection_uid = '{}-{}-{}'.format(repo,org,cid)
-                collection_path = os.path.join(settings.DDR_BASE_PATH, collection_uid)
+                collection_uid,collection_path = _uid_path(repo, org, cid)
                 # create the new collection repo
                 exit,status = commands.create(git_name, git_mail, collection_path)
                 if exit:
@@ -205,7 +257,7 @@ def collection_new( request, repo, org ):
                 'cid': cid,}
         form = NewCollectionForm(data)
     return render_to_response(
-        'webui/collections/collection-new.html',
+        'webui/collections/new.html',
         {'form': form,},
         context_instance=RequestContext(request, processors=[])
     )
@@ -263,98 +315,6 @@ def edit_ead( request, repo, org, cid ):
 
 @login_required
 @storage_required
-def edit_eadheader( request, repo, org, cid ):
-    """Edit the contents of <eadheader>.
-    """
-    git_name = request.session.get('git_name')
-    git_mail = request.session.get('git_mail')
-    if not git_name and git_mail:
-        messages.error(request, 'Login is required')
-    collection_uid = '{}-{}-{}'.format(repo, org, cid)
-    collection_path = os.path.join(settings.DDR_BASE_PATH, collection_uid)
-    ead_path_rel = 'ead.xml'
-    ead_path_abs = os.path.join(collection_path, ead_path_rel)
-    with open(ead_path_abs, 'r') as f:
-        xml = f.read()
-    fields = EadHeaderForm.prep_fields(EADHEADER_FIELDS, xml)
-    #
-    if request.method == 'POST':
-        form = EadHeaderForm(request.POST, fields=fields)
-        if form.is_valid():
-            form_fields = form.fields
-            cleaned_data = form.cleaned_data
-            xml_new = EadHeaderForm.process(xml, fields, form)
-            # TODO validate XML
-            with open(ead_path_abs, 'w') as fnew:
-                fnew.write(xml_new)
-            # TODO validate XML
-            exit,status = commands.update(git_name, git_mail, collection_path, [ead_path_rel])
-            if exit:
-                messages.error(request, 'Error: {}'.format(status))
-            else:
-                messages.success(request, '<eadheader> updated')
-                return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
-    else:
-        form = EadHeaderForm(fields=fields)
-    return render_to_response(
-        'webui/collections/edit-eadheader.html',
-        {'repo': repo,
-         'org': org,
-         'cid': cid,
-         'collection_uid': collection_uid,
-         'form': form,},
-        context_instance=RequestContext(request, processors=[])
-    )
-
-@login_required
-@storage_required
-def edit_archdesc( request, repo, org, cid ):
-    """Edit the contents of <archdesc>.
-    """
-    git_name = request.session.get('git_name')
-    git_mail = request.session.get('git_mail')
-    if not git_name and git_mail:
-        messages.error(request, 'Login is required')
-    collection_uid = '{}-{}-{}'.format(repo, org, cid)
-    collection_path = os.path.join(settings.DDR_BASE_PATH, collection_uid)
-    ead_path_rel = 'ead.xml'
-    ead_path_abs = os.path.join(collection_path, ead_path_rel)
-    with open(ead_path_abs, 'r') as f:
-        xml = f.read()
-    fields = ArchDescForm.prep_fields(ARCHDESC_FIELDS, xml)
-    #
-    if request.method == 'POST':
-        form = ArchDescForm(request.POST, fields=fields)
-        if form.is_valid():
-            form_fields = form.fields
-            cleaned_data = form.cleaned_data
-            xml_new = ArchDescForm.process(xml, fields, form)
-            # TODO validate XML
-            with open(ead_path_abs, 'w') as fnew:
-                fnew.write(xml_new)
-            # TODO validate XML
-            exit,status = commands.update(git_name, git_mail, collection_path, [ead_path_rel])
-            if exit:
-                messages.error(request, 'Error: {}'.format(status))
-            else:
-                messages.success(request, '<archdesc> updated')
-                return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
-    else:
-        form = ArchDescForm(fields=fields)
-    return render_to_response(
-        'webui/collections/edit-archdesc.html',
-        {'repo': repo,
-         'org': org,
-         'cid': cid,
-         'collection_uid': collection_uid,
-         'form': form,},
-        context_instance=RequestContext(request, processors=[])
-    )
-
-
-
-@login_required
-@storage_required
 def edit_xml( request, repo, org, cid, slug, Form, FIELDS ):
     """Edit the contents of <archdesc>.
     """
@@ -362,8 +322,7 @@ def edit_xml( request, repo, org, cid, slug, Form, FIELDS ):
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
         messages.error(request, 'Login is required')
-    collection_uid = '{}-{}-{}'.format(repo, org, cid)
-    collection_path = os.path.join(settings.DDR_BASE_PATH, collection_uid)
+    collection_uid,collection_path = _uid_path(repo, org, cid)
     ead_path_rel = 'ead.xml'
     ead_path_abs = os.path.join(collection_path, ead_path_rel)
     with open(ead_path_abs, 'r') as f:

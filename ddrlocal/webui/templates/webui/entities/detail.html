@@ -10,37 +10,24 @@
 
 {% block content %}
 
-<div class="row">
-  <div class="span12">
-
 <h1>{{ entity_uid }}</h1>
-
-<p>
-collection_path: {{ collection_path }}<br/>
-entity_path: {{ entity_path }}<br/>
-</p>
 
   </div><!-- .span12 -->
 </div><!-- .row -->
 <div class="row">
   <div class="span8">
 
-<div id="xml">
-METS.xml:
-<a href="{% url "webui-entity-edit-mets" repo org cid eid %}">edit</a>
-/
-<a href="{% url "webui-entity-mets-xml" repo org cid eid %}">download</a>
-</div>
+<p>
+collection_path: {{ collection_path }}<br/>
+entity_path: {{ entity_path }}<br/>
+</p>
 
   </div><!-- .span8 -->
   <div class="span4">
 
 <h3>
 Files
-&mdash;
-<a href="{% url "webui-entity-add" repo org cid eid %}">Add</a>
 </h3>
-{% if files %}
 <ul>
 {% for file in files %}
   <li>
@@ -49,23 +36,28 @@ Files
   <a href="{% url "webui-entity-file" repo org cid eid forloop.counter0 %}">{{ file.basename }}</a>
   </li>
 {% endfor %}
+  <li><a href="{% url "webui-entity-add" repo org cid eid %}">New file</a></li>
 </ul>
-{% else %}
-<p>
-No files
-</p>
+{% if files %}
+<a class="pull-right" href="{% url "webui-entity-files" repo org cid eid %}">more &raquo;</a>
 {% endif %}
 
   </div><!-- .span4 -->
 </div><!-- .row -->
-<div class="row">
-  <div class="span12">
-
-<h3>changelog</h3>
-<pre>
-{{ changelog }}</pre>
-
-  </div><!-- .span12 -->
-</div><!-- .row -->
 
 {% endblock content %}
+
+
+
+{% block footer %}
+
+<div class="muted" id="expert">
+  <span>
+    <a class="muted" href="{% url "webui-entity-mets-xml" repo org cid eid %}">mets.xml</a>
+    <a class="muted" href="{% url "webui-entity-edit-mets" repo org cid eid %}">(edit)</a>
+  </span>
+  <span class="bullsep">&bull;</span>
+  <span><a class="muted" href="{% url "webui-entity-changelog" repo org cid eid %}">changelog</a></span>
+</div>
+
+{% endblock footer %}

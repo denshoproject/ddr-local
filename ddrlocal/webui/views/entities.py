@@ -70,7 +70,7 @@ def handle_uploaded_file(f, dest_dir):
 # views ----------------------------------------------------------------
 
 @storage_required
-def entity( request, repo, org, cid, eid ):
+def detail( request, repo, org, cid, eid ):
     collection_uid = '{}-{}-{}'.format(repo, org, cid)
     entity_uid     = '{}-{}-{}-{}'.format(repo, org, cid, eid)
     collection_abs = os.path.join(settings.DDR_BASE_PATH, collection_uid)
@@ -84,7 +84,7 @@ def entity( request, repo, org, cid, eid ):
     #
     files = entity_files(mets_soup, collection_abs, entity_rel)
     return render_to_response(
-        'webui/entities/entity.html',
+        'webui/entities/detail.html',
         {'repo': repo,
          'org': org,
          'cid': cid,
@@ -96,6 +96,25 @@ def entity( request, repo, org, cid, eid ):
          'mets': mets,
          'changelog': changelog,
          'files': files,},
+        context_instance=RequestContext(request, processors=[])
+    )
+
+@storage_required
+def changelog( request, repo, org, cid, eid ):
+    collection_uid = '{}-{}-{}'.format(repo, org, cid)
+    entity_uid     = '{}-{}-{}-{}'.format(repo, org, cid, eid)
+    collection_abs = os.path.join(settings.DDR_BASE_PATH, collection_uid)
+    entity_abs     = os.path.join(collection_abs,'files',entity_uid)
+    changelog = open( os.path.join(entity_abs, 'changelog'), 'r').read()
+    return render_to_response(
+        'webui/entities/changelog.html',
+        {'repo': repo,
+         'org': org,
+         'cid': cid,
+         'eid': eid,
+         'collection_uid': collection_uid,
+         'entity_uid': entity_uid,
+         'changelog': changelog,},
         context_instance=RequestContext(request, processors=[])
     )
 
@@ -113,7 +132,7 @@ def entity_mets_xml( request, repo, org, cid, eid ):
 
 @login_required
 @storage_required
-def entity_new( request, repo, org, cid ):
+def new( request, repo, org, cid ):
     """
     TODO webui.views.entities.entity_new: get new EID from workbench
     """
@@ -141,15 +160,18 @@ def entity_new( request, repo, org, cid ):
     else:
         # request the new CID
         eids = api.entities_next(request, repo, org, cid, 1)
-        # display in form
-        eid = int(eids[-1].split('-')[3])
+        if eids:
+            eid = int(eids[-1].split('-')[3])
+        else:
+            eid = None
+            messages.error(request, 'Error: Could not get new EID from workbench.')
         data = {'repo': repo,
                 'org': org,
                 'cid': cid,
                 'eid': eid,}
         form = NewEntityForm(data)
     return render_to_response(
-        'webui/entities/entity-new.html',
+        'webui/entities/new.html',
         {'repo': repo,
          'org': org,
          'cid': cid,

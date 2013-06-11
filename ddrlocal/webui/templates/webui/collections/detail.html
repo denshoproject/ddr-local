@@ -1,0 +1,126 @@
+{% extends "webui/collections/base.html" %}
+
+
+{% block title %}{{ collection_uid }}{% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+<li class="active">{{ collection_uid }}</li>
+{% endblock breadcrumbs %}
+
+
+{% block content %}
+
+<div id="admin" style="float:right; margin-left:10px;">
+  <form name="collection-sync" action="{% url "webui-collection-sync" repo org cid %}" method="POST">{% csrf_token %}
+    <input class="btn btn-primary" name="sync" type="submit" value="Sync"/>
+  </form>
+</div>
+
+<h1>{{ collection_uid }}</h1>
+
+  </div><!-- .span12 -->
+</div><!-- .row -->
+<div class="row">
+  <div class="span8">
+
+
+<div id="overview">
+<h3> overview (<a href="{% url "webui-collection-edit-overview" repo org cid %}">edit</a>) </h3>
+<dl class="dl-horizontal">
+{% for lv in overview.labels_values %}
+  {% if lv.value %}<dt>{{ lv.label }}</dt><dd>{{ lv.value|linebreaks }}</dd>{% endif %}
+{% endfor %}
+</dl>
+</div><!-- #overview -->
+
+<div id="admininfo">
+<h3> admininfo (<a href="{% url "webui-collection-edit-admininfo" repo org cid %}">edit</a>) </h3>
+<dl class="dl-horizontal">
+{% for lv in admininfo.labels_values %}
+  {% if lv.value %}<dt>{{ lv.label }}</dt><dd>{{ lv.value|linebreaks }}</dd>{% endif %}
+{% endfor %}
+</dl>
+</div><!-- #admininfo -->
+
+<div id="bioghist">
+<h3> bioghist (<a href="{% url "webui-collection-edit-bioghist" repo org cid %}">edit</a>) </h3>
+<dl class="dl-horizontal">
+{% for lv in bioghist.labels_values %}
+  {% if lv.value %}<dt>{{ lv.label }}</dt><dd>{{ lv.value|linebreaks }}</dd>{% endif %}
+{% endfor %}
+</dl>
+</div><!-- #bioghist -->
+
+<div id="scopecontent">
+<h3> scopecontent (<a href="{% url "webui-collection-edit-scopecontent" repo org cid %}">edit</a>) </h3>
+<dl class="dl-horizontal">
+{% for lv in scopecontent.labels_values %}
+  {% if lv.value %}<dt>{{ lv.label }}</dt><dd>{{ lv.value|linebreaks }}</dd>{% endif %}
+{% endfor %}
+</dl>
+</div><!-- #scopecontent -->
+
+<div id="adjunctdesc">
+<h3> adjunctdesc (<a href="{% url "webui-collection-edit-adjunctdesc" repo org cid %}">edit</a>) </h3>
+<dl class="dl-horizontal">
+{% for lv in adjunctdesc.labels_values %}
+  {% if lv.value %}<dt>{{ lv.label }}</dt><dd>{{ lv.value|linebreaks }}</dd>{% endif %}
+{% endfor %}
+</dl>
+</div><!-- #adjunctdesc -->
+
+
+  </div><!-- .span8 -->
+  <div class="span4">
+
+
+<h3>
+Entities
+</h3>
+<ul>
+{% for entity in entities %}
+  <li><a href="{% url "webui-entity" entity.repo entity.org entity.cid entity.eid %}">{{ entity.uid }}: {{ entity.title }}</a></li>
+{% endfor %}
+  <li><a href="{% url "webui-entity-new" repo org cid %}">New entity</a></li>
+</ul>
+{% if entities %}
+<a class="pull-right" href="{% url "webui-collection-entities" repo org cid %}">more &raquo;</a>
+{% endif %}
+
+
+  </div><!-- .span4 -->
+</div><!-- .row -->
+<div class="row">
+  <div class="span12">
+
+
+
+
+  </div><!-- .span12 -->
+</div><!-- .row -->
+
+
+{% endblock content %}
+
+
+
+{% block footer %}
+
+<div class="muted" id="expert">
+  <span><a class="muted" href="{{ workbench_url }}" target="workbench">workbench</a></span>
+  <span class="bullsep">&bull;</span>
+  <span><a class="muted" href="{{ cgit_url }}" target="cgit">cgit</a></span>
+  <span class="bullsep">&bull;&bull;</span>
+  <span>
+   <a class="muted" href="{% url "webui-collection-ead-xml" repo org cid %}">ead.xml</a>
+   <a class="muted" href="{% url "webui-collection-edit-ead" repo org cid %}">(edit)</a>
+  </span>
+  <span class="bullsep">&bull;</span>
+  <span><a class="muted" href="{% url "webui-collection-changelog" repo org cid %}">changelog</a></span>
+  <span class="bullsep">&bull;</span>
+  <span><a class="muted" href="{% url "webui-collection-git-status" repo org cid %}">git status</a></span>
+  <span class="bullsep">&bull;</span>
+  <span><a class="muted" href="{% url "webui-collection-git-annex-status" repo org cid %}">git annex status</a></span>
+</div>
+
+{% endblock footer %}

@@ -4,13 +4,18 @@
 {% block title %}{{ entity_uid }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li class="active">{{ entity_uid }}</li>
+<li><a href="{% url "webui-entity" repo org cid eid %}">{{ entity_uid }}</a></li>
+<li class="active">mets.xml</li>
 {% endblock breadcrumbs %}
 
 
 {% block content %}
 
-<h1>{{ entity_uid }}</h1>
+<h1>
+{{ entity_uid }}
+&mdash;
+edit
+</h1>
 
 <div class="alert alert-block">
   <b>IMPORTANT:</b>
