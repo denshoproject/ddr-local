@@ -16,17 +16,22 @@ class XMLModel(object):
     
     generates a Python object that can be used in templates
     """
-
+    namespaces = None
+    
     def __init__(self, *args, **kwargs):
         xml = args[0]
         fields = args[1]
+        if kwargs.has_key('namespaces'):
+            self.namespaces = kwargs.pop('namespaces')
         #super(XMLModel, self).__init__(*args, **kwargs)
         tree = etree.parse(StringIO.StringIO(xml))
         self.fieldnames = []
+        namespaces = self.namespaces
         for f in fields:
             # find tags, get first one
             tag = None
-            tags = tree.xpath(f['xpath'])
+            xpath = f['xpath']
+            tags = tree.xpath(xpath, namespaces=self.namespaces)
             if tags and len(tags):
                 if (type(tags) == type([])):
                     tag = tags[0]

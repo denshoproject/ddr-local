@@ -95,6 +95,7 @@ class XMLForm(forms.Form):
             },
         ]
     """
+    namespaces = None
     
     def __init__(self, *args, **kwargs):
         """Adds specified form fields
@@ -129,6 +130,8 @@ class XMLForm(forms.Form):
             field_kwargs = kwargs.pop('fields')
         else:
             field_kwargs = []
+        if kwargs.has_key('namespaces'):
+            self.namespaces = kwargs.pop('namespaces')
         super(XMLForm, self).__init__(*args, **kwargs)
         fields = []
         for fkwargs in deepcopy(field_kwargs): # don't modify kwargs here
@@ -142,7 +145,7 @@ class XMLForm(forms.Form):
         self.fields = SortedDict(fields)
     
     @staticmethod
-    def prep_fields(fields, xml):
+    def prep_fields(fields, xml, namespaces=None):
         """Takes raw kwargs, fills in initial data from xml file.
         
         kwargs[*]['initial'] is used to populate form fields
@@ -155,7 +158,7 @@ class XMLForm(forms.Form):
         for f in fields:
             # find tags, get first one
             tag = None
-            tags = thistree.xpath(f['xpath'])
+            tags = thistree.xpath(f['xpath'], namespaces=namespaces)
             if tags and len(tags):
                 if (type(tags) == type([])):
                     tag = tags[0]
@@ -178,7 +181,7 @@ class XMLForm(forms.Form):
         return fields
         
     @staticmethod
-    def process(xml, fields, form):
+    def process(xml, fields, form, namespaces=None):
         """Writes form.cleaned_data values to XML
         
         Uses XPaths from field_kwargs
@@ -199,7 +202,7 @@ class XMLForm(forms.Form):
             # find tags, get first one
             # TODO handle repeating tags (possibly important...)
             tag = None
-            tags = tree.xpath(f['xpath'])
+            tags = tree.xpath(f['xpath'], namespaces=namespaces)
             if tags and len(tags):
                 if (type(tags) == type([])):
                     tag = tags[0]
