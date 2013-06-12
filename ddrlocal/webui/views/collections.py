@@ -17,8 +17,6 @@ from DDR import commands
 from storage.decorators import storage_required
 from webui import api
 from webui.forms.collections import NewCollectionForm, UpdateForm
-from webui.ead import EADHEADER_FIELDS, EadHeaderForm
-from webui.ead import ARCHDESC_FIELDS, ArchDescForm
 from webui.ead import COLLECTION_OVERVIEW_FIELDS, CollectionOverviewForm
 from webui.ead import ADMIN_INFO_FIELDS, AdminInfoForm
 from webui.ead import BIOG_HIST_FIELDS, BiogHistForm
