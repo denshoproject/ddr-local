@@ -31,8 +31,8 @@ urlpatterns = patterns(
 
     # entity
 
+    url(r'^entity/(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/edit/mets.xml/$', 'webui.views.entities.edit_mets_xml', name='webui-entity-edit-mets-xml'),
     url(r'^entity/(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/edit/mets/$', 'webui.views.entities.edit_mets', name='webui-entity-edit-mets'),
-    url(r'^entity/(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/edit/metshdr/$', 'webui.views.entities.edit_metshdr', name='webui-entity-edit-metshdr'),
     url(r'^entity/(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/add/$', 'webui.views.entities.entity_add', name='webui-entity-add'),
 
     url(r'^entity/(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/files/(?P<filenum>[\d]+)/$', 'webui.views.entities.entity_file', name='webui-entity-file'),

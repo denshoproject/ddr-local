@@ -16,9 +16,9 @@ from DDR import commands
 from storage.decorators import storage_required
 from webui import api
 from webui.forms.entities import NewEntityForm, UpdateForm, AddFileForm
+from webui.mets import NAMESPACES, NAMESPACES_XPATH
+from webui.mets import METS_FIELDS, MetsForm
 from webui.views.decorators import login_required
-from webui.mets import METSHDR_FIELDS
-from webui.mets import MetshdrForm
 from xmlforms.models import XMLModel
 
 
@@ -77,10 +77,11 @@ def detail( request, repo, org, cid, eid ):
     entity_abs     = os.path.join(collection_abs,'files',entity_uid)
     entity_rel     = os.path.join('files',entity_uid)
     #
-    mets = open( os.path.join(entity_abs, 'mets.xml'), 'r').read()
+    xml = ''
+    with open( os.path.join(entity_abs, 'mets.xml'), 'r') as f:
+        xml = f.read()
+    mets = xml
     mets_soup = BeautifulSoup(mets, 'xml')
-    #
-    changelog = open( os.path.join(entity_abs, 'changelog'), 'r').read()
     #
     files = entity_files(mets_soup, collection_abs, entity_rel)
     return render_to_response(
@@ -93,8 +94,7 @@ def detail( request, repo, org, cid, eid ):
          'entity_uid': entity_uid,
          'collection_path': collection_abs,
          'entity_path': entity_abs,
-         'mets': mets,
-         'changelog': changelog,
+         'mets': XMLModel(xml, METS_FIELDS, namespaces=NAMESPACES),
          'files': files,},
         context_instance=RequestContext(request, processors=[])
     )
@@ -265,7 +265,7 @@ def entity_file( request, repo, org, cid, eid, filenum ):
 
 @login_required
 @storage_required
-def edit_mets( request, repo, org, cid, eid ):
+def edit_mets_xml( request, repo, org, cid, eid ):
     """
     on GET
     - reads contents of EAD.xml
@@ -321,8 +321,8 @@ def edit_mets( request, repo, org, cid, eid ):
 
 @login_required
 @storage_required
-def edit_metshdr( request, repo, org, cid, eid ):
-    """Edit the contents of <metshdr>.
+def edit_xml( request, repo, org, cid, eid, slug, Form, FIELDS, namespaces=None ):
+    """Edit the contents of <archdesc>.
     """
     git_name = request.session.get('git_name')
     git_mail = request.session.get('git_mail')
@@ -337,14 +337,14 @@ def edit_metshdr( request, repo, org, cid, eid ):
     xml_path_abs   = os.path.join(entity_abs, xml_path_rel)
     with open(xml_path_abs, 'r') as f:
         xml = f.read()
-    fields = MetshdrForm.prep_fields(METSHDR_FIELDS, xml)
+    fields = Form.prep_fields(FIELDS, xml, namespaces=namespaces)
     #
     if request.method == 'POST':
-        form = MetshdrForm(request.POST, fields=fields)
+        form = Form(request.POST, fields=fields, namespaces=namespaces)
         if form.is_valid():
             form_fields = form.fields
             cleaned_data = form.cleaned_data
-            xml_new = MetshdrForm.process(xml, fields, form)
+            xml_new = Form.process(xml, fields, form, namespaces=namespaces)
             # TODO validate XML
             with open(xml_path_abs, 'w') as fnew:
                 fnew.write(xml_new)
@@ -353,16 +353,32 @@ def edit_metshdr( request, repo, org, cid, eid ):
             if exit:
                 messages.error(request, 'Error: {}'.format(status))
             else:
-                messages.success(request, '<metshdr> updated')
-                return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+                messages.success(request, '<{}> updated'.format(slug))
+                return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     else:
-        form = MetshdrForm(fields=fields)
+        form = Form(fields=fields, namespaces=namespaces)
+    # template
+    try:
+        tf = 'webui/collections/edit-{}.html'.format(slug)
+        t = get_template(tf)
+        template_filename = tf
+    except:
+        template_filename = 'webui/entities/edit-xml.html'
     return render_to_response(
-        'webui/entities/edit-metshdr.html',
+        template_filename,
         {'repo': repo,
          'org': org,
          'cid': cid,
+         'eid': eid,
          'collection_uid': collection_uid,
+         'entity_uid': entity_uid,
+         'slug': slug,
          'form': form,},
         context_instance=RequestContext(request, processors=[])
     )
+
+def edit_mets( request, repo, org, cid, eid ):
+    return edit_xml(request, repo, org, cid, eid,
+                    slug='mets',
+                    Form=MetsForm, FIELDS=METS_FIELDS,
+                    namespaces=NAMESPACES,)
