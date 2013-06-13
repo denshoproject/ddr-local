@@ -37,6 +37,8 @@ def gettag(tree, xpath, namespaces):
 
 def gettagvalue(tag):
     """Gets tag text, attribute, or tail, depending on the xpath
+
+    NOTE: This seems to work with namespaced attributes, while settagvalue does not.
     """
     value = None
     if type(tag) == type(etree._ElementStringResult()):
@@ -55,12 +57,24 @@ def gettagvalue(tag):
         pass
     return value
 
-def settagvalue(tag, xpath, value):
+def settagvalue(tag, xpath, value, namespaces):
+    """Set the value of the tag/attribute.
+    
+    NOTE: Tag type 'attribute' has to work with both of these xpaths:
+    - "/mets:mets/@OBJID"
+    - "/mets:mets/mets:dmdSec[@ID='DM1']/mets:mdWrap/mets:xmlData/mods:mods/mods:subject/mods:topic/@xlink:href"
+    
+    TODO Is there an easier way to set a namespaced attribute in lxml???
+    """
     if hasattr(tag, 'text'):
         tag.text = value
     elif type(tag) == type(''):
         tag = value
     elif tagtype(tag) == 'attribute':
-        attr = xpath.split('@')[1]
+        attr = xpath.rsplit('@',1)[-1]
+        # namespaced attribute
+        if attr.find(':') > -1:
+            ns,a = attr.split(':')
+            attr = '{%s}%s' % (namespaces[ns], a)
         tag.getparent().attrib[attr] = value
     return tag

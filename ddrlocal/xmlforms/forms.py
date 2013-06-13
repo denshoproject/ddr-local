@@ -166,5 +166,5 @@ class XMLForm(forms.Form):
                 cleaned_data = cleaned_data.strftime('%Y-%m-%d')
             
             tag = gettag(tree, f['xpath'], namespaces)
-            tag = settagvalue(tag, f['xpath'], cleaned_data)
+            tag = settagvalue(tag, f['xpath'], cleaned_data, namespaces)
         return etree.tostring(tree, pretty_print=True)
