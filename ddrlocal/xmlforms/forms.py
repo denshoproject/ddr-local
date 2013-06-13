@@ -7,28 +7,8 @@ from lxml import etree
 from django import forms
 from django.utils.datastructures import SortedDict
 
+from xmlforms import tagtype, gettag, gettagvalue, settagvalue
 
-
-
-def _tag_type(tag):
-    """some of these checks cause errors for some reason
-    """
-    try:
-        if tag.is_text:
-            return 'text'
-    except:
-        pass
-    try:
-        if tag.is_attribute:
-            return 'attribute'
-    except:
-        pass
-    try:
-        if tag.is_tail:
-            return 'tail'
-    except:
-        pass
-    return 'unknown'
 
 
 class XMLForm(forms.Form):
@@ -156,28 +136,11 @@ class XMLForm(forms.Form):
         """
         thistree = etree.parse(StringIO.StringIO(xml))
         for f in fields:
-            # find tags, get first one
-            tag = None
-            tags = thistree.xpath(f['xpath'], namespaces=namespaces)
-            if tags and len(tags):
-                if (type(tags) == type([])):
-                    tag = tags[0]
-                else:
-                    tag = tags
-            # tag text, attribute, or tail
-            tagtype = _tag_type(tag)
-            if hasattr(tag, 'text'):
-                initial = tag.text
-            elif type(tag) == type(''):
-                initial = tag
-            elif tagtype == 'attribute':
-                attr = f['xpath'].split('@')[1]
-                initial = tag.getparent().attrib[attr]
-            else:
-                initial = None
+            tag = gettag(thistree, f['xpath'], namespaces)
+            value = gettagvalue(tag)
             # insert into form data
-            if initial:
-                f['form']['initial'] = initial.strip()
+            if value:
+                f['form']['initial'] = value
         return fields
         
     @staticmethod
@@ -193,29 +156,15 @@ class XMLForm(forms.Form):
         tree = etree.parse(StringIO.StringIO(xml))
         for f in deepcopy(fields):
             cleaned_data = form.cleaned_data[f['name']]
+            
             # datetime
             if type(cleaned_data)   == type(datetime(1970,1,1, 1,1,1)):
                 cleaned_data = cleaned_data.strftime('%Y-%m-%d %H:%M:%S')
+            
             # date
             elif type(cleaned_data) == type(date(1970,1,1)):
                 cleaned_data = cleaned_data.strftime('%Y-%m-%d')
-            # find tags, get first one
-            # TODO handle repeating tags (possibly important...)
-            tag = None
-            tags = tree.xpath(f['xpath'], namespaces=namespaces)
-            if tags and len(tags):
-                if (type(tags) == type([])):
-                    tag = tags[0]
-                else:
-                    tag = tags
-            # different ways to get the text, depending on whether it's in the
-            # tag text, tail, or an attribute
-            tagtype = _tag_type(tag)
-            if hasattr(tag, 'text'):
-                tag.text = cleaned_data
-            elif type(tag) == type(''):
-                tag = cleaned_data
-            elif tagtype == 'attribute':
-                attr = f['xpath'].split('@')[1]
-                tag.getparent().attrib[attr] = cleaned_data
+            
+            tag = gettag(tree, f['xpath'], namespaces)
+            tag = settagvalue(tag, f['xpath'], cleaned_data)
         return etree.tostring(tree, pretty_print=True)
