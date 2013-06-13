@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 import os
 import StringIO
 
@@ -356,7 +356,7 @@ METS_FIELDS = [
 #    },
     {
         'name':       'topic',
-        'xpath':      "/mets:mets/mets:dmdSec[@ID='DM1']/mets:mdWrap/mets:xmlData/mods:mods/mods:subject/mods:topic",
+        'xpath':      "/mets:mets/mets:dmdSec[@ID='DM1']/mets:mdWrap/mets:xmlData/mods:mods/mods:subject/mods:topic/@xlink:href",
         'xpath_dup':  [],
         'model_type': str,
         'form_type':  forms.CharField,
@@ -420,3 +420,60 @@ METS_FIELDS = [
 class MetsForm(XMLForm):
     def __init__(self, *args, **kwargs):
         super(MetsForm, self).__init__(*args, **kwargs)
+    
+    @staticmethod
+    def process(xml, fields, form, namespaces=None):
+        """Do things to the XML that I can't figure out how to do any other way.
+        """
+        xml = XMLForm.process(xml, fields, form, namespaces=namespaces)
+        tree = etree.parse(StringIO.StringIO(xml))
+
+        def getval(tree, namespaces, xpath):
+            """Gets the first value; yes this is probably suboptimal
+            """
+            return tree.xpath(xpath, namespaces=namespaces)[0]
+        
+        def set_attr(tree, namespaces, xpath, attr, value):
+            tag = tree.xpath(xpath, namespaces=namespaces)[0]
+            tag.set(attr, value)
+            return tree
+        
+        def set_tag_text(tree, namespaces, xpath, value):
+            tag = getval(tree, namespaces, xpath)
+            tag.text = value
+            return tree
+        
+        def duplicate(tree, namespaces, src_xpath, dest_xpath):
+            i = tree.xpath( src_xpath,  namespaces=namespaces )[0]
+            tag = tree.xpath( dest_xpath, namespaces=namespaces )[0]
+            tag.text = i
+            return tree
+        
+        # created
+        if not getval(tree, namespaces, "/mets:mets/mets:metsHdr/@CREATEDATE"):
+            tree = set_attr(tree, namespaces,
+                            "/mets:mets/mets:metsHdr", 'CREATEDATE',
+                            datetime.now().strftime('%Y-%m-%dT%H:%M:%S'))
+        # modified
+        tree = set_attr(tree, namespaces,
+                        "/mets:mets/mets:metsHdr",
+                        'LASTMODDATE',
+                        datetime.now().strftime('%Y-%m-%dT%H:%M:%S'))
+        
+        # fields
+        
+        # entity_id
+        tree = duplicate(tree, namespaces,
+                         "/mets:mets/@OBJID",
+                         "/mets:mets/mets:dmdSec[@ID='DM1']/mets:mdWrap/mets:xmlData/mods:mods/mods:identifier",
+                         )
+        # title
+        tree = duplicate(tree, namespaces,
+                         "/mets:mets/@LABEL",
+                         "/mets:mets/mets:dmdSec[@ID='DM1']/mets:mdWrap/mets:xmlData/mods:mods/mods:titleInfo/mods:title",
+                         )
+        # topic
+        topic_xpath = "/mets:mets/mets:dmdSec[@ID='DM1']/mets:mdWrap/mets:xmlData/mods:mods/mods:subject/mods:topic/@xlink:href"
+        
+
+        return etree.tostring(tree, pretty_print=True)
