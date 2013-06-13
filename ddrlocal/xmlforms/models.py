@@ -26,38 +26,50 @@ class XMLModel(object):
         #super(XMLModel, self).__init__(*args, **kwargs)
         tree = etree.parse(StringIO.StringIO(xml))
         self.fieldnames = []
-        namespaces = self.namespaces
         for f in fields:
-            # find tags, get first one
-            tag = None
-            xpath = f['xpath']
-            tags = tree.xpath(xpath, namespaces=self.namespaces)
-            if tags and len(tags):
-                if (type(tags) == type([])):
-                    tag = tags[0]
-                else:
-                    tag = tags
-            # tag text, attribute, or tail
-            tagtype = _tag_type(tag)
-            if hasattr(tag, 'text'):
-                value = tag.text
-            elif type(tag) == type(''):
-                value = tag
-            elif tagtype == 'attribute':
-                attr = f['xpath'].split('@')[1]
-                value = tag.getparent().attrib[attr]
-            else:
-                value = None
-            # strip before/after whitespace
-            try:
-                value = value.strip()
-            except:
-                pass
-            # insert into object
+            tag = XMLModel._gettag(tree, f['xpath'], self.namespaces)
+            value = XMLModel._gettagvalue(tag)
             field = {'label': f['form']['label'],
                      'value': value,}
             setattr(self, f['name'], field)
             self.fieldnames.append(f['name'])
+    
+    @staticmethod
+    def _gettag(tree, xpath, namespaces):
+        """
+        TODO Refactor this!!!
+        For each field, only the first tag is retrieved, when there may be many that we are interested in.
+        """
+        tag = None
+        tags = tree.xpath(xpath, namespaces=namespaces)
+        if tags and len(tags):
+            if (type(tags) == type([])):
+                tag = tags[0]
+            else:
+                tag = tags
+        return tag
+
+    @staticmethod
+    def _gettagvalue(tag):
+        """Gets tag text, attribute, or tail, depending on the xpath
+        """
+        value = None
+        tagtype = _tag_type(tag)
+        if type(tag) == type(etree._ElementStringResult()):
+            value = tag
+        elif hasattr(tag, 'text'):
+            value = tag.text
+        elif type(tag) == type(''):
+            value = tag
+        elif tagtype == 'attribute':
+            attr = f['xpath'].split('@')[1]
+            value = tag.getparent().attrib[attr]
+        # strip before/after whitespace
+        try:
+            value = value.strip()
+        except:
+            pass
+        return value
     
     @staticmethod
     def process(xml, fields, form):
