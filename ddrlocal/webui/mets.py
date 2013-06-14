@@ -6,7 +6,10 @@ from lxml import etree
 
 from django import forms
 
+
+import xmlforms
 from xmlforms.forms import XMLForm
+import tematres
 
 
 METS_XML = ''
@@ -472,8 +475,41 @@ class MetsForm(XMLForm):
                          "/mets:mets/@LABEL",
                          "/mets:mets/mets:dmdSec[@ID='DM1']/mets:mdWrap/mets:xmlData/mods:mods/mods:titleInfo/mods:title",
                          )
-        # topic
-        topic_xpath = "/mets:mets/mets:dmdSec[@ID='DM1']/mets:mdWrap/mets:xmlData/mods:mods/mods:subject/mods:topic/@xlink:href"
         
+        # topic
+        def process_topics(form, tree, namespaces):
+            """
+            TODO Add term to form so not necessary to hit Tematres server during save
+                http://r020.com.ar/tematres/demo/xml.php?jsonTema=256|Lenguajes monomediales
+                http://r020.com.ar/tematres/demo/xml.php?jsonTema=512|Telecomunicaciones
+                http://r020.com.ar/tematres/demo/xml.php?jsonTema=1024|cell
+            """
+            #  <mods:subject>
+            #    <mods:topic xlink:href=""></mods:topic>
+            #  </mods:subject>
+            xpath = "/mets:mets/mets:dmdSec[@ID='DM1']/mets:mdWrap/mets:xmlData/mods:mods/mods:subject/mods:topic"
+            
+            form_urls = [t.strip() for t in form.cleaned_data['topic'].split(';')]
+            topics = []
+            # TODO Don't follow URLs for terms that have not changed.
+            # TODO Cache tematres requests?
+            terms = tematres.get_terms(form_urls)
+            
+            # remove existing tags
+            parent = None
+            for tag in tree.xpath(xpath, namespaces=NAMESPACES):
+                parent = tag.getparent()
+                parent.remove(tag)
+            # replace with new tags
+            for href,term in terms:
+                tag_name  = xmlforms.expand_attrib_namespace('mods:topic', namespaces)
+                attr_name = xmlforms.expand_attrib_namespace('xlink:href', namespaces)
+                child = etree.Element(tag_name)
+                child.set(attr_name, href)
+                child.text = term
+                parent.append(child)
+            return tree
+        
+        tree = process_topics(form, tree, namespaces)
 
         return etree.tostring(tree, pretty_print=True)
