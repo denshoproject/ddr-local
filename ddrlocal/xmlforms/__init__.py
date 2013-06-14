@@ -74,7 +74,12 @@ def settagvalue(tag, xpath, value, namespaces):
         attr = xpath.rsplit('@',1)[-1]
         # namespaced attribute
         if attr.find(':') > -1:
-            ns,a = attr.split(':')
-            attr = '{%s}%s' % (namespaces[ns], a)
+            attr = expand_attrib_namespace(attr, namespaces)
         tag.getparent().attrib[attr] = value
     return tag
+
+def expand_attrib_namespace(attr, namespaces):
+    """
+    """
+    ns,a = attr.split(':')
+    return '{%s}%s' % (namespaces[ns], a)
