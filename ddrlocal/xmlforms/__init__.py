@@ -35,26 +35,29 @@ def gettag(tree, xpath, namespaces):
             tag = tags
     return tag
 
-def gettagvalue(tag):
+def gettagvalue(tag, function=None):
     """Gets tag text, attribute, or tail, depending on the xpath
 
     NOTE: This seems to work with namespaced attributes, while settagvalue does not.
     """
     value = None
-    if type(tag) == type(etree._ElementStringResult()):
-        value = tag
-    elif hasattr(tag, 'text'):
-        value = tag.text
-    elif type(tag) == type(''):
-        value = tag
-    elif tagtype(tag) == 'attribute':
-        attr = f['xpath'].split('@')[1]
-        value = tag.getparent().attrib[attr]
-    # strip before/after whitespace
-    try:
-        value = value.strip()
-    except:
-        pass
+    if function:
+        value = function(tag)
+    else:
+        if type(tag) == type(etree._ElementStringResult()):
+            value = tag
+        elif hasattr(tag, 'text'):
+            value = tag.text
+        elif type(tag) == type(''):
+            value = tag
+        elif tagtype(tag) == 'attribute':
+            attr = f['xpath'].split('@')[1]
+            value = tag.getparent().attrib[attr]
+        # strip before/after whitespace
+        try:
+            value = value.strip()
+        except:
+            pass
     return value
 
 def settagvalue(tag, xpath, value, namespaces):

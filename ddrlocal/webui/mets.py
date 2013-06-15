@@ -44,8 +44,109 @@ LANGUAGE_CHOICES = [['eng','English'],
 
 
 
+class MetsForm(XMLForm):
+    def __init__(self, *args, **kwargs):
+        super(MetsForm, self).__init__(*args, **kwargs)
 
- 
+    @staticmethod
+    def load_mods_topics(tag):
+        """Extract topics from etree tag and return Python objects.
+        """
+        topics = []
+        for topic in tag:
+            attr = xmlforms.expand_attrib_namespace('xlink:href', NAMESPACES)
+            topics.append((topic.get(attr), topic.text))
+        return topics
+    
+    @staticmethod
+    def process(xml, fields, form, namespaces=None):
+        """Do things to the XML that I can't figure out how to do any other way.
+        """
+        xml = XMLForm.process(xml, fields, form, namespaces=namespaces)
+        tree = etree.parse(StringIO.StringIO(xml))
+
+        def getval(tree, namespaces, xpath):
+            """Gets the first value; yes this is probably suboptimal
+            """
+            return tree.xpath(xpath, namespaces=namespaces)[0]
+        
+        def set_attr(tree, namespaces, xpath, attr, value):
+            tag = tree.xpath(xpath, namespaces=namespaces)[0]
+            tag.set(attr, value)
+            return tree
+        
+        def set_tag_text(tree, namespaces, xpath, value):
+            tag = getval(tree, namespaces, xpath)
+            tag.text = value
+            return tree
+        
+        def duplicate(tree, namespaces, src_xpath, dest_xpath):
+            i = tree.xpath( src_xpath,  namespaces=namespaces )[0]
+            tag = tree.xpath( dest_xpath, namespaces=namespaces )[0]
+            tag.text = i
+            return tree
+        
+        # created
+        if not getval(tree, namespaces, "/mets:mets/mets:metsHdr/@CREATEDATE"):
+            tree = set_attr(tree, namespaces,
+                            "/mets:mets/mets:metsHdr", 'CREATEDATE',
+                            datetime.now().strftime('%Y-%m-%dT%H:%M:%S'))
+        # modified
+        tree = set_attr(tree, namespaces,
+                        "/mets:mets/mets:metsHdr",
+                        'LASTMODDATE',
+                        datetime.now().strftime('%Y-%m-%dT%H:%M:%S'))
+        
+        # fields
+        
+        # entity_id
+        tree = duplicate(tree, namespaces,
+                         "/mets:mets/@OBJID",
+                         "/mets:mets/mets:dmdSec[@ID='DM1']/mets:mdWrap/mets:xmlData/mods:mods/mods:identifier",
+                         )
+        # title
+        tree = duplicate(tree, namespaces,
+                         "/mets:mets/@LABEL",
+                         "/mets:mets/mets:dmdSec[@ID='DM1']/mets:mdWrap/mets:xmlData/mods:mods/mods:titleInfo/mods:title",
+                         )
+        
+        def topics(form, tree, namespaces):
+            """
+            TODO Add term to form so not necessary to hit Tematres server during save
+                http://r020.com.ar/tematres/demo/xml.php?jsonTema=256|Lenguajes monomediales
+                http://r020.com.ar/tematres/demo/xml.php?jsonTema=512|Telecomunicaciones
+                http://r020.com.ar/tematres/demo/xml.php?jsonTema=1024|cell
+            """
+            #  <mods:subject>
+            #    <mods:topic xlink:href=""></mods:topic>
+            #  </mods:subject>
+            xpath = "/mets:mets/mets:dmdSec[@ID='DM1']/mets:mdWrap/mets:xmlData/mods:mods/mods:subject/mods:topic"
+            
+            form_urls = [t.strip() for t in form.cleaned_data['topic'].split(';')]
+            topics = []
+            # TODO Don't follow URLs for terms that have not changed.
+            # TODO Cache tematres requests?
+            terms = tematres.get_terms(form_urls)
+            
+            # remove existing tags
+            parent = None
+            for tag in tree.xpath(xpath, namespaces=NAMESPACES):
+                parent = tag.getparent()
+                parent.remove(tag)
+            # replace with new tags
+            for href,term in terms:
+                tag_name  = xmlforms.expand_attrib_namespace('mods:topic', namespaces)
+                attr_name = xmlforms.expand_attrib_namespace('xlink:href', namespaces)
+                child = etree.Element(tag_name)
+                child.set(attr_name, href)
+                child.text = term
+                parent.append(child)
+            return tree
+        
+        tree = topics(form, tree, namespaces)
+
+        return etree.tostring(tree, pretty_print=True)
+
 
 
 METS_FIELDS = [
@@ -360,9 +461,11 @@ METS_FIELDS = [
     {
         'name':       'topic',
         'xpath':      "/mets:mets/mets:dmdSec[@ID='DM1']/mets:mdWrap/mets:xmlData/mods:mods/mods:subject/mods:topic/@xlink:href",
+        'xpath':      "/mets:mets/mets:dmdSec[@ID='DM1']/mets:mdWrap/mets:xmlData/mods:mods/mods:subject",
         'xpath_dup':  [],
         'model_type': str,
         'form_type':  forms.CharField,
+        'function':   MetsForm.load_mods_topics,
         'form': {
             'label':      'Topic',
             'help_text':  'Thematic content of object.	From Densho topics controlled vocabulary. Separate multiple topics with semi-colon.',
@@ -418,98 +521,3 @@ METS_FIELDS = [
 #        'default':    '',
 #    },
 ]
-
-
-class MetsForm(XMLForm):
-    def __init__(self, *args, **kwargs):
-        super(MetsForm, self).__init__(*args, **kwargs)
-    
-    @staticmethod
-    def process(xml, fields, form, namespaces=None):
-        """Do things to the XML that I can't figure out how to do any other way.
-        """
-        xml = XMLForm.process(xml, fields, form, namespaces=namespaces)
-        tree = etree.parse(StringIO.StringIO(xml))
-
-        def getval(tree, namespaces, xpath):
-            """Gets the first value; yes this is probably suboptimal
-            """
-            return tree.xpath(xpath, namespaces=namespaces)[0]
-        
-        def set_attr(tree, namespaces, xpath, attr, value):
-            tag = tree.xpath(xpath, namespaces=namespaces)[0]
-            tag.set(attr, value)
-            return tree
-        
-        def set_tag_text(tree, namespaces, xpath, value):
-            tag = getval(tree, namespaces, xpath)
-            tag.text = value
-            return tree
-        
-        def duplicate(tree, namespaces, src_xpath, dest_xpath):
-            i = tree.xpath( src_xpath,  namespaces=namespaces )[0]
-            tag = tree.xpath( dest_xpath, namespaces=namespaces )[0]
-            tag.text = i
-            return tree
-        
-        # created
-        if not getval(tree, namespaces, "/mets:mets/mets:metsHdr/@CREATEDATE"):
-            tree = set_attr(tree, namespaces,
-                            "/mets:mets/mets:metsHdr", 'CREATEDATE',
-                            datetime.now().strftime('%Y-%m-%dT%H:%M:%S'))
-        # modified
-        tree = set_attr(tree, namespaces,
-                        "/mets:mets/mets:metsHdr",
-                        'LASTMODDATE',
-                        datetime.now().strftime('%Y-%m-%dT%H:%M:%S'))
-        
-        # fields
-        
-        # entity_id
-        tree = duplicate(tree, namespaces,
-                         "/mets:mets/@OBJID",
-                         "/mets:mets/mets:dmdSec[@ID='DM1']/mets:mdWrap/mets:xmlData/mods:mods/mods:identifier",
-                         )
-        # title
-        tree = duplicate(tree, namespaces,
-                         "/mets:mets/@LABEL",
-                         "/mets:mets/mets:dmdSec[@ID='DM1']/mets:mdWrap/mets:xmlData/mods:mods/mods:titleInfo/mods:title",
-                         )
-        
-        # topic
-        def process_topics(form, tree, namespaces):
-            """
-            TODO Add term to form so not necessary to hit Tematres server during save
-                http://r020.com.ar/tematres/demo/xml.php?jsonTema=256|Lenguajes monomediales
-                http://r020.com.ar/tematres/demo/xml.php?jsonTema=512|Telecomunicaciones
-                http://r020.com.ar/tematres/demo/xml.php?jsonTema=1024|cell
-            """
-            #  <mods:subject>
-            #    <mods:topic xlink:href=""></mods:topic>
-            #  </mods:subject>
-            xpath = "/mets:mets/mets:dmdSec[@ID='DM1']/mets:mdWrap/mets:xmlData/mods:mods/mods:subject/mods:topic"
-            
-            form_urls = [t.strip() for t in form.cleaned_data['topic'].split(';')]
-            topics = []
-            # TODO Don't follow URLs for terms that have not changed.
-            # TODO Cache tematres requests?
-            terms = tematres.get_terms(form_urls)
-            
-            # remove existing tags
-            parent = None
-            for tag in tree.xpath(xpath, namespaces=NAMESPACES):
-                parent = tag.getparent()
-                parent.remove(tag)
-            # replace with new tags
-            for href,term in terms:
-                tag_name  = xmlforms.expand_attrib_namespace('mods:topic', namespaces)
-                attr_name = xmlforms.expand_attrib_namespace('xlink:href', namespaces)
-                child = etree.Element(tag_name)
-                child.set(attr_name, href)
-                child.text = term
-                parent.append(child)
-            return tree
-        
-        tree = process_topics(form, tree, namespaces)
-
-        return etree.tostring(tree, pretty_print=True)

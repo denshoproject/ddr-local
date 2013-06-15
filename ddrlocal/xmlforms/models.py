@@ -28,7 +28,7 @@ class XMLModel(object):
         self.fieldnames = []
         for f in fields:
             tag = gettag(tree, f['xpath'], self.namespaces)
-            value = gettagvalue(tag)
+            value = gettagvalue(tag, f.get('function',None))
             field = {'label': f['form']['label'],
                      'value': value,}
             setattr(self, f['name'], field)
