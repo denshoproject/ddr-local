@@ -13,6 +13,9 @@ from django.template import RequestContext
 
 from DDR import commands
 
+from ddrlocal.models import Entity
+from ddrlocal.forms import EntityForm
+
 from storage.decorators import storage_required
 from webui import api
 from webui.forms.entities import NewEntityForm, UpdateForm, AddFileForm
@@ -77,13 +80,7 @@ def detail( request, repo, org, cid, eid ):
     entity_abs     = os.path.join(collection_abs,'files',entity_uid)
     entity_rel     = os.path.join('files',entity_uid)
     #
-    xml = ''
-    with open( os.path.join(entity_abs, 'mets.xml'), 'r') as f:
-        xml = f.read()
-    mets = xml
-    mets_soup = BeautifulSoup(mets, 'xml')
-    #
-    files = entity_files(mets_soup, collection_abs, entity_rel)
+    entity = Entity.load(os.path.join(entity_abs, 'entity.json'))
     return render_to_response(
         'webui/entities/detail.html',
         {'repo': repo,
@@ -94,8 +91,10 @@ def detail( request, repo, org, cid, eid ):
          'entity_uid': entity_uid,
          'collection_path': collection_abs,
          'entity_path': entity_abs,
-         'mets': XMLModel(xml, METS_FIELDS, namespaces=NAMESPACES),
-         'files': files,},
+         'entity': entity,
+         #'mets': mets,
+         #'files': files,
+         },
         context_instance=RequestContext(request, processors=[])
     )
 
@@ -117,6 +116,17 @@ def changelog( request, repo, org, cid, eid ):
          'changelog': changelog,},
         context_instance=RequestContext(request, processors=[])
     )
+
+@storage_required
+def entity_json( request, repo, org, cid, eid ):
+    collection_uid = '{}-{}-{}'.format(repo, org, cid)
+    entity_uid     = '{}-{}-{}-{}'.format(repo, org, cid, eid)
+    collection_abs = os.path.join(settings.DDR_BASE_PATH, collection_uid)
+    entity_abs     = os.path.join(collection_abs,'files',entity_uid)
+    j = ''
+    with open( os.path.join(entity_abs, 'entity.json'), 'r') as f:
+        j = f.read()
+    return HttpResponse(j, mimetype="application/json")
 
 @storage_required
 def entity_mets_xml( request, repo, org, cid, eid ):
@@ -260,6 +270,53 @@ def entity_file( request, repo, org, cid, eid, filenum ):
          'changelog': changelog,
          'files': files,
          'file': files[filenum],},
+        context_instance=RequestContext(request, processors=[])
+    )
+
+@login_required
+@storage_required
+def edit( request, repo, org, cid, eid ):
+    git_name = request.session.get('git_name')
+    git_mail = request.session.get('git_mail')
+    if not git_name and git_mail:
+        messages.error(request, 'Login is required')
+    collection_uid = '{}-{}-{}'.format(repo, org, cid)
+    entity_uid     = '{}-{}-{}-{}'.format(repo, org, cid, eid)
+    collection_abs = os.path.join(settings.DDR_BASE_PATH, collection_uid)
+    entity_abs     = os.path.join(collection_abs,'files',entity_uid)
+    entity = Entity.load(os.path.join(entity_abs, 'entity.json'))
+    #
+    if request.method == 'POST':
+        form = EntityForm(request.POST)
+        if form.is_valid():
+            git_name = request.session.get('git_name')
+            git_mail = request.session.get('git_mail')
+            if git_name and git_mail:
+                assert False
+                # write JSON
+                # write XML
+                if exit:
+                    messages.error(request, 'Error: {}'.format(status))
+                else:
+                    messages.success(request, 'Entity updated')
+                    return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+            else:
+                messages.error(request, 'Login is required')
+    else:
+        form = EntityForm(entity.form_data())
+    return render_to_response(
+        'webui/entities/detail.html',
+        {'repo': repo,
+         'org': org,
+         'cid': cid,
+         'eid': eid,
+         'collection_uid': collection_uid,
+         'entity_uid': entity_uid,
+         'collection_path': collection_abs,
+         'entity_path': entity_abs,
+         'entity': entity,
+         'form': form,
+         },
         context_instance=RequestContext(request, processors=[])
     )
 

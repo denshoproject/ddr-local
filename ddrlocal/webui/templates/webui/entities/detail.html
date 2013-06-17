@@ -1,16 +1,16 @@
 {% extends "webui/entities/base.html" %}
 
 
-{% block title %}{{ entity_uid }}{% endblock %}
+{% block title %}{{ entity.id }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li class="active">{{ entity_uid }}</li>
+<li class="active">{{ entity.title }}</li>
 {% endblock breadcrumbs %}
 
 
 {% block content %}
 
-<h1>{{ entity_uid }}</h1>
+<h1>{{ entity.title }} ({{ entity.id }})</h1>
 
   </div><!-- .span12 -->
 </div><!-- .row -->
@@ -20,7 +20,7 @@
 <div id="overview">
 <h3> mets (<a href="{% url "webui-entity-edit-mets" repo org cid eid %}">edit</a>) </h3>
 <dl class="dl-horizontal">
-{% for lv in mets.labels_values %}
+{% for lv in entity.labels_values %}
   {% if lv.value %}<dt>{{ lv.label }}</dt><dd>{{ lv.value|linebreaks }}</dd>{% endif %}
 {% endfor %}
 </dl>
@@ -56,6 +56,8 @@ Files
 {% block footer %}
 
 <div class="muted" id="expert">
+  <span><a class="muted" href="{% url "webui-entity-json" repo org cid eid %}">json</a></span>
+  <span class="bullsep">&bull;</span>
   <span>
     <a class="muted" href="{% url "webui-entity-mets-xml" repo org cid eid %}">mets.xml</a>
     <a class="muted" href="{% url "webui-entity-edit-mets-xml" repo org cid eid %}">(edit)</a>
