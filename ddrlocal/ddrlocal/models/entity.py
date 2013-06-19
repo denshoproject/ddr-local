@@ -1,12 +1,21 @@
-from datetime import datetime
+from datetime import datetime, date
 import json
+import os
+
+from bs4 import BeautifulSoup
 
 from django import forms
+from django.conf import settings
 
+import tematres
 
 
 DATE_FORMAT = '%Y-%m-%d'
 DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
+# Django uses a slightly different datetime format
+DATETIME_FORMAT_FORM = '%Y-%m-%d %H:%M:%S'
+
+
 
 LANGUAGE_CHOICES = [['eng','English'],
                     ['jpn','Japanese'],
@@ -15,13 +24,102 @@ LANGUAGE_CHOICES = [['eng','English'],
 
 
 class Entity(object):
+    id = ''
+    path = None
+
+    def repo(self):
+        return self.id.split('-')[0]
+    
+    def org(self):
+        return self.id.split('-')[1]
+    
+    def cid(self):
+        return self.id.split('-')[2]
+    
+    def eid(self):
+        return self.id.split('-')[3]
+    
+    def collection_uid(self):
+        return self.id.rsplit('-',1)[0]
+    
+    @staticmethod
+    def json_path(repo, org, cid, eid):
+        collection_uid = '{}-{}-{}'.format(repo, org, cid)
+        entity_uid     = '{}-{}-{}-{}'.format(repo, org, cid, eid)
+        collection_abs = os.path.join(settings.DDR_BASE_PATH, collection_uid)
+        entity_abs     = os.path.join(collection_abs,'files',entity_uid)
+        path = os.path.join(entity_abs, 'entity.json')
+        return path
+    
+    def changelog_path(self, rel=False):
+        path_rel = 'changelog'
+        if rel:
+            return path_rel
+        return os.path.join(self.path, path_rel)
+    
+    def mets_xml_path(self, rel=False):
+        path_rel = 'mets.xml'
+        if rel:
+            return path_rel
+        return os.path.join(self.path, path_rel)
+    
+    def parent_path(self):
+        return os.path.split(os.path.split(self.path)[0])[0]
+        
+    def files_path(self, rel=False):
+        path_rel = 'files'
+        if rel:
+            return path_rel
+        return os.path.join(self.path, path_rel)
+    
+    def changelog(self):
+        return open(self.changelog_path(), 'r').read()
+    
+    def json(self):
+        path = Entity.json_path(self.repo(), self.org(), self.cid(), self.eid())
+        return open(path, 'r').read()
+    
+    def mets_xml(self):
+        return open(self.mets_xml_path(), 'r').read()
+    
+    def files(self):
+        """Given a BeautifulSoup-ified METS doc, get list of entity files
+        
+        ...
+        <fileSec>
+         <fileGrp USE="master">
+          <file CHECKSUM="fadfbcd8ceb71b9cfc765b9710db8c2c" CHECKSUMTYPE="md5">
+           <Flocat href="files/6a00e55055.png"/>
+          </file>
+         </fileGrp>
+         <fileGrp USE="master">
+          <file CHECKSUM="42d55eb5ac104c86655b3382213deef1" CHECKSUMTYPE="md5">
+           <Flocat href="files/20121205.jpg"/>
+          </file>
+         </fileGrp>
+        </fileSec>
+        ...
+        """
+        self_dict = self.__dict__
+        assert False
+        soup = BeautifulSoup(self.mets_xml(), 'xml')
+        files = []
+        for tag in soup.find_all('flocat', 'xml'):
+            f = {
+                'abs': os.path.join(self.path, tag['href']),
+                'name': os.path.join(self.path, tag['href']),
+                'basename': os.path.basename(tag['href']),
+                'size': 1234567,
+            }
+            files.append(f)
+        return files
     
     def labels_values(self):
         """Generic display
         """
         lv = []
         for mf in METS_FIELDS:
-            if hasattr(self, mf['name']):
+            if hasattr(self, mf['name']) and hasattr(self, mf['form']):
                 item = {'label': mf['form']['label'],
                         'value': getattr(self, mf['name'])}
                 lv.append(item)
@@ -29,14 +127,43 @@ class Entity(object):
 
     def form_data(self):
         """Prep data dict to pass into EntityForm object.
+        
+        Certain fields may require special processing, which will be performed
+        by the function specified in field['prep_func'].
+        
+        @returns data: dict object as used by Django Form object.
         """
         data = {}
         for mf in METS_FIELDS:
             if hasattr(self, mf['name']):
                 key = mf['name']
                 value = getattr(self, mf['name'])
+                # hand off special processing to function specified in METS_FIELDS
+                if mf.get('prep_func',None):
+                    func = mf['prep_func']
+                    value = func(value)
+                # end special processing
                 data[key] = value
         return data
+
+    def form_process(self, form):
+        """Process cleaned_data coming from EntityForm
+        
+        Certain fields may require special processing, which will be performed
+        by the function specified in field['proc_func'].
+        
+        @param form
+        """
+        for mf in METS_FIELDS:
+            if hasattr(self, mf['name']):
+                key = mf['name']
+                cleaned_data = form.cleaned_data[key]
+                # hand off special processing to function specified in METS_FIELDS
+                if mf.get('proc_func',None):
+                    func = mf['proc_func']
+                    cleaned_data = func(cleaned_data)
+                # end special processing
+                setattr(self, key, cleaned_data)
     
     @staticmethod
     def load(path):
@@ -62,19 +189,31 @@ class Entity(object):
             e = json.loads(f.read())
         if e:
             entity = Entity()
+            entity.path = os.path.dirname(path)
             for mf in METS_FIELDS:
                 for f in e:
                     if f.keys()[0] == mf['name']:
                         setattr(entity, f.keys()[0], f.values()[0])
             # special cases
-            entity.created = datetime.strptime(entity.created, DATETIME_FORMAT)
-            entity.lastmod = datetime.strptime(entity.lastmod, DATETIME_FORMAT)
-            entity.digitize_date = datetime.strptime(entity.digitize_date, DATE_FORMAT)
+            if not entity.id:
+                entity.id = os.path.split(os.path.dirname(path))[1]
+            if entity.created:
+                entity.created = datetime.strptime(entity.created, DATETIME_FORMAT)
+            else:
+                entity.created = datetime.now()
+            if entity.lastmod:
+                entity.lastmod = datetime.strptime(entity.lastmod, DATETIME_FORMAT)
+            else:
+                entity.lastmod = datetime.now()
+            if entity.digitize_date:
+                entity.digitize_date = datetime.strptime(entity.digitize_date, DATE_FORMAT)
+            else:
+                entity.digitize_date = ''
             # end special cases
             return entity
         return None
     
-    def dump(self, path):
+    def _dump_json(self, path):
         """Dump Entity data to .json file.
         @param path: Absolute path to .json file.
         """
@@ -109,7 +248,132 @@ class Entity(object):
         """
         pass
 
+    @staticmethod
+    def create(path):
+        """Creates a new entity with the specified entity ID.
+        @param path: Absolute path; must end in valid DDR entity id.
+        """
+        entity = Entity()
+        for mf in METS_FIELDS:
+            if hasattr(mf, 'name') and hasattr(mf, 'initial'):
+                setattr(entity, mf['name'], mf['initial'])
+        entity.id = eid
+        entity.path = path
+        return entity
 
+
+
+
+# forms pre-processing functions ---------------------------------------
+# convert from Python objects to form(data)
+
+def _prepare_basic(data):
+    if data:
+        return json.dumps(data)
+    return ''
+                   
+# id
+# created
+# lastmod
+def prepare_parent(data):     return _prepare_basic(data)
+def prepare_collection(data): return _prepare_basic(data)
+# title
+# description
+def prepare_creation(data):   return _prepare_basic(data)
+# location
+
+def prepare_creators(data):
+    data = ';\n'.join([n['namepart'] for n in data])
+    return data
+
+def prepare_language(data):
+    if data.get('code', None):
+        data = data['code']
+    return data
+
+# genre
+# format
+# dimensions
+# organization
+# organization_id
+# digitize_person
+# digitize_organization
+# digitize_date
+# credit
+# rights
+
+def prepare_topics(data):
+    """Present as semicolon-separated list"""
+    a = [t['url'] for t in data]
+    data = ';\n'.join(a)
+    return data
+
+def prepare_persons(data):    return _prepare_basic(data)
+def prepare_facility(data):   return _prepare_basic(data)
+# notes
+
+
+
+
+# forms post-processing functions --------------------------------------
+# convert from form.cleaned_data to Python objects
+
+def _process_basic(data):
+    if data:
+        try:
+            return json.loads(data)
+        except:
+            return data
+    return ''
+
+# id
+# created
+# lastmod
+def process_parent(data):     return _process_basic(data)
+def process_collection(data): return _process_basic(data)
+# title
+# description
+def process_creation(data):   return _process_basic(data)
+# location
+
+def process_creators(data):
+    a = []
+    for n in data.split(';'):
+        b = {'namepart': n.strip(), 'role': 'author',}
+        a.append(b)
+    return a
+
+def process_language(data):
+    a = {'code': data,
+         'label': '',}
+    for l in LANGUAGE_CHOICES:
+        if l[0] == a['code']:
+            a['label'] = l[1]
+    return a
+
+# genre
+# format
+# dimensions
+# organization
+# organization_id
+# digitize_person
+# digitize_organization
+# digitize_date
+# credit
+# rights
+
+def process_topics(data):
+    a = []
+    form_urls = [t.strip() for t in data.split(';')]
+    a = tematres.get_terms(form_urls)
+    return a
+
+def process_persons(data):    return _process_basic(data)
+def process_facility(data):   return _process_basic(data)
+# notes
+
+
+# ----------------------------------------------------------------------
 
 METS_FIELDS = [
     {
@@ -136,12 +400,11 @@ METS_FIELDS = [
         'xpath':      "",
         'xpath_dup':  [],
         'model_type': datetime,
-        'form_type':  '',
+        'form_type':  forms.DateTimeField,
         'form': {
             'label':      '',
             'help_text':  '',
-            'max_length': 255,
-            'widget':     '',
+            'widget':     forms.HiddenInput,
             'initial':    '',
             'required':   True,
         },
@@ -152,12 +415,11 @@ METS_FIELDS = [
         'xpath':      "",
         'xpath_dup':  [],
         'model_type': datetime,
-        'form_type':  '',
+        'form_type':  forms.DateTimeField,
         'form': {
             'label':      '',
             'help_text':  '',
-            'max_length': 255,
-            'widget':     '',
+            'widget':     forms.HiddenInput,
             'initial':    '',
             'required':   True,
         },
@@ -177,6 +439,8 @@ METS_FIELDS = [
             'initial':    '',
             'required':   False,
         },
+        'prep_func':  prepare_parent,
+        'proc_func':  process_parent,
         'default':    '',
     },
     {
@@ -193,6 +457,8 @@ METS_FIELDS = [
             'initial':    '',
             'required':   True,
         },
+        'prep_func':  prepare_collection,
+        'proc_func':  process_collection,
         'default':    '',
     },
     # Scan ID
@@ -244,6 +510,8 @@ METS_FIELDS = [
             'initial':    '',
             'required':   False,
         },
+        'prep_func':  prepare_creation,
+        'proc_func':  process_creation,
         'default':    '',
     },
     {
@@ -272,10 +540,12 @@ METS_FIELDS = [
             'label':      'Creator',
             'help_text':  'For photographs, the name of the photographer. For letters, documents and other written materials, the name of the author. For newspapers, magazine and other printed matter, the name of the publisher.	For individuals, "LastName, FirstName: CreatorRole" (e.g., "Adams, Ansel:photographer"). Multiple creators are allowed, but must be separated using a semi-colon.',
             'max_length': 255,
-            'widget':     '',
+            'widget':     forms.Textarea,
             'initial':    '',
             'required':   False,
         },
+        'prep_func':  prepare_creators,
+        'proc_func':  process_creators,
         'default':    '',
     },
     {
@@ -292,6 +562,8 @@ METS_FIELDS = [
             'initial':    '',
             'required':   False,
         },
+        'prep_func':  prepare_language,
+        'proc_func':  process_language,
         'default':    '',
     },
     {
@@ -411,11 +683,10 @@ METS_FIELDS = [
         'xpath':      '',
         'xpath_dup':  [],
         'model_type': str,
-        'form_type':  forms.CharField,
+        'form_type':  forms.DateField,
         'form': {
             'label':      'Digitize Date',
             'help_text':  'Date of scan. M/D/YYYY.',
-            'max_length': 255,
             'widget':     '',
             'initial':    '',
             'required':   True,
@@ -455,7 +726,7 @@ METS_FIELDS = [
         'default':    '',
     },
     {
-        'name':       'topic',
+        'name':       'topics',
         'xpath':      "/mets:mets/mets:dmdSec[@ID='DM1']/mets:mdWrap/mets:xmlData/mods:mods/mods:subject/mods:topic/@xlink:href",
         'xpath':      "/mets:mets/mets:dmdSec[@ID='DM1']/mets:mdWrap/mets:xmlData/mods:mods/mods:subject",
         'xpath_dup':  [],
@@ -468,6 +739,8 @@ METS_FIELDS = [
             'initial':    '',
             'required':   False,
         },
+        'prep_func':  prepare_topics,
+        'proc_func':  process_topics,
         'default':    '',
     },
     {
@@ -483,6 +756,8 @@ METS_FIELDS = [
             'initial':    '',
             'required':   False,
         },
+        'prep_func':  prepare_persons,
+        'proc_func':  process_persons,
         'default':    '',
     },
     {
@@ -498,6 +773,8 @@ METS_FIELDS = [
             'initial':    '',
             'required':   False,
         },
+        'prep_func':  prepare_facility,
+        'proc_func':  process_facility,
         'default':    '',
     },
     {
@@ -513,6 +790,14 @@ METS_FIELDS = [
             'initial':    '',
             'required':   False,
         },
+        'default':    '',
+    },
+    {
+        'name':       'files',
+        'xpath':      "",
+        'xpath_dup':  [],
+        'model_type': str,
+        'form_type':  None,
         'default':    '',
     },
 ]

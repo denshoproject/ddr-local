@@ -12,10 +12,11 @@ def get_terms(urls):
     import requests
     terms = []
     for url in urls:
-        r = requests.get(url)
-        if (r.status_code == 200) and r.text:
-            json = r.json()
-            terms.append( (url, json['string']))
+        if url:
+            r = requests.get(url)
+            if (r.status_code == 200) and r.text:
+                json = r.json()
+                terms.append( {'url':url, 'label':json['string']} )
     #import grequests
     #rs = (grequests.get(u) for u in urls)
     #responses = grequests.map(rs, size=2)

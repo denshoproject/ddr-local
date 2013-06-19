@@ -18,7 +18,7 @@
   <div class="span8">
 
 <div id="overview">
-<h3> mets (<a href="{% url "webui-entity-edit-mets" repo org cid eid %}">edit</a>) </h3>
+<h3> mets (<a href="{% url "webui-entity-edit" repo org cid eid %}">edit</a>) </h3>
 <dl class="dl-horizontal">
 {% for lv in entity.labels_values %}
   {% if lv.value %}<dt>{{ lv.label }}</dt><dd>{{ lv.value|linebreaks }}</dd>{% endif %}
@@ -33,7 +33,7 @@
 Files
 </h3>
 <ul>
-{% for file in files %}
+{% for file in entity.files %}
   <li>
   <a href="{% url "webui-entity-file" repo org cid eid forloop.counter0 %}"><img src="{{ MEDIA_URL }}{{ file.name }}" width="100" height="100" /></a>
   <br/>
@@ -66,7 +66,7 @@ Files
   <span><a class="muted" href="{% url "webui-entity-changelog" repo org cid eid %}">changelog</a></span>
   <span class="bullsep">&bull;&bull;</span>
   <span>
-  {{ entity_path }}
+  {{ entity.path }}
   </span>
 </div>
 

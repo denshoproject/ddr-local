@@ -2,8 +2,9 @@ from copy import deepcopy
 
 from django import forms
 from django.conf import settings
+from django.utils.datastructures import SortedDict
 
-from ddrlocal.models import METS_FIELDS
+from ddrlocal.models.entity import METS_FIELDS
 
 
 class EntityForm(forms.Form):
@@ -14,7 +15,8 @@ class EntityForm(forms.Form):
             fargs = []
             # instantiate Field object and to list
             ftype = fkwargs['form_type']
-            fobject = ftype(*fargs, **fkwargs['form'])
+            form_kwargs = fkwargs['form']
+            fobject = ftype(*fargs, **form_kwargs)
             fields.append((fkwargs['name'], fobject))
         # Django Form object takes a SortedDict rather than list
         self.fields = SortedDict(fields)

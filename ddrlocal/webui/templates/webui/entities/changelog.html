@@ -1,20 +1,20 @@
 {% extends "webui/entities/base.html" %}
 
 
-{% block title %}changelog | {{ entity_uid }}{% endblock %}
+{% block title %}changelog | {{ entity.id }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{% url "webui-entity" repo org cid eid %}">{{ entity_uid }}</a></li>
+<li><a href="{% url "webui-entity" entity.repo entity.org entity.cid entity.eid %}">{{ entity.id }}</a></li>
 <li class="active">changelog</li>
 {% endblock breadcrumbs %}
 
 
 {% block content %}
 
-<h1>{{ entity_uid }} - changelog</h1>
+<h1>{{ entity.id }} - changelog</h1>
 
 <pre>
-{{ changelog }}
+{{ entity.changelog }}
 </pre>
 
 {% endblock content %}
