@@ -91,7 +91,6 @@ def file_detail( request, repo, org, cid, eid, filenum ):
     """
     entity = Entity.load(Entity.json_path(repo, org, cid, eid))
     filenum = int(filenum)
-    files = entity.files()
     return render_to_response(
         'webui/entities/file.html',
         {'repo': entity.repo,
@@ -99,8 +98,8 @@ def file_detail( request, repo, org, cid, eid, filenum ):
          'cid': entity.cid,
          'eid': entity.eid,
          'collection_uid': entity.collection_uid,
-         'files': files,
-         'file': files[filenum],},
+         'entity': entity,
+         'file': entity.files[filenum],},
         context_instance=RequestContext(request, processors=[])
     )
 

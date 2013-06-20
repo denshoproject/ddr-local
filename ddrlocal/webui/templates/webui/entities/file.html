@@ -1,10 +1,10 @@
 {% extends "webui/entities/base.html" %}
 
 
-{% block title %}{{ entity_uid }}{% endblock %}
+{% block title %}{{ entity.id }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{% url "webui-entity" repo org cid eid %}">{{ entity_uid }}</a></li>
+<li><a href="{% url "webui-entity" repo org cid eid %}">{{ entity.id }}</a></li>
 <li class="active">{{ file.basename }}</li>
 {% endblock breadcrumbs %}
 
@@ -17,21 +17,30 @@
 <h1>{{ file.basename }}</h1>
 
 <table class="table table-condensed table-striped">
-{{ file.keys }}
+  <tr>
+    <td>path</td>
+    <td>
+    {{ entity.path }}/{{ file.path }}<br/>
+    {{ file.path }}<br/>
+    </td>
+  </tr>
   <tr>
     <td>basename</td><td>{{ file.basename }}</td>
   </tr>
   <tr>
-    <td>name</td><td>{{ file.name }}</td>
+    <td>size</td><td>{{ file.size }} ({{ file.size|filesizeformat }})</td>
   </tr>
   <tr>
-    <td>abs</td><td>{{ file.abs }}</td>
+    <td>SHA256</td><td>{{ file.sha256 }}</td>
   </tr>
   <tr>
-    <td>size</td><td>{{ file.size }}</td>
+    <td>SHA1</td><td>{{ file.sha1 }}</td>
+  </tr>
+  <tr>
+    <td>MD5</td><td>{{ file.md5 }}</td>
   </tr>
 </table>
 
-<img src="{{ MEDIA_URL }}{{ file.name }}" />
+<img src="{{ MEDIA_URL }}{{ file.basename }}" />
 
 {% endblock content %}
