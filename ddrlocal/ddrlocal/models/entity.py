@@ -9,6 +9,7 @@ from django.conf import settings
 
 import tematres
 
+from DDR.models import DDREntity
 
 DATE_FORMAT = '%Y-%m-%d'
 DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
@@ -23,96 +24,24 @@ LANGUAGE_CHOICES = [['eng','English'],
 
 
 
-class Entity(object):
-    id = ''
-    path = None
-
-    def repo(self):
-        return self.id.split('-')[0]
+class DDRLocalEntity( DDREntity ):
+    """
+    This subclass of Entity and DDREntity adds functions for reading and writing
+    entity.json, and preparing/processing Django forms.
+    """
+    id = 'whatever'
+    repo = None
+    org = None
+    cid = None
+    eid = None
     
-    def org(self):
-        return self.id.split('-')[1]
-    
-    def cid(self):
-        return self.id.split('-')[2]
-    
-    def eid(self):
-        return self.id.split('-')[3]
-    
-    def collection_uid(self):
-        return self.id.rsplit('-',1)[0]
-    
-    @staticmethod
-    def json_path(repo, org, cid, eid):
-        collection_uid = '{}-{}-{}'.format(repo, org, cid)
-        entity_uid     = '{}-{}-{}-{}'.format(repo, org, cid, eid)
-        collection_abs = os.path.join(settings.DDR_BASE_PATH, collection_uid)
-        entity_abs     = os.path.join(collection_abs,'files',entity_uid)
-        path = os.path.join(entity_abs, 'entity.json')
-        return path
-    
-    def changelog_path(self, rel=False):
-        path_rel = 'changelog'
-        if rel:
-            return path_rel
-        return os.path.join(self.path, path_rel)
-    
-    def mets_xml_path(self, rel=False):
-        path_rel = 'mets.xml'
-        if rel:
-            return path_rel
-        return os.path.join(self.path, path_rel)
-    
-    def parent_path(self):
-        return os.path.split(os.path.split(self.path)[0])[0]
-        
-    def files_path(self, rel=False):
-        path_rel = 'files'
-        if rel:
-            return path_rel
-        return os.path.join(self.path, path_rel)
-    
-    def changelog(self):
-        return open(self.changelog_path(), 'r').read()
-    
-    def json(self):
-        path = Entity.json_path(self.repo(), self.org(), self.cid(), self.eid())
-        return open(path, 'r').read()
-    
-    def mets_xml(self):
-        return open(self.mets_xml_path(), 'r').read()
-    
-    def files(self):
-        """Given a BeautifulSoup-ified METS doc, get list of entity files
-        
-        ...
-        <fileSec>
-         <fileGrp USE="master">
-          <file CHECKSUM="fadfbcd8ceb71b9cfc765b9710db8c2c" CHECKSUMTYPE="md5">
-           <Flocat href="files/6a00e55055.png"/>
-          </file>
-         </fileGrp>
-         <fileGrp USE="master">
-          <file CHECKSUM="42d55eb5ac104c86655b3382213deef1" CHECKSUMTYPE="md5">
-           <Flocat href="files/20121205.jpg"/>
-          </file>
-         </fileGrp>
-        </fileSec>
-        ...
-        """
-        self_dict = self.__dict__
-        assert False
-        soup = BeautifulSoup(self.mets_xml(), 'xml')
-        files = []
-        for tag in soup.find_all('flocat', 'xml'):
-            f = {
-                'abs': os.path.join(self.path, tag['href']),
-                'name': os.path.join(self.path, tag['href']),
-                'basename': os.path.basename(tag['href']),
-                'size': 1234567,
-            }
-            files.append(f)
-        return files
+    def __init__(self, *args, **kwargs):
+        super(DDRLocalEntity, self).__init__(*args, **kwargs)
+        self.id = self.uid
+        self.repo = self.id.split('-')[0]
+        self.org = self.id.split('-')[1]
+        self.cid = self.id.split('-')[2]
+        self.eid = self.id.split('-')[3]
     
     def labels_values(self):
         """Generic display
@@ -124,7 +53,7 @@ class Entity(object):
                         'value': getattr(self, mf['name'])}
                 lv.append(item)
         return lv
-
+    
     def form_data(self):
         """Prep data dict to pass into EntityForm object.
         
@@ -145,7 +74,7 @@ class Entity(object):
                 # end special processing
                 data[key] = value
         return data
-
+    
     def form_process(self, form):
         """Process cleaned_data coming from EntityForm
         
@@ -164,56 +93,46 @@ class Entity(object):
                     cleaned_data = func(cleaned_data)
                 # end special processing
                 setattr(self, key, cleaned_data)
-    
+        # update lastmod
+        self.lastmod = datetime.now()
+
     @staticmethod
-    def load(path):
-        if '.json' in path:
-            return Entity._load_json(path)
-        elif '.xml' in path:
-            return Entity._load_xml(path)
-        return None
+    def from_json(repo, org, cid, eid):
+        collection_uid = '{}-{}-{}'.format(repo, org, cid)
+        entity_uid     = '{}-{}-{}-{}'.format(repo, org, cid, eid)
+        collection_abs = os.path.join(settings.DDR_BASE_PATH, collection_uid)
+        entity_abs     = os.path.join(collection_abs,'files',entity_uid)
+        entity = DDRLocalEntity(entity_abs)
+        entity.load_json(entity.json_path)
+        if not entity.id:
+            entity.id = entity_uid  # might get overwritten if entity.json is blank
+        return entity
     
-    def dump(self, path):
-        if '.json' in path:
-            return self._dump_json(path)
-        elif '.xml' in path:
-            return self._dump_xml(path)
-        return None
-    
-    @staticmethod
-    def _load_json(path):
-        """Load Entity from .json file.
-        @param path: Absolute path to .json file.
+    def load_json(self, path):
+        """Populate Entity data from .json file.
+        @param path: Absolute path to entity
         """
-        with open(path, 'r') as f:
-            e = json.loads(f.read())
-        if e:
-            entity = Entity()
-            entity.path = os.path.dirname(path)
-            for mf in METS_FIELDS:
-                for f in e:
-                    if f.keys()[0] == mf['name']:
-                        setattr(entity, f.keys()[0], f.values()[0])
-            # special cases
-            if not entity.id:
-                entity.id = os.path.split(os.path.dirname(path))[1]
-            if entity.created:
-                entity.created = datetime.strptime(entity.created, DATETIME_FORMAT)
-            else:
-                entity.created = datetime.now()
-            if entity.lastmod:
-                entity.lastmod = datetime.strptime(entity.lastmod, DATETIME_FORMAT)
-            else:
-                entity.lastmod = datetime.now()
-            if entity.digitize_date:
-                entity.digitize_date = datetime.strptime(entity.digitize_date, DATE_FORMAT)
-            else:
-                entity.digitize_date = ''
-            # end special cases
-            return entity
-        return None
+        json_data = self.json().data
+        for mf in METS_FIELDS:
+            for f in json_data:
+                if f.keys()[0] == mf['name']:
+                    setattr(self, f.keys()[0], f.values()[0])
+        # special cases
+        if self.created:
+            self.created = datetime.strptime(self.created, DATETIME_FORMAT)
+        else:
+            self.created = datetime.now()
+        if self.lastmod:
+            self.lastmod = datetime.strptime(self.lastmod, DATETIME_FORMAT)
+        else:
+            self.lastmod = datetime.now()
+        if self.digitize_date:
+            self.digitize_date = datetime.strptime(self.digitize_date, DATE_FORMAT)
+        else:
+            self.digitize_date = ''
+        # end special cases
     
-    def _dump_json(self, path):
+    def dump_json(self):
         """Dump Entity data to .json file.
         @param path: Absolute path to .json file.
         """
@@ -232,33 +151,18 @@ class Entity(object):
                 item[key] = val
                 entity.append(item)
         json_pretty = json.dumps(entity, indent=4, separators=(',', ': '))
-        with open(path, 'w') as f:
+        with open(self.json_path, 'w') as f:
             f.write(json_pretty)
     
     @staticmethod
-    def _load_xml(path):
-        """Load Entity from .xml file.
-        @param path: Absolute path to .xml file.
-        """
-        return None
-    
-    def _dump_xml(self, path):
-        """Dump Entity to .xml file.
-        @param path: Absolute path to .xml file.
-        """
-        pass
-
-    @staticmethod
     def create(path):
         """Creates a new entity with the specified entity ID.
-        @param path: Absolute path; must end in valid DDR entity id.
+        @param path: Absolute path to entity; must end in valid DDR entity id.
         """
-        entity = Entity()
+        entity = Entity(path)
         for mf in METS_FIELDS:
             if hasattr(mf, 'name') and hasattr(mf, 'initial'):
                 setattr(entity, mf['name'], mf['initial'])
-        entity.id = eid
-        entity.path = path
         return entity
 
 

@@ -13,7 +13,7 @@ from django.template import RequestContext
 
 from DDR import commands
 
-from ddrlocal.models.entity import Entity
+from ddrlocal.models.entity import DDRLocalEntity as Entity
 from ddrlocal.forms import EntityForm
 
 from storage.decorators import storage_required
@@ -41,34 +41,32 @@ def handle_uploaded_file(f, dest_dir):
 
 
 
-
-
 # views ----------------------------------------------------------------
 
 @storage_required
 def detail( request, repo, org, cid, eid ):
-    entity = Entity.load(Entity.json_path(repo, org, cid, eid))
+    entity = Entity.from_json(repo, org, cid, eid)
     return render_to_response(
         'webui/entities/detail.html',
         {'repo': entity.repo,
          'org': entity.org,
          'cid': entity.cid,
          'eid': entity.eid,
-         'collection_uid': entity.collection_uid,
+         'collection_uid': entity.parent_uid,
          'entity': entity,},
         context_instance=RequestContext(request, processors=[])
     )
 
 @storage_required
 def changelog( request, repo, org, cid, eid ):
-    entity = Entity.load(Entity.json_path(repo, org, cid, eid))
+    entity = Entity.from_json(repo, org, cid, eid)
     return render_to_response(
         'webui/entities/changelog.html',
         {'repo': entity.repo,
          'org': entity.org,
          'cid': entity.cid,
          'eid': entity.eid,
-         'collection_uid': entity.collection_uid,
+         'collection_uid': entity.parent_uid,
          'entity': entity,},
         context_instance=RequestContext(request, processors=[])
     )
@@ -80,20 +78,20 @@ def json( request, repo, org, cid, eid ):
 
 @storage_required
 def mets_xml( request, repo, org, cid, eid ):
-    entity = Entity.load(Entity.json_path(repo, org, cid, eid))
-    soup = BeautifulSoup(entity.mets_xml(), 'xml')
+    entity = Entity.from_json(repo, org, cid, eid)
+    soup = BeautifulSoup(entity.mets().xml, 'xml')
     return HttpResponse(soup.prettify(), mimetype="application/xml")
 
 @storage_required
 def files( request, repo, org, cid, eid ):
-    entity = Entity.load(Entity.json_path(repo, org, cid, eid))
+    entity = Entity.from_json(repo, org, cid, eid)
     return render_to_response(
         'webui/entities/files.html',
         {'repo': entity.repo,
          'org': entity.org,
          'cid': entity.cid,
          'eid': entity.eid,
-         'collection_uid': entity.collection_uid,
+         'collection_uid': entity.parent_uid,
          'entity': entity,},
         context_instance=RequestContext(request, processors=[])
     )
@@ -103,7 +101,7 @@ def files( request, repo, org, cid, eid ):
 def file_detail( request, repo, org, cid, eid, filenum ):
     """Add file to entity.
     """
-    entity = Entity.load(Entity.json_path(repo, org, cid, eid))
+    entity = Entity.from_json(repo, org, cid, eid)
     filenum = int(filenum)
     return render_to_response(
         'webui/entities/file.html',
@@ -111,7 +109,7 @@ def file_detail( request, repo, org, cid, eid, filenum ):
          'org': entity.org,
          'cid': entity.cid,
          'eid': entity.eid,
-         'collection_uid': entity.collection_uid,
+         'collection_uid': entity.parent_uid,
          'entity': entity,
          'file': entity.files[filenum],},
         context_instance=RequestContext(request, processors=[])
@@ -161,7 +159,7 @@ def new( request, repo, org, cid ):
         {'repo': repo,
          'org': org,
          'cid': cid,
-         'collection_uid': collection_uid,
+         'collection_uid': entity.parent_uid,
          'form': form,},
         context_instance=RequestContext(request, processors=[])
     )
@@ -171,8 +169,8 @@ def new( request, repo, org, cid ):
 def entity_add( request, repo, org, cid, eid ):
     """Add an entity to collection
     """
-    entity = Entity.load(Entity.json_path(repo, org, cid, eid))
-    messages.debug(request, 'entity_files_dir: {}'.format(entity.files_path()))
+    entity = Entity.from_json(repo, org, cid, eid)
+    messages.debug(request, 'entity_files_dir: {}'.format(entity.files_path))
     #
     if request.method == 'POST':
         form = AddFileForm(request.POST, request.FILES)
@@ -182,11 +180,11 @@ def entity_add( request, repo, org, cid, eid ):
             if git_name and git_mail:
                 role = form.cleaned_data['role']
                 # write file to entity files dir
-                file_abs = handle_uploaded_file(request.FILES['file'], entity.files_path())
+                file_abs = handle_uploaded_file(request.FILES['file'], entity.files_path)
                 file_rel = os.path.basename(file_abs)
                 
                 exit,status = commands.entity_annex_add(git_name, git_mail,
-                                                        entity.parent_path(),
+                                                        entity.parent_path,
                                                         entity.id, file_rel)
                 
                 if exit:
@@ -204,7 +202,7 @@ def entity_add( request, repo, org, cid, eid ):
          'org': entity.org,
          'cid': entity.cid,
          'eid': entity.eid,
-         'collection_uid': entity.collection_uid,
+         'collection_uid': entity.parent_uid,
          'entity': entity,
          'form': form,},
         context_instance=RequestContext(request, processors=[])
@@ -217,8 +215,7 @@ def edit( request, repo, org, cid, eid ):
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
         messages.error(request, 'Login is required')
-    json_path = Entity.json_path(repo, org, cid, eid)
-    entity = Entity.load(json_path)
+    entity = Entity.from_json(repo, org, cid, eid)
     #
     if request.method == 'POST':
         form = EntityForm(request.POST)
@@ -227,12 +224,11 @@ def edit( request, repo, org, cid, eid ):
             git_mail = request.session.get('git_mail')
             if git_name and git_mail:
                 entity.form_process(form)
-                # write JSON
-                entity.dump(json_path)
+                entity.dump_json()
                 # TODO write XML
                 exit,status = commands.entity_update(git_name, git_mail,
-                                                     entity.parent_path(), entity.id,
-                                                     [json_path])
+                                                     entity.parent_path, entity.id,
+                                                     [entity.json_path])
                 if exit:
                     messages.error(request, 'Error: {}'.format(status))
                 else:
@@ -248,7 +244,7 @@ def edit( request, repo, org, cid, eid ):
          'org': entity.org,
          'cid': entity.cid,
          'eid': entity.eid,
-         'collection_uid': entity.collection_uid,
+         'collection_uid': entity.parent_uid,
          'entity': entity,
          'form': form,
          },
@@ -267,7 +263,7 @@ def edit_mets_xml( request, repo, org, cid, eid ):
     - write contents of field to EAD.xml
     - commands.update
     """
-    entity = Entity.load(Entity.json_path(repo, org, cid, eid))
+    entity = Entity.from_json(repo, org, cid, eid)
     #
     if request.method == 'POST':
         form = UpdateForm(request.POST)
@@ -277,13 +273,13 @@ def edit_mets_xml( request, repo, org, cid, eid ):
             if git_name and git_mail:
                 xml = form.cleaned_data['xml']
                 # TODO validate XML
-                with open(entity.mets_xml_path(), 'w') as f:
+                with open(entity.mets_path, 'w') as f:
                     f.write(xml)
                 
                 exit,status = commands.entity_update(
                     git_name, git_mail,
-                    entity.parent_path(), entity.id,
-                    [entity.mets_xml_path(rel=True)])
+                    entity.parent_path, entity.id,
+                    [entity.mets_path])
                 
                 if exit:
                     messages.error(request, 'Error: {}'.format(status))
@@ -293,14 +289,14 @@ def edit_mets_xml( request, repo, org, cid, eid ):
             else:
                 messages.error(request, 'Login is required')
     else:
-        form = UpdateForm({'xml': entity.mets_xml(),})
+        form = UpdateForm({'xml': entity.mets().xml,})
     return render_to_response(
         'webui/entities/edit-mets.html',
         {'repo': entity.repo,
          'org': entity.org,
          'cid': entity.cid,
          'eid': entity.eid,
-         'collection_uid': entity.collection_uid,
+         'collection_uid': entity.parent_uid,
          'entity': entity,
          'form': form,},
         context_instance=RequestContext(request, processors=[])
