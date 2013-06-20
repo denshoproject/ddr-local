@@ -150,13 +150,13 @@ def new( request, repo, org, cid ):
             if git_name and git_mail:
                 eid = form.cleaned_data['eid']
                 entity_uid = '{}-{}-{}-{}'.format(repo,org,cid,eid)
-                exit,status = commands.entity_create(git_name, git_mail, entity.parent_path(), entity.eid)
+                exit,status = commands.entity_create(git_name, git_mail, collection_path, entity_uid)
                 
                 if exit:
                     messages.error(request, 'Error: {}'.format(status))
                 else:
                     redirect_url = reverse('webui-entity', args=[repo,org,cid,eid])
-                    messages.success(request, 'New entity created: {}'.format(entity.eid))
+                    messages.success(request, 'New entity created: {}'.format(entity_uid))
                     return HttpResponseRedirect(redirect_url)
             else:
                 messages.error(request, 'Login is required')
