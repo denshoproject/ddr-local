@@ -1,3 +1,4 @@
+import json
 import os
 
 from bs4 import BeautifulSoup
@@ -72,9 +73,9 @@ def changelog( request, repo, org, cid, eid ):
     )
 
 @storage_required
-def json( request, repo, org, cid, eid ):
-    entity = Entity.load(Entity.json_path(repo, org, cid, eid))
-    return HttpResponse(entity.json(), mimetype="application/json")
+def entity_json( request, repo, org, cid, eid ):
+    entity = Entity.from_json(repo, org, cid, eid)
+    return HttpResponse(json.dumps(entity.json().data), mimetype="application/json")
 
 @storage_required
 def mets_xml( request, repo, org, cid, eid ):
