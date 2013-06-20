@@ -119,7 +119,7 @@ class Entity(object):
         """
         lv = []
         for mf in METS_FIELDS:
-            if hasattr(self, mf['name']) and hasattr(self, mf['form']):
+            if hasattr(self, mf['name']) and mf.get('form',None):
                 item = {'label': mf['form']['label'],
                         'value': getattr(self, mf['name'])}
                 lv.append(item)
@@ -135,7 +135,7 @@ class Entity(object):
         """
         data = {}
         for mf in METS_FIELDS:
-            if hasattr(self, mf['name']):
+            if hasattr(self, mf['name']) and mf.get('form',None):
                 key = mf['name']
                 value = getattr(self, mf['name'])
                 # hand off special processing to function specified in METS_FIELDS
@@ -155,7 +155,7 @@ class Entity(object):
         @param form
         """
         for mf in METS_FIELDS:
-            if hasattr(self, mf['name']):
+            if hasattr(self, mf['name']) and mf.get('form',None):
                 key = mf['name']
                 cleaned_data = form.cleaned_data[key]
                 # hand off special processing to function specified in METS_FIELDS
@@ -797,7 +797,8 @@ METS_FIELDS = [
         'xpath':      "",
         'xpath_dup':  [],
         'model_type': str,
-        'form_type':  None,
+        # no form_type
+        # no form
         'default':    '',
     },
 ]

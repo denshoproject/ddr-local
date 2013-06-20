@@ -12,11 +12,11 @@ class EntityForm(forms.Form):
         super(EntityForm, self).__init__(*args, **kwargs)
         fields = []
         for fkwargs in deepcopy(METS_FIELDS): # don't modify fields data
-            fargs = []
-            # instantiate Field object and to list
-            ftype = fkwargs['form_type']
-            form_kwargs = fkwargs['form']
-            fobject = ftype(*fargs, **form_kwargs)
-            fields.append((fkwargs['name'], fobject))
-        # Django Form object takes a SortedDict rather than list
-        self.fields = SortedDict(fields)
+            # METS_FIELDS..files is not handled by EntityForm
+            if fkwargs.get('form', None):
+                # instantiate Field object and to list
+                form_field_object = fkwargs['form_type']
+                fobject = form_field_object(*[], **fkwargs['form'])
+                fields.append((fkwargs['name'], fobject))
+                # Django Form object takes a SortedDict rather than list
+                self.fields = SortedDict(fields)
