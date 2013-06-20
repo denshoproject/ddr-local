@@ -1,0 +1,27 @@
+{% extends "webui/entities/base.html" %}
+
+
+{% block title %}files | {{ entity.id }}{% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+<li><a href="{% url "webui-entity" repo org cid eid %}">{{ entity.id }}</a></li>
+<li class="active">files</li>
+{% endblock breadcrumbs %}
+
+
+{% block content %}
+
+<h1>{{ entity.id }} - files</h1>
+
+<ul>
+{% for file in entity.files %}
+  <li>
+  <a href="{% url "webui-entity-file" repo org cid eid forloop.counter0 %}"><img src="{{ file.path }}" width="100" height="100" /></a><br/>
+  <a href="{% url "webui-entity-file" repo org cid eid forloop.counter0 %}">{{ file.basename }}</a><br/>
+  {{ file.size|filesizeformat }}<br/>
+  </li>
+{% endfor %}
+  <li><a href="{% url "webui-entity-add" repo org cid eid %}">New file</a></li>
+</ul>
+
+{% endblock content %}

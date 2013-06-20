@@ -84,6 +84,20 @@ def mets_xml( request, repo, org, cid, eid ):
     soup = BeautifulSoup(entity.mets_xml(), 'xml')
     return HttpResponse(soup.prettify(), mimetype="application/xml")
 
+@storage_required
+def files( request, repo, org, cid, eid ):
+    entity = Entity.load(Entity.json_path(repo, org, cid, eid))
+    return render_to_response(
+        'webui/entities/files.html',
+        {'repo': entity.repo,
+         'org': entity.org,
+         'cid': entity.cid,
+         'eid': entity.eid,
+         'collection_uid': entity.collection_uid,
+         'entity': entity,},
+        context_instance=RequestContext(request, processors=[])
+    )
+
 @login_required
 @storage_required
 def file_detail( request, repo, org, cid, eid, filenum ):
