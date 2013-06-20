@@ -104,15 +104,35 @@ def changelog( request, repo, org, cid, eid ):
     )
 
 @storage_required
-def entity_json( request, repo, org, cid, eid ):
+def json( request, repo, org, cid, eid ):
     entity = Entity.load(Entity.json_path(repo, org, cid, eid))
     return HttpResponse(entity.json(), mimetype="application/json")
 
 @storage_required
-def entity_mets_xml( request, repo, org, cid, eid ):
+def mets_xml( request, repo, org, cid, eid ):
     entity = Entity.load(Entity.json_path(repo, org, cid, eid))
     soup = BeautifulSoup(entity.mets_xml(), 'xml')
     return HttpResponse(soup.prettify(), mimetype="application/xml")
+
+@login_required
+@storage_required
+def file_detail( request, repo, org, cid, eid, filenum ):
+    """Add file to entity.
+    """
+    entity = Entity.load(Entity.json_path(repo, org, cid, eid))
+    filenum = int(filenum)
+    files = entity.files()
+    return render_to_response(
+        'webui/entities/file.html',
+        {'repo': entity.repo,
+         'org': entity.org,
+         'cid': entity.cid,
+         'eid': entity.eid,
+         'collection_uid': entity.collection_uid,
+         'files': files,
+         'file': files[filenum],},
+        context_instance=RequestContext(request, processors=[])
+    )
 
 @login_required
 @storage_required
@@ -204,26 +224,6 @@ def entity_add( request, repo, org, cid, eid ):
          'collection_uid': entity.collection_uid,
          'entity': entity,
          'form': form,},
-        context_instance=RequestContext(request, processors=[])
-    )
-
-@login_required
-@storage_required
-def entity_file( request, repo, org, cid, eid, filenum ):
-    """Add file to entity.
-    """
-    entity = Entity.load(Entity.json_path(repo, org, cid, eid))
-    filenum = int(filenum)
-    files = entity.files()
-    return render_to_response(
-        'webui/entities/entity-file.html',
-        {'repo': entity.repo,
-         'org': entity.org,
-         'cid': entity.cid,
-         'eid': entity.eid,
-         'collection_uid': entity.collection_uid,
-         'files': files,
-         'file': files[filenum],},
         context_instance=RequestContext(request, processors=[])
     )
 
