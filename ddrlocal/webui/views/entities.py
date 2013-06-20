@@ -27,36 +27,6 @@ from xmlforms.models import XMLModel
 
 # helpers --------------------------------------------------------------
 
-def entity_files(soup, collection_abs, entity_rel):
-    """Given a BeautifulSoup-ified METS doc, get list of entity files
-    
-    ...
-    <fileSec>
-     <fileGrp USE="master">
-      <file CHECKSUM="fadfbcd8ceb71b9cfc765b9710db8c2c" CHECKSUMTYPE="md5">
-       <Flocat href="files/6a00e55055.png"/>
-      </file>
-     </fileGrp>
-     <fileGrp USE="master">
-      <file CHECKSUM="42d55eb5ac104c86655b3382213deef1" CHECKSUMTYPE="md5">
-       <Flocat href="files/20121205.jpg"/>
-      </file>
-     </fileGrp>
-    </fileSec>
-    ...
-    """
-    files = []
-    for tag in soup.find_all('flocat', 'xml'):
-        cid = os.path.basename(collection_abs)
-        f = {
-            'abs': os.path.join(collection_abs, entity_rel, tag['href']),
-            'name': os.path.join(cid, entity_rel, tag['href']),
-            'basename': os.path.basename(tag['href']),
-            'size': 1234567,
-        }
-        files.append(f)
-    return files
-
 def handle_uploaded_file(f, dest_dir):
     if not os.path.exists(dest_dir):
         os.makedirs(dest_dir)
