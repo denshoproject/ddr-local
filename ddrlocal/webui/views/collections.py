@@ -14,14 +14,12 @@ from django.template.loader import get_template
 
 from DDR import commands
 
+from ddrlocal.models.collection import DDRLocalCollection as Collection
+from ddrlocal.forms import CollectionForm
+
 from storage.decorators import storage_required
 from webui import api
 from webui.forms.collections import NewCollectionForm, UpdateForm
-from webui.ead import COLLECTION_OVERVIEW_FIELDS, CollectionOverviewForm
-from webui.ead import ADMIN_INFO_FIELDS, AdminInfoForm
-from webui.ead import BIOG_HIST_FIELDS, BiogHistForm
-from webui.ead import SCOPE_CONTENT_FIELDS, ScopeContentForm
-from webui.ead import ADJUNCT_DESCRIPTIVE_FIELDS, AdjunctDescriptiveForm
 from webui.views.decorators import login_required
 from xmlforms.models import XMLModel
 
@@ -32,43 +30,6 @@ def collection_cgit_url(collection_uid):
     """Returns cgit URL for collection.
     """
     return '{}/cgit.cgi/{}/'.format(settings.CGIT_URL, collection_uid)
-
-def collection_entities(soup):
-    """Given a BeautifulSoup-ified EAD doc, get list of entity UIDs
-    
-    <dsc>
-      <head>
-       Inventory
-      </head>
-      <c01>
-       <did>
-        <unittitle eid="ddr-testing-201304081359-1">
-         Entity description goes here
-        </unittitle>
-       </did>
-      </c01>
-      <c01>
-       <did>
-        <unittitle eid="ddr-testing-201304081359-2">
-         Entity description goes here
-        </unittitle>
-       </did>
-      </c01>
-     </dsc>
-    """
-    entities = []
-    dsc = soup.find('dsc')
-    if dsc:
-        for tag in dsc.find_all('unittitle'):
-            e = tag['eid'].split('-')
-            repo,org,cid,eid = e[0],e[1],e[2],e[3]
-            entities.append( {'uid': tag['eid'],
-                              'repo': repo,
-                              'org': org,
-                              'cid': cid,
-                              'eid': eid,
-                              'title': tag.string.strip(),} )
-    return entities
 
 def _uid_path(repo, org, cid):
     uid = '{}-{}-{}'.format(repo, org, cid)
@@ -99,28 +60,14 @@ def collections( request ):
 
 @storage_required
 def detail( request, repo, org, cid ):
-    collection_uid,collection_path = _uid_path(repo, org, cid)
-    ead_path_rel = 'ead.xml'
-    ead_path_abs = os.path.join(collection_path, ead_path_rel)
-    ead = open( os.path.join(collection_path, 'ead.xml'), 'r').read()
-    ead_soup = BeautifulSoup(ead, 'xml')
-    entities = collection_entities(ead_soup)[:20]
-    with open(ead_path_abs, 'r') as f:
-        xml = f.read()
+    collection = Collection.from_json(repo, org, cid)
     return render_to_response(
         'webui/collections/detail.html',
         {'repo': repo,
          'org': org,
          'cid': cid,
-         'collection_uid': collection_uid,
-         'ead': ead,
-         'entities': entities,
-         'cgit_url': collection_cgit_url(collection_uid),
-         'overview': XMLModel(xml, COLLECTION_OVERVIEW_FIELDS),
-         'admininfo': XMLModel(xml, ADMIN_INFO_FIELDS),
-         'bioghist': XMLModel(xml, BIOG_HIST_FIELDS),
-         'scopecontent': XMLModel(xml, SCOPE_CONTENT_FIELDS),
-         'adjunctdesc': XMLModel(xml, ADJUNCT_DESCRIPTIVE_FIELDS),
+         'collection': collection,
+         'cgit_url': collection_cgit_url(collection.id),
          'workbench_url': settings.WORKBENCH_URL,
          },
         context_instance=RequestContext(request, processors=[])
@@ -128,6 +75,7 @@ def detail( request, repo, org, cid ):
 
 @storage_required
 def entities( request, repo, org, cid ):
+    collection = Collection.from_json(repo, org, cid)
     collection_uid,collection_path = _uid_path(repo, org, cid)
     ead_path_rel = 'ead.xml'
     ead_path_abs = os.path.join(collection_path, ead_path_rel)
@@ -139,7 +87,6 @@ def entities( request, repo, org, cid ):
         {'repo': repo,
          'org': org,
          'cid': cid,
-         'collection_uid': collection_uid,
          'entities': entities,
          },
         context_instance=RequestContext(request, processors=[])
@@ -147,29 +94,31 @@ def entities( request, repo, org, cid ):
 
 @storage_required
 def changelog( request, repo, org, cid ):
-    collection_uid,collection_path = _uid_path(repo, org, cid)
-    changelog = open( os.path.join(collection_path, 'changelog'), 'r').read()
+    collection = Collection.from_json(repo, org, cid)
     return render_to_response(
         'webui/collections/changelog.html',
         {'repo': repo,
          'org': org,
          'cid': cid,
-         'collection_uid': collection_uid,
-         'changelog': changelog,
-         },
+         'collection': collection,},
         context_instance=RequestContext(request, processors=[])
     )
 
 @storage_required
+def collection_json( request, repo, org, cid ):
+    collection = Collection.from_json(repo, org, cid)
+    return HttpResponse(json.dumps(collection.json().data), mimetype="application/json")
+
+@storage_required
 def git_status( request, repo, org, cid ):
-    collection_uid,collection_path = _uid_path(repo, org, cid)
-    exit,status = commands.status(collection_path)
+    collection = Collection.from_json(repo, org, cid)
+    exit,status = commands.status(collection.path)
     return render_to_response(
         'webui/collections/git-status.html',
         {'repo': repo,
          'org': org,
          'cid': cid,
-         'collection_uid': collection_uid,
+         'collection': collection,
          'status': status,
          },
         context_instance=RequestContext(request, processors=[])
@@ -177,14 +126,14 @@ def git_status( request, repo, org, cid ):
 
 @storage_required
 def git_annex_status( request, repo, org, cid ):
-    collection_uid,collection_path = _uid_path(repo, org, cid)
-    exit,astatus = commands.annex_status(collection_path)
+    collection = Collection.from_json(repo, org, cid)
+    exit,astatus = commands.annex_status(collection.path)
     return render_to_response(
         'webui/collections/git-annex-status.html',
         {'repo': repo,
          'org': org,
          'cid': cid,
-         'collection_uid': collection_uid,
+         'collection': collection,
          'astatus': astatus,
          },
         context_instance=RequestContext(request, processors=[])
@@ -192,25 +141,19 @@ def git_annex_status( request, repo, org, cid ):
 
 @storage_required
 def ead_xml( request, repo, org, cid ):
-    collection_uid,collection_path = _uid_path(repo, org, cid)
-    ead_path_rel = 'ead.xml'
-    ead_path_abs = os.path.join(collection_path, ead_path_rel)
-    xml = ''
-    with open( os.path.join(collection_path, 'ead.xml'), 'r') as f:
-        xml = f.read()
-    soup = BeautifulSoup(xml, 'xml')
+    collection = Collection.from_json(repo, org, cid)
+    soup = BeautifulSoup(collection.ead().xml, 'xml')
     return HttpResponse(soup.prettify(), mimetype="application/xml")
 
 @login_required
 @storage_required
 def sync( request, repo, org, cid ):
-    collection_uid,collection_path = _uid_path(repo, org, cid)
-    #
+    collection = Collection.from_json(repo, org, cid)
     if request.method == 'POST':
         git_name = request.session.get('git_name')
         git_mail = request.session.get('git_mail')
         if git_name and git_mail:
-            exit,status = commands.sync(git_name, git_mail, collection_path)
+            exit,status = commands.sync(git_name, git_mail, collection.path)
             #
             if exit:
                 messages.error(request, 'Error: {}'.format(status))
@@ -257,6 +200,46 @@ def new( request, repo, org ):
     return render_to_response(
         'webui/collections/new.html',
         {'form': form,},
+        context_instance=RequestContext(request, processors=[])
+    )
+
+@login_required
+@storage_required
+def edit( request, repo, org, cid ):
+    git_name = request.session.get('git_name')
+    git_mail = request.session.get('git_mail')
+    if not git_name and git_mail:
+        messages.error(request, 'Login is required')
+    collection = Collection.from_json(repo, org, cid)
+    if request.method == 'POST':
+        form = CollectionForm(request.POST)
+        if form.is_valid():
+            git_name = request.session.get('git_name')
+            git_mail = request.session.get('git_mail')
+            if git_name and git_mail:
+                collection.form_process(form)
+                collection.dump_json()
+                # TODO write XML
+                exit,status = commands.update(git_name, git_mail,
+                                              collection.path,
+                                              [collection.json_path])
+                if exit:
+                    messages.error(request, 'Error: {}'.format(status))
+                else:
+                    messages.success(request, 'Collection updated')
+                    return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+            else:
+                messages.error(request, 'Login is required')
+    else:
+        form = CollectionForm(collection.form_data())
+    return render_to_response(
+        'webui/collections/edit-json.html',
+        {'repo': repo,
+         'org': org,
+         'cid': cid,
+         'collection': collection,
+         'form': form,
+         },
         context_instance=RequestContext(request, processors=[])
     )
 

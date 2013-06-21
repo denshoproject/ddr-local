@@ -1,20 +1,20 @@
 {% extends "webui/collections/base.html" %}
 
 
-{% block title %}Changelog | {{ collection_uid }}{% endblock %}
+{% block title %}Changelog | {{ collection.id }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{% url "webui-collection" repo org cid %}">{{ collection_uid }}</a></li>
+<li><a href="{% url "webui-collection" repo org cid %}">{{ collection.id }}</a></li>
 <li class="active">changelog</li>
 {% endblock breadcrumbs %}
 
 
 {% block content %}
 
-<h1>{{ collection_uid }} - changelog</h1>
+<h1>{{ collection.id }} - changelog</h1>
 
 <pre>
-{{ changelog }}
+{{ collection.changelog }}
 </pre>
 
 {% endblock content %}

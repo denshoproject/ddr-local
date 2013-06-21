@@ -1,17 +1,17 @@
 {% extends "webui/collections/base.html" %}
 
 
-{% block title %}git annex status | {{ collection_uid }}{% endblock %}
+{% block title %}git annex status | {{ collection.id }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{% url "webui-collection" repo org cid %}">{{ collection_uid }}</a></li>
+<li><a href="{% url "webui-collection" repo org cid %}">{{ collection.id }}</a></li>
 <li class="active">git annex status</li>
 {% endblock breadcrumbs %}
 
 
 {% block content %}
 
-<h1>{{ collection_uid }} - git annex status</h1>
+<h1>{{ collection.id }} - git annex status</h1>
 
 <pre>
 {{ astatus }}
