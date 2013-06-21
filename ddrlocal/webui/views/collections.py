@@ -259,7 +259,7 @@ def edit_ead( request, repo, org, cid ):
                 with open(ead_path_abs, 'w') as f:
                     f.write(xml)
                 
-                exit,status = commands.update(git_name, git_mail, collection_path, [ead_path_rel])
+                exit,status = commands.update(git_name, git_mail, collection.path, [ead_path_rel])
                 
                 if exit:
                     messages.error(request, 'Error: {}'.format(status))
@@ -277,7 +277,8 @@ def edit_ead( request, repo, org, cid ):
         {'repo': repo,
          'org': org,
          'cid': cid,
-         'collection_uid': collection_uid,
+         'collection_uid': collection.id,
+         'collection': collection,
          'form': form,},
         context_instance=RequestContext(request, processors=[])
     )

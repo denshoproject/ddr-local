@@ -4,8 +4,8 @@
 {% block title %}files | {{ entity.id }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{% url "webui-entity" repo org cid eid %}">{{ entity.id }}</a></li>
-<li class="active">files</li>
+<li><a href="{% url "webui-entity" entity.repo entity.org entity.cid entity.eid %}">{% if entity.title %}{{ entity.title }}{% else %}{{ entity.id }}{% endif %}</a></li>
+<li class="active">Files</li>
 {% endblock breadcrumbs %}
 
 

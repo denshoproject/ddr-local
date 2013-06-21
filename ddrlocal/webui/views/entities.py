@@ -55,7 +55,8 @@ def detail( request, repo, org, cid, eid ):
          'org': entity.org,
          'cid': entity.cid,
          'eid': entity.eid,
-         'collection_uid': entity.parent_uid,
+         'collection_uid': collection.id,
+         'collection': collection,
          'entity': entity,},
         context_instance=RequestContext(request, processors=[])
     )
@@ -70,7 +71,8 @@ def changelog( request, repo, org, cid, eid ):
          'org': entity.org,
          'cid': entity.cid,
          'eid': entity.eid,
-         'collection_uid': entity.parent_uid,
+         'collection_uid': collection.id,
+         'collection': collection,
          'entity': entity,},
         context_instance=RequestContext(request, processors=[])
     )
@@ -98,7 +100,8 @@ def files( request, repo, org, cid, eid ):
          'org': entity.org,
          'cid': entity.cid,
          'eid': entity.eid,
-         'collection_uid': entity.parent_uid,
+         'collection_uid': collection.id,
+         'collection': collection,
          'entity': entity,},
         context_instance=RequestContext(request, processors=[])
     )
@@ -117,7 +120,8 @@ def file_detail( request, repo, org, cid, eid, filenum ):
          'org': entity.org,
          'cid': entity.cid,
          'eid': entity.eid,
-         'collection_uid': entity.parent_uid,
+         'collection_uid': collection.id,
+         'collection': collection,
          'entity': entity,
          'file': entity.files[filenum],},
         context_instance=RequestContext(request, processors=[])
@@ -138,7 +142,7 @@ def new( request, repo, org, cid ):
             if git_name and git_mail:
                 eid = form.cleaned_data['eid']
                 entity_uid = '{}-{}-{}-{}'.format(repo,org,cid,eid)
-                exit,status = commands.entity_create(git_name, git_mail, collection_path, entity_uid)
+                exit,status = commands.entity_create(git_name, git_mail, collection.path, entity_uid)
                 
                 if exit:
                     messages.error(request, 'Error: {}'.format(status))
@@ -166,7 +170,8 @@ def new( request, repo, org, cid ):
         {'repo': repo,
          'org': org,
          'cid': cid,
-         'collection_uid': collection_uid,
+         'collection_uid': collection.id,
+         'collection': collection,
          'form': form,},
         context_instance=RequestContext(request, processors=[])
     )
@@ -210,7 +215,8 @@ def entity_add( request, repo, org, cid, eid ):
          'org': entity.org,
          'cid': entity.cid,
          'eid': entity.eid,
-         'collection_uid': entity.parent_uid,
+         'collection_uid': collection.id,
+         'collection': collection,
          'entity': entity,
          'form': form,},
         context_instance=RequestContext(request, processors=[])
@@ -253,7 +259,8 @@ def edit( request, repo, org, cid, eid ):
          'org': entity.org,
          'cid': entity.cid,
          'eid': entity.eid,
-         'collection_uid': entity.parent_uid,
+         'collection_uid': collection.id,
+         'collection': collection,
          'entity': entity,
          'form': form,
          },

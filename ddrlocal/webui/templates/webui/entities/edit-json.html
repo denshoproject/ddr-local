@@ -1,17 +1,17 @@
 {% extends "webui/entities/base.html" %}
 
 
-{% block title %}{{ slug }} | {{ entity.id }}{% endblock %}
+{% block title %}Edit | {{ entity.title }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{% url "webui-entity" repo org cid eid %}">{{ entity.id }}</a></li>
+<li><a href="{% url "webui-entity" entity.repo entity.org entity.cid entity.eid %}">{% if entity.title %}{{ entity.title }}{% else %}{{ entity.id }}{% endif %}</a></li>
 <li class="active">Edit</li>
 {% endblock breadcrumbs %}
 
 
 {% block content %}
 
-<h1>{{ entity.id }} - entity.mets_xml_path()</h1>
+<h1>{{ entity.title }} - Edit</h1>
 
 <form name="edit" action="" method="POST">{% csrf_token %}
 <table>

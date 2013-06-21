@@ -1,17 +1,17 @@
 {% extends "webui/collections/base.html" %}
 
 
-{% block title %}{{ slug }} | {{ collection.id }}{% endblock %}
+{% block title %}EDIT | {{ collection.title }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{% url "webui-collection" repo org cid %}">{{ collection.id }}</a></li>
+<li><a href="{% url "webui-collection" repo org cid %}">{{ collection.title }}</a></li>
 <li class="active">Edit</li>
 {% endblock breadcrumbs %}
 
 
 {% block content %}
 
-<h1>{{ collection.id }} - EDIT</h1>
+<h1>{{ collection.title }} - EDIT</h1>
 
 <form name="edit" action="" method="POST">{% csrf_token %}
 <table>

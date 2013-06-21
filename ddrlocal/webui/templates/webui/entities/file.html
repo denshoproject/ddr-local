@@ -1,10 +1,10 @@
 {% extends "webui/entities/base.html" %}
 
 
-{% block title %}{{ entity.id }}{% endblock %}
+{% block title %}{{ entity.title }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{% url "webui-entity" repo org cid eid %}">{{ entity.id }}</a></li>
+<li><a href="{% url "webui-entity" entity.repo entity.org entity.cid entity.eid %}">{% if entity.title %}{{ entity.title }}{% else %}{{ entity.id }}{% endif %}</a></li>
 <li class="active">{{ file.basename }}</li>
 {% endblock breadcrumbs %}
 

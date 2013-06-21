@@ -4,7 +4,7 @@
 {% block title %}{{ collection.id }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li class="active">{{ collection.id }}</li>
+<li class="active">{{ collection.title }}</li>
 {% endblock breadcrumbs %}
 
 
@@ -16,7 +16,7 @@
   </form>
 </div>
 
-<h1>{{ collection.id }}</h1>
+<h1>{{ collection.title }}</h1>
 
   </div><!-- .span12 -->
 </div><!-- .row -->
@@ -43,7 +43,11 @@ Entities
 </h3>
 <ul>
 {% for entity in collection.entities %}
-  <li><a href="{# url "webui-entity" entity.repo entity.org entity.cid entity.eid #}">{{ entity.uid }}: {{ entity.title }}</a></li>
+  <li>
+    <a href="{% url "webui-entity" entity.repo entity.org entity.cid entity.eid %}">
+      {{ entity.title }}
+    </a>
+  </li>
 {% endfor %}
   <li><a href="{% url "webui-entity-new" repo org cid %}">New entity</a></li>
 </ul>
@@ -71,10 +75,6 @@ Entities
 {% block footer %}
 
 <div class="muted" id="expert">
-  <span><a class="muted" href="{{ workbench_url }}" target="workbench">workbench</a></span>
-  <span class="bullsep">&bull;</span>
-  <span><a class="muted" href="{{ cgit_url }}" target="cgit">cgit</a></span>
-  <span class="bullsep">&bull;&bull;</span>
   <span>
    <a class="muted" href="{% url "webui-collection-ead-xml" repo org cid %}">ead.xml</a>
    <a class="muted" href="{% url "webui-collection-edit-ead" repo org cid %}">(edit)</a>
@@ -83,8 +83,14 @@ Entities
   <span><a class="muted" href="{% url "webui-collection-changelog" repo org cid %}">changelog</a></span>
   <span class="bullsep">&bull;</span>
   <span><a class="muted" href="{% url "webui-collection-git-status" repo org cid %}">git status</a></span>
+  <span class="bullsep">&bull;&bull;</span>
+  <span><a class="muted" href="{{ workbench_url }}" target="workbench">workbench</a></span>
   <span class="bullsep">&bull;</span>
-  <span><a class="muted" href="{% url "webui-collection-git-annex-status" repo org cid %}">git annex status</a></span>
+  <span><a class="muted" href="{{ cgit_url }}" target="cgit">cgit</a></span>
+  <span class="bullsep">&bull;</span>
+  <span>
+  {{ collection.path }}
+  </span>
 </div>
 
 {% endblock footer %}

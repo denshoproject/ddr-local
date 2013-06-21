@@ -1,17 +1,17 @@
 {% extends "webui/collections/base.html" %}
 
 
-{% block title %}{{ collection_uid }}{% endblock %}
+{% block title %}{{ collection.title }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{% url "webui-collection" repo org cid %}">{{ collection_uid }}</a></li>
-<li class="active">{{ collection_uid }}</li>
+<li><a href="{% url "webui-collection" repo org cid %}">{{ collection.title }}</a></li>
+<li class="active">Edit</li>
 {% endblock breadcrumbs %}
 
 
 {% block content %}
 
-<h1>{{ collection_uid }} - edit</h1>
+<h1>{{ collection.title }} - Edit</h1>
 
 <div class="alert alert-block">
   <b>IMPORTANT:</b>
