@@ -47,10 +47,10 @@ class DDRLocalEntity( DDREntity ):
         """Generic display
         """
         lv = []
-        for mf in METS_FIELDS:
-            if hasattr(self, mf['name']) and mf.get('form',None):
-                item = {'label': mf['form']['label'],
-                        'value': getattr(self, mf['name'])}
+        for f in METS_FIELDS:
+            if hasattr(self, f['name']) and f.get('form',None):
+                item = {'label': f['form']['label'],
+                        'value': getattr(self, f['name'])}
                 lv.append(item)
         return lv
     
@@ -63,13 +63,13 @@ class DDRLocalEntity( DDREntity ):
         @returns data: dict object as used by Django Form object.
         """
         data = {}
-        for mf in METS_FIELDS:
-            if hasattr(self, mf['name']) and mf.get('form',None):
-                key = mf['name']
-                value = getattr(self, mf['name'])
+        for f in METS_FIELDS:
+            if hasattr(self, f['name']) and f.get('form',None):
+                key = f['name']
+                value = getattr(self, f['name'])
                 # hand off special processing to function specified in METS_FIELDS
-                if mf.get('prep_func',None):
-                    func = mf['prep_func']
+                if f.get('prep_func',None):
+                    func = f['prep_func']
                     value = func(value)
                 # end special processing
                 data[key] = value
@@ -83,13 +83,13 @@ class DDRLocalEntity( DDREntity ):
         
         @param form
         """
-        for mf in METS_FIELDS:
-            if hasattr(self, mf['name']) and mf.get('form',None):
-                key = mf['name']
+        for f in METS_FIELDS:
+            if hasattr(self, f['name']) and f.get('form',None):
+                key = f['name']
                 cleaned_data = form.cleaned_data[key]
                 # hand off special processing to function specified in METS_FIELDS
-                if mf.get('proc_func',None):
-                    func = mf['proc_func']
+                if f.get('proc_func',None):
+                    func = f['proc_func']
                     cleaned_data = func(cleaned_data)
                 # end special processing
                 setattr(self, key, cleaned_data)
@@ -113,9 +113,9 @@ class DDRLocalEntity( DDREntity ):
         @param path: Absolute path to entity
         """
         json_data = self.json().data
-        for mf in METS_FIELDS:
+        for ff in METS_FIELDS:
             for f in json_data:
-                if f.keys()[0] == mf['name']:
+                if f.keys()[0] == ff['name']:
                     setattr(self, f.keys()[0], f.values()[0])
         # special cases
         if self.created:
@@ -137,11 +137,11 @@ class DDRLocalEntity( DDREntity ):
         @param path: Absolute path to .json file.
         """
         entity = []
-        for mf in METS_FIELDS:
-            if hasattr(self, mf['name']):
+        for f in METS_FIELDS:
+            if hasattr(self, f['name']):
                 item = {}
-                key = mf['name']
-                val = getattr(self, mf['name'])
+                key = f['name']
+                val = getattr(self, f['name'])
                 # special cases
                 if key in ['created', 'lastmod']:
                     val = val.strftime(DATETIME_FORMAT)
@@ -160,11 +160,10 @@ class DDRLocalEntity( DDREntity ):
         @param path: Absolute path to entity; must end in valid DDR entity id.
         """
         entity = Entity(path)
-        for mf in METS_FIELDS:
-            if hasattr(mf, 'name') and hasattr(mf, 'initial'):
-                setattr(entity, mf['name'], mf['initial'])
+        for f in METS_FIELDS:
+            if hasattr(f, 'name') and hasattr(f, 'initial'):
+                setattr(entity, f['name'], f['initial'])
         return entity
-
 
 
 
@@ -215,7 +214,6 @@ def prepare_topics(data):
 def prepare_persons(data):    return _prepare_basic(data)
 def prepare_facility(data):   return _prepare_basic(data)
 # notes
-
 
 
 
@@ -275,6 +273,7 @@ def process_topics(data):
 def process_persons(data):    return _process_basic(data)
 def process_facility(data):   return _process_basic(data)
 # notes
+
 
 
 # ----------------------------------------------------------------------

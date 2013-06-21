@@ -160,7 +160,7 @@ def new( request, repo, org, cid ):
         {'repo': repo,
          'org': org,
          'cid': cid,
-         'collection_uid': entity.parent_uid,
+         'collection_uid': collection_uid,
          'form': form,},
         context_instance=RequestContext(request, processors=[])
     )
