@@ -115,6 +115,7 @@ def collection_json( request, repo, org, cid ):
 def git_status( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(repo,org,cid))
     exit,status = commands.status(collection.path)
+    exit,astatus = commands.annex_status(collection.path)
     return render_to_response(
         'webui/collections/git-status.html',
         {'repo': repo,
@@ -122,20 +123,6 @@ def git_status( request, repo, org, cid ):
          'cid': cid,
          'collection': collection,
          'status': status,
-         },
-        context_instance=RequestContext(request, processors=[])
-    )
-
-@storage_required
-def git_annex_status( request, repo, org, cid ):
-    collection = Collection.from_json(repo, org, cid)
-    exit,astatus = commands.annex_status(collection.path)
-    return render_to_response(
-        'webui/collections/git-annex-status.html',
-        {'repo': repo,
-         'org': org,
-         'cid': cid,
-         'collection': collection,
          'astatus': astatus,
          },
         context_instance=RequestContext(request, processors=[])
