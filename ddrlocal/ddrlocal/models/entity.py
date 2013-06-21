@@ -34,6 +34,14 @@ class DDRLocalEntity( DDREntity ):
     org = None
     cid = None
     eid = None
+    
+    def __init__(self, *args, **kwargs):
+        super(DDRLocalEntity, self).__init__(*args, **kwargs)
+        self.id = self.uid
+        self.repo = self.id.split('-')[0]
+        self.org = self.id.split('-')[1]
+        self.cid = self.id.split('-')[2]
+        self.eid = self.id.split('-')[3]
 
     @staticmethod
     def entity_path(repo, org, cid, eid):
@@ -43,13 +51,16 @@ class DDRLocalEntity( DDREntity ):
         entity_abs     = os.path.join(collection_abs,'files',entity_uid)
         return entity_abs
     
-    def __init__(self, *args, **kwargs):
-        super(DDRLocalEntity, self).__init__(*args, **kwargs)
-        self.id = self.uid
-        self.repo = self.id.split('-')[0]
-        self.org = self.id.split('-')[1]
-        self.cid = self.id.split('-')[2]
-        self.eid = self.id.split('-')[3]
+    @staticmethod
+    def create(path):
+        """Creates a new entity with the specified entity ID.
+        @param path: Absolute path to entity; must end in valid DDR entity id.
+        """
+        entity = Entity(path)
+        for f in METS_FIELDS:
+            if hasattr(f, 'name') and hasattr(f, 'initial'):
+                setattr(entity, f['name'], f['initial'])
+        return entity
     
     def labels_values(self):
         """Generic display
@@ -158,17 +169,6 @@ class DDRLocalEntity( DDREntity ):
         json_pretty = json.dumps(entity, indent=4, separators=(',', ': '))
         with open(self.json_path, 'w') as f:
             f.write(json_pretty)
-    
-    @staticmethod
-    def create(path):
-        """Creates a new entity with the specified entity ID.
-        @param path: Absolute path to entity; must end in valid DDR entity id.
-        """
-        entity = Entity(path)
-        for f in METS_FIELDS:
-            if hasattr(f, 'name') and hasattr(f, 'initial'):
-                setattr(entity, f['name'], f['initial'])
-        return entity
 
 
 

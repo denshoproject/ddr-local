@@ -32,16 +32,27 @@ class DDRLocalCollection( DDRCollection ):
     org = None
     cid = None
 
-    @staticmethod
-    def collection_path(repo, org, cid):
-        return os.path.join(settings.DDR_BASE_PATH, '{}-{}-{}'.format(repo, org, cid))
-
     def __init__(self, *args, **kwargs):
         super(DDRLocalCollection, self).__init__(*args, **kwargs)
         self.id = self.uid
         self.repo = self.id.split('-')[0]
         self.org = self.id.split('-')[1]
         self.cid = self.id.split('-')[2]
+
+    @staticmethod
+    def collection_path(repo, org, cid):
+        return os.path.join(settings.DDR_BASE_PATH, '{}-{}-{}'.format(repo, org, cid))
+    
+    @staticmethod
+    def create(path):
+        """Creates a new collection with the specified collection ID.
+        @param path: Absolute path to collection; must end in valid DDR collection id.
+        """
+        collection = Collection(path)
+        for f in EAD_FIELDS:
+            if hasattr(f, 'name') and hasattr(f, 'initial'):
+                setattr(collection, f['name'], f['initial'])
+        return collection
     
     def entities( self ):
         """Returns relative paths to entities."""
@@ -158,17 +169,6 @@ class DDRLocalCollection( DDRCollection ):
         json_pretty = json.dumps(collection, indent=4, separators=(',', ': '))
         with open(self.json_path, 'w') as f:
             f.write(json_pretty)
-    
-    @staticmethod
-    def create(path):
-        """Creates a new entity with the specified collection ID.
-        @param path: Absolute path to collection; must end in valid DDR collection id.
-        """
-        collection = Collection(path)
-        for f in EAD_FIELDS:
-            if hasattr(f, 'name') and hasattr(f, 'initial'):
-                setattr(collection, f['name'], f['initial'])
-        return collection
 
 
 
