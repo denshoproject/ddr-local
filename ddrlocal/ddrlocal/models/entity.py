@@ -34,6 +34,14 @@ class DDRLocalEntity( DDREntity ):
     org = None
     cid = None
     eid = None
+
+    @staticmethod
+    def entity_path(repo, org, cid, eid):
+        collection_uid = '{}-{}-{}'.format(repo, org, cid)
+        entity_uid     = '{}-{}-{}-{}'.format(repo, org, cid, eid)
+        collection_abs = os.path.join(settings.DDR_BASE_PATH, collection_uid)
+        entity_abs     = os.path.join(collection_abs,'files',entity_uid)
+        return entity_abs
     
     def __init__(self, *args, **kwargs):
         super(DDRLocalEntity, self).__init__(*args, **kwargs)
@@ -97,12 +105,9 @@ class DDRLocalEntity( DDREntity ):
         self.lastmod = datetime.now()
 
     @staticmethod
-    def from_json(repo, org, cid, eid):
-        collection_uid = '{}-{}-{}'.format(repo, org, cid)
-        entity_uid     = '{}-{}-{}-{}'.format(repo, org, cid, eid)
-        collection_abs = os.path.join(settings.DDR_BASE_PATH, collection_uid)
-        entity_abs     = os.path.join(collection_abs,'files',entity_uid)
+    def from_json(entity_abs):
         entity = DDRLocalEntity(entity_abs)
+        entity_uid = entity.id
         entity.load_json(entity.json_path)
         if not entity.id:
             entity.id = entity_uid  # might get overwritten if entity.json is blank

@@ -37,6 +37,7 @@ def _uid_path(repo, org, cid):
     return uid,path
 
 
+
 # views ----------------------------------------------------------------
 
 @storage_required
@@ -60,7 +61,8 @@ def collections( request ):
 
 @storage_required
 def detail( request, repo, org, cid ):
-    collection = Collection.from_json(repo, org, cid)
+    collection = Collection.from_json(Collection.collection_path(repo,org,cid))
+    entities = collection.entities()
     return render_to_response(
         'webui/collections/detail.html',
         {'repo': repo,
@@ -75,7 +77,7 @@ def detail( request, repo, org, cid ):
 
 @storage_required
 def entities( request, repo, org, cid ):
-    collection = Collection.from_json(repo, org, cid)
+    collection = Collection.from_json(Collection.collection_path(repo,org,cid))
     collection_uid,collection_path = _uid_path(repo, org, cid)
     ead_path_rel = 'ead.xml'
     ead_path_abs = os.path.join(collection_path, ead_path_rel)
@@ -94,7 +96,7 @@ def entities( request, repo, org, cid ):
 
 @storage_required
 def changelog( request, repo, org, cid ):
-    collection = Collection.from_json(repo, org, cid)
+    collection = Collection.from_json(Collection.collection_path(repo,org,cid))
     return render_to_response(
         'webui/collections/changelog.html',
         {'repo': repo,
@@ -106,12 +108,12 @@ def changelog( request, repo, org, cid ):
 
 @storage_required
 def collection_json( request, repo, org, cid ):
-    collection = Collection.from_json(repo, org, cid)
+    collection = Collection.from_json(Collection.collection_path(repo,org,cid))
     return HttpResponse(json.dumps(collection.json().data), mimetype="application/json")
 
 @storage_required
 def git_status( request, repo, org, cid ):
-    collection = Collection.from_json(repo, org, cid)
+    collection = Collection.from_json(Collection.collection_path(repo,org,cid))
     exit,status = commands.status(collection.path)
     return render_to_response(
         'webui/collections/git-status.html',
@@ -141,14 +143,14 @@ def git_annex_status( request, repo, org, cid ):
 
 @storage_required
 def ead_xml( request, repo, org, cid ):
-    collection = Collection.from_json(repo, org, cid)
+    collection = Collection.from_json(Collection.collection_path(repo,org,cid))
     soup = BeautifulSoup(collection.ead().xml, 'xml')
     return HttpResponse(soup.prettify(), mimetype="application/xml")
 
 @login_required
 @storage_required
 def sync( request, repo, org, cid ):
-    collection = Collection.from_json(repo, org, cid)
+    collection = Collection.from_json(Collection.collection_path(repo,org,cid))
     if request.method == 'POST':
         git_name = request.session.get('git_name')
         git_mail = request.session.get('git_mail')
@@ -210,7 +212,7 @@ def edit( request, repo, org, cid ):
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
         messages.error(request, 'Login is required')
-    collection = Collection.from_json(repo, org, cid)
+    collection = Collection.from_json(Collection.collection_path(repo,org,cid))
     if request.method == 'POST':
         form = CollectionForm(request.POST)
         if form.is_valid():
@@ -255,10 +257,9 @@ def edit_ead( request, repo, org, cid ):
     - write contents of field to EAD.xml
     - commands.update
     """
-    collection_uid = '{}-{}-{}'.format(repo, org, cid)
-    collection_path = os.path.join(settings.DDR_BASE_PATH, collection_uid)
+    collection = Collection.from_json(Collection.collection_path(repo,org,cid))
     ead_path_rel = 'ead.xml'
-    ead_path_abs = os.path.join(collection_path, ead_path_rel)
+    ead_path_abs = os.path.join(collection.path, ead_path_rel)
     #
     if request.method == 'POST':
         form = UpdateForm(request.POST)

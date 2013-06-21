@@ -6,6 +6,8 @@ from django import forms
 from django.conf import settings
 
 from DDR.models import DDRCollection
+from ddrlocal.models.entity import DDRLocalEntity
+
 
 DATE_FORMAT = '%Y-%m-%d'
 DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
@@ -29,13 +31,30 @@ class DDRLocalCollection( DDRCollection ):
     repo = None
     org = None
     cid = None
-    
+
+    @staticmethod
+    def collection_path(repo, org, cid):
+        return os.path.join(settings.DDR_BASE_PATH, '{}-{}-{}'.format(repo, org, cid))
+
     def __init__(self, *args, **kwargs):
         super(DDRLocalCollection, self).__init__(*args, **kwargs)
         self.id = self.uid
         self.repo = self.id.split('-')[0]
         self.org = self.id.split('-')[1]
         self.cid = self.id.split('-')[2]
+    
+    def entities( self ):
+        """Returns relative paths to entities."""
+        entities = []
+        if os.path.exists(self.files_path):
+            for eid in os.listdir(self.files_path):
+                path = os.path.join(self.files_path, eid)
+                entity = DDRLocalEntity.from_json(path)
+                for lv in entity.labels_values():
+                    if lv['label'] == 'title':
+                        entity.title = lv['value']
+                entities.append(entity)
+        return entities
     
     def labels_values(self):
         """Generic display
@@ -91,9 +110,7 @@ class DDRLocalCollection( DDRCollection ):
         self.lastmod = datetime.now()
     
     @staticmethod
-    def from_json(repo, org, cid):
-        collection_uid = '{}-{}-{}'.format(repo, org, cid)
-        collection_abs = os.path.join(settings.DDR_BASE_PATH, collection_uid)
+    def from_json(collection_abs):
         collection = DDRLocalCollection(collection_abs)
         collection.load_json(collection.json_path)
         if not collection.id:
