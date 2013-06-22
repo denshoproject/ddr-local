@@ -1,14 +1,14 @@
 from datetime import datetime, date
 import json
 import os
+from StringIO import StringIO
 
-from bs4 import BeautifulSoup
+from lxml import etree
 
 from django import forms
 from django.conf import settings
 
 import tematres
-
 from DDR.models import DDREntity
 
 DATE_FORMAT = '%Y-%m-%d'
@@ -169,6 +169,41 @@ class DDRLocalEntity( DDREntity ):
         json_pretty = json.dumps(entity, indent=4, separators=(',', ': '))
         with open(self.json_path, 'w') as f:
             f.write(json_pretty)
+    
+    def dump_mets(self):
+        """Dump Entity data to mets.xml file.
+        """
+        NAMESPACES = {
+            'mets':  'http://www.loc.gov/METS/',
+            'mix':   'http://www.loc.gov/mix/v10',
+            'mods':  'http://www.loc.gov/mods/v3',
+            'rts':   'http://cosimo.stanford.edu/sdr/metsrights/',
+            'xlink': 'http://www.w3.org/1999/xlink',
+            'xsi':   'http://www.w3.org/2001/XMLSchema-instance',
+        }
+        NAMESPACES_TAGPREFIX = {}
+        for k,v in NAMESPACES.iteritems():
+            NAMESPACES_TAGPREFIX[k] = '{%s}' % v
+        NAMESPACES_XPATH = {'mets': NAMESPACES['mets'],}
+        NSMAP = {None : NAMESPACES['mets'],}
+        NS = NAMESPACES_TAGPREFIX
+        ns = NAMESPACES_XPATH
+        
+        tree = etree.parse(StringIO(self.mets().xml))
+        
+        for f in METS_FIELDS:
+            if hasattr(self, f['name']):
+                key = f['name']
+                value = getattr(self, f['name'])
+                # hand off special processing to function specified in METS_FIELDS
+                if f.get('mets_func',None):
+                    func = f['mets_func']
+                    tree = func(tree, NAMESPACES, f, value)
+                # end special processing
+        
+        xml_pretty = etree.tostring(tree, pretty_print=True)
+        with open(self.mets_path, 'w') as f:
+            f.write(xml_pretty)
 
 
 
@@ -216,7 +251,9 @@ def prepare_topics(data):
     data = ';\n'.join(a)
     return data
 
-def prepare_persons(data):    return _prepare_basic(data)
+def prepare_persons(data):
+    return ';\n'.join(data)
+
 def prepare_facility(data):   return _prepare_basic(data)
 # notes
 
@@ -275,9 +312,156 @@ def process_topics(data):
     a = tematres.get_terms(form_urls)
     return a
 
-def process_persons(data):    return _process_basic(data)
+def process_persons(data):
+    return [n.strip() for n in data.split(';')]
+
 def process_facility(data):   return _process_basic(data)
 # notes
+
+
+
+# XML export functions -------------------------------------------------
+# 
+
+def _expand_attrib_namespace(attr, namespaces):
+    ns,a = attr.split(':')
+    return '{%s}%s' % (namespaces[ns], a)
+
+def _getval(tree, namespaces, xpath):
+    """Gets the first value; yes this is probably suboptimal
+    """
+    return tree.xpath(xpath, namespaces=namespaces)[0]
+
+def _set_attr(tree, namespaces, xpath, attr, value):
+    tag = tree.xpath(xpath, namespaces=namespaces)[0]
+    tag.set(attr, value)
+    return tree
+
+def _set_tag_text(tree, namespaces, xpath, value):
+    tag = _getval(tree, namespaces, xpath)
+    tag.text = value
+    return tree
+
+def _duplicate(tree, namespaces, src_xpath, dest_xpath):
+    i = tree.xpath( src_xpath,  namespaces=namespaces )[0]
+    tag = tree.xpath( dest_xpath, namespaces=namespaces )[0]
+    tag.text = i
+    return tree
+
+def _mets_simple(tree, namespaces, field, value):
+    return _set_tag_text(tree, namespaces, field['xpath'], value)
+
+def mets_id(tree, namespaces, field, value):
+    tree = _set_attr(tree, namespaces, '/mets:mets', 'OBJID', value)
+    tree = _set_tag_text(tree, namespaces,
+                         "/mets:mets/mets:dmdSec[@ID='DM1']/mets:mdWrap/mets:xmlData/mods:mods/mods:identifier",
+                         value)
+    #tree = _set_tag_text(tree, namespaces,
+    #                     "/mets:mets/mets:amdSec/mets:digiProvMD[@ID='PROV1']/mets:mdWrap/mets:xmlData/premis:premis/premis:object/premis:objectIdentifierValue",
+    #                     value)
+    return tree
+
+
+
+def mets_created(tree, namespaces, field, value):
+    return _set_attr(tree, namespaces,
+                     '/mets:mets/mets:metsHdr', 'CREATEDATE',
+                     value.strftime(DATETIME_FORMAT))
+
+def mets_lastmod(tree, namespaces, field, value):
+    return _set_attr(tree, namespaces,
+                     '/mets:mets/mets:metsHdr', 'LASTMODDATE',
+                     value.strftime(DATETIME_FORMAT))
+
+# parent
+# collection
+
+def mets_title(tree, namespaces, field, value):
+    tree = _set_attr(tree, namespaces, '/mets:mets', 'LABEL', value)
+    tree = _set_tag_text(tree, namespaces, "/mets:mets/mets:dmdSec[@ID='DM1']/mets:mdWrap/mets:xmlData/mods:mods/mods:titleInfo/mods:title", value)
+    return tree
+
+def mets_description(tree, namespaces, field, value):
+    return _set_tag_text(tree, namespaces, field['xpath'], value)
+
+# creation
+# location
+def mets_creators(tree, namespaces, field, value):
+    """
+    <mods:name authority="naf" type="organization">
+      <mods:namePart>Anderson Photo Service</mods:namePart>
+      <mods:role>
+        <mods:roleTerm authority="marcrelator" type="text">Artist</mods:roleTerm>
+      </mods:role>
+    </mods:name>
+    """
+    return tree
+
+def mets_language(tree, namespaces, field, value):
+    """
+    """
+    return tree
+
+# genre
+# format
+# dimensions
+# organization
+# organization_id
+# digitize_person
+# digitize_organization
+# digitize_date
+# credit
+# rights
+
+def mets_topics(tree, namespaces, field, value):
+    """
+    <mods:subject ID="topics">
+      <mods:topic xlink:href="http://id.densho.org/cv/topics/8">Small Business [8]</mods:topic>
+      ...
+    </mods:subject>
+    """
+    ## remove existing tags
+    #parent = None
+    #for tag in tree.xpath(field['xpath'], namespaces=namespaces):
+    #    parent = tag.getparent()
+    #    parent.remove(tag)
+    ## replace with new tags
+    #if parent:
+    #    for kv in value:
+    #        tag = etree.Element(_expand_attrib_namespace('mods:topic', namespaces))
+    #        tag.set(_expand_attrib_namespace('xlink:href', namespaces), kv['url'])
+    #        tag.text = kv['label']
+    #        parent.append(tag)
+    return tree
+
+def mets_persons(tree, namespaces, field, value):
+    """
+    <mods:subject ID="persons">
+      <mods:name authority="naf" type="personal">
+        <mods:namePart>Hatchimonji, Kumezo</mods:namePart>
+      </mods:name>
+      ...
+    </mods:subject>
+    """
+    #parent = None
+    #xpath = field['xpath']
+    #tags = tree.xpath(field['xpath'], namespaces=namespaces)
+    #assert False
+    ## replace with new tags
+    #if parent:
+    #    for kv in value:
+    #        name = etree.Element(_expand_attrib_namespace('mods:name', namespaces))
+    #        name.set('authority', 'naf')
+    #        name.set('type', 'unknown')
+    #        namePart = etree.Element(_expand_attrib_namespace('mods:namePart', namespaces))
+    #        namePart.text = kv
+    #        name.append(namePart)
+    #        parent.append(name)
+    return tree
+
+# facility
+# notes
+# files
 
 
 
@@ -301,11 +485,12 @@ METS_FIELDS = [
             'initial':    '',
             'required':   True,
         },
+        'mets_func':  mets_id,
         'default':    '',
     },
     {
         'name':       'created',
-        'xpath':      "",
+        'xpath':      "/mets:mets/mets:metsHdr@CREATEDATE",
         'xpath_dup':  [],
         'model_type': datetime,
         'form_type':  forms.DateTimeField,
@@ -316,11 +501,12 @@ METS_FIELDS = [
             'initial':    '',
             'required':   True,
         },
+        'mets_func':  mets_created,
         'default':    '',
     },
     {
         'name':       'lastmod',
-        'xpath':      "",
+        'xpath':      "/mets:mets/mets:metsHdr@LASTMODDATE",
         'xpath_dup':  [],
         'model_type': datetime,
         'form_type':  forms.DateTimeField,
@@ -331,6 +517,7 @@ METS_FIELDS = [
             'initial':    '',
             'required':   True,
         },
+        'mets_func':  mets_lastmod,
         'default':    '',
     },
     {
@@ -386,6 +573,7 @@ METS_FIELDS = [
             'initial':    '',
             'required':   True,
         },
+        'mets_func':  mets_title,
         'default':    '',
     },
     {
@@ -402,6 +590,7 @@ METS_FIELDS = [
             'initial':    '',
             'required':   False,
         },
+        'mets_func':  _mets_simple,
         'default':    '',
     },
     {
@@ -454,6 +643,7 @@ METS_FIELDS = [
         },
         'prep_func':  prepare_creators,
         'proc_func':  process_creators,
+        'mets_func':  mets_creators,
         'default':    '',
     },
     {
@@ -472,6 +662,7 @@ METS_FIELDS = [
         },
         'prep_func':  prepare_language,
         'proc_func':  process_language,
+        'mets_func':  mets_language,
         'default':    '',
     },
     {
@@ -488,6 +679,7 @@ METS_FIELDS = [
             'initial':    '',
             'required':   False,
         },
+        'mets_func':  _mets_simple,
         'default':    '',
     },
     {
@@ -504,6 +696,7 @@ METS_FIELDS = [
             'initial':    '',
             'required':   True,
         },
+        'mets_func':  _mets_simple,
         'default':    '',
     },
     {
@@ -520,6 +713,7 @@ METS_FIELDS = [
             'initial':    '',
             'required':   True,
         },
+        'mets_func':  _mets_simple,
         'default':    '',
     },
     {
@@ -536,6 +730,7 @@ METS_FIELDS = [
             'initial':    '',
             'required':   True,
         },
+        'mets_func':  _mets_simple,
         'default':    '',
     },
     {
@@ -649,11 +844,12 @@ METS_FIELDS = [
         },
         'prep_func':  prepare_topics,
         'proc_func':  process_topics,
+        'mets_func':  mets_topics,
         'default':    '',
     },
     {
         'name':       'persons',
-        'xpath':      "/mets:mets/mets:dmdSec[@ID='DM1']/mets:mdWrap/mets:xmlData/mods:mods/mods:subject/mods:name/mods:namePart",
+        'xpath':      "/mets:mets/mets:dmdSec[@ID='DM1']/mets:mdWrap/mets:xmlData/mods:mods/mods:subject[@ID='persons']",
         'xpath_dup':  [],
         'model_type': str,
         'form_type':  forms.CharField,
@@ -666,6 +862,7 @@ METS_FIELDS = [
         },
         'prep_func':  prepare_persons,
         'proc_func':  process_persons,
+        'mets_func':  mets_persons,
         'default':    '',
     },
     {

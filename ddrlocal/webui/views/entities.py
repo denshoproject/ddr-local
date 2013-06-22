@@ -240,7 +240,7 @@ def edit( request, repo, org, cid, eid ):
             if git_name and git_mail:
                 entity.form_process(form)
                 entity.dump_json()
-                # TODO write XML
+                entity.dump_mets()
                 exit,status = commands.entity_update(git_name, git_mail,
                                                      entity.parent_path, entity.id,
                                                      [entity.json_path])
