@@ -11,7 +11,7 @@
 
 {% block content %}
 
-<h1>{{ collection.title }} - EDIT</h1>
+<h1>{% if collection.title %}{{ collection.title }}{% else %}{{ collection.id }}{% endif %} - EDIT</h1>
 
 <form name="edit" action="" method="POST">{% csrf_token %}
 <table>
