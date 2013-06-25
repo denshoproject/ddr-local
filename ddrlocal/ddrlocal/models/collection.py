@@ -147,6 +147,11 @@ class DDRLocalCollection( DDRCollection ):
         else:
             self.lastmod = datetime.now()
         # end special cases
+        # Ensure that every field in EAD_FIELDS is represented
+        # even if not present in json_data.
+        for ff in EAD_FIELDS:
+            if not hasattr(self, ff['name']):
+                setattr(self, ff['name'], ff.get('default',None))
     
     def dump_json(self):
         """Dump Collection data to .json file.
@@ -154,9 +159,10 @@ class DDRLocalCollection( DDRCollection ):
         """
         collection = []
         for ff in EAD_FIELDS:
+            item = {}
+            key = ff['name']
+            val = ''
             if hasattr(self, ff['name']):
-                item = {}
-                key = ff['name']
                 val = getattr(self, ff['name'])
                 # special cases
                 if key in ['created', 'lastmod']:
@@ -164,8 +170,8 @@ class DDRLocalCollection( DDRCollection ):
                 elif key in ['digitize_date']:
                     val = val.strftime(DATE_FORMAT)
                 # end special cases
-                item[key] = val
-                collection.append(item)
+            item[key] = val
+            collection.append(item)
         json_pretty = json.dumps(collection, indent=4, separators=(',', ': '))
         with open(self.json_path, 'w') as f:
             f.write(json_pretty)
