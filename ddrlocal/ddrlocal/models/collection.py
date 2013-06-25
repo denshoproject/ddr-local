@@ -308,9 +308,41 @@ def _duplicate(tree, namespaces, src_xpath, dest_xpath):
 def _ead_simple(tree, namespaces, field, value):
     return _set_tag_text(tree, namespaces, field['xpath'], value)
 
+# - - - - - - - - - - - - - - - -
+
+def ead_id(tree, namespaces, field, value):
+    tree = _set_tag_text(tree, namespaces, "/ead/eadheader/eadid", value)
+    tree = _set_tag_text(tree, namespaces, "/ead/archdesc/did/unitid", value)
+    return tree
+
+def ead_created(tree, namespaces, field, value):
+    return _set_attr(tree, namespaces, "/ead/eadheader/eadid", "created", value.strftime(DATETIME_FORMAT))
+
+def ead_lastmod(tree, namespaces, field, value):
+    return _set_attr(tree, namespaces, "/ead/eadheader/eadid", "lastmod", value.strftime(DATETIME_FORMAT))
+
+def ead_title(tree, namespaces, field, value):
+    tree = _set_tag_text(tree, namespaces, "/ead/eadheader/filedesc/titlestmt/titleproper", value)
+    tree = _set_tag_text(tree, namespaces, "/ead/archdesc/did/unittitle", value)
+    return tree
+
+# unitdate_inclusive
+# unitdate_bulk
 # creators
 # extent
-# language
+
+def ead_language(tree, namespaces, field, value):
+    code = value
+    label = ''
+    for l in LANGUAGE_CHOICES:
+        if l[0] == code:
+            label = l[1]
+    tree = _set_attr(tree, namespaces, "/ead/eadheader/profiledesc/langusage/language", "langcode", code)
+    tree = _set_tag_text(tree, namespaces, "/ead/eadheader/profiledesc/langusage/language", label)
+    tree = _set_attr(tree, namespaces, "/ead/archdesc/did/langmaterial/language", "langcode", code)
+    tree = _set_tag_text(tree, namespaces, "/ead/archdesc/did/langmaterial/language", label)
+    return tree
+
 # organization
 # description
 # notes
@@ -351,6 +383,7 @@ EAD_FIELDS = [
             'initial':    '',
             'required':   True,
         },
+        'ead_func':   ead_id,
         'default':    '',
     },
     {
@@ -367,6 +400,7 @@ EAD_FIELDS = [
             'initial':    '',
             'required':   True,
         },
+        'ead_func':   ead_created,
         'default':    '',
     },
     {
@@ -383,6 +417,7 @@ EAD_FIELDS = [
             'initial':    '',
             'required':   True,
         },
+        'ead_func':   ead_lastmod,
         'default':    '',
     },
     # overview ---------------------------------------------------------
@@ -401,10 +436,11 @@ EAD_FIELDS = [
             'initial':    '',
             'required':   True,
         },
+        'ead_func':   ead_title,
         'default':    '',
     },
     {
-        'name':       'unitdate_inclusive',
+        'name':       'unitdateinclusive',
         'group':      'overview',
         'xpath':      "/ead/archdesc/did/unitdate[@type='inclusive']",
         'xpath_dup':  [],
@@ -418,10 +454,11 @@ EAD_FIELDS = [
             'initial':    '',
             'required':   True,
         },
+        'ead_func':   _ead_simple,
         'default':    '',
     },
     {
-        'name':       'unitdate_bulk',
+        'name':       'unitdatebulk',
         'group':      'overview',
         'xpath':      "/ead/archdesc/did/unitdate[@type='bulk']",
         'xpath_dup':  [],
@@ -435,6 +472,7 @@ EAD_FIELDS = [
             'initial':    '',
             'required':   False,
         },
+        'ead_func':   _ead_simple,
         'default':    '',
     },
     {
@@ -452,6 +490,7 @@ EAD_FIELDS = [
             'initial':    '',
             'required':   False,
         },
+        'ead_func':   _ead_simple,
         'default':    '',
     },
     {
@@ -469,6 +508,7 @@ EAD_FIELDS = [
             'initial':    '',
             'required':   True,
         },
+        'ead_func':   _ead_simple,
         'default':    '',
     },
     {
@@ -486,6 +526,7 @@ EAD_FIELDS = [
             'initial':    '',
             'required':   False,
         },
+        'ead_func':   ead_language,
         'default':    '',
     },
     {
@@ -503,6 +544,7 @@ EAD_FIELDS = [
             'initial':    '',
             'required':   True,
         },
+        'ead_func':   _ead_simple,
         'default':    '',
     },
     {
@@ -519,6 +561,7 @@ EAD_FIELDS = [
             'initial':    '',
             'required':   False,
         },
+        'ead_func':   _ead_simple,
         'default':    '',
     },
     {
@@ -535,6 +578,7 @@ EAD_FIELDS = [
             'initial':    '',
             'required':   False,
         },
+        'ead_func':   _ead_simple,
         'default':    '',
     },
     {
@@ -552,6 +596,7 @@ EAD_FIELDS = [
             'initial':    '',
             'required':   True,
         },
+        'ead_func':   _ead_simple,
         'default':    '',
     },
     # administative ----------------------------------------------------
@@ -569,6 +614,7 @@ EAD_FIELDS = [
             'initial':    '',
             'required':   False,
         },
+        'ead_func':   _ead_simple,
         'default':    '',
     },
     {
@@ -585,6 +631,7 @@ EAD_FIELDS = [
             'initial':    '',
             'required':   False,
         },
+        'ead_func':   _ead_simple,
         'default':    '',
     },
     {
@@ -601,6 +648,7 @@ EAD_FIELDS = [
             'initial':    '',
             'required':   False,
         },
+        'ead_func':   _ead_simple,
         'default':    '',
     },
     {
@@ -617,6 +665,7 @@ EAD_FIELDS = [
             'initial':    '',
             'required':   False,
         },
+        'ead_func':   _ead_simple,
         'default':    '',
     },
     {
@@ -633,6 +682,7 @@ EAD_FIELDS = [
             'initial':    '',
             'required':   False,
         },
+        'ead_func':   _ead_simple,
         'default':    '',
     },
     {
@@ -649,6 +699,7 @@ EAD_FIELDS = [
             'initial':    '',
             'required':   False,
         },
+        'ead_func':   _ead_simple,
         'default':    '',
     },
     {
@@ -666,6 +717,7 @@ EAD_FIELDS = [
             'initial':    '',
             'required':   False,
         },
+        'ead_func':   _ead_simple,
         'default':    '',
     },
     # bioghist ---------------------------------------------------------
@@ -683,6 +735,7 @@ EAD_FIELDS = [
             'initial':    '',
             'required':   False,
         },
+        'ead_func':   _ead_simple,
         'default':    '',
     },
     # scopecontent -----------------------------------------------------
@@ -700,13 +753,14 @@ EAD_FIELDS = [
             'initial':    '',
             'required':   False,
         },
+        'ead_func':   _ead_simple,
         'default':    '',
     },
     # related ----------------------------------------------------------
     {
         'name':       'relatedmaterial',
         'group':      'related',
-        'xpath':      "/ead/descgrp/relatedmaterial",
+        'xpath':      "/ead/relatedmaterial",
         'xpath_dup':  [],
         'model_type': str,
         'form_type':  forms.CharField,
@@ -717,12 +771,13 @@ EAD_FIELDS = [
             'initial':    '',
             'required':   False,
         },
+        'ead_func':   _ead_simple,
         'default':    '',
     },
     {
         'name':       'separatedmaterial',
         'group':      'related',
-        'xpath':      "/ead/descgrp/separatedmaterial",
+        'xpath':      "/ead/separatedmaterial",
         'xpath_dup':  [],
         'model_type': str,
         'form_type':  forms.CharField,
@@ -733,6 +788,7 @@ EAD_FIELDS = [
             'initial':    '',
             'required':   False,
         },
+        'ead_func':   _ead_simple,
         'default':    '',
     },
 
