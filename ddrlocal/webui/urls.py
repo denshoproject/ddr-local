@@ -19,6 +19,7 @@ urlpatterns = patterns(
     url(r'^collection/(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/edit/adjunctdesc/$', 'webui.views.collections.edit_adjunctdesc', name='webui-collection-edit-adjunctdesc'),
     url(r'^collection/(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/edit/$', 'webui.views.collections.edit', name='webui-collection-edit'),
 
+    url(r'^collection/(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/collection.json$', 'webui.views.collections.collection_json', name='webui-collection-json'),
     url(r'^collection/(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/ead.xml$', 'webui.views.collections.ead_xml', name='webui-collection-ead-xml'),
     url(r'^collection/(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/changelog/$', 'webui.views.collections.changelog', name='webui-collection-changelog'),
     url(r'^collection/(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/entities/$', 'webui.views.collections.entities', name='webui-collection-entities'),
