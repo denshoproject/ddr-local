@@ -2,6 +2,8 @@ from datetime import datetime, date
 import json
 import os
 
+from lxml import etree
+
 from django import forms
 from django.conf import settings
 
@@ -175,7 +177,25 @@ class DDRLocalCollection( DDRCollection ):
         json_pretty = json.dumps(collection, indent=4, separators=(',', ': '))
         with open(self.json_path, 'w') as f:
             f.write(json_pretty)
-
+    
+    def dump_ead(self):
+        """Dump Collection data to ead.xml file.
+        """
+        NAMESPACES = None
+        tree = etree.fromstring(self.ead().xml)
+        for f in EAD_FIELDS:
+            key = f['name']
+            value = ''
+            if hasattr(self, f['name']):
+                value = getattr(self, f['name'])
+                # hand off special processing to function specified in EAD_FIELDS
+                if f.get('ead_func',None):
+                    func = f['ead_func']
+                    tree = func(tree, NAMESPACES, f, value)
+                # end special processing
+        xml_pretty = etree.tostring(tree, pretty_print=True)
+        with open(self.ead_path, 'w') as f:
+            f.write(xml_pretty)
 
 
 # forms pre-processing functions ---------------------------------------
@@ -232,6 +252,62 @@ def _process_basic(data):
 # title
 # unitdate_inclusive
 # unitdate_bulk
+# creators
+# extent
+# language
+# organization
+# description
+# notes
+# physloc
+#
+# acqinfo
+# custodhist
+# accruals
+# processinfo
+# accessrestrict
+# userrestrict
+# prefercite
+#
+# bioghist
+#
+# scopecontent
+#
+# relatedmaterial
+# separatedmaterial
+
+
+
+# XML export functions -------------------------------------------------
+#
+
+def _expand_attrib_namespace(attr, namespaces):
+    ns,a = attr.split(':')
+    return '{%s}%s' % (namespaces[ns], a)
+
+def _getval(tree, namespaces, xpath):
+    """Gets the first value; yes this is probably suboptimal
+    """
+    return tree.xpath(xpath, namespaces=namespaces)[0]
+
+def _set_attr(tree, namespaces, xpath, attr, value):
+    tag = tree.xpath(xpath, namespaces=namespaces)[0]
+    tag.set(attr, value)
+    return tree
+
+def _set_tag_text(tree, namespaces, xpath, value):
+    tag = _getval(tree, namespaces, xpath)
+    tag.text = value
+    return tree
+
+def _duplicate(tree, namespaces, src_xpath, dest_xpath):
+    i = tree.xpath( src_xpath,  namespaces=namespaces )[0]
+    tag = tree.xpath( dest_xpath, namespaces=namespaces )[0]
+    tag.text = i
+    return tree
+
+def _ead_simple(tree, namespaces, field, value):
+    return _set_tag_text(tree, namespaces, field['xpath'], value)
+
 # creators
 # extent
 # language
