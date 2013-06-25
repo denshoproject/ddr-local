@@ -243,7 +243,7 @@ def edit( request, repo, org, cid, eid ):
                 entity.dump_mets()
                 exit,status = commands.entity_update(git_name, git_mail,
                                                      entity.parent_path, entity.id,
-                                                     [entity.json_path])
+                                                     [entity.json_path, entity.mets_path,])
                 if exit:
                     messages.error(request, 'Error: {}'.format(status))
                 else:

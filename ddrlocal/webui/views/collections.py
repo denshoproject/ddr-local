@@ -209,10 +209,10 @@ def edit( request, repo, org, cid ):
             if git_name and git_mail:
                 collection.form_process(form)
                 collection.dump_json()
-                # TODO write XML
+                collection.dump_ead()
                 exit,status = commands.update(git_name, git_mail,
                                               collection.path,
-                                              [collection.json_path])
+                                              [collection.json_path, collection.ead_path,])
                 if exit:
                     messages.error(request, 'Error: {}'.format(status))
                 else:
