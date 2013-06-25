@@ -147,6 +147,11 @@ class DDRLocalEntity( DDREntity ):
         else:
             self.digitize_date = ''
         # end special cases
+        # Ensure that every field in METS_FIELDS is represented
+        # even if not present in json_data.
+        for ff in METS_FIELDS:
+            if not hasattr(self, ff['name']):
+                setattr(self, ff['name'], ff.get('default',None))
     
     def dump_json(self):
         """Dump Entity data to .json file.
@@ -154,9 +159,10 @@ class DDRLocalEntity( DDREntity ):
         """
         entity = []
         for f in METS_FIELDS:
+            item = {}
+            key = f['name']
+            val = ''
             if hasattr(self, f['name']):
-                item = {}
-                key = f['name']
                 val = getattr(self, f['name'])
                 # special cases
                 if key in ['created', 'lastmod']:
@@ -164,8 +170,8 @@ class DDRLocalEntity( DDREntity ):
                 elif key in ['digitize_date']:
                     val = val.strftime(DATE_FORMAT)
                 # end special cases
-                item[key] = val
-                entity.append(item)
+            item[key] = val
+            entity.append(item)
         json_pretty = json.dumps(entity, indent=4, separators=(',', ': '))
         with open(self.json_path, 'w') as f:
             f.write(json_pretty)
@@ -188,19 +194,17 @@ class DDRLocalEntity( DDREntity ):
         NSMAP = {None : NAMESPACES['mets'],}
         NS = NAMESPACES_TAGPREFIX
         ns = NAMESPACES_XPATH
-        
         tree = etree.parse(StringIO(self.mets().xml))
-        
         for f in METS_FIELDS:
+            key = f['name']
+            value = ''
             if hasattr(self, f['name']):
-                key = f['name']
                 value = getattr(self, f['name'])
                 # hand off special processing to function specified in METS_FIELDS
                 if f.get('mets_func',None):
                     func = f['mets_func']
                     tree = func(tree, NAMESPACES, f, value)
                 # end special processing
-        
         xml_pretty = etree.tostring(tree, pretty_print=True)
         with open(self.mets_path, 'w') as f:
             f.write(xml_pretty)
