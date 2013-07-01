@@ -1,18 +1,20 @@
 # dependencies used in all environments
 
-django
+# -------------------------- License
+
+django                     # MIT
 
 # cache, sessions, celery broker
-redis
-django-redis
-django-redis-sessions
+redis                      # MIT
+django-redis               # BSD
+django-redis-sessions      # BSD
 
 # process queue
-celery
-django-celery
-django-celery-with-redis
+celery                     # BSD
+django-celery              # BSD
+django-celery-with-redis   # BSD
 
 # misc
-beautifulsoup4
-envoy
-requests
+beautifulsoup4             # Python Software Foundation License
+envoy                      # MIT
+requests                   # Apache

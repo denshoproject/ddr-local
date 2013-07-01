@@ -3,8 +3,8 @@
 # include base
 -r _base.txt
 
-bpython
-coverage
-flower   # celery monitoring
-nose
-sphinx
+bpython                         # MIT
+coverage                        # BSD
+flower   # celery monitoring    # BSD?/MIT?
+nose                            # LGPL
+sphinx                          # BSD
