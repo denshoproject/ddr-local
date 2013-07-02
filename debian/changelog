@@ -1,3 +1,9 @@
+ddr-local (0.20130701) UNRELEASED; urgency=low
+
+  * Do I have to update this changelog manually every time I release a new version?
+
+ -- geoffrey jost <geoffrey.jost@densho.org>  Mon, 01 July 2013 16:35:00 -0800
+
 ddr-local (0.20130513) UNRELEASED; urgency=low
 
   * Setting up Debian packaging.
