@@ -1,3 +1,9 @@
+ddr-local (0.20130702) UNRELEASED; urgency=low
+
+  * Added Gunicorn, Supervisord to requirements.
+
+ -- geoffrey jost <geoffrey.jost@densho.org>  Tues, 02 July 2013 11:27:00 -0800
+
 ddr-local (0.20130701) UNRELEASED; urgency=low
 
   * Do I have to update this changelog manually every time I release a new version?

@@ -3,6 +3,7 @@
 # -------------------------- License
 
 django                     # MIT
+gunicorn                   # MIT
 
 # cache, sessions, celery broker
 redis                      # MIT
