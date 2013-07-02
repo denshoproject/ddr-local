@@ -110,13 +110,14 @@ subcall('cp -R {} {}'.format(SRCDIR,PKGDIR))
 print("Building virtualenv: {}".format(VENVDIR))
 os.chdir(PKGDIR)
 subcall('virtualenv --no-site-packages --python=python2.7 {}'.format(VENVDIR))
-subcall('source {}/{}/bin/activate'.format(PKGDIR,VENV))
+SOURCE = 'source {}/{}/bin/activate'.format(PKGDIR,VENV)
+subcall(SOURCE)
 if PIPCACHE:
     print("Using pipcache: {}".format(PIPCACHE))
-    subcall('pip install -vv --index-url={} -r {}/{}/requirements/production.txt --log {}'.format(PIPCACHE, PKGDIR, APP_NAME, PIPLOG))
+    subcall('{} && pip install -vv --index-url={} -r {}/{}/requirements/production.txt --log {}'.format(SOURCE, PIPCACHE, PKGDIR, APP_NAME, PIPLOG))
 else:
     print("No pipcache")
-    subcall('pip install -vv -r {}/{}/requirements/production.txt --log {}'.format(PKGDIR, APP_NAME, PIPLOG))
+    subcall('{} && pip install -vv -r {}/{}/requirements/production.txt --log {}'.format(SOURCE, PKGDIR, APP_NAME, PIPLOG))
 
 # Adjust all the files in the virtualenv's bin/ dir to point to the
 # final virtualenv location rather than the temporary location inside
