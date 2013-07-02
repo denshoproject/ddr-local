@@ -20,9 +20,9 @@ def subcall(cmd):
 PROJ_NAME='ddr-local'
 APP_NAME='ddrlocal'
 ARCHITECTURE='i386'
-#print('PROJ_NAME: {}'.format(PROJ_NAME))
-#print('APP_NAME: {}'.format(APP_NAME))
-#print('ARCHITECTURE: {}'.format(ARCHITECTURE))
+print('PROJ_NAME: {}'.format(PROJ_NAME))
+print('APP_NAME: {}'.format(APP_NAME))
+print('ARCHITECTURE: {}'.format(ARCHITECTURE))
 
 # extract the first (most recent) date from changelog
 # assumes you're running from outside the debian/ dir.
@@ -42,14 +42,14 @@ if not versions:
     print("Couldn't get a version from changelog")
     sys.exit(1)
 VERSION = versions[0]
-#print('VERSION: {}'.format(VERSION))
+print('VERSION: {}'.format(VERSION))
 
 VENV="env/ddr-local"
 DESTDIR="/tmp"
 PKGINSTALLDIR="/opt"
-#print('VENV: {}'.format(VENV))
-#print('DESTDIR: {}'.format(DESTDIR))
-#print('PKGINSTALLDIR: {}'.format(PKGINSTALLDIR))
+print('VENV: {}'.format(VENV))
+print('DESTDIR: {}'.format(DESTDIR))
+print('PKGINSTALLDIR: {}'.format(PKGINSTALLDIR))
 
 # use pip2pi to cache pypi downloads
 #PIPCACHE="http://127.0.0.1/pypackages/simple/"
@@ -63,19 +63,19 @@ DEBFINAL="{}/{}_{}.deb".format(DESTDIR, DEB, ARCHITECTURE)
 VENVDIR="{}/{}".format(PKGDIR,VENV)
 SHBANGDIR="{}/{}/bin/".format(PKGDIR, VENV)
 FINALVENVDIR="/opt/virtualenvs/{}".format(PROJ_NAME)
-#print('SRCDIR: {}'.format(SRCDIR))
-#print('PKG: {}'.format(PKG))
-#print('DEB: {}'.format(DEB))
-#print('PKGDIR: {}'.format(PKGDIR))
-#print('DEBFINAL: {}'.format(DEBFINAL))
-#print('VENVDIR: {}'.format(VENVDIR))
-#print('SHBANGDIR: {}'.format(SHBANGDIR))
-#print("FINALVENVDIR: {}".format(FINALVENVDIR))
+print('SRCDIR: {}'.format(SRCDIR))
+print('PKG: {}'.format(PKG))
+print('DEB: {}'.format(DEB))
+print('PKGDIR: {}'.format(PKGDIR))
+print('DEBFINAL: {}'.format(DEBFINAL))
+print('VENVDIR: {}'.format(VENVDIR))
+print('SHBANGDIR: {}'.format(SHBANGDIR))
+print("FINALVENVDIR: {}".format(FINALVENVDIR))
 
 # use s=...=...= instead of s/.../.../ so don't have to escape slashes in paths
 #SEDCMD="s=#!${PKGDIR}/${APP_NAME}/${VENV}/bin/python=#!${PKGINSTALLDIR}/${APP_NAME}/${VENV}/bin/python="
 SEDCMD="s={}/{}={}=".format(PKGDIR, VENV, FINALVENVDIR)
-#print("SEDCMD: {}".format(SEDCMD))
+print("SEDCMD: {}".format(SEDCMD))
 
 # make sure we have Debian package tools
 if '/usr/bin/debuild' not in subprocess.check_output('whereis debuild', shell=True):
