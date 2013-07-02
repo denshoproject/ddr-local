@@ -59,6 +59,7 @@ SRCDIR=os.getcwd()
 PKG='{}-{}'.format(PROJ_NAME, VERSION)
 DEB='{}_{}'.format(PROJ_NAME, VERSION)
 PKGDIR="{}/{}".format(DESTDIR, PKG)
+PIPLOG="{}/{}-pip.log".format(DESTDIR, PKG)
 DEBFINAL="{}/{}_{}.deb".format(DESTDIR, DEB, ARCHITECTURE)
 VENVDIR="{}/{}".format(PKGDIR,VENV)
 SHBANGDIR="{}/{}/bin/".format(PKGDIR, VENV)
@@ -67,6 +68,7 @@ print('SRCDIR: {}'.format(SRCDIR))
 print('PKG: {}'.format(PKG))
 print('DEB: {}'.format(DEB))
 print('PKGDIR: {}'.format(PKGDIR))
+print('PIPLOG: {}'.format(PIPLOG))
 print('DEBFINAL: {}'.format(DEBFINAL))
 print('VENVDIR: {}'.format(VENVDIR))
 print('SHBANGDIR: {}'.format(SHBANGDIR))
@@ -111,10 +113,12 @@ subcall('virtualenv --no-site-packages --python=python2.7 {}'.format(VENVDIR))
 subcall('source {}/{}/bin/activate'.format(PKGDIR,VENV))
 if PIPCACHE:
     print("Using pipcache: {}".format(PIPCACHE))
-    subcall('pip install -v --index-url={} -r {}/{}/requirements/production.txt'.format(PIPCACHE, PKGDIR, APP_NAME))
+    subcall('rm {}'.format(PIPLOG))  # rm pip log
+    subcall('pip install -vv --index-url={} -r {}/{}/requirements/production.txt --log {}'.format(PIPCACHE, PKGDIR, APP_NAME, PIPLOG))
 else:
     print("No pipcache")
-    subcall('pip install -v -r {}/{}/requirements/production.txt'.format(PKGDIR,APP_NAME))
+    subcall('rm {}'.format(PIPLOG))  # rm pip log
+    subcall('pip install -vv -r {}/{}/requirements/production.txt --log {}'.format(PKGDIR, APP_NAME, PIPLOG))
 
 # Adjust all the files in the virtualenv's bin/ dir to point to the
 # final virtualenv location rather than the temporary location inside
