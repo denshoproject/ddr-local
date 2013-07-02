@@ -113,11 +113,9 @@ subcall('virtualenv --no-site-packages --python=python2.7 {}'.format(VENVDIR))
 subcall('source {}/{}/bin/activate'.format(PKGDIR,VENV))
 if PIPCACHE:
     print("Using pipcache: {}".format(PIPCACHE))
-    subcall('rm {}'.format(PIPLOG))  # rm pip log
     subcall('pip install -vv --index-url={} -r {}/{}/requirements/production.txt --log {}'.format(PIPCACHE, PKGDIR, APP_NAME, PIPLOG))
 else:
     print("No pipcache")
-    subcall('rm {}'.format(PIPLOG))  # rm pip log
     subcall('pip install -vv -r {}/{}/requirements/production.txt --log {}'.format(PKGDIR, APP_NAME, PIPLOG))
 
 # Adjust all the files in the virtualenv's bin/ dir to point to the
