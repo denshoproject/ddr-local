@@ -2,7 +2,9 @@
 ddr-local
 ==========
 
-ddr-local is a Django web application for editing Densho Digital Repository collections and entities.
+DDR is a set of tools for constructing a distributed repository suitable for the archival preservation of media files and metadata.  It is built from standard open-source components, uses archival standard metadata formats, and provides for replication of collections under low- or no-bandwidth conditions.
+
+**ddr-local** is a Django web application which provides a user-friendly interface for editing DDR collections, entities, and media.
 
 
 .. REQUIREMENTS
