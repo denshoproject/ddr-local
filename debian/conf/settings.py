@@ -108,17 +108,17 @@ LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'America/Los_Angeles'
 
 TEMPLATE_DIRS = (
-    '/opt/ddr-local/ddrlocal/ddrlocal/templates',
-    '/opt/ddr-local/ddrlocal/storage/templates',
-    '/opt/ddr-local/ddrlocal/webui/templates',
+    '/usr/local/src/ddr-local/ddrlocal/ddrlocal/templates',
+    '/usr/local/src/ddr-local/ddrlocal/storage/templates',
+    '/usr/local/src/ddr-local/ddrlocal/webui/templates',
 )
 
 STATICFILES_DIRS = (
     #'/opt/ddr-local/ddrlocal/ddrlocal/static',
-    '/opt/ddr-local/ddrlocal/storage/static',
-    '/opt/ddr-local/ddrlocal/webui/static',
+    '/usr/local/src/ddr-local/ddrlocal/storage/static',
+    '/usr/local/src/ddr-local/ddrlocal/webui/static',
 )
-STATIC_ROOT = '/var/www/ddr-local/static'
+STATIC_ROOT = '/var/www/ddrlocal/static'
 STATIC_URL  = 'http://127.0.0.1/static/static/'
 
 MEDIA_ROOT = '/var/www/ddr/'
@@ -163,7 +163,6 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     #
     'djcelery',
-    'progressbarupload',
     #
     'storage',
     'webui',
