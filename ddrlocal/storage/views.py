@@ -10,56 +10,13 @@ from django.template import RequestContext
 
 from DDR import commands
 
-from storage import base_path
+from storage import base_path, mount, unmount
 from storage import REMOUNT_POST_REDIRECT_URL_SESSION_KEY
 from storage.forms import MountForm, UmountForm
 
 
 
-# helpers --------------------------------------------------------------
-
-def mount( request, devicefile, label ):
-    if not (devicefile and label):
-        messages.error(request, 'storage.mount(): devicefile or label missing [{} {}]'.format(devicefile, label))
-        return None
-    stat,mount_path = commands.mount(devicefile, label)
-    if mount_path:
-        messages.success(request, 'Mounted {}'.format(label))
-        # save label,mount_path in session
-        request.session['storage_devicefile'] = devicefile
-        request.session['storage_label'] = label
-        request.session['storage_mount_path'] = mount_path
-        # write mount_path to cache
-        bp = base_path(request)
-    elif mount_path == False:
-        messages.warning(request, 'Count not mount device [{} {}: {},{}]'.format(devicefile, label, stat,mount_path))
-    else:
-        messages.error(request, 'Problem mounting device [{} {}: {},{}]'.format(devicefile, label, stat,mount_path))
-    return mount_path
-
-def unmount( request, devicefile, label ):
-    unmounted = None
-    if devicefile:
-        stat,unmounted = commands.umount(devicefile)
-        # remove label,mount_path from session,
-        # regardless of whether unmount worked
-        try:
-            del request.session['storage_devicefile']
-            del request.session['storage_label']
-            del request.session['storage_mount_path']
-        except KeyError:
-            pass
-    if unmounted:
-        messages.success(request, 'Umounted {}'.format(label))
-    elif unmounted == False:
-        messages.warning(request, 'Count not unmount device [{} {}: {},{}]'.format(devicefile, label, stat,mounted))
-    else:
-        messages.error(request, 'Problem unmounting device [{} {}: {},{}]'.format(devicefile, label, stat,mounted))
-    return unmounted
-
-
 # views ----------------------------------------------------------------
-
 
 def index( request ):
     """Interface for mounting/unmounting drives
