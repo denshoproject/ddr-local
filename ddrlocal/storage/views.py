@@ -19,20 +19,22 @@ from storage.forms import MountForm, UmountForm
 # helpers --------------------------------------------------------------
 
 def mount( request, devicefile, label ):
-    mounted,mount_path = None,None
-    if devicefile and label:
-        stat,mount_path = commands.mount(devicefile, label)
+    if not (devicefile and label):
+        messages.error(request, 'storage.mount(): devicefile or label missing [{} {}]'.format(devicefile, label))
+        return None
+    stat,mount_path = commands.mount(devicefile, label)
     if mount_path:
         messages.success(request, 'Mounted {}'.format(label))
         # save label,mount_path in session
         request.session['storage_devicefile'] = devicefile
         request.session['storage_label'] = label
         request.session['storage_mount_path'] = mount_path
+        # write mount_path to cache
         bp = base_path(request)
     elif mount_path == False:
-        messages.warning(request, 'Count not mount {}'.format(label))
+        messages.warning(request, 'Count not mount device [{} {}: {},{}]'.format(devicefile, label, stat,mount_path))
     else:
-        messages.error(request, 'Problem mounting {}: {},{}'.format(label, stat,mounted))
+        messages.error(request, 'Problem mounting device [{} {}: {},{}]'.format(devicefile, label, stat,mount_path))
     return mount_path
 
 def unmount( request, devicefile, label ):
@@ -50,9 +52,9 @@ def unmount( request, devicefile, label ):
     if unmounted:
         messages.success(request, 'Umounted {}'.format(label))
     elif unmounted == False:
-        messages.warning(request, 'Count not umount {}'.format(label))
+        messages.warning(request, 'Count not unmount device [{} {}: {},{}]'.format(devicefile, label, stat,mounted))
     else:
-        messages.error(request, 'Problem unmounting {}: {},{}'.format(label, stat,unmounted))
+        messages.error(request, 'Problem unmounting device [{} {}: {},{}]'.format(devicefile, label, stat,mounted))
     return unmounted
 
 
