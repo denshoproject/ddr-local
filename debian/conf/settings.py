@@ -33,15 +33,10 @@ WORKBENCH_NEWENT_URL = config.get('workbench','workbench_newent_url')
 # Keyword of the organization represented by this install.
 DDR_ORGANIZATIONS    = config.get('local','organizations').split(',')
 
-# Base path to dir where the repos go
-LOCAL_BASE_PATH      = config.get('local','base_path')
-#DDR_BASE_PATH = os.path.join(LOCAL_BASE_PATH, DDR_ORG_UID)
-DDR_BASE_PATH = LOCAL_BASE_PATH
-
 # Directory in root of USB HDD that marks it as a DDR disk
 # /media/USBHDDNAME/ddr
 # USBHDDNAME will be detected and git remotes will be named USBHDDNAME
-#DDR_USBHDD_BASE_DIR = DDR_ORG_UID
+DDR_USBHDD_BASE_DIR = 'ddr'
 
 # path to SSH public key for the VM
 DDR_SSHPUB_PATH      = config.get('local','ssh_pubkey')
