@@ -45,6 +45,12 @@ DDR_SSHPUB_PATH      = config.get('local','ssh_pubkey')
 DDR_PROTOTYPE_USER   = config.get('testing','user_name')
 DDR_PROTOTYPE_MAIL   = config.get('testing','user_mail')
 
+STATIC_ROOT = '/var/www/ddrlocal/static'
+STATIC_URL  = 'http://192.168.56.114/static/'
+
+MEDIA_ROOT = '/var/www/ddr/'
+MEDIA_URL  = 'http://192.168.56.114/media/'
+
 # logging
 WEBUI_LOG_FILE       = config.get('webui', 'log_file')
 WEBUI_LOG_LEVEL      = config.get('webui', 'log_level')
@@ -110,14 +116,9 @@ TEMPLATE_DIRS = (
 
 STATICFILES_DIRS = (
     #'/opt/ddr-local/ddrlocal/ddrlocal/static',
-    '/usr/local/src/ddr-local/ddrlocal/storage/static',
+    #'/usr/local/src/ddr-local/ddrlocal/storage/static',
     '/usr/local/src/ddr-local/ddrlocal/webui/static',
 )
-STATIC_ROOT = '/var/www/ddrlocal/static'
-STATIC_URL  = 'http://127.0.0.1/static/static/'
-
-MEDIA_ROOT = '/var/www/ddr/'
-MEDIA_URL  = 'http://127.0.0.1/media/'
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to
