@@ -46,10 +46,10 @@ DDR_PROTOTYPE_USER   = config.get('testing','user_name')
 DDR_PROTOTYPE_MAIL   = config.get('testing','user_mail')
 
 STATIC_ROOT = '/var/www/ddrlocal/static'
-STATIC_URL  = 'http://192.168.56.114/static/'
+STATIC_URL  = 'http://192.168.56.101/static/'
 
 MEDIA_ROOT = '/var/www/ddr/'
-MEDIA_URL  = 'http://192.168.56.114/media/'
+MEDIA_URL  = 'http://192.168.56.101/media/'
 
 # logging
 WEBUI_LOG_FILE       = config.get('webui', 'log_file')
