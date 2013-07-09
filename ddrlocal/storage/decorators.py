@@ -8,6 +8,7 @@ from django.utils.decorators import available_attrs
 
 from DDR import commands
 
+from storage import base_path
 from storage import REMOUNT_POST_REDIRECT_URL_SESSION_KEY
 
 
@@ -21,14 +22,15 @@ def storage_required(func):
     @wraps(func, assigned=available_attrs(func))
     def inner(request, *args, **kwargs):
         # if we can get list of collections, storage must be readable
+        basepath = base_path(request)
         repo,org = settings.DDR_ORGANIZATIONS[0].split('-')
         try:
-            collections = commands.collections_local(settings.DDR_BASE_PATH, repo, org)
+            collections = commands.collections_local(basepath, repo, org)
             readable = True
         except:
             readable = False
         if not readable:
-            status,msg = commands.storage_status(settings.DDR_BASE_PATH)
+            status,msg = commands.storage_status(basepath)
             remount_uri = request.META.get('PATH_INFO',None)
             request.session[REMOUNT_POST_REDIRECT_URL_SESSION_KEY] = remount_uri
             if msg == 'unmounted':

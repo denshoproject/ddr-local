@@ -9,6 +9,7 @@ from django.conf import settings
 
 from DDR.models import DDRCollection
 from ddrlocal.models.entity import DDRLocalEntity
+from storage import base_path
 
 
 DATE_FORMAT = '%Y-%m-%d'
@@ -42,8 +43,8 @@ class DDRLocalCollection( DDRCollection ):
         self.cid = self.id.split('-')[2]
 
     @staticmethod
-    def collection_path(repo, org, cid):
-        return os.path.join(settings.DDR_BASE_PATH, '{}-{}-{}'.format(repo, org, cid))
+    def collection_path(request, repo, org, cid):
+        return os.path.join(base_path(request), '{}-{}-{}'.format(repo, org, cid))
     
     @staticmethod
     def create(path):

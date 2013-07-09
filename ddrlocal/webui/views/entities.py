@@ -18,6 +18,7 @@ from ddrlocal.models.collection import DDRLocalCollection as Collection
 from ddrlocal.models.entity import DDRLocalEntity as Entity
 from ddrlocal.forms import EntityForm
 
+from storage import base_path
 from storage.decorators import storage_required
 from webui import api
 from webui.forms.entities import NewEntityForm, UpdateForm, AddFileForm
@@ -47,8 +48,8 @@ def handle_uploaded_file(f, dest_dir):
 
 @storage_required
 def detail( request, repo, org, cid, eid ):
-    collection = Collection.from_json(Collection.collection_path(repo,org,cid))
-    entity = Entity.from_json(Entity.entity_path(repo,org,cid,eid))
+    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
     return render_to_response(
         'webui/entities/detail.html',
         {'repo': entity.repo,
@@ -63,8 +64,8 @@ def detail( request, repo, org, cid, eid ):
 
 @storage_required
 def changelog( request, repo, org, cid, eid ):
-    collection = Collection.from_json(Collection.collection_path(repo,org,cid))
-    entity = Entity.from_json(Entity.entity_path(repo,org,cid,eid))
+    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
     return render_to_response(
         'webui/entities/changelog.html',
         {'repo': entity.repo,
@@ -79,21 +80,21 @@ def changelog( request, repo, org, cid, eid ):
 
 @storage_required
 def entity_json( request, repo, org, cid, eid ):
-    collection = Collection.from_json(Collection.collection_path(repo,org,cid))
-    entity = Entity.from_json(Entity.entity_path(repo,org,cid,eid))
+    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
     return HttpResponse(json.dumps(entity.json().data), mimetype="application/json")
 
 @storage_required
 def mets_xml( request, repo, org, cid, eid ):
-    collection = Collection.from_json(Collection.collection_path(repo,org,cid))
-    entity = Entity.from_json(Entity.entity_path(repo,org,cid,eid))
+    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
     soup = BeautifulSoup(entity.mets().xml, 'xml')
     return HttpResponse(soup.prettify(), mimetype="application/xml")
 
 @storage_required
 def files( request, repo, org, cid, eid ):
-    collection = Collection.from_json(Collection.collection_path(repo,org,cid))
-    entity = Entity.from_json(Entity.entity_path(repo,org,cid,eid))
+    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
     return render_to_response(
         'webui/entities/files.html',
         {'repo': entity.repo,
@@ -111,8 +112,8 @@ def files( request, repo, org, cid, eid ):
 def file_detail( request, repo, org, cid, eid, filenum ):
     """Add file to entity.
     """
-    collection = Collection.from_json(Collection.collection_path(repo,org,cid))
-    entity = Entity.from_json(Entity.entity_path(repo,org,cid,eid))
+    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
     filenum = int(filenum)
     return render_to_response(
         'webui/entities/file.html',
@@ -133,7 +134,7 @@ def new( request, repo, org, cid ):
     """
     TODO webui.views.entities.entity_new: get new EID from workbench
     """
-    collection = Collection.from_json(Collection.collection_path(repo,org,cid))
+    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     if request.method == 'POST':
         form = NewEntityForm(request.POST)
         if form.is_valid():
@@ -181,8 +182,8 @@ def new( request, repo, org, cid ):
 def entity_add( request, repo, org, cid, eid ):
     """Add an entity to collection
     """
-    collection = Collection.from_json(Collection.collection_path(repo,org,cid))
-    entity = Entity.from_json(Entity.entity_path(repo,org,cid,eid))
+    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
     messages.debug(request, 'entity_files_dir: {}'.format(entity.files_path))
     #
     if request.method == 'POST':
@@ -229,8 +230,8 @@ def edit( request, repo, org, cid, eid ):
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
         messages.error(request, 'Login is required')
-    collection = Collection.from_json(Collection.collection_path(repo,org,cid))
-    entity = Entity.from_json(Entity.entity_path(repo,org,cid,eid))
+    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
     #
     if request.method == 'POST':
         form = EntityForm(request.POST)
@@ -279,8 +280,8 @@ def edit_mets_xml( request, repo, org, cid, eid ):
     - write contents of field to EAD.xml
     - commands.update
     """
-    collection = Collection.from_json(Collection.collection_path(repo,org,cid))
-    entity = Entity.from_json(Entity.entity_path(repo,org,cid,eid))
+    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
     #
     if request.method == 'POST':
         form = UpdateForm(request.POST)
@@ -330,7 +331,7 @@ def edit_xml( request, repo, org, cid, eid, slug, Form, FIELDS, namespaces=None 
         messages.error(request, 'Login is required')
     collection_uid = '{}-{}-{}'.format(repo, org, cid)
     entity_uid     = '{}-{}-{}-{}'.format(repo, org, cid, eid)
-    collection_abs = os.path.join(settings.DDR_BASE_PATH, collection_uid)
+    collection_abs = os.path.join(base_path(request), collection_uid)
     entity_abs     = os.path.join(collection_abs,'files',entity_uid)
     entity_rel     = os.path.join('files',entity_uid)
     xml_path_rel   = 'mets.xml'

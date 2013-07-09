@@ -10,6 +10,7 @@ from django.template import RequestContext
 
 from DDR import commands
 
+from storage import base_path
 from storage import REMOUNT_POST_REDIRECT_URL_SESSION_KEY
 from storage.forms import MountForm, UmountForm
 
@@ -27,6 +28,7 @@ def mount( request, devicefile, label ):
         request.session['storage_devicefile'] = devicefile
         request.session['storage_label'] = label
         request.session['storage_mount_path'] = mount_path
+        bp = base_path(request)
     elif mount_path == False:
         messages.warning(request, 'Count not mount {}'.format(label))
     else:
