@@ -153,6 +153,9 @@ class DDRLocalEntity( DDREntity ):
         for ff in METS_FIELDS:
             if not hasattr(self, ff['name']):
                 setattr(self, ff['name'], ff.get('default',None))
+        # add relative path to files
+        for f in self.files:
+            f['url'] = os.path.join(self.path_rel, f['path'])
     
     def dump_json(self):
         """Dump Entity data to .json file.
