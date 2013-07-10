@@ -67,6 +67,7 @@ REDIS_PORT = '6379'
 # 0 - cache
 # 1 - celery broker
 # 2 - celery result
+# 3 - sorl
 
 # ----------------------------------------------------------------------
 
@@ -92,6 +93,7 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     #
     'djcelery',
+    'sorl.thumbnail',
     #
     'storage',
     'webui',
@@ -218,3 +220,16 @@ WSGI_APPLICATION = 'ddrlocal.wsgi.application'
 BROKER_URL            = 'redis://%s:%s/1' % (REDIS_HOST, REDIS_PORT)
 CELERY_RESULT_BACKEND = 'redis://%s:%s/2' % (REDIS_HOST, REDIS_PORT)
 BROKER_TRANSPORT_OPTIONS = {'visibility_timeout': 60 * 60}  # 1 hour
+
+# sorl-thumbnail
+THUMBNAIL_DEBUG = DEBUG
+THUMBNAIL_DEBUG = False
+THUMBNAIL_KVSTORE = 'sorl.thumbnail.kvstores.redis_kvstore.KVStore'
+THUMBNAIL_REDIS_PASSWORD = ''
+THUMBNAIL_REDIS_HOST = REDIS_HOST
+THUMBNAIL_REDIS_PORT = int(REDIS_PORT)
+THUMBNAIL_REDIS_DB = 3
+THUMBNAIL_ENGINE = 'sorl.thumbnail.engines.convert_engine.Engine'
+THUMBNAIL_CONVERT = 'convert'
+THUMBNAIL_IDENTIFY = 'identify'
+THUMBNAIL_CACHE_TIMEOUT = 60*60*24*365*10  # 10 years

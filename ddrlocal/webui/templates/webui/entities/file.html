@@ -1,4 +1,5 @@
 {% extends "webui/entities/base.html" %}
+{% load thumbnail %}
 
 
 {% block title %}{{ entity.title }}{% endblock %}
@@ -41,6 +42,11 @@
   </tr>
 </table>
 
-<img src="{{ MEDIA_URL }}{{ file.basename }}" />
+{% if file and file.url %}
+{% thumbnail file.url "1000x1000" crop="center" as img %}
+<img src="{{ img.url }}" width="{{ img.width }}" height="{{ img.height }}">
+{% endthumbnail %}
+{% endif %}
+
 
 {% endblock content %}

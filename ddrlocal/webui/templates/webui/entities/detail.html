@@ -1,4 +1,5 @@
 {% extends "webui/entities/base.html" %}
+{% load thumbnail %}
 
 
 {% block title %}{{ entity.id }}{% endblock %}
@@ -35,7 +36,13 @@ Files
 <ul>
 {% for file in entity.files %}
   <li>
-  <a href="{% url "webui-entity-file" repo org cid eid forloop.counter0 %}"><img src="{{ file.path }}" width="100" height="100" /></a><br/>
+
+{% if file and file.url %}
+{% thumbnail file.url "100x100" crop="center" as img %}
+    <a href="{% url "webui-entity-file" repo org cid eid forloop.counter0 %}"><img src="{{ img.url }}" width="{{ img.width }}" height="{{ img.height }}"></a><br/>
+{% endthumbnail %}
+{% endif %}
+
   <a href="{% url "webui-entity-file" repo org cid eid forloop.counter0 %}">{{ file.basename }}</a><br/>
   {{ file.size|filesizeformat }}<br/>
   </li>
