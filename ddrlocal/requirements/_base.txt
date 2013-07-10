@@ -1,21 +1,28 @@
 # dependencies used in all environments
 
-# -------------------------- License
+# Non-Python dependencies
+# sudo apt-get install libssl-dev, redis-server, python2.7, supervisor
 
-django                     # MIT
-gunicorn                   # MIT
+                           # LICENSE      DEBIAN PKG (WHEEZY)              (JESSIE)
+
+django                     # MIT          python-django (1.4.5-1)          python-django (1.5.1-2)
+gunicorn                   # MIT          gunicorn (0.14.5-3+deb7u1)       gunicorn (0.15.0-1)
 
 # cache, sessions, celery broker
-redis                      # MIT
-django-redis               # BSD
-django-redis-sessions      # BSD
+redis                      # MIT          python-redis (2.4.13-1)          python-redis (2.4.13-2)
+django-redis               # BSD          n/a                              n/a
+django-redis-sessions      # BSD          n/a                              n/a
 
 # process queue
-celery                     # BSD
-django-celery              # BSD
-django-celery-with-redis   # BSD
+celery                     # BSD          python-celery (2.5.3-4)          python-celery (2.5.3-4)
+django-celery              # BSD          python-django-celery (2.5.5-2)   python-django-celery (2.5.5-2)
+django-celery-with-redis   # BSD          n/a                              n/a
 
 # misc
-beautifulsoup4             # Python Software Foundation License
-envoy                      # MIT
-requests                   # Apache
+beautifulsoup4             # MIT          python-beautifulsoup (3.2.1-1)   python-beautifulsoup (3.2.1-1)
+envoy                      # MIT          n/a                              n/a
+lxml                       # BSD          python-lxml (2.3.2-1)            python-lxml (3.2.0-1)
+requests                   # Apache       python-requests (0.12.1-1)       python-requests (1.2.3-1)
+sorl-thumbnail             # BSD          python-sorl-thumbnail (11.12-4)  python-sorl-thumbnail (11.12-5)
+
+#-e git://github.com/densho/ddr-cmdln.git#egg=DDR
