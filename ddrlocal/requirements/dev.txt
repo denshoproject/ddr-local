@@ -1,5 +1,8 @@
 # dependencies for local dev environment
 
+# Non-Python dependencies
+# sudo apt-get install graphviz
+
 # include base
 -r _base.txt
 
@@ -7,4 +10,5 @@ bpython                         # MIT
 coverage                        # BSD
 flower   # celery monitoring    # BSD?/MIT?
 nose                            # LGPL
+snakefood                       # GPL
 sphinx                          # BSD
