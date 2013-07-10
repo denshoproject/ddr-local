@@ -61,6 +61,13 @@ ENTITY_FILE_ROLES = (
     ('access','access'),
 )
 
+REDIS_HOST = '127.0.0.1'
+REDIS_PORT = '6379'
+# REDIS_DB
+# 0 - cache
+# 1 - celery broker
+# 2 - celery result
+
 # ----------------------------------------------------------------------
 
 import djcelery
@@ -74,6 +81,21 @@ MANAGERS = ADMINS
 
 SITE_ID = 1
 SECRET_KEY = 'N0~M0R3-53CR375'
+
+INSTALLED_APPS = (
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.sites',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'django.contrib.admin',
+    #
+    'djcelery',
+    #
+    'storage',
+    'webui',
+)
 
 DATABASES = {
     'default': {
@@ -95,11 +117,6 @@ CACHES = {
 SESSION_ENGINE = 'redis_sessions.session'
 
 MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
-
-# Celery
-BROKER_URL            = 'redis://localhost:6379/1'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/2'
-BROKER_TRANSPORT_OPTIONS = {'visibility_timeout': 60 * 60}  # 1 hour
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False
 # See https://docs.djangoproject.com/en/1.5/ref/settings/#allowed-hosts
@@ -149,21 +166,6 @@ LOGGING = {
     }
 }
 
-INSTALLED_APPS = (
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.sites',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'django.contrib.admin',
-    #
-    'djcelery',
-    #
-    'storage',
-    'webui',
-)
-
 USE_TZ = True
 USE_I18N = True
 USE_L10N = True
@@ -211,3 +213,8 @@ MIDDLEWARE_CLASSES = (
 ROOT_URLCONF = 'ddrlocal.urls'
 
 WSGI_APPLICATION = 'ddrlocal.wsgi.application'
+
+# Celery
+BROKER_URL            = 'redis://%s:%s/1' % (REDIS_HOST, REDIS_PORT)
+CELERY_RESULT_BACKEND = 'redis://%s:%s/2' % (REDIS_HOST, REDIS_PORT)
+BROKER_TRANSPORT_OPTIONS = {'visibility_timeout': 60 * 60}  # 1 hour
