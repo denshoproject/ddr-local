@@ -25,7 +25,7 @@
 
 
 <div id="overview">
-<h3> overview (<a href="{% url "webui-collection-edit" repo org cid %}">edit</a>) </h3>
+<h3><a href="{% url "webui-collection-edit" repo org cid %}">edit</a></h3>
 <dl class="dl-horizontal">
 {% for lv in collection.labels_values %}
   {% if lv.value %}<dt>{{ lv.label }}</dt><dd>{{ lv.value|linebreaks }}</dd>{% endif %}
