@@ -126,9 +126,11 @@ class DDRLocalCollection( DDRCollection ):
     @staticmethod
     def from_json(collection_abs):
         collection = DDRLocalCollection(collection_abs)
+        collection_uid = collection.id  # save this just in case
         collection.load_json(collection.json_path)
         if not collection.id:
-            collection.id = collection_uid  # might get overwritten if collection.json is blank
+            # id gets overwritten if collection.json is blank
+            collection.id = collection_uid
         return collection
     
     def load_json(self, path):
