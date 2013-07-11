@@ -17,7 +17,7 @@
 <ul>
 {% for c in o.3 %}
   <li>
-    <a href="{{ c.url }}">{{ c.id }}</a>
+    <a href="{{ c.url }}">{{ c.id }} {% if c.title %}&mdash; {{ c.title }}{% endif %}</a>
   </li>
 {% endfor %}
 {% if username %}
