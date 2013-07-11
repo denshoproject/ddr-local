@@ -4,7 +4,7 @@
 {% block title %}Changelog | {{ collection.title }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{% url "webui-collection" repo org cid %}">{{ collection.title }}</a></li>
+<li><a href="{{ collection.url }}">{{ collection.title }}</a></li>
 <li class="active">changelog</li>
 {% endblock breadcrumbs %}
 

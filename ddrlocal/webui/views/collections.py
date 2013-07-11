@@ -53,7 +53,8 @@ def collections( request ):
                 coll = os.path.basename(coll)
                 c = coll.split('-')
                 repo,org,cid = c[0],c[1],c[2]
-                colls.append( (coll,repo,org,cid) )
+                collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+                colls.append(collection)
         collections.append( (o,repo,org,colls) )
     return render_to_response(
         'webui/collections/index.html',

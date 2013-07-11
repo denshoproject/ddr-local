@@ -7,6 +7,7 @@ from lxml import etree
 
 from django import forms
 from django.conf import settings
+from django.core.urlresolvers import reverse
 
 import tematres
 from ddrlocal import VERSION, git_commit
@@ -44,6 +45,9 @@ class DDRLocalEntity( DDREntity ):
         self.org = self.id.split('-')[1]
         self.cid = self.id.split('-')[2]
         self.eid = self.id.split('-')[3]
+    
+    def url( self ):
+        return reverse('webui-entity', args=[self.repo, self.org, self.cid, self.eid])
 
     @staticmethod
     def entity_path(request, repo, org, cid, eid):

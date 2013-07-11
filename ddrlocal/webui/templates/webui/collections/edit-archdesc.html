@@ -4,7 +4,7 @@
 {% block title %}archdesc | {{ collection_uid }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{% url "webui-collection" repo org cid %}">{{ collection_uid }}</a></li>
+<li><a href="{{ collection.url }}">{{ collection_uid }}</a></li>
 <li class="active">archdesc</li>
 {% endblock breadcrumbs %}
 

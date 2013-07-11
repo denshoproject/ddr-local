@@ -44,7 +44,7 @@ Entities
 <ul>
 {% for entity in collection.entities %}
   <li>
-    <a href="{% url "webui-entity" entity.repo entity.org entity.cid entity.eid %}">
+    <a href="{{ entity.url }}">
       {{ entity.title }}
     </a>
   </li>

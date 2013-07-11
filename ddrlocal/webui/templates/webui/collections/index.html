@@ -17,7 +17,7 @@
 <ul>
 {% for c in o.3 %}
   <li>
-    <a href="{% url "webui-collection" c.1 c.2 c.3 %}">{{ c.0 }}</a>
+    <a href="{{ c.url }}">{{ c.id }}</a>
   </li>
 {% endfor %}
 {% if username %}

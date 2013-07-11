@@ -6,6 +6,7 @@ from lxml import etree
 
 from django import forms
 from django.conf import settings
+from django.core.urlresolvers import reverse
 
 from DDR.models import DDRCollection
 from ddrlocal.models.entity import DDRLocalEntity
@@ -42,7 +43,10 @@ class DDRLocalCollection( DDRCollection ):
         self.repo = self.id.split('-')[0]
         self.org = self.id.split('-')[1]
         self.cid = self.id.split('-')[2]
-
+    
+    def url( self ):
+        return reverse('webui-collection', args=[self.repo, self.org, self.cid])
+    
     @staticmethod
     def collection_path(request, repo, org, cid):
         return os.path.join(base_path(request), '{}-{}-{}'.format(repo, org, cid))
