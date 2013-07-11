@@ -9,7 +9,3 @@ class NewEntityForm(forms.Form):
 
 class UpdateForm(forms.Form):
     xml = forms.CharField(widget=forms.Textarea)
-
-class AddFileForm(forms.Form):
-    role = forms.ChoiceField(choices=settings.ENTITY_FILE_ROLES)
-    file = forms.FileField()

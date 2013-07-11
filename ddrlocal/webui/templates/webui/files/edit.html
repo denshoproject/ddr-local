@@ -1,0 +1,17 @@
+{% extends "webui/files/base.html" %}
+{% load thumbnail %}
+
+
+{% block title %}Edit | {{ file.basename }}{% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+<li><a href="{% url "webui-file-detail" repo org cid eid filenum %}">{{ file.basename }}</a></li>
+<li class="active">Edit</li>
+{% endblock breadcrumbs %}
+
+
+{% block content %}
+
+<h1>{{ file.basename }} - Edit</h1>
+
+{% endblock content %}

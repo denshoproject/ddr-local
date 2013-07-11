@@ -35,9 +35,7 @@ urlpatterns = patterns(
     url(r'^entity/(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/edit/mets.xml/$', 'webui.views.entities.edit_mets_xml', name='webui-entity-edit-mets-xml'),
     url(r'^entity/(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/edit/mets/$', 'webui.views.entities.edit_mets', name='webui-entity-edit-mets'),
     url(r'^entity/(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/edit/$', 'webui.views.entities.edit', name='webui-entity-edit'),
-    url(r'^entity/(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/add/$', 'webui.views.entities.entity_add', name='webui-entity-add'),
 
-    url(r'^entity/(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/files/(?P<filenum>[\d]+)/$', 'webui.views.entities.file_detail', name='webui-entity-file'),
     url(r'^entity/(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/files/$', 'webui.views.entities.files', name='webui-entity-files'),
     url(r'^entity/(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/changelog/$', 'webui.views.entities.changelog', name='webui-entity-changelog'),
     url(r'^entity/(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/entity.json$', 'webui.views.entities.entity_json', name='webui-entity-json'),
@@ -46,6 +44,12 @@ urlpatterns = patterns(
 
     url(r'^entity/(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/new/$', 'webui.views.entities.new', name='webui-entity-new'),
 
+    # files
+
+    url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/files/(?P<filenum>[\d]+)/edit/$', 'webui.views.files.edit', name='webui-file-edit'),
+    url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/files/(?P<filenum>[\d]+)/$', 'webui.views.files.detail', name='webui-file-detail'),
+
+    url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/files/new/$', 'webui.views.files.new', name='webui-file-new'),
 
     url(r'^$', TemplateView.as_view(template_name="webui/index.html"), name='webui-index'),
 )
