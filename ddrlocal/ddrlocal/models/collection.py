@@ -201,6 +201,69 @@ class DDRLocalCollection( DDRCollection ):
             f.write(xml_pretty)
 
 
+
+# XML grow functions ---------------------------------------------------
+# Add tags to XML if not found in xpath
+
+def _find_existing_ancestor(tree, xpath):
+    frag = xpath
+    while not tree.xpath(frag):
+        frag = frag.rsplit('/', 1)[0]
+    return frag
+
+def _next_tag(frag, xpath):
+    ftags = frag.split('/')
+    xtags = xpath.split('/')
+    last = xtags.pop()
+    while xtags != ftags:
+        last = xtags.pop()
+    return last
+
+def _graft(tree, frag, tag):
+    if ('@' not in tag):
+        parent = tree.xpath(frag)[0]
+        t = etree.Element(tag)
+        parent.append(t)
+
+def _grow(tree, xpath):
+    """
+    THIS needs to be aware of attrib
+    """
+    frag = _find_existing_ancestor(tree, xpath)
+    while frag != xpath:
+        tag = _next_tag(frag, xpath)
+        _graft(tree, frag, tag)
+        frag = _find_existing_ancestor(tree, xpath)
+
+def _mktagp(tree, EAD_FIELDS):
+    """If tags specified in xpaths don't exist, make 'em.
+    """
+    for f in EAD_FIELDS:
+        x = f['xpath']
+        if x:
+            something = tree.xpath(x)
+            if ('@' not in x) and (not something):
+                _grow(tree, x)
+
+"""
+from lxml import etree
+from ddrlocal.models import collection
+from ddrlocal.models.collection import EAD_FIELDS
+p = '/media/WD5000BMV-2/ddr/ddr-testing-61/ead.xml'
+with open(p, 'rw') as f:
+    xml0 = f.read()
+
+print(xml0)
+tree = etree.fromstring(xml0)
+collection._mktagp(tree, EAD_FIELDS)
+xml1 = etree.tostring(tree, pretty_print=True)
+print(xml1)
+with open(p, 'w') as f:
+    f.write(xml1)
+"""
+
+
+
 # forms pre-processing functions ---------------------------------------
 # convert from Python objects to form(data)
 
