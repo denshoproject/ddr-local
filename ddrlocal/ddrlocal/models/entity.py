@@ -9,6 +9,7 @@ from django import forms
 from django.conf import settings
 
 import tematres
+from ddrlocal import VERSION, git_commit
 from DDR.models import DDREntity
 from storage import base_path
 
@@ -161,7 +162,9 @@ class DDRLocalEntity( DDREntity ):
         """Dump Entity data to .json file.
         @param path: Absolute path to .json file.
         """
-        entity = []
+        entity = [{'application': 'https://github.com/densho/ddr-local.git',
+                   'commit': git_commit(),
+                   'release': VERSION,}]
         for f in METS_FIELDS:
             item = {}
             key = f['name']

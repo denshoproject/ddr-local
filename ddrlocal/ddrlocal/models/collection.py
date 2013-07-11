@@ -9,6 +9,7 @@ from django.conf import settings
 
 from DDR.models import DDRCollection
 from ddrlocal.models.entity import DDRLocalEntity
+from ddrlocal import VERSION, git_commit
 from storage import base_path
 
 
@@ -162,7 +163,9 @@ class DDRLocalCollection( DDRCollection ):
         """Dump Collection data to .json file.
         @param path: Absolute path to .json file.
         """
-        collection = []
+        collection = [{'application': 'https://github.com/densho/ddr-local.git',
+                       'commit': git_commit(),
+                       'release': VERSION,}]
         for ff in EAD_FIELDS:
             item = {}
             key = ff['name']
