@@ -75,6 +75,8 @@ Entities
 {% block footer %}
 
 <div class="muted" id="expert">
+  <span><a class="muted" href="{% url "webui-collection-json" repo org cid %}">json</a></span>
+  <span class="bullsep">&bull;</span>
   <span>
    <a class="muted" href="{% url "webui-collection-ead-xml" repo org cid %}">ead.xml</a>
    <a class="muted" href="{% url "webui-collection-edit-ead" repo org cid %}">(edit)</a>
