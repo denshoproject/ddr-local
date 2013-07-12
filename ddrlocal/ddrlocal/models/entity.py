@@ -200,7 +200,6 @@ class DDRLocalEntity( DDREntity ):
         @param path: Absolute path to .json file.
         """
         # TODO DUMP FILE AND FILEMETA PROPERLY!!!
-        assert False
         entity = [{'application': 'https://github.com/densho/ddr-local.git',
                    'commit': git_commit(),
                    'release': VERSION,}]
