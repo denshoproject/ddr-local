@@ -5,7 +5,7 @@
 {% block title %}{{ entity.title }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li class="active">{{ file.basename }}</li>
+<li class="active">{% if file.label %}{{ file.label }}{% else %}{{ file.basename }}{% endif %}</li>
 {% endblock breadcrumbs %}
 
 
@@ -14,19 +14,25 @@
 <div class="row">
   <div class="span12">
 
-<h1>{{ file.basename }}</h1>
+<h1>{% if file.label %}{{ file.label }}{% else %}{{ file.basename }}{% endif %}</h1>
 
 <p>
-<a href="{% url "webui-file-edit" repo org cid eid filenum %}">Edit</a>
+<a href="{# url "webui-file-edit" file.repo file.org file.cid file.eid file.sha1 #}">Edit</a>
 </p>
 
 <table class="table table-condensed table-striped">
+  <tr>
+    <td>label</td><td>{{ file.label }}</td>
+  </tr>
   <tr>
     <td>path</td>
     <td>
     {{ entity.path }}/{{ file.path }}<br/>
     {{ file.path }}<br/>
     </td>
+  </tr>
+  <tr>
+    <td>src</td><td>{{ file.src }}</td>
   </tr>
   <tr>
     <td>basename</td><td>{{ file.basename }}</td>
@@ -43,10 +49,22 @@
   <tr>
     <td>MD5</td><td>{{ file.md5 }}</td>
   </tr>
+  <tr>
+    <td>status</td><td>{{ file.status }}</td>
+  </tr>
+  <tr>
+    <td>public</td><td>{{ file.public }}</td>
+  </tr>
+  <tr>
+    <td>sort</td><td>{{ file.sort }}</td>
+  </tr>
+  <tr>
+    <td>exif</td><td>{{ file.exif }}</td>
+  </tr>
 </table>
 
-{% if file and file.url %}
-{% thumbnail file.url "1000x1000" crop="center" as img %}
+{% if file and file.src %}
+{% thumbnail file.src "1000x1000" crop="center" as img %}
 <img src="{{ img.url }}" width="{{ img.width }}" height="{{ img.height }}">
 {% endthumbnail %}
 {% endif %}

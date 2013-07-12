@@ -16,7 +16,7 @@ from DDR import commands
 from ddrlocal.models.collection import DDRLocalCollection as Collection
 from ddrlocal.models.entity import DDRLocalEntity as Entity
 from storage.decorators import storage_required
-from webui.forms.files import AddFileForm
+from webui.forms.files import AddFileForm, EditFileForm
 from webui.views.decorators import login_required
 
 
@@ -40,12 +40,11 @@ def handle_uploaded_file(f, dest_dir):
 
 @login_required
 @storage_required
-def detail( request, repo, org, cid, eid, filenum ):
+def detail( request, repo, org, cid, eid, sha1 ):
     """Add file to entity.
     """
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
-    filenum = int(filenum)
     return render_to_response(
         'webui/files/detail.html',
         {'repo': entity.repo,
@@ -55,8 +54,7 @@ def detail( request, repo, org, cid, eid, filenum ):
          'collection_uid': collection.id,
          'collection': collection,
          'entity': entity,
-         'file': entity.files[filenum],
-         'filenum': filenum,},
+         'file': entity.file(sha1)},
         context_instance=RequestContext(request, processors=[])
     )
 
@@ -113,7 +111,6 @@ def edit( request, repo, org, cid, eid, filenum ):
     """
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
-    filenum = int(filenum)
     return render_to_response(
         'webui/files/edit.html',
         {'repo': entity.repo,
@@ -123,7 +120,6 @@ def edit( request, repo, org, cid, eid, filenum ):
          'collection_uid': collection.id,
          'collection': collection,
          'entity': entity,
-         'file': entity.files[filenum],
-         'filenum': filenum,},
+         'file': entity.file(sha1)},
         context_instance=RequestContext(request, processors=[])
     )

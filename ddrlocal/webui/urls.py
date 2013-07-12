@@ -45,9 +45,9 @@ urlpatterns = patterns(
 
     # files
 
-    url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/files/(?P<filenum>[\d]+)/edit/$', 'webui.views.files.edit', name='webui-file-edit'),
+    url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/files/(?P<sha1>[\w]+)/edit/$', 'webui.views.files.edit', name='webui-file-edit'),
 
-    url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/files/(?P<filenum>[\d]+)/$', 'webui.views.files.detail', name='webui-file-detail'),
+    url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/files/(?P<sha1>[\w]+)/$', 'webui.views.files.detail', name='webui-file'),
 
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/files/new/$', 'webui.views.files.new', name='webui-file-new'),
 

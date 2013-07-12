@@ -11,6 +11,7 @@ from django.core.urlresolvers import reverse
 
 import tematres
 from ddrlocal import VERSION, git_commit
+from ddrlocal.models.file import DDRFile
 from DDR.models import DDREntity
 from storage import base_path
 
@@ -37,6 +38,7 @@ class DDRLocalEntity( DDREntity ):
     org = None
     cid = None
     eid = None
+    _files = []
     
     def __init__(self, *args, **kwargs):
         super(DDRLocalEntity, self).__init__(*args, **kwargs)
@@ -45,6 +47,8 @@ class DDRLocalEntity( DDREntity ):
         self.org = self.id.split('-')[1]
         self.cid = self.id.split('-')[2]
         self.eid = self.id.split('-')[3]
+        self._files = []
+        self._filemeta = []
     
     def url( self ):
         return reverse('webui-entity', args=[self.repo, self.org, self.cid, self.eid])
@@ -56,6 +60,18 @@ class DDRLocalEntity( DDREntity ):
         collection_abs = os.path.join(base_path(request), collection_uid)
         entity_abs     = os.path.join(collection_abs,'files',entity_uid)
         return entity_abs
+    
+    def files( self ):
+        return self._files
+    
+    def file( self, sha1 ):
+        """Given a SHA1 hash, get the corresponding file dict.
+        @returns file dict, or None
+        """
+        for f in self._files:
+            if sha1 in f.sha1:
+                return f
+        return None
     
     @staticmethod
     def create(path):
@@ -139,6 +155,7 @@ class DDRLocalEntity( DDREntity ):
             for f in json_data:
                 if f.keys()[0] == ff['name']:
                     setattr(self, f.keys()[0], f.values()[0])
+        
         # special cases
         if self.created:
             self.created = datetime.strptime(self.created, DATETIME_FORMAT)
@@ -153,19 +170,37 @@ class DDRLocalEntity( DDREntity ):
         else:
             self.digitize_date = ''
         # end special cases
+        
         # Ensure that every field in METS_FIELDS is represented
         # even if not present in json_data.
         for ff in METS_FIELDS:
             if not hasattr(self, ff['name']):
                 setattr(self, ff['name'], ff.get('default',None))
-        # add relative path to files
-        for f in self.files:
-            f['url'] = os.path.join(self.path_rel, f['path'])
+        
+        # files, filemeta
+        filemetas = {}
+        for x in json_data:
+            if x.keys()[0] == 'filemeta':
+                filemetas = x.values()[0]
+        _files = []
+        for y in json_data:
+            if y.keys()[0] == 'files':
+                _files = y.values()[0]
+        self._files = []
+        for z in _files:
+            if z.get('sha1', None):
+                m = filemetas.get(z['sha1'], DDRFile.filemeta_blank())
+            # This is a little weird since the entity is kinda still being loaded
+            # but we only need it for the repo/org/cid/eid and path_rel.
+            f = DDRFile(file=z, meta=m, entity=self)
+            self._files.append(f)
     
     def dump_json(self):
         """Dump Entity data to .json file.
         @param path: Absolute path to .json file.
         """
+        # TODO DUMP FILE AND FILEMETA PROPERLY!!!
+        assert False
         entity = [{'application': 'https://github.com/densho/ddr-local.git',
                    'commit': git_commit(),
                    'release': VERSION,}]
