@@ -8,6 +8,8 @@ TEMPLATE_DEBUG = DEBUG
 import ConfigParser
 import os
 
+os.environ['USER'] = 'ddr'
+
 class NoConfigError(Exception):
     def __init__(self, value):
         self.value = value
