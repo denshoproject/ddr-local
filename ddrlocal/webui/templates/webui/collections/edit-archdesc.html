@@ -4,7 +4,7 @@
 {% block title %}archdesc | {{ collection_uid }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{{ collection.url }}">{{ collection_uid }}</a></li>
+<li><a href="{{ collection.url }}">{% if collection.title %}{{ collection.title }}{% else %}{{ collection.id }}{% endif %}</a></li>
 <li class="active">archdesc</li>
 {% endblock breadcrumbs %}
 
