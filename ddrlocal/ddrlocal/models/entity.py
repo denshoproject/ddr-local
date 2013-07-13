@@ -61,9 +61,6 @@ class DDRLocalEntity( DDREntity ):
         entity_abs     = os.path.join(collection_abs,'files',entity_uid)
         return entity_abs
     
-    def files( self ):
-        return self._files
-    
     def file( self, sha1 ):
         """Given a SHA1 hash, get the corresponding file dict.
         @returns file dict, or None
@@ -186,14 +183,14 @@ class DDRLocalEntity( DDREntity ):
         for y in json_data:
             if y.keys()[0] == 'files':
                 _files = y.values()[0]
-        self._files = []
+        self.files = []
         for z in _files:
             if z.get('sha1', None):
                 m = filemetas.get(z['sha1'], DDRFile.filemeta_blank())
             # This is a little weird since the entity is kinda still being loaded
             # but we only need it for the repo/org/cid/eid and path_rel.
             f = DDRFile(file=z, meta=m, entity=self)
-            self._files.append(f)
+            self.files.append(f)
     
     def dump_json(self):
         """Dump Entity data to .json file.
