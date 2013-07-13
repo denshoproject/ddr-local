@@ -63,14 +63,6 @@ ENTITY_FILE_ROLES = (
     ('access','access'),
 )
 
-REDIS_HOST = '127.0.0.1'
-REDIS_PORT = '6379'
-# REDIS_DB
-# 0 - cache
-# 1 - celery broker
-# 2 - celery result
-# 3 - sorl
-
 # ----------------------------------------------------------------------
 
 import djcelery
@@ -108,15 +100,40 @@ DATABASES = {
     }
 }
 
+REDIS_HOST = '127.0.0.1'
+REDIS_PORT = '6379'
+REDIS_DB_CACHE = 0
+REDIS_DB_CELERY_BROKER = 1
+REDIS_DB_CELERY_RESULT = 2
+REDIS_DB_SORL = 3
+
 CACHES = {
     "default": {
         "BACKEND": "redis_cache.cache.RedisCache",
-        "LOCATION": "127.0.0.1:6379:0",
+        "LOCATION": "%s:%s:%s" % (REDIS_HOST, REDIS_PORT, REDIS_DB_CACHE),
         "OPTIONS": {
             "CLIENT_CLASS": "redis_cache.client.DefaultClient",
         }
     }
 }
+
+# Celery
+BROKER_URL            = 'redis://%s:%s/%s' % (REDIS_HOST, REDIS_PORT, REDIS_DB_CELERY_BROKER)
+CELERY_RESULT_BACKEND = 'redis://%s:%s/%s' % (REDIS_HOST, REDIS_PORT, REDIS_DB_CELERY_RESULT)
+BROKER_TRANSPORT_OPTIONS = {'visibility_timeout': 60 * 60}  # 1 hour
+
+# sorl-thumbnail
+THUMBNAIL_DEBUG = DEBUG
+#THUMBNAIL_DEBUG = False
+THUMBNAIL_KVSTORE = 'sorl.thumbnail.kvstores.redis_kvstore.KVStore'
+THUMBNAIL_REDIS_PASSWORD = ''
+THUMBNAIL_REDIS_HOST = REDIS_HOST
+THUMBNAIL_REDIS_PORT = int(REDIS_PORT)
+THUMBNAIL_REDIS_DB = REDIS_DB_SORL
+THUMBNAIL_ENGINE = 'sorl.thumbnail.engines.convert_engine.Engine'
+THUMBNAIL_CONVERT = 'convert'
+THUMBNAIL_IDENTIFY = 'identify'
+THUMBNAIL_CACHE_TIMEOUT = 60*60*24*365*10  # 10 years
 
 SESSION_ENGINE = 'redis_sessions.session'
 
@@ -217,21 +234,3 @@ MIDDLEWARE_CLASSES = (
 ROOT_URLCONF = 'ddrlocal.urls'
 
 WSGI_APPLICATION = 'ddrlocal.wsgi.application'
-
-# Celery
-BROKER_URL            = 'redis://%s:%s/1' % (REDIS_HOST, REDIS_PORT)
-CELERY_RESULT_BACKEND = 'redis://%s:%s/2' % (REDIS_HOST, REDIS_PORT)
-BROKER_TRANSPORT_OPTIONS = {'visibility_timeout': 60 * 60}  # 1 hour
-
-# sorl-thumbnail
-THUMBNAIL_DEBUG = DEBUG
-THUMBNAIL_DEBUG = False
-THUMBNAIL_KVSTORE = 'sorl.thumbnail.kvstores.redis_kvstore.KVStore'
-THUMBNAIL_REDIS_PASSWORD = ''
-THUMBNAIL_REDIS_HOST = REDIS_HOST
-THUMBNAIL_REDIS_PORT = int(REDIS_PORT)
-THUMBNAIL_REDIS_DB = 3
-THUMBNAIL_ENGINE = 'sorl.thumbnail.engines.convert_engine.Engine'
-THUMBNAIL_CONVERT = 'convert'
-THUMBNAIL_IDENTIFY = 'identify'
-THUMBNAIL_CACHE_TIMEOUT = 60*60*24*365*10  # 10 years
