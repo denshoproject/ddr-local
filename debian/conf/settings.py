@@ -37,7 +37,6 @@ DDR_ORGANIZATIONS    = config.get('local','organizations').split(',')
 
 # Directory in root of USB HDD that marks it as a DDR disk
 # /media/USBHDDNAME/ddr
-# USBHDDNAME will be detected and git remotes will be named USBHDDNAME
 DDR_USBHDD_BASE_DIR = 'ddr'
 
 # path to SSH public key for the VM
@@ -47,11 +46,14 @@ DDR_SSHPUB_PATH      = config.get('local','ssh_pubkey')
 DDR_PROTOTYPE_USER   = config.get('testing','user_name')
 DDR_PROTOTYPE_MAIL   = config.get('testing','user_mail')
 
-STATIC_ROOT = '/var/www/ddrlocal/static'
+STATIC_ROOT = '/var/www/static'
 STATIC_URL  = 'http://192.168.56.101/static/'
 
-MEDIA_ROOT = '/var/www/ddr/'
+MEDIA_ROOT = '/var/www/media'
 MEDIA_URL  = 'http://192.168.56.101/media/'
+
+DDR_MEDIA_ROOT = '/var/www/media/base'
+DDR_MEDIA_URL  = 'http://192.168.56.101/media/base/'
 
 # logging
 WEBUI_LOG_FILE       = config.get('webui', 'log_file')

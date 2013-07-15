@@ -49,7 +49,7 @@ class DDRFile( object ):
             self.org = kwargs['entity'].org
             self.cid = kwargs['entity'].cid
             self.eid = kwargs['entity'].eid
-            self.src = os.path.join(kwargs['entity'].path_rel, self.path)
+            self.src = os.path.join('base', kwargs['entity'].path_rel, self.path)
     
     def dict( self ):
         return self.__dict__
