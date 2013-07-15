@@ -14,6 +14,9 @@
 
 {% block content %}
 
+  <div class="row-fluid">
+    <div class="span12">
+
 <h1>
 Remounting
 <img src="{{ STATIC_URL }}storage/spinner.gif" />
@@ -33,5 +36,8 @@ in 30 seconds,
 remount_uri: {{ remount_uri }}
 </p>
 </div><!-- .muted -->
+
+    </div><!-- .span12 -->
+  </div><!-- .row-fluid -->
 
 {% endblock content %}

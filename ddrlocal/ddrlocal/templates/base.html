@@ -51,18 +51,23 @@ form .helptext { color:#aaa; }
 
 
 <div class="container-fluid">
+
+
+
   <div class="row-fluid">
     <div class="span12">
 
 
-<div class="navbar navbar-inverse">
-  <div class="navbar-inner">
-    <a class="brand" href="{% url "webui-index" %}">DDR Local</a>
-    <ul class="nav">
-      <li><a href="{% url "webui-index" %}">Home</a></li>
-      <li><a href="{% url "webui-index" %}">Web UI</a></li>
-    </ul>
-    <p id="user-info" class="navbar-text pull-right">
+
+      <div class="navbar navbar-inverse">
+        <div class="navbar-inner">
+
+<a class="brand" href="{% url "webui-index" %}">DDR Local</a>
+<ul class="nav">
+  <li><a href="{% url "webui-index" %}">Home</a></li>
+  <li><a href="{% url "webui-index" %}">Web UI</a></li>
+</ul>
+<p id="user-info" class="navbar-text pull-right">
     
 {% if username %}
     {{ username }} / <a href="{% url "webui-logout" %}">Log out</a>
@@ -70,9 +75,9 @@ form .helptext { color:#aaa; }
     <a href="{% url "webui-login" %}">Log in</a>
 {% endif %}
         
-    &nbsp;&bull;&nbsp;
-    
-    <a href="{% url "storage-index" %}">Storage</a>
+&nbsp;&bull;&nbsp;
+
+<a href="{% url "storage-index" %}">Storage</a>
 
 {% if storage_type %}
 <span class="label {% if storage_type == 'unknown' %}label-warning{% else %}label-info{% endif %}">
@@ -94,14 +99,19 @@ form .helptext { color:#aaa; }
 </span>
 {% endif %} 
    
-    </p>
-  </div>
-</div><!-- .navbar -->
+</p>
+
+        </div>
+      </div><!-- .navbar -->
+
+
 
 <ul class="breadcrumb">
 <li><a href="{% url "webui-index" %}">Home</a></li>
 {% block breadcrumbs %}{% endblock breadcrumbs %}
 </ul><!-- .breadcrumb -->
+
+
 
 {% for message in messages %}
 <div class="alert alert-{{ message.tags }}">
@@ -112,21 +122,23 @@ form .helptext { color:#aaa; }
 
 
 
-
-<div id="content">
-{% block content %}{% endblock content %}
-</div><!-- #content -->
-
-
-
-<div id="footer">
-{% block footer %}{% endblock footer %}
-</div><!-- #footer -->
-
-
-
     </div><!-- .span12 -->
   </div><!-- .row-fluid -->
+
+
+
+  <div id="content">
+{% block content %}{% endblock content %}
+  </div><!-- #content -->
+
+
+
+  <div id="footer">
+{% block footer %}{% endblock footer %}
+  </div><!-- #footer -->
+
+
+
 </div><!-- .container-fluid -->
 
 

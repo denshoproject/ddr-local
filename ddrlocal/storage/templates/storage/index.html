@@ -10,8 +10,10 @@
 
 {% block content %}
 
-<h1>Storage</h1>
+  <div class="row-fluid">
+    <div class="span12">
 
+<h1>Storage</h1>
 
 {% if removables_mounted %}
 
@@ -124,5 +126,8 @@ Reload this page.<br/>
 <p>
 remount_uri: {{ remount_uri }}
 </p>
+
+    </div><!-- .span12 -->
+  </div><!-- .row-fluid -->
 
 {% endblock content %}

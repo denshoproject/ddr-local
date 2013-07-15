@@ -10,6 +10,9 @@
 
 {% block content %}
 
+  <div class="row-fluid">
+    <div class="span12">
+
 <h1>Log in</h1>
 
 <form name="login" action="" method="POST">{% csrf_token %}
@@ -18,5 +21,8 @@
 </table>
 <input name="submit" type="submit" value="login"/><br/>
 </form>
+
+    </div><!-- .span12 -->
+  </div><!-- .row-fluid -->
 
 {% endblock content %}

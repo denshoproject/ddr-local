@@ -10,6 +10,9 @@
 
 {% block content %}
 
+  <div class="row-fluid">
+    <div class="span12">
+
 <div id="admin" style="float:right; margin-left:10px;">
   <form name="collection-sync" action="{% url "webui-collection-sync" repo org cid %}" method="POST">{% csrf_token %}
     <input class="btn btn-primary" name="sync" type="submit" value="Sync"/>
@@ -18,10 +21,10 @@
 
 <h1>{{ collection.title }}</h1>
 
-  </div><!-- .span12 -->
-</div><!-- .row -->
-<div class="row">
-  <div class="span8">
+    </div><!-- .span12 -->
+  </div><!-- .row -->
+  <div class="row">
+    <div class="span8">
 
 
 <div id="overview">
@@ -34,8 +37,8 @@
 </div><!-- #overview -->
 
 
-  </div><!-- .span8 -->
-  <div class="span4">
+    </div><!-- .span8 -->
+    <div class="span4">
 
 
 <h3>
@@ -56,17 +59,8 @@ Entities
 {% endif %}
 
 
-  </div><!-- .span4 -->
-</div><!-- .row -->
-<div class="row">
-  <div class="span12">
-
-
-
-
-  </div><!-- .span12 -->
-</div><!-- .row -->
-
+    </div><!-- .span4 -->
+  </div><!-- .row -->
 
 {% endblock content %}
 

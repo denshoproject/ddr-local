@@ -11,6 +11,9 @@
 
 {% block content %}
 
+  <div class="row-fluid">
+    <div class="span12">
+
 <h1>{{ collection.title }} - git status</h1>
 
 <h3>git status</h3>
@@ -22,5 +25,8 @@
 <pre>
 {{ astatus }}
 </pre>
+
+    </div><!-- .span12 -->
+  </div><!-- .row-fluid -->
 
 {% endblock content %}

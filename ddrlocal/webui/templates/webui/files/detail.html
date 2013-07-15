@@ -11,8 +11,8 @@
 
 {% block content %}
 
-<div class="row">
-  <div class="span12">
+  <div class="row-fluid">
+    <div class="span12">
 
 <h1>{% if file.label %}{{ file.label }}{% else %}{{ file.basename }}{% endif %}</h1>
 
@@ -69,5 +69,7 @@
 {% endthumbnail %}
 {% endif %}
 
+    </div><!-- .span12 -->
+  </div><!-- .row-fluid -->
 
 {% endblock content %}

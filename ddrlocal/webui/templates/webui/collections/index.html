@@ -10,6 +10,9 @@
 
 {% block content %}
 
+  <div class="row-fluid">
+    <div class="span12">
+
 <h1>Collections</h1>
 
 {% for o in collections %}
@@ -25,5 +28,8 @@
 {% endif %}
 </ul>
 {% endfor %}
+
+    </div><!-- .span12 -->
+  </div><!-- .row-fluid -->
 
 {% endblock content %}

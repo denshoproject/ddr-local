@@ -10,6 +10,9 @@
 
 {% block content %}
 
+  <div class="row-fluid">
+    <div class="span12">
+
 <h1>Storage Required</h1>
 
 <p>
@@ -17,5 +20,8 @@ Can't find repository storage!
 It probably just got unmounted.
 <a href="{% url "storage-index" %}">Try remounting it</a>
 </p>
+
+    </div><!-- .span12 -->
+  </div><!-- .row-fluid -->
 
 {% endblock content %}

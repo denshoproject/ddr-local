@@ -11,12 +11,15 @@
 
 {% block content %}
 
+  <div class="row-fluid">
+    <div class="span12">
+
 <h1>{{ entity.title }}</h1>
 
-  </div><!-- .span12 -->
-</div><!-- .row -->
-<div class="row">
-  <div class="span8">
+    </div><!-- .span12 -->
+  </div><!-- .row-fluid -->
+  <div class="row">
+    <div class="span8">
 
 <div id="overview">
 <h3><a href="{% url "webui-entity-edit" repo org cid eid %}">edit</a></h3>
@@ -27,8 +30,8 @@
 </dl>
 </div><!-- #mets -->
 
-  </div><!-- .span8 -->
-  <div class="span4">
+    </div><!-- .span8 -->
+    <div class="span4">
 
 <h3>
 Files
@@ -52,8 +55,8 @@ Files
 <a class="pull-right" href="{% url "webui-entity-files" repo org cid eid %}">more &raquo;</a>
 {% endif %}
 
-  </div><!-- .span4 -->
-</div><!-- .row -->
+    </div><!-- .span4 -->
+  </div><!-- .row -->
 
 {% endblock content %}
 

@@ -12,6 +12,9 @@
 
 {% block content %}
 
+  <div class="row-fluid">
+    <div class="span12">
+
 <h1>{{ entity.id }} - files</h1>
 
 <ul>
@@ -24,5 +27,8 @@
 {% endfor %}
   <li><a href="{% url "webui-entity-add" repo org cid eid %}">New file</a></li>
 </ul>
+
+    </div><!-- .span12 -->
+  </div><!-- .row-fluid -->
 
 {% endblock content %}

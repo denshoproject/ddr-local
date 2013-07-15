@@ -11,6 +11,9 @@
 
 {% block content %}
 
+  <div class="row-fluid">
+    <div class="span12">
+
 <h1>{% if collection.title %}{{ collection.title }}{% else %}{{ collection.id }}{% endif %} - EDIT</h1>
 
 <form name="edit" action="" method="POST">{% csrf_token %}
@@ -19,5 +22,8 @@
 </table>
 <input name="submit" type="submit" value="submit"/><br/>
 </form>
+
+    </div><!-- .span12 -->
+  </div><!-- .row-fluid -->
 
 {% endblock content %}

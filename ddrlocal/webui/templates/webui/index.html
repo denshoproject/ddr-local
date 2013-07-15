@@ -10,11 +10,17 @@
 
 {% block content %}
 
+  <div class="row-fluid">
+    <div class="span12">
+
 <h1>DDR-Local</h1>
 
 <p>
 <a href="{% url "webui-collections" %}">Collections</a>
 {% if username %}(<a href="">new</a>){% endif %}
 </p>
+
+    </div><!-- .span12 -->
+  </div><!-- .row-fluid -->
 
 {% endblock content %}

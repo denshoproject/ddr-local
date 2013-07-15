@@ -11,10 +11,16 @@
 
 {% block content %}
 
+  <div class="row-fluid">
+    <div class="span12">
+
 <h1>{{ collection.title }} - changelog</h1>
 
 <pre>
 {{ collection.changelog }}
 </pre>
+
+    </div><!-- .span12 -->
+  </div><!-- .row-fluid -->
 
 {% endblock content %}
