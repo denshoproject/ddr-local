@@ -65,7 +65,7 @@ class DDRLocalEntity( DDREntity ):
         """Given a SHA1 hash, get the corresponding file dict.
         @returns file dict, or None
         """
-        for f in self._files:
+        for f in self.files:
             if sha1 in f.sha1:
                 return f
         return None
