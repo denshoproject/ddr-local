@@ -133,8 +133,8 @@ THUMBNAIL_REDIS_HOST = REDIS_HOST
 THUMBNAIL_REDIS_PORT = int(REDIS_PORT)
 THUMBNAIL_REDIS_DB = REDIS_DB_SORL
 THUMBNAIL_ENGINE = 'sorl.thumbnail.engines.convert_engine.Engine'
-THUMBNAIL_CONVERT = '/usr/bin/gm convert'
-THUMBNAIL_IDENTIFY = '/usr/bin/gm identify'
+THUMBNAIL_CONVERT = 'convert'
+THUMBNAIL_IDENTIFY = 'identify'
 THUMBNAIL_CACHE_TIMEOUT = 60*60*24*365*10  # 10 years
 
 SESSION_ENGINE = 'redis_sessions.session'

@@ -1,7 +1,7 @@
 # dependencies used in all environments
 
 # Non-Python dependencies
-# sudo apt-get install libssl-dev, redis-server, python2.7, supervisor, graphicsmagick
+# sudo apt-get install libssl-dev, redis-server, python2.7, supervisor, imagemagick
 
                            # LICENSE      DEBIAN PKG (WHEEZY)              (JESSIE)
 
