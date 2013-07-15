@@ -38,7 +38,7 @@ Files
   <li>
 {% if file and file.src %}
 {% thumbnail file.src "100x100" crop="center" as img %}
-    <a href="{{ file.url }}"><img src="{{ DDR_MEDIA_URL }}{{ file.src }}" width="{{ img.width }}" height="{{ img.height }}"></a><br/>
+    <a href="{{ file.url }}"><img src="{{ MEDIA_URL }}{{ file.src }}" width="{{ img.width }}" height="{{ img.height }}"></a><br/>
 {% endthumbnail %}
 {% endif %}
 
