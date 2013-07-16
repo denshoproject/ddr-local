@@ -5,7 +5,7 @@
 {% block title %}{{ entity.id }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li class="active">{{ entity.title }}</li>
+<li class="active">{% if entity.title %}{{ entity.title }}{% else %}{{ entity.id }}{% endif %}</li>
 {% endblock breadcrumbs %}
 
 
@@ -14,7 +14,7 @@
   <div class="row-fluid">
     <div class="span12">
 
-<h1>{{ entity.title }}</h1>
+<h1>{% if entity.title %}{{ entity.title }}{% else %}{{ entity.id }}{% endif %}</h1>
 
     </div><!-- .span12 -->
   </div><!-- .row-fluid -->

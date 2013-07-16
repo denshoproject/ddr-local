@@ -4,7 +4,7 @@
 {% block title %}{{ collection.id }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li class="active">{{ collection.title }}</li>
+<li class="active">{% if collection.title %}{{ collection.title }}{% else %}{{ collection.id }}{% endif %}</li>
 {% endblock breadcrumbs %}
 
 
@@ -47,8 +47,7 @@ Entities
 <ul>
 {% for entity in collection.entities %}
   <li>
-    <a href="{{ entity.url }}">
-      {{ entity.title }}
+    <a href="{{ entity.url }}">{{ entity.id }} {% if entity.title %}&mdash; {{ entity.title }}{% endif %}</a>
     </a>
   </li>
 {% endfor %}
