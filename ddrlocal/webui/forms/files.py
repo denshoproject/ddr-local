@@ -6,7 +6,7 @@ class AddFileForm(forms.Form):
     file = forms.FileField()
 
 class EditFileForm(forms.Form):
-    sha1 = forms.CharField(max_length=100)
     sort = forms.IntegerField()
     role = forms.ChoiceField(choices=settings.ENTITY_FILE_ROLES)
     label = forms.CharField(max_length=255)
+    exif = forms.CharField(widget=forms.Textarea, required=False)

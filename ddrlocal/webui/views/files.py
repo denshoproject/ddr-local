@@ -106,11 +106,49 @@ def new( request, repo, org, cid, eid ):
 
 @login_required
 @storage_required
-def edit( request, repo, org, cid, eid, filenum ):
-    """Edit file.
+def edit( request, repo, org, cid, eid, sha1 ):
+    """Edit file metadata
     """
+    git_name = request.session.get('git_name')
+    git_mail = request.session.get('git_mail')
+    if not git_name and git_mail:
+        messages.error(request, 'Login is required')
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+    f = entity.file(sha1)
+    if request.method == 'POST':
+        form = EditFileForm(request.POST, request.FILES)
+        if form.is_valid():
+            #f.status = form.cleaned_data['status']
+            #f.public = form.cleaned_data['public']
+            f.sort = form.cleaned_data['sort']
+            f.role = form.cleaned_data['role']
+            f.label = form.cleaned_data['label']
+            f.exif = form.cleaned_data['exif']
+            result = entity.file(sha1, f)
+            if result in ['added','updated']:
+                entity.dump_json()
+                entity.dump_mets()
+                exit,status = commands.entity_update(git_name, git_mail,
+                                                     entity.parent_path, entity.id,
+                                                     [entity.json_path, entity.mets_path,])
+                if exit:
+                    messages.error(request, 'Error: {}'.format(status))
+                else:
+                    messages.success(request, 'File metadata updated')
+                    return HttpResponseRedirect( reverse('webui-file', args=[repo,org,cid,eid,sha1]) )
+            # something went wrong
+            assert False
+    else:
+        data = {
+            'status': f.status,
+            'public': f.public,
+            'sort': f.sort,
+            'role': f.role,
+            'label': f.label,
+            'exif': f.exif,
+            }
+        form = EditFileForm(data)
     return render_to_response(
         'webui/files/edit.html',
         {'repo': entity.repo,
@@ -120,6 +158,7 @@ def edit( request, repo, org, cid, eid, filenum ):
          'collection_uid': collection.id,
          'collection': collection,
          'entity': entity,
-         'file': entity.file(sha1)},
+         'file': f,
+         'form': form,},
         context_instance=RequestContext(request, processors=[])
     )

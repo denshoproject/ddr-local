@@ -12,18 +12,22 @@ FILEMETA_BLANK = {'sha1':None,
 
 
 class DDRFile( object ):
-    sha1 = None
+    # files
     path = None
     basename = None
-    src = None
     size = None
+    sha1 = None
     sha256 = None
     md5 = None
+    # filemeta
     status = None
     public = None
     sort = None
+    role = None
     label = None
     exif = None
+    #
+    src = None
     repo = None
     org = None
     cid = None
@@ -42,6 +46,7 @@ class DDRFile( object ):
             self.status = kwargs['meta'].get('status', None)
             self.public = kwargs['meta'].get('public', None)
             self.sort = kwargs['meta'].get('sort', None)
+            self.role = kwargs['meta'].get('role', None)
             self.label = kwargs['meta'].get('label', None)
             self.exif = kwargs['meta'].get('exif', None)
         if kwargs.get('entity', None):

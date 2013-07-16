@@ -213,6 +213,7 @@ class DDRLocalEntity( DDREntity ):
         entity = [{'application': 'https://github.com/densho/ddr-local.git',
                    'commit': git_commit(),
                    'release': VERSION,}]
+        exceptions = ['files', 'filemeta']
         for f in METS_FIELDS:
             item = {}
             key = f['name']
@@ -226,7 +227,31 @@ class DDRLocalEntity( DDREntity ):
                     val = val.strftime(DATE_FORMAT)
                 # end special cases
             item[key] = val
-            entity.append(item)
+            if (key not in exceptions):
+                entity.append(item)
+        files = []
+        for f in self.files:
+            files.append({
+                'path': f.path,
+                'basename': f.basename,
+                'size': f.size,
+                'sha1': f.sha1,
+                'sha256': f.sha256,
+                'md5': f.md5,
+                })
+        entity.append( {'files':files} )
+        filemeta = {}
+        for f in self.files:
+            filemeta[f.sha1] = {
+                'status': f.status,
+                'public': f.public,
+                'sort': f.sort,
+                'role': f.role,
+                'label': f.label,
+                'exif': f.exif,
+                }
+        entity.append( {'filemeta':filemeta} )
+        # write
         json_pretty = json.dumps(entity, indent=4, separators=(',', ': '))
         with open(self.json_path, 'w') as f:
             f.write(json_pretty)
