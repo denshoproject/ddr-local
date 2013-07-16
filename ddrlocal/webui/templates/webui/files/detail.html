@@ -17,7 +17,7 @@
 <h1>{% if file.label %}{{ file.label }}{% else %}{{ file.basename }}{% endif %}</h1>
 
 <p>
-<a href="{# url "webui-file-edit" file.repo file.org file.cid file.eid file.sha1 #}">Edit</a>
+<a href="{{ file.url }}edit/">Edit</a>
 </p>
 
 <table class="table table-condensed table-striped">
