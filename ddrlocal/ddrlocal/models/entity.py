@@ -61,13 +61,26 @@ class DDRLocalEntity( DDREntity ):
         entity_abs     = os.path.join(collection_abs,'files',entity_uid)
         return entity_abs
     
-    def file( self, sha1 ):
+    def file( self, sha1, newfile=None ):
         """Given a SHA1 hash, get the corresponding file dict.
-        @returns file dict, or None
+        
+        @param sha1
+        @param newfile (optional) If present, updates existing file or appends new one.
+        @returns 'added', 'updated', DDRFile, or None
         """
+        # update existing file or append
+        if sha1 and newfile:
+            for f in self.files:
+                if sha1 in f.sha1:
+                    f = newfile
+                    return 'updated'
+            self.files.append(newfile)
+            return 'added'
+        # get a file
         for f in self.files:
             if sha1 in f.sha1:
                 return f
+        # just do nothing
         return None
     
     @staticmethod
