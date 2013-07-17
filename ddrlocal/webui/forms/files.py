@@ -1,9 +1,9 @@
 from django import forms
 from django.conf import settings
 
-class AddFileForm(forms.Form):
+class NewFileForm(forms.Form):
     role = forms.ChoiceField(choices=settings.ENTITY_FILE_ROLES)
-    file = forms.FileField()
+    path = forms.FilePathField(path=settings.VIRTUALBOX_SHARED_FOLDER)
 
 class EditFileForm(forms.Form):
     sort = forms.IntegerField()
