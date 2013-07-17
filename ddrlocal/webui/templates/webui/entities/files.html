@@ -17,16 +17,59 @@
 
 <h1>{{ entity.id }} - files</h1>
 
-<ul>
-{% for file in entity.files %}
-  <li>
-  <a href="{% url "webui-entity-file" repo org cid eid forloop.counter0 %}"><img src="{{ MEDIA_URL }}{{ file.url }}" width="100" height="100" /></a><br/>
-  <a href="{% url "webui-entity-file" repo org cid eid forloop.counter0 %}">{{ file.basename }}</a><br/>
-  {{ file.size|filesizeformat }}<br/>
-  </li>
+<h3>Master</h3>
+{% if entity.files_master %}
+<table class="table table-bordered">
+{% for file in entity.files_master %}
+  <tr>
+    <td>
+      <a class="btn btn-mini" href="{{ file.url }}edit/">Edit</a>
+      &nbsp;
+      <a class="btn btn-mini" href="{{ file.url }}delete/">Delete</a>
+    </td>
+    <td>
+      <a href="{{ file.url }}">{{ file.basename }}</a>
+      ({{ file.size|filesizeformat }})
+    </td>
+    <td>
+      {{ file.label }}
+    </td>
+  </tr>
 {% endfor %}
-  <li><a href="{% url "webui-entity-add" repo org cid eid %}">New file</a></li>
-</ul>
+</table>
+{% endif %}
+<p>
+<a href="{% url "webui-file-new-master" repo org cid eid %}" class="btn">Add a file</a>
+or
+<a href="{% url "webui-file-batch-master" repo org cid eid %}" class="btn">Add a batch of files</a>
+</p>
+
+<h3>Mezzanine</h3>
+{% if entity.files_mezzanine %}
+<table class="table table-bordered">
+{% for file in entity.files_mezzanine %}
+  <tr>
+    <td>
+      <a class="btn btn-mini" href="{{ file.url }}edit/">Edit</a>
+      &nbsp;
+      <a class="btn btn-mini" href="{{ file.url }}delete/">Delete</a>
+    </td>
+    <td>
+      <a href="{{ file.url }}">{{ file.basename }}</a>
+      ({{ file.size|filesizeformat }})
+    </td>
+    <td>
+      {{ file.label }}
+    </td>
+  </tr>
+{% endfor %}
+</table>
+{% endif %}
+<p>
+<a href="{% url "webui-file-new-mezzanine" repo org cid eid %}" class="btn">Add a file</a>
+or
+<a href="{% url "webui-file-batch-mezzanine" repo org cid eid %}" class="btn">Add a batch of files</a>
+</p>
 
     </div><!-- .span12 -->
   </div><!-- .row-fluid -->

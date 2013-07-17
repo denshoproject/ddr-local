@@ -61,6 +61,14 @@ class DDRLocalEntity( DDREntity ):
         entity_abs     = os.path.join(collection_abs,'files',entity_uid)
         return entity_abs
     
+    def files_master( self ):
+        files = [f for f in self.files if f.role and (f.role == 'master')]
+        return files
+    
+    def files_mezzanine( self ):
+        files = [f for f in self.files if f.role and (f.role == 'mezzanine')]
+        return files
+    
     def file( self, sha1, newfile=None ):
         """Given a SHA1 hash, get the corresponding file dict.
         
