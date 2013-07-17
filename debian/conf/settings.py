@@ -21,6 +21,20 @@ if not os.path.exists(CONFIG_FILE):
     raise NoConfigError('No config file!')
 config = ConfigParser.ConfigParser()
 config.read(CONFIG_FILE)
+
+SECRET_KEY           = config.get('local','secret_key')
+LANGUAGE_CODE        = config.get('local','language_code')
+TIME_ZONE            = config.get('local','time_zone')
+VIRTUALBOX_SHARED_FOLDER = config.get('local','virtualbox_shared_folder')
+DDR_ORGANIZATIONS    = config.get('local','organizations').split(',')
+DDR_SSHPUB_PATH      = config.get('local','ssh_pubkey')
+DDR_PROTOTYPE_USER   = config.get('testing','user_name')
+DDR_PROTOTYPE_MAIL   = config.get('testing','user_mail')
+STATIC_ROOT          = config.get('local','static_root')
+STATIC_URL           = config.get('local','static_url')
+MEDIA_ROOT           = config.get('local','media_root')
+MEDIA_URL            = config.get('local','media_url')
+
 GITOLITE             = config.get('workbench','gitolite')
 CGIT_URL             = config.get('workbench','cgit_url')
 GIT_REMOTE_NAME      = config.get('workbench','remote')
@@ -32,28 +46,9 @@ WORKBENCH_USERINFO   = config.get('workbench','workbench_userinfo_url')
 WORKBENCH_NEWCOL_URL = config.get('workbench','workbench_newcol_url')
 WORKBENCH_NEWENT_URL = config.get('workbench','workbench_newent_url')
 
-# Keyword of the organization represented by this install.
-DDR_ORGANIZATIONS    = config.get('local','organizations').split(',')
-
 # Directory in root of USB HDD that marks it as a DDR disk
 # /media/USBHDDNAME/ddr
 DDR_USBHDD_BASE_DIR = 'ddr'
-
-# path to SSH public key for the VM
-DDR_SSHPUB_PATH      = config.get('local','ssh_pubkey')
-
-# TODO replace with login user details
-DDR_PROTOTYPE_USER   = config.get('testing','user_name')
-DDR_PROTOTYPE_MAIL   = config.get('testing','user_mail')
-
-STATIC_ROOT = '/var/www/static'
-STATIC_URL  = 'http://192.168.56.101/static/'
-
-MEDIA_ROOT = '/var/www/media'
-MEDIA_URL  = 'http://192.168.56.101/media/'
-
-DDR_MEDIA_ROOT = '/var/www/media/base'
-DDR_MEDIA_URL  = 'http://192.168.56.101/media/base/'
 
 # logging
 WEBUI_LOG_FILE       = config.get('webui', 'log_file')
@@ -77,7 +72,6 @@ ADMINS = (
 MANAGERS = ADMINS
 
 SITE_ID = 1
-SECRET_KEY = 'N0~M0R3-53CR375'
 
 INSTALLED_APPS = (
     'django.contrib.auth',
@@ -98,7 +92,7 @@ INSTALLED_APPS = (
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': '/tmp/ddr-local/ddrlocal/ddrlocal.db',
+        'NAME': '/var/lib/ddr/ddrlocal.db',
     }
 }
 
@@ -144,9 +138,6 @@ MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 # Hosts/domain names that are valid for this site; required if DEBUG is False
 # See https://docs.djangoproject.com/en/1.5/ref/settings/#allowed-hosts
 ALLOWED_HOSTS = []
-
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'America/Los_Angeles'
 
 TEMPLATE_DIRS = (
     '/usr/local/src/ddr-local/ddrlocal/ddrlocal/templates',
