@@ -1,3 +1,4 @@
+import hashlib
 import os
 
 from django.core.urlresolvers import reverse
@@ -58,7 +59,38 @@ class DDRFile( object ):
     
     def dict( self ):
         return self.__dict__
-
+    
+    @staticmethod
+    def file_name( entity, path ):
+        """Generate a new name for the specified file
+        
+        rename files to standard names on ingest:
+        %{repo}-%{org}-%{cid}-%{eid}-%{sha1}.%{ext}
+        example: ddr-testing-56-101-fb73f9de29.jpg
+        """
+        def hash(path):
+            h = hashlib.sha1()
+            block_size=1024
+            f = open(path, 'rb')
+            while True:
+                data = f.read(block_size)
+                if not data:
+                    break
+                h.update(data)
+            f.close()
+            return h.hexdigest()
+        if os.path.exists and os.access(path, os.R_OK):
+            ext = os.path.splitext(path)[1]
+            sha1 = hash(path)
+            if sha1:
+                base = '-'.join([
+                    entity.repo, entity.org, entity.cid, entity.eid,
+                    sha1[:10]
+                ])
+                name = '{}{}'.format(base, ext)
+                return name
+        return None
+    
     @staticmethod
     def filemeta_blank():
         return FILEMETA_BLANK
