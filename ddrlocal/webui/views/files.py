@@ -74,27 +74,54 @@ def new( request, repo, org, cid, eid, role='master' ):
     if request.method == 'POST':
         form = NewFileForm(request.POST, request.FILES)
         if form.is_valid():
-            role = form.cleaned_data['role']
+            role     = form.cleaned_data['role']
             src_path = form.cleaned_data['path']
-            # complain
-            src_exists = os.path.exists(src_path)
-            src_is_readable = os.access(src_path, os.R_OK)
-            dest = entity.files_path
-            dest_exists = os.path.exists(dest)
-            dest_is_writable = os.access(dest, os.W_OK)
-            if not src_exists:       messages.error(request, 'Source file does not exist: {}'.format(src))
-            if not src_is_readable:  messages.error(request, 'Source file not readable: {}'.format(src))
-            if not dest_exists:      messages.error(request, 'Destination directory does not exist: {}'.format(dest))
-            if not dest_is_writable: messages.error(request, 'Destination directory not writable: {}'.format(dest))
+            #
+            src_basename      = os.path.basename(src_path)
+            src_exists        = os.path.exists(src_path)
+            src_readable      = os.access(src_path, os.R_OK)
+            if not os.path.exists(entity.files_path):
+                os.mkdir(entity.files_path)
+            dest_dir          = entity.files_path
+            dest_dir_exists   = os.path.exists(dest_dir)
+            dest_dir_writable = os.access(dest_dir, os.W_OK)
+            dest_basename     = DDRFile.file_name(entity, src_path)
+            dest_path         = os.path.join(dest_dir, dest_basename)
+            dest_path_exists  = os.path.exists(dest_path)
+            s = []
+            if src_exists: s.append('ok')
+            else:                  messages.error(request, 'Source file does not exist: {}'.format(src_path))
+            if src_readable: s.append('ok')
+            else:                  messages.error(request, 'Source file not readable: {}'.format(src_path))
+            if dest_dir_exists: s.append('ok')
+            else:                  messages.error(request, 'Destination directory does not exist: {}'.format(dest_dir))
+            if dest_dir_writable: s.append('ok')
+            else:                  messages.error(request, 'Destination directory not writable: {}'.format(dest_dir))
+            if not dest_path_exists: s.append('ok')
+            else:                  messages.error(request, 'Destination file already exists!: {}'.format(dest_path))
+            preparations = ','.join(s)
             # do, or do not
-            if src_exists and src_is_readable and dest_exists and dest_is_writable:
-                dest_name = DDRFile.file_name(entity, src_path)
-                dest_path = os.path.join(dest, dest_name)
+            if preparations == 'ok,ok,ok,ok,ok':
                 assert False
-                # write file to entity files dir
-                file_abs = handle_uploaded_file(request.FILES['file'], entity.files_path)
-                file_rel = os.path.basename(file_abs)
                 
+                # extract_exif
+                
+                # copy_to_entity
+                dest_file_exists = False
+                
+                # make_access_copy
+                access_file_exists = False
+                
+                # make_thumbnail
+                thumbnail_exists = False
+                
+                # add_filemeta
+                if dest_file_exists:
+                    pass # add dest_file to entity.filemeta
+                if access_file_exists:
+                    pass # add access_file to entity.filemeta
+                
+                # entity_annex_add
                 exit,status = commands.entity_annex_add(git_name, git_mail,
                                                         entity.parent_path,
                                                         entity.id, file_rel)
