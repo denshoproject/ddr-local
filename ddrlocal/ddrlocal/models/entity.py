@@ -222,7 +222,7 @@ class DDRLocalEntity( DDREntity ):
                 m = filemetas.get(z['sha1'], DDRFile.filemeta_blank())
             # This is a little weird since the entity is kinda still being loaded
             # but we only need it for the repo/org/cid/eid and path_rel.
-            f = DDRFile(file=z, meta=m, entity=self)
+            f = DDRFile.from_entity(self, z, m)
             self.files.append(f)
     
     def dump_json(self):
@@ -269,7 +269,7 @@ class DDRLocalEntity( DDREntity ):
                 'sort': f.sort,
                 'role': f.role,
                 'label': f.label,
-                'exif': f.exif,
+                'xmp': f.xmp,
                 }
         entity.append( {'filemeta':filemeta} )
         # write
