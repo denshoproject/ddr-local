@@ -39,6 +39,7 @@ class DDRLocalEntity( DDREntity ):
     cid = None
     eid = None
     _files = []
+    locked = 0
     
     def __init__(self, *args, **kwargs):
         super(DDRLocalEntity, self).__init__(*args, **kwargs)
@@ -113,6 +114,14 @@ class DDRLocalEntity( DDREntity ):
                 lv.append(item)
         return lv
     
+    def lock( self ):
+        self.locked = 1
+        self.dump_json()
+    
+    def unlock( self ):
+        self.locked = 0
+        self.dump_json()
+    
     def form_data(self):
         """Prep data dict to pass into EntityForm object.
         
@@ -169,6 +178,9 @@ class DDRLocalEntity( DDREntity ):
         @param path: Absolute path to entity
         """
         json_data = self.json().data
+        
+        self.locked = json_data[0].get('locked',0)
+        
         for ff in METS_FIELDS:
             for f in json_data:
                 if f.keys()[0] == ff['name']:
@@ -220,7 +232,8 @@ class DDRLocalEntity( DDREntity ):
         # TODO DUMP FILE AND FILEMETA PROPERLY!!!
         entity = [{'application': 'https://github.com/densho/ddr-local.git',
                    'commit': git_commit(),
-                   'release': VERSION,}]
+                   'release': VERSION,
+                   'locked': self.locked,}]
         exceptions = ['files', 'filemeta']
         for f in METS_FIELDS:
             item = {}

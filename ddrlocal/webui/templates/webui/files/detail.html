@@ -17,7 +17,9 @@
 <h1>{% if file.label %}{{ file.label }}{% else %}{{ file.basename }}{% endif %}</h1>
 
 <p>
-<a href="{{ file.url }}edit/">Edit</a>
+{% if entity.locked %}<a class="muted" title="This entity is locked">edit</a>
+{% else %}<a href="{{ file.url }}">edit</a>
+{% endif %}
 </p>
 
 <table class="table table-condensed table-striped">

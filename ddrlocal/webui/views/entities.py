@@ -150,6 +150,9 @@ def edit( request, repo, org, cid, eid ):
         messages.error(request, 'Login is required')
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+    if entity.locked:
+        messages.error(request, 'This entity is locked.')
+        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     #
     if request.method == 'POST':
         form = EntityForm(request.POST)
@@ -200,6 +203,9 @@ def edit_mets_xml( request, repo, org, cid, eid ):
     """
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+    if entity.locked:
+        messages.error(request, 'This entity is locked.')
+        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     #
     if request.method == 'POST':
         form = UpdateForm(request.POST)

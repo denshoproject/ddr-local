@@ -70,6 +70,9 @@ def new( request, repo, org, cid, eid, role='master' ):
         messages.error(request, 'Login is required')
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+    if entity.locked:
+        messages.error(request, 'This entity is locked.')
+        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     #
     if request.method == 'POST':
         form = NewFileForm(request.POST, request.FILES)
@@ -153,6 +156,9 @@ def batch( request, repo, org, cid, eid, role='master' ):
     """
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+    if entity.locked:
+        messages.error(request, 'This entity is locked.')
+        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     return render_to_response(
         'webui/files/new.html',
         {'collection': collection,
@@ -172,6 +178,9 @@ def edit( request, repo, org, cid, eid, sha1 ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
     f = entity.file(sha1)
+    if entity.locked:
+        messages.error(request, "This file's parent entity is locked.")
+        return HttpResponseRedirect( f.url() )
     if request.method == 'POST':
         form = EditFileForm(request.POST, request.FILES)
         if form.is_valid():
