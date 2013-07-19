@@ -15,6 +15,24 @@ FILEMETA_BLANK = {'sha1':None,
                   'log':[],}
 
 
+def hash(path, algo='sha1'):
+    if algo == 'sha256':
+        h = hashlib.sha256()
+    elif algo == 'md5':
+        h = hashlib.md5()
+    else:
+        h = hashlib.sha1()
+    block_size=1024
+    f = open(path, 'rb')
+    while True:
+        data = f.read(block_size)
+        if not data:
+            break
+        h.update(data)
+    f.close()
+    return h.hexdigest()
+
+
 class DDRFile( object ):
     # files
     path = None
@@ -94,20 +112,9 @@ class DDRFile( object ):
         %{repo}-%{org}-%{cid}-%{eid}-%{sha1}.%{ext}
         example: ddr-testing-56-101-fb73f9de29.jpg
         """
-        def hash(path):
-            h = hashlib.sha1()
-            block_size=1024
-            f = open(path, 'rb')
-            while True:
-                data = f.read(block_size)
-                if not data:
-                    break
-                h.update(data)
-            f.close()
-            return h.hexdigest()
         if os.path.exists and os.access(path, os.R_OK):
             ext = os.path.splitext(path)[1]
-            sha1 = hash(path)
+            sha1 = hash(path, 'sha1')
             if sha1:
                 base = '-'.join([
                     entity.repo, entity.org, entity.cid, entity.eid,
