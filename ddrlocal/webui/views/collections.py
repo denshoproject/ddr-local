@@ -18,7 +18,6 @@ from DDR import commands
 from ddrlocal.models.collection import DDRLocalCollection as Collection
 from ddrlocal.forms import CollectionForm
 
-from storage import base_path
 from storage.decorators import storage_required
 from webui import api
 from webui.forms.collections import NewCollectionForm, UpdateForm
@@ -35,7 +34,7 @@ def collection_cgit_url(collection_uid):
 
 def _uid_path(request, repo, org, cid):
     uid = '{}-{}-{}'.format(repo, org, cid)
-    path = os.path.join(base_path(request), uid)
+    path = os.path.join(settings.MEDIA_BASE, uid)
     return uid,path
 
 
@@ -48,7 +47,7 @@ def collections( request ):
     for o in settings.DDR_ORGANIZATIONS:
         repo,org = o.split('-')
         colls = []
-        for coll in commands.collections_local(base_path(request), repo, org):
+        for coll in commands.collections_local(settings.MEDIA_BASE, repo, org):
             if coll:
                 coll = os.path.basename(coll)
                 c = coll.split('-')

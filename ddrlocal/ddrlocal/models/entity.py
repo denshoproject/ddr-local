@@ -15,7 +15,6 @@ from ddrlocal import VERSION, git_commit
 from ddrlocal.models.file import DDRFile, hash
 from DDR.commands import entity_annex_add
 from DDR.models import DDREntity
-from storage import base_path
 
 DATE_FORMAT = '%Y-%m-%d'
 DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
@@ -60,7 +59,7 @@ class DDRLocalEntity( DDREntity ):
     def entity_path(request, repo, org, cid, eid):
         collection_uid = '{}-{}-{}'.format(repo, org, cid)
         entity_uid     = '{}-{}-{}-{}'.format(repo, org, cid, eid)
-        collection_abs = os.path.join(base_path(request), collection_uid)
+        collection_abs = os.path.join(settings.MEDIA_BASE, collection_uid)
         entity_abs     = os.path.join(collection_abs,'files',entity_uid)
         return entity_abs
     

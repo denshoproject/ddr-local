@@ -50,6 +50,8 @@ WORKBENCH_NEWENT_URL = config.get('workbench','workbench_newent_url')
 # /media/USBHDDNAME/ddr
 DDR_USBHDD_BASE_DIR = 'ddr'
 
+MEDIA_BASE = os.path.join(MEDIA_ROOT, 'base')
+
 # logging
 WEBUI_LOG_FILE       = config.get('webui', 'log_file')
 WEBUI_LOG_LEVEL      = config.get('webui', 'log_level')

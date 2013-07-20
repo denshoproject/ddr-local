@@ -11,7 +11,6 @@ from django.core.urlresolvers import reverse
 from DDR.models import DDRCollection
 from ddrlocal.models.entity import DDRLocalEntity
 from ddrlocal import VERSION, git_commit
-from storage import base_path
 
 
 DATE_FORMAT = '%Y-%m-%d'
@@ -49,7 +48,7 @@ class DDRLocalCollection( DDRCollection ):
     
     @staticmethod
     def collection_path(request, repo, org, cid):
-        return os.path.join(base_path(request), '{}-{}-{}'.format(repo, org, cid))
+        return os.path.join(settings.MEDIA_BASE, '{}-{}-{}'.format(repo, org, cid))
     
     @staticmethod
     def create(path):

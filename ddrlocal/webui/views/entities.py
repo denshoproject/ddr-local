@@ -18,7 +18,6 @@ from ddrlocal.models.collection import DDRLocalCollection as Collection
 from ddrlocal.models.entity import DDRLocalEntity as Entity
 from ddrlocal.forms import EntityForm
 
-from storage import base_path
 from storage.decorators import storage_required
 from webui import api
 from webui.forms.entities import NewEntityForm, UpdateForm
@@ -34,7 +33,8 @@ from xmlforms.models import XMLModel
 @storage_required
 def detail( request, repo, org, cid, eid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
-    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+    epath = Entity.entity_path(request,repo,org,cid,eid)
+    entity = Entity.from_json(epath)
     return render_to_response(
         'webui/entities/detail.html',
         {'repo': entity.repo,
@@ -255,7 +255,7 @@ def edit_xml( request, repo, org, cid, eid, slug, Form, FIELDS, namespaces=None 
         messages.error(request, 'Login is required')
     collection_uid = '{}-{}-{}'.format(repo, org, cid)
     entity_uid     = '{}-{}-{}-{}'.format(repo, org, cid, eid)
-    collection_abs = os.path.join(base_path(request), collection_uid)
+    collection_abs = os.path.join(settings.MEDIA_BASE, collection_uid)
     entity_abs     = os.path.join(collection_abs,'files',entity_uid)
     entity_rel     = os.path.join('files',entity_uid)
     xml_path_rel   = 'mets.xml'
