@@ -1,7 +1,7 @@
 # dependencies used in all environments
 
 # Non-Python dependencies
-# sudo apt-get install libssl-dev, redis-server, python2.7, supervisor, imagemagick
+# sudo apt-get install libexempi3, libssl-dev, redis-server, python2.7, supervisor, imagemagick
 
                            # LICENSE      DEBIAN PKG (WHEEZY)              (JESSIE)
 
@@ -22,6 +22,7 @@ django-celery-with-redis   # BSD          n/a                              n/a
 beautifulsoup4             # MIT          python-beautifulsoup (3.2.1-1)   python-beautifulsoup (3.2.1-1)
 envoy                      # MIT          n/a                              n/a
 lxml                       # BSD          python-lxml (2.3.2-1)            python-lxml (3.2.0-1)
+python-xmp-toolkit         # New BSD      n/a                              (sid) python-libxmp (v?)
 requests                   # Apache       python-requests (0.12.1-1)       python-requests (1.2.3-1)
 sorl-thumbnail             # BSD          python-sorl-thumbnail (11.12-4)  python-sorl-thumbnail (11.12-5)
 

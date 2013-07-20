@@ -105,6 +105,18 @@ class DDRFile( object ):
         return self.__dict__
     
     @staticmethod
+    def extract_xmp( path ):
+        """Attempts to extract XMP data from a file, returns as dict.
+        
+        @return dict NOTE: this is not an XML file!
+        """
+        xmp = None
+        if os.path.exists(path):
+            import libxmp
+            xmp = libxmp.file_to_dict(path)
+        return xmp
+    
+    @staticmethod
     def file_name( entity, path ):
         """Generate a new name for the specified file
         
