@@ -126,6 +126,9 @@ class DDRFile( object ):
             xmp = libxmp.file_to_dict(path)
         return xmp
     
+    def make_thumbnail( self ):
+        pass
+    
     @staticmethod
     def file_name( entity, path ):
         """Generate a new name for the specified file
