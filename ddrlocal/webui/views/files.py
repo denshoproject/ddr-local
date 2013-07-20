@@ -62,8 +62,6 @@ def detail( request, repo, org, cid, eid, sha1 ):
 @login_required
 @storage_required
 def new( request, repo, org, cid, eid, role='master' ):
-    """Add file to entity
-    """
     git_name = request.session.get('git_name')
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
@@ -79,60 +77,12 @@ def new( request, repo, org, cid, eid, role='master' ):
         if form.is_valid():
             role     = form.cleaned_data['role']
             src_path = form.cleaned_data['path']
-            #
-            src_basename      = os.path.basename(src_path)
-            src_exists        = os.path.exists(src_path)
-            src_readable      = os.access(src_path, os.R_OK)
-            if not os.path.exists(entity.files_path):
-                os.mkdir(entity.files_path)
-            dest_dir          = entity.files_path
-            dest_dir_exists   = os.path.exists(dest_dir)
-            dest_dir_writable = os.access(dest_dir, os.W_OK)
-            dest_basename     = DDRFile.file_name(entity, src_path)
-            dest_path         = os.path.join(dest_dir, dest_basename)
-            dest_path_exists  = os.path.exists(dest_path)
-            s = []
-            if src_exists: s.append('ok')
-            else:                  messages.error(request, 'Source file does not exist: {}'.format(src_path))
-            if src_readable: s.append('ok')
-            else:                  messages.error(request, 'Source file not readable: {}'.format(src_path))
-            if dest_dir_exists: s.append('ok')
-            else:                  messages.error(request, 'Destination directory does not exist: {}'.format(dest_dir))
-            if dest_dir_writable: s.append('ok')
-            else:                  messages.error(request, 'Destination directory not writable: {}'.format(dest_dir))
-            if not dest_path_exists: s.append('ok')
-            else:                  messages.error(request, 'Destination file already exists!: {}'.format(dest_path))
-            preparations = ','.join(s)
-            # do, or do not
-            if preparations == 'ok,ok,ok,ok,ok':
-                assert False
-                
-                # extract_exif
-                
-                # copy_to_entity
-                dest_file_exists = False
-                
-                # make_access_copy
-                access_file_exists = False
-                
-                # make_thumbnail
-                thumbnail_exists = False
-                
-                # add_filemeta
-                if dest_file_exists:
-                    pass # add dest_file to entity.filemeta
-                if access_file_exists:
-                    pass # add access_file to entity.filemeta
-                
-                # entity_annex_add
-                exit,status = commands.entity_annex_add(git_name, git_mail,
-                                                        entity.parent_path,
-                                                        entity.id, file_rel)
-                if exit:
-                    messages.error(request, 'Error: {}'.format(status))
-                else:
-                    messages.success(request, 'New file added: {}'.format(status))
-                    return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+            
+            entity.add_file(request, src_path, git_name, git_mail)
+            log = entity.addfile_log()
+            
+            messages.success(request, 'New file pending. Stay tuned...')
+            return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     else:
         data = {'role':role,}
         form = NewFileForm(data)
