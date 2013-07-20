@@ -57,19 +57,26 @@ class DDRFile( object ):
     eid = None
     
     def __init__(self, *args, **kwargs):
-        if kwargs.get('path',None):
-            self.path = kwargs['path']
+        # files
+        if kwargs.get('path',None) and kwargs.get('entity',None):
+            self.set_path(kwargs['path'], kwargs['entity'])
+        elif kwargs.get('path',None):
+            self.set_path(kwargs['path'])
+        # filemeta
+        self.basename_orig = FILEMETA_BLANK['basename_orig']
+        self.status = FILEMETA_BLANK['status']
+        self.public = FILEMETA_BLANK['public']
+        self.sort = FILEMETA_BLANK['sort']
+        self.label = FILEMETA_BLANK['label']
+        self.xmp = FILEMETA_BLANK['xmp']
+        self.thumb = FILEMETA_BLANK['thumb']
+        # entity
         if kwargs.get('entity',None):
             self.repo = kwargs['entity'].repo
             self.org = kwargs['entity'].org
             self.cid = kwargs['entity'].cid
             self.eid = kwargs['entity'].eid
-        if self.path:
-            self.basename = os.path.basename(self.path)
-        if self.path and kwargs.get('entity',None):
-            self.src = os.path.join('base', kwargs['entity'].path_rel, self.path)
-        
-    
+
     @staticmethod
     def from_entity(entity, phile, meta):
         f = DDRFile()
@@ -98,6 +105,12 @@ class DDRFile( object ):
             f.src = os.path.join('base', entity.path_rel, f.path)
         return f
     
+    def set_path( self, path, entity=None ):
+        self.path = path
+        self.basename = os.path.basename(self.path)
+        if entity:
+            self.src = os.path.join('base', entity.path_rel, self.path)
+        
     def dict( self ):
         return self.__dict__
     
