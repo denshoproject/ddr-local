@@ -11,8 +11,7 @@ FILEMETA_BLANK = {'sha1':None,
                   'sort':-1,
                   'label':'',
                   'xmp':'',
-                  'thumb':-1,
-                  'log':[],}
+                  'thumb':-1,}
 
 
 def hash(path, algo='sha1'):
@@ -50,7 +49,6 @@ class DDRFile( object ):
     label = FILEMETA_BLANK['label']
     xmp = FILEMETA_BLANK['xmp']
     thumb = FILEMETA_BLANK['thumb']
-    log = FILEMETA_BLANK['log']
     # entity
     src = None
     repo = None
@@ -95,7 +93,6 @@ class DDRFile( object ):
         f.label  = meta.get('label',  FILEMETA_BLANK['label'])
         f.xmp   = meta.get('xmp',   FILEMETA_BLANK['xmp'])
         f.thumb  = meta.get('thumb',  FILEMETA_BLANK['thumb'])
-        f.log    = meta.get('log',    FILEMETA_BLANK['log'])
         if f.path:
             f.basename = os.path.basename(f.path)
             f.src = os.path.join('base', entity.path_rel, f.path)
