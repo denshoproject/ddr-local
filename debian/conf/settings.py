@@ -122,6 +122,7 @@ BROKER_TRANSPORT_OPTIONS = {'visibility_timeout': 60 * 60}  # 1 hour
 THUMBNAIL_DEBUG = DEBUG
 #THUMBNAIL_DEBUG = False
 THUMBNAIL_KVSTORE = 'sorl.thumbnail.kvstores.redis_kvstore.KVStore'
+#THUMBNAIL_KVSTORE = 'sorl.thumbnail.kvstores.cached_db_kvstore.KVStore'
 THUMBNAIL_REDIS_PASSWORD = ''
 THUMBNAIL_REDIS_HOST = REDIS_HOST
 THUMBNAIL_REDIS_PORT = int(REDIS_PORT)
