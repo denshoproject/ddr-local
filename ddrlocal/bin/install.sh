@@ -14,6 +14,8 @@ adduser ddr
 adduser ddr vboxsf
 
 
+apt-get --assume-yes update
+
 # Install Miscellaneous Useful Tools
 apt-get --assume-yes install ack-grep byobu bzip2 curl elinks htop logrotate mg multitail p7zip-full wget
 
