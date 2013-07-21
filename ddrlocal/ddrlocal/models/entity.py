@@ -96,13 +96,13 @@ class DDRLocalEntity( DDREntity ):
     def addfile_log( self ):
         return os.path.join(self.path, 'addfile.log')
     
-    def add_file( self, src_path, git_name, git_mail ):
+    def add_file( self, src_path, role, git_name, git_mail ):
         """Add file to entity
         
-        This method manipulates entity.json directly
-        and breaks out of the OOP paradigm a bit.
-        Thus it needs to prevent other edits while it does its thing.
+        This method breaks out of OOP and manipulates entity.json directly.
+        Thus it needs to lock to prevent other edits while it does its thing.
         """
+        f = None
         lf = self.addfile_log()
         
         def log(logfile, ok, msg):
@@ -144,15 +144,13 @@ class DDRLocalEntity( DDREntity ):
             log(lf, 1, 'Proceeding with copy.')
             
             f = DDRFile(entity=self)
+            f.role = role
             
             # original filename
             f.basename_orig = src_basename
             log(lf, 1, 'original filename: %s' % f.basename_orig)
             
-            # task: get SHA1 checksum
-            # (for connecting data in entity.filemeta to data in entity.files)
-            #   25M  - 0.7s
-            #   3.5G - 1m 51s
+            # task: get SHA1 checksum (links entity.filemeta entity.files records
             f.sha1   = hash(src_path, 'sha1')
             log(lf, 1, 'sha1: %s' % f.sha1)
             f.md5    = hash(src_path, 'md5')
@@ -161,10 +159,8 @@ class DDRLocalEntity( DDREntity ):
             log(lf, 1, 'sha256: %s' % f.sha256)
             
             # task: extract_xmp
-            #   25M  - 0.17s
-            #   3.5G - 0.006s
             f.xmp = DDRFile.extract_xmp(src_path)
-            log(lf, 1, 'XMP extracted.')
+            log(lf, 1, 'XMP extracted')
             
             # task: copy
             log(lf, 1, 'copy start')
@@ -176,13 +172,19 @@ class DDRLocalEntity( DDREntity ):
                 f.set_path(dest_path, entity=self)
                 log(lf, 1, 'copy success: %s' % f.path)
             
-            # task: make access copy
+            # task: make thumbnail
+            # NOTE: do this before entity_annex_add so don't have to lock/unlock
+            thumbnail = f.make_thumbnail('500x500')
+            if thumbnail:
+                f.thumb = 1
+            else:
+                f.thumb = 0
+            log(lf, 1, 'thumbnail attempted: %s' % f.thumb)
+            
+            # TODO task: make access copy
             log(lf, 1, 'TODO access copy')
             
-            # task: make thumbnail
-            log(lf, 1, 'TODO thumbnail')
-            
-            log(lf, 1, f.__dict__)
+            self.files.append(f)
             
             # entity_annex_add
             log(lf, 1, 'TODO entity_annex_add')
@@ -192,13 +194,12 @@ class DDRLocalEntity( DDREntity ):
             log(lf, 1, 'exit: %s' % exit)
             log(lf, 1, 'status: %s' % status)
             
-            self.files.append(f)
-            
         self.unlock()
         
         # TODO save entity.json and other files
         
         log(lf, 1, 'FINISHED\n')
+        return f
     
     @staticmethod
     def create(path):
