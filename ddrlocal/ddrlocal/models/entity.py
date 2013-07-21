@@ -353,8 +353,7 @@ class DDRLocalEntity( DDREntity ):
                 if key in ['created', 'lastmod']:
                     val = val.strftime(DATETIME_FORMAT)
                 elif key in ['digitize_date']:
-                    if type(val) == type(datetime):
-                        val = val.strftime(DATE_FORMAT)
+                    val = val.strftime(DATE_FORMAT)
                 # end special cases
             item[key] = val
             if (key not in exceptions):
