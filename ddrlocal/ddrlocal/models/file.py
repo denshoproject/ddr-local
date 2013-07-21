@@ -1,8 +1,10 @@
 import hashlib
 import os
 
+from django.core.files import File
 from django.core.urlresolvers import reverse
 
+from sorl.thumbnail import default
 
 
 FILE_KEYS = ['path', 
@@ -152,8 +154,29 @@ class DDRFile( object ):
             xmp = libxmp.file_to_dict(path)
         return xmp
     
-    def make_thumbnail( self ):
-        pass
+    def make_thumbnail( self, geometry, options={} ):
+        """Attempt to make thumbnail.
+        
+        See sorl.thumbnail.templatetags.thumbnail.ThumbnailNode.render 
+        https://github.com/sorl/sorl-thumbnail/blob/master/sorl/thumbnail/templatetags/thumbnail.py
+        
+        from django.core.files import File
+        from sorl.thumbnail import default
+        from ddrlocal.models.entity import DDRLocalEntity
+        entity = DDRLocalEntity.from_json('/var/www/media/base/ddr-testing-61/files/ddr-testing-61-3')
+        ef = entity.files[0]
+        with open(ef.path, 'r') as f:
+            file_ = File(f)
+         
+        geometry = '200x200'
+        thumbnail = default.backend.get_thumbnail(file_, geometry)
+        """
+        thumbnail = None
+        if self.path:
+            with open(self.path, 'r') as f:
+                file_ = File(f)
+            thumbnail = default.backend.get_thumbnail(file_, geometry)
+        return thumbnail
     
     @staticmethod
     def file_name( entity, path ):
