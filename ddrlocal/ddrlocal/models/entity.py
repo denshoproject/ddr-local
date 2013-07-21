@@ -12,7 +12,7 @@ from django.core.urlresolvers import reverse
 
 import tematres
 from ddrlocal import VERSION, git_commit
-from ddrlocal.models.file import DDRFile, hash
+from ddrlocal.models.file import DDRFile, hash, FILE_KEYS, FILEMETA_KEYS
 from DDR.commands import entity_annex_add
 from DDR.models import DDREntity
 
@@ -360,25 +360,19 @@ class DDRLocalEntity( DDREntity ):
                 entity.append(item)
         files = []
         for f in self.files:
-            files.append({
-                'path': f.path,
-                'basename': f.basename,
-                'size': f.size,
-                'sha1': f.sha1,
-                'sha256': f.sha256,
-                'md5': f.md5,
-                })
+            fd = {}
+            for key in FILE_KEYS:
+                if hasattr(f, key):
+                    fd[key] = getattr(f, key, None)
+            files.append(fd)
         entity.append( {'files':files} )
         filemeta = {}
         for f in self.files:
-            filemeta[f.sha1] = {
-                'status': f.status,
-                'public': f.public,
-                'sort': f.sort,
-                'role': f.role,
-                'label': f.label,
-                'xmp': f.xmp,
-                }
+            fm = {}
+            for key in FILEMETA_KEYS:
+                if hasattr(f, key) and (key != 'sha1'):
+                    fm[key] = getattr(f, key, None)
+            filemeta[f.sha1] = fm
         entity.append( {'filemeta':filemeta} )
         # write
         json_pretty = json.dumps(entity, indent=4, separators=(',', ': '))

@@ -4,14 +4,23 @@ import os
 from django.core.urlresolvers import reverse
 
 
+
+FILE_KEYS = ['path', 
+             'basename', 
+             'size', 
+             'role', 
+             'sha1', 
+             'sha256', 
+             'md5',]
 FILEMETA_BLANK = {'sha1':None,
                   'basename_orig':'',
                   'status':'',
                   'public':0,
                   'sort':-1,
                   'label':'',
-                  'xmp':'',
-                  'thumb':-1,}
+                  'thumb':-1,
+                  'xmp':'',}
+FILEMETA_KEYS = FILEMETA_BLANK.keys()
 
 
 def hash(path, algo='sha1'):
@@ -107,9 +116,26 @@ class DDRFile( object ):
     
     def set_path( self, path, entity=None ):
         self.path = path
+        self.size = os.path.getsize(self.path)
         self.basename = os.path.basename(self.path)
         if entity:
             self.src = os.path.join('base', entity.path_rel, self.path)
+    
+    def file( self ):
+        """Simulates an entity['files'] dict used to construct file"""
+        f = {}
+        for key in FILE_KEYS:
+            if hasattr(self, key):
+                f[key] = getattr(self, key, None)
+        return f
+    
+    def filemeta( self ):
+        """Simulates an entity['filemeta'] dict used to construct file"""
+        f = {}
+        for key in FILEMETA_KEYS:
+            if hasattr(self, key) and (key != 'sha1'):
+                f[key] = getattr(self, key, None)
+        return f
         
     def dict( self ):
         return self.__dict__
