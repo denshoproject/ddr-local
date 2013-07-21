@@ -43,9 +43,9 @@ Files
 <ul>
 {% for file in entity.files %}
   <li>
-{% if file and file.src %}
-{% thumbnail file.src "100x100" crop="center" as img %}
-    <a href="{{ file.url }}"><img src="{{ img.url }}" width="{{ img.width }}" height="{{ img.height }}"></a><br/>
+{% if file and file.src and file.thumb == 1 %}
+{% thumbnail file.src "500x500" crop="center" as img %}
+    <a href="{{ file.url }}"><img src="{{ img.url }}" width="100" height="100"></a><br/>
 {% empty %}
     No image<br/>
 {% endthumbnail %}

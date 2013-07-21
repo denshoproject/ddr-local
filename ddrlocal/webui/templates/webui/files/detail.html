@@ -68,7 +68,7 @@
   </tr>
 </table>
 
-{% if file and file.src %}
+{% if file and file.src and file.thumb == 1 %}
 {% thumbnail file.src "500x500" crop="center" as img %}
 <img src="{{ img.url }}" width="{{ img.width }}" height="{{ img.height }}">
 {% empty %}
