@@ -88,6 +88,7 @@ class DDRFile( object ):
         # files
         f.path   = phile.get('path',None)
         f.size   = phile.get('size',None)
+        f.role   = phile.get('role',None)
         f.sha1   = phile.get('sha1',None)
         f.sha256 = phile.get('sha256',None)
         f.md5    = phile.get('md5',None)
@@ -96,7 +97,6 @@ class DDRFile( object ):
         f.status = meta.get('status', FILEMETA_BLANK['status'])
         f.public = meta.get('public', FILEMETA_BLANK['public'])
         f.sort   = meta.get('sort',   FILEMETA_BLANK['sort'])
-        f.role   = meta.get('role',   None)
         f.label  = meta.get('label',  FILEMETA_BLANK['label'])
         f.xmp   = meta.get('xmp',   FILEMETA_BLANK['xmp'])
         f.thumb  = meta.get('thumb',  FILEMETA_BLANK['thumb'])
