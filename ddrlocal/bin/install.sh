@@ -3,32 +3,52 @@
 # 
 
 
+# text color variables
+txtund=$(tput sgr 0 1)   # underline
+txtbld=$(tput bold)      # bold
+red=$(tput setaf 1)      # red
+grn=$(tput setaf 2)      # green
+blu=$(tput setaf 4)      # blue
+wht=$(tput setaf 7)      # white
+bldred=${txtbld}${red}   # red
+bldgrn=${txtbld}${grn}   # green
+bldblu=${txtbld}${blu}   # blue
+bldwht=${txtbld}${wht}   # white
+txtrst=$(tput sgr0)      # reset
+info=${bldwht}*${txtrst} # feedback
+pass=${bldblu}*${txtrst}
+warn=${bldred}*${txtrst}
+ques=${bldblu}?${txtrst}
+
+
 git config --global alias.st status
 git config --global alias.co checkout
 git config --global alias.br branch
 git config --global alias.ci commit
 
 
-# Create a ddr user
+echo "${bldgrn}Creating ddr user${txtrst}"
 adduser ddr
 adduser ddr vboxsf
 
 
+echo "${bldgrn}Package update${txtrst}"
 apt-get --assume-yes update
 
-# Install Miscellaneous Useful Tools
+
+echo "${bldgrn}Installing miscellaneous tools${txtrst}"
 apt-get --assume-yes install ack-grep byobu bzip2 curl elinks htop logrotate mg multitail p7zip-full wget
 
 
-# www server
+echo "${bldgrn}www server${txtrst}"
 apt-get --assume-yes install nginx
 
 
-# cache server
+echo "${bldgrn}cache server${txtrst}"
 apt-get --assume-yes install redis-server
 
 
-# ddr-cmdln
+echo "${bldgrn}ddr-cmdln${txtrst}"
 apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev pmount udisks python-dev python-pip
 cd /usr/local/src
 git clone https://github.com/densho/ddr-cmdln.git
@@ -38,7 +58,7 @@ pip install -r /usr/local/src/ddr-cmdln/ddr/requirements/production.txt
 adduser ddr plugdev
 
 
-# ddr-lint
+echo "${bldgrn}ddr-lint${txtrst}"
 apt-get --assume-yes install libxml2 libxml2-dev libxslt1-dev
 cd /usr/local/src
 git clone https://github.com/densho/ddr-lint.git
@@ -47,7 +67,7 @@ python setup.py install
 pip install -r /usr/local/src/ddr-cmdln/ddr/requirements/production.txt
 
 
-# ddr-local
+echo "${bldgrn}ddr-local${txtrst}"
 apt-get --assume-yes install imagemagick libssl-dev python-dev libxml2 libxml2-dev libxslt1-dev supervisor
 cd /usr/local/src
 git clone https://github.com/densho/ddr-local.git
@@ -55,7 +75,7 @@ cd /usr/local/src/ddr-local/ddrlocal
 pip install -r /usr/local/src/ddr-local/ddrlocal/requirements/production.txt
 
 
-# Create Directories
+echo "${bldgrn}creating directories${txtrst}"
 mkdir /etc/ddr
 mkdir /var/log/ddr
 mkdir /var/lib/ddr
@@ -69,7 +89,7 @@ chown -R ddr /var/lib/ddr/
 chown -R ddr /var/www/media
 
 
-# Bootstrap, jQuery, Modernizr
+echo "${bldgrn}Bootstrap, jQuery, Modernizr${txtrst}"
 cd /var/www/static
 wget http://twitter.github.io/bootstrap/assets/bootstrap.zip
 7z x bootstrap.zip
@@ -79,7 +99,7 @@ wget http://code.jquery.com/jquery-1.10.2.min.js
 ln -s jquery-1.10.2.min.js jquery.js
 
 
-# Configuration Files
+echo "${bldgrn}configuration files${txtrst}"
 cp /usr/local/src/ddr-local/debian/conf/ddr.cfg /etc/ddr/
 chown root.root /etc/ddr/ddr.cfg
 chmod 644 /etc/ddr/ddr.cfg
