@@ -18,11 +18,17 @@ cp ../debian/conf/settings.py ./ddrlocal/
 echo "/etc/nginx/sites-available/ddrlocal.conf"
 sudo cp ../debian/conf/ddrlocal.conf /etc/nginx/sites-available/
 
+echo "/etc/supervisor/conf.d/celeryd.conf"
+sudo cp ../debian/conf/celeryd.conf /etc/supervisor/conf.d/
+
 echo "/etc/supervisor/conf.d/gunicorn_ddrlocal.conf"
 sudo cp ../debian/conf/gunicorn_ddrlocal.conf /etc/supervisor/conf.d/
 
 echo "supervisorctl reload"
 sudo supervisorctl reload
+
+echo "supervisorctl restart celeryd"
+sudo supervisorctl restart celeryd
 
 echo "supervisorctl restart ddrlocal"
 sudo supervisorctl restart ddrlocal
