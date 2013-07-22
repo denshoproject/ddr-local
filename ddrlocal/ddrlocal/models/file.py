@@ -276,11 +276,11 @@ def entity_add_file( entity, src_path, role, git_name, git_mail ):
     else:                  log(lf, 0, 'Destination directory does not exist: {}'.format(dest_dir))
     if dest_dir_writable:  s.append('ok')
     else:                  log(lf, 0, 'Destination directory not writable: {}'.format(dest_dir))
-    if not dest_path_exists: s.append('ok')
-    else:                  log(lf, 0, 'Destination file already exists!: {}'.format(dest_path))
+    #if not dest_path_exists: s.append('ok')
+    #else:                  log(lf, 0, 'Destination file already exists!: {}'.format(dest_path))
     preparations = ','.join(s)
     # do, or do not
-    if preparations == 'ok,ok,ok,ok,ok':
+    if preparations == 'ok,ok,ok,ok':  # ,ok
         log(lf, 1, 'Proceeding with copy.')
         
         f = DDRFile(entity=entity)
