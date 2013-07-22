@@ -2,7 +2,6 @@ from datetime import datetime, date
 import json
 import os
 from StringIO import StringIO
-import shutil
 
 from lxml import etree
 
@@ -13,7 +12,6 @@ from django.core.urlresolvers import reverse
 import tematres
 from ddrlocal import VERSION, git_commit
 from ddrlocal.models.file import DDRFile, hash, FILE_KEYS, FILEMETA_KEYS
-from DDR.commands import entity_annex_add
 from DDR.models import DDREntity
 
 DATE_FORMAT = '%Y-%m-%d'
@@ -92,114 +90,6 @@ class DDRLocalEntity( DDREntity ):
                 return f
         # just do nothing
         return None
-    
-    def addfile_log( self ):
-        return os.path.join(self.path, 'addfile.log')
-    
-    def add_file( self, src_path, role, git_name, git_mail ):
-        """Add file to entity
-        
-        This method breaks out of OOP and manipulates entity.json directly.
-        Thus it needs to lock to prevent other edits while it does its thing.
-        """
-        f = None
-        lf = self.addfile_log()
-        
-        def log(logfile, ok, msg):
-            if ok: ok = 'ok'
-            else:  ok = 'not ok'
-            entry = '[{}] {} - {}\n'.format(datetime.now().isoformat('T'), ok, msg)
-            with open(lf, 'a') as f:
-                f.write(entry)
-                
-        log(lf, 1, 'START')
-        log(lf, 1, 'copying %s' % src_path)
-        self.lock()
-        
-        src_basename      = os.path.basename(src_path)
-        src_exists        = os.path.exists(src_path)
-        src_readable      = os.access(src_path, os.R_OK)
-        if not os.path.exists(self.files_path):
-            os.mkdir(self.files_path)
-        dest_dir          = self.files_path
-        dest_dir_exists   = os.path.exists(dest_dir)
-        dest_dir_writable = os.access(dest_dir, os.W_OK)
-        dest_basename     = DDRFile.file_name(self, src_path)
-        dest_path         = os.path.join(dest_dir, dest_basename)
-        dest_path_exists  = os.path.exists(dest_path)
-        s = []
-        if src_exists:         s.append('ok')
-        else:                  log(lf, 0, 'Source file does not exist: {}'.format(src_path))
-        if src_readable:       s.append('ok')
-        else:                  log(lf, 0, 'Source file not readable: {}'.format(src_path))
-        if dest_dir_exists:    s.append('ok')
-        else:                  log(lf, 0, 'Destination directory does not exist: {}'.format(dest_dir))
-        if dest_dir_writable:  s.append('ok')
-        else:                  log(lf, 0, 'Destination directory not writable: {}'.format(dest_dir))
-        if not dest_path_exists: s.append('ok')
-        else:                  log(lf, 0, 'Destination file already exists!: {}'.format(dest_path))
-        preparations = ','.join(s)
-        # do, or do not
-        if preparations == 'ok,ok,ok,ok,ok':
-            log(lf, 1, 'Proceeding with copy.')
-            
-            f = DDRFile(entity=self)
-            f.role = role
-            
-            # original filename
-            f.basename_orig = src_basename
-            log(lf, 1, 'original filename: %s' % f.basename_orig)
-            
-            # task: get SHA1 checksum (links entity.filemeta entity.files records
-            f.sha1   = hash(src_path, 'sha1')
-            log(lf, 1, 'sha1: %s' % f.sha1)
-            f.md5    = hash(src_path, 'md5')
-            log(lf, 1, 'md5: %s' % f.md5)
-            f.sha256 = hash(src_path, 'sha256')
-            log(lf, 1, 'sha256: %s' % f.sha256)
-            
-            # task: extract_xmp
-            f.xmp = DDRFile.extract_xmp(src_path)
-            log(lf, 1, 'XMP extracted')
-            
-            # task: copy
-            log(lf, 1, 'copy start')
-            shutil.copy(src_path, dest_path)
-            log(lf, 1, 'copy end')
-            cp_successful = False
-            if os.path.exists(dest_path):
-                cp_successful = True
-                f.set_path(dest_path, entity=self)
-                log(lf, 1, 'copy success: %s' % f.path)
-            
-            # task: make thumbnail
-            # NOTE: do this before entity_annex_add so don't have to lock/unlock
-            thumbnail = f.make_thumbnail('500x500')
-            if thumbnail:
-                f.thumb = 1
-            else:
-                f.thumb = 0
-            log(lf, 1, 'thumbnail attempted: %s' % f.thumb)
-            
-            # TODO task: make access copy
-            log(lf, 1, 'TODO access copy')
-            
-            self.files.append(f)
-            
-            # entity_annex_add
-            log(lf, 1, 'TODO entity_annex_add')
-            exit,status = entity_annex_add(git_name, git_mail,
-                                           self.parent_path,
-                                           self.id, dest_basename)
-            log(lf, 1, 'exit: %s' % exit)
-            log(lf, 1, 'status: %s' % status)
-            
-        self.unlock()
-        
-        # TODO save entity.json and other files
-        
-        log(lf, 1, 'FINISHED\n')
-        return f
     
     @staticmethod
     def create(path):
