@@ -1,6 +1,9 @@
 import hashlib
 import os
 
+import libxmp
+from lxml import etree
+
 from django.core.files import File
 from django.core.urlresolvers import reverse
 
@@ -148,11 +151,21 @@ class DDRFile( object ):
         
         @return dict NOTE: this is not an XML file!
         """
-        xmp = None
-        if os.path.exists(path):
-            import libxmp
-            xmp = libxmp.file_to_dict(path)
-        return xmp
+        xmpfile = libxmp.files.XMPFiles()
+        try:
+            xmpfile.open_file(path, open_read=True)
+            xmp = xmpfile.get_xmp()
+        except:
+            xmp = None
+        if xmp:
+            xml  = xmp.serialize_to_unicode()
+            tree = etree.fromstring(xml)
+            str = etree.tostring(tree, pretty_print=False).strip()
+            while str.find('\n ') > -1:
+                str = str.replace('\n ', '\n')
+            str = str.replace('\n','')
+            return str
+        return None
     
     def make_thumbnail( self, geometry, options={} ):
         """Attempt to make thumbnail.
