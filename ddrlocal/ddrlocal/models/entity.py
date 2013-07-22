@@ -185,19 +185,21 @@ class DDRLocalEntity( DDREntity ):
                 if f.keys()[0] == ff['name']:
                     setattr(self, f.keys()[0], f.values()[0])
         
+        def parsedt(txt):
+            d = datetime.now()
+            try:
+                d = datetime.strptime(txt, DATETIME_FORMAT)
+            except:
+                try:
+                    d = datetime.strptime(txt, TIME_FORMAT)
+                except:
+                    pass
+            return d
+            
         # special cases
-        if self.created:
-            self.created = datetime.strptime(self.created, DATETIME_FORMAT)
-        else:
-            self.created = datetime.now()
-        if self.lastmod:
-            self.lastmod = datetime.strptime(self.lastmod, DATETIME_FORMAT)
-        else:
-            self.lastmod = datetime.now()
-        if self.digitize_date:
-            self.digitize_date = datetime.strptime(self.digitize_date, DATE_FORMAT)
-        else:
-            self.digitize_date = ''
+        if self.created: self.created = parsedt(self.created)
+        if self.lastmod: self.lastmod = parsedt(self.lastmod)
+        if self.digitize_date: self.digitize_date = parsedt(self.digitize_date)
         # end special cases
         
         # Ensure that every field in METS_FIELDS is represented
@@ -238,13 +240,14 @@ class DDRLocalEntity( DDREntity ):
             item = {}
             key = f['name']
             val = ''
+            dt = datetime(1970,1,1)
+            d = date(1970,1,1)
             if hasattr(self, f['name']):
                 val = getattr(self, f['name'])
                 # special cases
-                if key in ['created', 'lastmod']:
-                    val = val.strftime(DATETIME_FORMAT)
-                elif key in ['digitize_date']:
-                    val = val.strftime(DATE_FORMAT)
+                if val:
+                    if (type(val) == type(dt)) or (type(val) == type(d)):
+                        val = val.strftime(DATETIME_FORMAT)
                 # end special cases
             item[key] = val
             if (key not in exceptions):
