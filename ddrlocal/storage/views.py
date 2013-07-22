@@ -35,14 +35,14 @@ def index( request ):
         if which == 'mount':
             if mount_form.is_valid():
                 raw = mount_form.cleaned_data['device']
-                devicefile,label = raw.split(' ')
+                devicefile,label = raw.split(' ',1)
                 # do it
                 mount(request, devicefile, label)
                 return HttpResponseRedirect( reverse('storage-index') )
         elif which == 'umount':
             if umount_form.is_valid():
                 raw = umount_form.cleaned_data['device']
-                mountpoint,devicefile = raw.split(' ')
+                mountpoint,devicefile = raw.split(' ',1)
                 # do it
                 unmount(request, devicefile, mountpoint)
                 return HttpResponseRedirect( reverse('storage-index') )
