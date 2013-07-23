@@ -165,11 +165,13 @@ class DDRLocalEntity( DDREntity ):
 
     @staticmethod
     def from_json(entity_abs):
-        entity = DDRLocalEntity(entity_abs)
-        entity_uid = entity.id
-        entity.load_json(entity.json_path)
-        if not entity.id:
-            entity.id = entity_uid  # might get overwritten if entity.json is blank
+        entity = None
+        if os.path.exists(entity_abs):
+            entity = DDRLocalEntity(entity_abs)
+            entity_uid = entity.id
+            entity.load_json(entity.json_path)
+            if not entity.id:
+                entity.id = entity_uid  # might get overwritten if entity.json is blank
         return entity
     
     def load_json(self, path):
