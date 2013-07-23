@@ -15,9 +15,10 @@ from django.template import RequestContext
 from DDR import commands
 from ddrlocal.models.collection import DDRLocalCollection as Collection
 from ddrlocal.models.entity import DDRLocalEntity as Entity
-from ddrlocal.models.file import DDRFile, entity_add_file
+from ddrlocal.models.file import DDRFile
 from storage.decorators import storage_required
 from webui.forms.files import NewFileForm, EditFileForm
+from webui.tasks import entity_add_file
 from webui.views.decorators import login_required
 
 
@@ -78,9 +79,9 @@ def new( request, repo, org, cid, eid, role='master' ):
             role     = form.cleaned_data['role']
             src_path = form.cleaned_data['path']
             
-            file_,log = entity_add_file(entity, src_path, role, git_name, git_mail)
+            r = entity_add_file.delay(entity, src_path, role, git_name, git_mail)
             
-            messages.success(request, 'New file pending. Stay tuned...')
+            messages.success(request, 'Uploading <b>%s</b>' % [os.path.basename(src_path)])
             return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     else:
         data = {'role':role,}
