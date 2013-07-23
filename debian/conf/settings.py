@@ -87,6 +87,7 @@ INSTALLED_APPS = (
     'djcelery',
     'sorl.thumbnail',
     #
+    'ddrlocal',
     'storage',
     'webui',
 )
