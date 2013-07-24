@@ -68,7 +68,7 @@ pip install -r /usr/local/src/ddr-cmdln/ddr/requirements/production.txt
 
 
 echo "${bldgrn}ddr-local${txtrst}"
-apt-get --assume-yes install imagemagick libssl-dev python-dev libxml2 libxml2-dev libxslt1-dev supervisor
+apt-get --assume-yes install imagemagick libexempi3 libssl-dev python-dev libxml2 libxml2-dev libxslt1-dev supervisor
 cd /usr/local/src
 git clone https://github.com/densho/ddr-local.git
 cd /usr/local/src/ddr-local/ddrlocal
