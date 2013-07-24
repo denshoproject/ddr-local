@@ -157,42 +157,33 @@ def sync( request, repo, org, cid ):
 @login_required
 @storage_required
 def new( request, repo, org ):
+    """Gets new CID from workbench, creates new collection record.
+    
+    If it messes up, goes back to collection list.
     """
-    TODO webui.views.collections.collection_new: get new CID from workbench
-    """
-    if request.method == 'POST':
-        form = NewCollectionForm(request.POST)
-        if form.is_valid():
-            git_name = request.session.get('git_name')
-            git_mail = request.session.get('git_mail')
-            if git_name and git_mail:
-                repo = form.cleaned_data['repo']
-                org = form.cleaned_data['org']
-                cid = form.cleaned_data['cid']
-                collection_uid,collection_path = _uid_path(request, repo, org, cid)
-                # create the new collection repo
-                exit,status = commands.create(git_name, git_mail, collection_path)
-                if exit:
-                    messages.error(request, 'Error: {}'.format(status))
-                else:
-                    messages.success(request, 'New collection created: {}'.format(status))
-                    return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
-            else:
-                messages.error(request, 'Login is required')
-    else:
-        # request the new CID
-        cids = api.collections_next(request, repo, org, 1)
-        # display in form
+    git_name = request.session.get('git_name')
+    git_mail = request.session.get('git_mail')
+    if not (git_name and git_mail):
+        messages.error(request, 'Login is required')
+    # get new collection ID
+    cid = None
+    cids = api.collections_next(request, repo, org, 1)
+    if cids:
         cid = int(cids[-1].split('-')[2])
-        data = {'repo': repo,
-                'org': org,
-                'cid': cid,}
-        form = NewCollectionForm(data)
-    return render_to_response(
-        'webui/collections/new.html',
-        {'form': form,},
-        context_instance=RequestContext(request, processors=[])
-    )
+    if cid:
+        # create the new collection repo
+        collection_uid,collection_path = _uid_path(request, repo, org, cid)
+        exit,status = commands.create(git_name, git_mail, collection_path)
+        if exit:
+            messages.error(request, 'Error: {}'.format(status))
+        else:
+            messages.success(request, 'New collection created: {}'.format(status))
+            return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+    else:
+        messages.error(request, 'Error: Could not get new collection IDs from workbench.')
+    # something happened...
+    messages.error(request, 'Error: Could not create new collection.')
+    return HttpResponseRedirect(reverse('webui-collections'))
 
 @login_required
 @storage_required
