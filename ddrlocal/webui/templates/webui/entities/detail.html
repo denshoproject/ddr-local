@@ -41,7 +41,7 @@
 Files
 </h3>
 <ul>
-{% for file in entity.files %}
+{% for file in entity.files_master %}
   <li>
 {% if file and file.src and file.thumb == 1 %}
 {% thumbnail file.src "500x500" crop="center" as img %}

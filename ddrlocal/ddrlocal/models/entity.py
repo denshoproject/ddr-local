@@ -63,11 +63,11 @@ class DDRLocalEntity( DDREntity ):
     
     def files_master( self ):
         files = [f for f in self.files if f.role and (f.role == 'master')]
-        return files
+        return sorted(files, key=lambda f: f.sort)
     
     def files_mezzanine( self ):
         files = [f for f in self.files if f.role and (f.role == 'mezzanine')]
-        return files
+        return sorted(files, key=lambda f: f.sort)
     
     def file( self, sha1, newfile=None ):
         """Given a SHA1 hash, get the corresponding file dict.
