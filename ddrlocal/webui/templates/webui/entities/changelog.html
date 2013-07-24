@@ -11,7 +11,7 @@
 
 {% block content %}
 
-<h1>{{ entity.title }} - changelog</h1>
+<h1>{% if entity.title %}{{ entity.title }}{% else %}{{ entity.id }}{% endif %} - changelog</h1>
 
 <pre>
 {{ entity.changelog }}
