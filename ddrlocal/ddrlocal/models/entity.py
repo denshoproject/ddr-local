@@ -124,6 +124,10 @@ class DDRLocalEntity( DDREntity ):
                     value = func(value)
                 # end special processing
                 data[key] = value
+        if not data.get('created', None):
+            data['created'] = datetime.now()
+        if not data.get('lastmod', None):
+            data['lastmod'] = datetime.now()
         return data
     
     def form_process(self, form):
