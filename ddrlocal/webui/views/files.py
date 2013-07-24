@@ -15,7 +15,7 @@ from django.template import RequestContext
 from DDR import commands
 from ddrlocal.models.collection import DDRLocalCollection as Collection
 from ddrlocal.models.entity import DDRLocalEntity as Entity
-from ddrlocal.models.file import DDRFile
+from ddrlocal.models.file import DDRFile, FILEMETA_BLANK
 from storage.decorators import storage_required
 from webui.forms.files import NewFileForm, EditFileForm
 from webui.tasks import entity_add_file
@@ -76,15 +76,18 @@ def new( request, repo, org, cid, eid, role='master' ):
     if request.method == 'POST':
         form = NewFileForm(request.POST, request.FILES)
         if form.is_valid():
-            role     = form.cleaned_data['role']
             src_path = form.cleaned_data['path']
-            
-            r = entity_add_file.delay(entity, src_path, role, git_name, git_mail)
-            
-            messages.success(request, 'Uploading <b>%s</b>' % [os.path.basename(src_path)])
+            role = form.cleaned_data['role']
+            sort = form.cleaned_data['sort']
+            label = form.cleaned_data['label']
+            result = entity_add_file.delay(git_name, git_mail, entity, src_path, role, sort, label)
+            msg = 'Uploading <b>%s</b> (%s)' % (os.path.basename(src_path), result)
+            messages.success(request, msg)
             return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     else:
-        data = {'role':role,}
+        data = {'role':role,
+                'sort': FILEMETA_BLANK['sort'],
+                'label': '',}
         form = NewFileForm(data)
     return render_to_response(
         'webui/files/new.html',

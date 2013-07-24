@@ -17,7 +17,7 @@ def add(x, y):
     return x + y
 
 @task(name='entity-add-file')
-def entity_add_file(entity, src_path, role, git_name, git_mail):
+def entity_add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
     """
     @param entity: DDRLocalEntity
     @param src_path: Absolute path to an uploadable file.
@@ -27,11 +27,11 @@ def entity_add_file(entity, src_path, role, git_name, git_mail):
     """
     file_ = None
     log = 'unknown error'
-    file_,log = add_file(entity, src_path, role, git_name, git_mail)
+    file_,log = add_file(git_name, git_mail, entity, src_path, role, sort, label)
     return log
 
 
-def add_file( entity, src_path, role, git_name, git_mail ):
+def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
     """Add file to entity
     
     This method breaks out of OOP and manipulates entity.json directly.
@@ -92,6 +92,8 @@ def add_file( entity, src_path, role, git_name, git_mail ):
         
         f = DDRFile(entity=entity)
         f.role = role
+        f.sort = sort
+        f.label = label
         
         # original filename
         f.basename_orig = src_basename
