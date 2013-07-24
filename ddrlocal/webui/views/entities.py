@@ -95,51 +95,35 @@ def files( request, repo, org, cid, eid ):
 @login_required
 @storage_required
 def new( request, repo, org, cid ):
+    """Gets new EID from workbench, creates new entity record.
+    
+    If it messes up, goes back to collection.
     """
-    TODO webui.views.entities.entity_new: get new EID from workbench
-    """
+    git_name = request.session.get('git_name')
+    git_mail = request.session.get('git_mail')
+    if not (git_name and git_mail):
+        messages.error(request, 'Login is required')
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
-    if request.method == 'POST':
-        form = NewEntityForm(request.POST)
-        if form.is_valid():
-            git_name = request.session.get('git_name')
-            git_mail = request.session.get('git_mail')
-            if git_name and git_mail:
-                eid = form.cleaned_data['eid']
-                entity_uid = '{}-{}-{}-{}'.format(repo,org,cid,eid)
-                exit,status = commands.entity_create(git_name, git_mail, collection.path, entity_uid)
-                
-                if exit:
-                    messages.error(request, 'Error: {}'.format(status))
-                else:
-                    redirect_url = reverse('webui-entity', args=[repo,org,cid,eid])
-                    messages.success(request, 'New entity created: {}'.format(entity_uid))
-                    return HttpResponseRedirect(redirect_url)
-            else:
-                messages.error(request, 'Login is required')
-    else:
-        # request the new CID
-        eids = api.entities_next(request, repo, org, cid, 1)
-        if eids:
-            eid = int(eids[-1].split('-')[3])
+    # get new entity ID
+    eid = None
+    eids = api.entities_next(request, repo, org, cid, 1)
+    if eids:
+        eid = int(eids[-1].split('-')[3])
+    if eid:
+        # create new entity
+        entity_uid = '{}-{}-{}-{}'.format(repo,org,cid,eid)
+        exit,status = commands.entity_create(git_name, git_mail, collection.path, entity_uid)
+        if exit:
+            messages.error(request, 'Error: {}'.format(status))
         else:
-            eid = None
-            messages.error(request, 'Error: Could not get new EID from workbench.')
-        data = {'repo': repo,
-                'org': org,
-                'cid': cid,
-                'eid': eid,}
-        form = NewEntityForm(data)
-    return render_to_response(
-        'webui/entities/new.html',
-        {'repo': repo,
-         'org': org,
-         'cid': cid,
-         'collection_uid': collection.id,
-         'collection': collection,
-         'form': form,},
-        context_instance=RequestContext(request, processors=[])
-    )
+            redirect_url = reverse('webui-entity', args=[repo,org,cid,eid])
+            messages.success(request, 'New entity created: {}'.format(entity_uid))
+            return HttpResponseRedirect(redirect_url)
+    else:
+        messages.error(request, 'Error: Could not get new entity IDs from workbench.')
+    # something happened...
+    messages.error(request, 'Error: Could not create new entity.')
+    return HttpResponseRedirect(reverse('webui-collection', args=[repo,org,cid]))
 
 @login_required
 @storage_required
