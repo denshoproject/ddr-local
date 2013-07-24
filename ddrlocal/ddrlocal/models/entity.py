@@ -91,6 +91,15 @@ class DDRLocalEntity( DDREntity ):
         # just do nothing
         return None
     
+    def files_log( self ):
+        """Returns log of add_files activity.
+        """
+        log = ''
+        logpath = os.path.join(self.path, 'addfile.log')
+        with open(logpath, 'r') as f:
+            log = f.read()
+        return log
+    
     @staticmethod
     def create(path):
         """Creates a new entity with the specified entity ID.

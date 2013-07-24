@@ -48,6 +48,22 @@ def detail( request, repo, org, cid, eid ):
     )
 
 @storage_required
+def addfile_log( request, repo, org, cid, eid ):
+    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+    return render_to_response(
+        'webui/entities/addfiles-log.html',
+        {'repo': entity.repo,
+         'org': entity.org,
+         'cid': entity.cid,
+         'eid': entity.eid,
+         'collection_uid': collection.id,
+         'collection': collection,
+         'entity': entity,},
+        context_instance=RequestContext(request, processors=[])
+    )
+
+@storage_required
 def changelog( request, repo, org, cid, eid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))

@@ -1,0 +1,20 @@
+{% extends "webui/entities/base.html" %}
+
+
+{% block title %}addfiles.log | {{ entity.title }}{% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+<li><a href="{{ entity.url }}">{% if entity.title %}{{ entity.title }}{% else %}{{ entity.id }}{% endif %}</a></li>
+<li class="active">addfiles.log</li>
+{% endblock breadcrumbs %}
+
+
+{% block content %}
+
+<h1>{% if entity.title %}{{ entity.title }}{% else %}{{ entity.id }}{% endif %} - addfiles.log</h1>
+
+<pre>
+{{ entity.files_log }}
+</pre>
+
+{% endblock content %}
