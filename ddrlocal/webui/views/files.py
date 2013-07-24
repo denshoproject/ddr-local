@@ -142,7 +142,7 @@ def edit( request, repo, org, cid, eid, sha1 ):
             f.sort = form.cleaned_data['sort']
             f.role = form.cleaned_data['role']
             f.label = form.cleaned_data['label']
-            f.exif = form.cleaned_data['exif']
+            f.xmp = form.cleaned_data['xmp']
             result = entity.file(sha1, f)
             if result in ['added','updated']:
                 entity.dump_json()
@@ -159,12 +159,12 @@ def edit( request, repo, org, cid, eid, sha1 ):
             assert False
     else:
         data = {
-            'status': f.status,
-            'public': f.public,
-            'sort': f.sort,
+            #'status': f.status,
+            #'public': f.public,
             'role': f.role,
+            'sort': f.sort,
             'label': f.label,
-            'exif': f.exif,
+            'xmp': f.xmp,
             }
         form = EditFileForm(data)
     return render_to_response(

@@ -8,7 +8,7 @@ class NewFileForm(forms.Form):
     sort = forms.IntegerField()
 
 class EditFileForm(forms.Form):
-    sort = forms.IntegerField()
     role = forms.ChoiceField(choices=settings.ENTITY_FILE_ROLES)
-    label = forms.CharField(max_length=255)
-    exif = forms.CharField(widget=forms.Textarea, required=False)
+    label = forms.CharField(max_length=255, required=False)
+    sort = forms.IntegerField()
+    xmp = forms.CharField(widget=forms.Textarea, required=False)
