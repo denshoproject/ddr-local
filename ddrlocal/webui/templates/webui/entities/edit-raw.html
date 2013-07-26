@@ -1,0 +1,32 @@
+{% extends "webui/entities/base.html" %}
+
+
+{% block title %}{{ entity.title }}{% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+<li><a href="{{ entity.url }}">{% if entity.title %}{{ entity.title }}{% else %}{{ entity.id }}{% endif %}</a></li>
+<li class="active">Edit</li>
+{% endblock breadcrumbs %}
+
+
+{% block content %}
+
+<h1>
+{{ entity.title }}
+&mdash;
+Edit
+</h1>
+
+<div class="alert alert-block">
+  <b>IMPORTANT:</b>
+  You are editing the raw entity record! Proceed at your own risk!
+</div>
+
+<form name="entity-update" action="" method="POST">{% csrf_token %}
+<table>
+  {{ form.as_table }}
+</table>
+<input name="submit" type="submit" value="submit"/><br/>
+</form>
+
+{% endblock content %}

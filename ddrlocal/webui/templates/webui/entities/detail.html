@@ -71,7 +71,10 @@
 {% block footer %}
 
 <div class="muted" id="expert">
-  <span><a class="muted" href="{% url "webui-entity-json" repo org cid eid %}">json</a></span>
+  <span>
+    <a class="muted" href="{% url "webui-entity-json" repo org cid eid %}">json</a>
+    <a class="muted" href="{% url "webui-entity-edit-json" repo org cid eid %}">(edit)</a>
+  </span>
   <span class="bullsep">&bull;</span>
   <span>
     <a class="muted" href="{% url "webui-entity-mets-xml" repo org cid eid %}">mets.xml</a>

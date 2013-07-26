@@ -7,5 +7,8 @@ class NewEntityForm(forms.Form):
     cid = forms.CharField(max_length=100)
     eid = forms.CharField(max_length=100)
 
+class JSONForm(forms.Form):
+    json = forms.CharField(widget=forms.Textarea)
+
 class UpdateForm(forms.Form):
     xml = forms.CharField(widget=forms.Textarea)

@@ -20,7 +20,7 @@ from ddrlocal.forms import EntityForm
 
 from storage.decorators import storage_required
 from webui import api
-from webui.forms.entities import NewEntityForm, UpdateForm
+from webui.forms.entities import NewEntityForm, JSONForm, UpdateForm
 from webui.mets import NAMESPACES, NAMESPACES_XPATH
 from webui.mets import METS_FIELDS, MetsForm
 from webui.views.decorators import login_required
@@ -186,6 +186,59 @@ def edit( request, repo, org, cid, eid ):
          'entity': entity,
          'form': form,
          },
+        context_instance=RequestContext(request, processors=[])
+    )
+
+@login_required
+@storage_required
+def edit_json( request, repo, org, cid, eid ):
+    """
+    NOTE: will permit editing even if entity is locked!
+    (which you need to do sometimes).
+    """
+    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+    #if entity.locked:
+    #    messages.error(request, 'This entity is locked.')
+    #    return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+    #
+    jsonpath = os.path.join(entity.path, 'entity.json')
+    if request.method == 'POST':
+        form = JSONForm(request.POST)
+        if form.is_valid():
+            git_name = request.session.get('git_name')
+            git_mail = request.session.get('git_mail')
+            if git_name and git_mail:
+                json = form.cleaned_data['json']
+                # TODO validate XML
+                with open(jsonpath, 'w') as f:
+                    f.write(json)
+                
+                exit,status = commands.entity_update(
+                    git_name, git_mail,
+                    entity.parent_path, entity.id,
+                    [jsonpath])
+                
+                if exit:
+                    messages.error(request, 'Error: {}'.format(status))
+                else:
+                    messages.success(request, 'Entity updated')
+                    return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+            else:
+                messages.error(request, 'Login is required')
+    else:
+        with open(jsonpath, 'r') as f:
+            json = f.read()
+        form = JSONForm({'json': json,})
+    return render_to_response(
+        'webui/entities/edit-raw.html',
+        {'repo': entity.repo,
+         'org': entity.org,
+         'cid': entity.cid,
+         'eid': entity.eid,
+         'collection_uid': entity.parent_uid,
+         'entity': entity,
+         'form': form,},
         context_instance=RequestContext(request, processors=[])
     )
 
