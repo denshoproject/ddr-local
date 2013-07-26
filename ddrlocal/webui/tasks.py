@@ -148,6 +148,8 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
         else:
             f.thumb = 0
         log(lf, 1, 'thumbnail attempted: %s' % f.thumb)
+        if thumbnail and hasattr(thumbnail, 'name') and thumbnail.name:
+            log(lf, 1, 'thumbnail: %s' % thumbnail.name)
         
         # TODO task: make access copy
         log(lf, 1, 'TODO access copy')
