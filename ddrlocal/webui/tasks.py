@@ -60,7 +60,8 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
             f.write(entry)
             
     log(lf, 1, 'START')
-    log(lf, 1, 'copying %s' % src_path)
+    log(lf, 1, 'ENTITY: %s' % entity.id)
+    log(lf, 1, 'ADDING: %s' % src_path)
     entity.lock()
     
     src_basename      = os.path.basename(src_path)
@@ -86,7 +87,9 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
     #if not dest_path_exists: s.append('ok')
     #else:                  log(lf, 0, 'Destination file already exists!: {}'.format(dest_path))
     preparations = ','.join(s)
+    
     # do, or do not
+    cp_successful = False
     if preparations == 'ok,ok,ok,ok':  # ,ok
         log(lf, 1, 'Proceeding with copy.')
         
@@ -128,14 +131,14 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
             log(lf, 1, 'copy start')
             shutil.copy(src_path, dest_path)
             log(lf, 1, 'copy end')
-            cp_successful = False
-            if os.path.exists(dest_path):
-                cp_successful = True
-                f.set_path(dest_path, entity=entity)
-                log(lf, 1, 'copy success: %s' % f.path)
         except:
             log(lf, 0, 'could not copy!')
-        
+        if os.path.exists(dest_path):
+            cp_successful = True
+            f.set_path(dest_path, entity=entity)
+            log(lf, 1, 'copy success: %s' % f.path)
+    
+    if f and cp_successful:
         # task: make thumbnail
         # NOTE: do this before entity_annex_add so don't have to lock/unlock
         try:
@@ -151,18 +154,21 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
         if thumbnail and hasattr(thumbnail, 'name') and thumbnail.name:
             log(lf, 1, 'thumbnail: %s' % thumbnail.name)
         
+    if f and cp_successful:
         # TODO task: make access copy
         log(lf, 1, 'TODO access copy')
-        
+    
+    if f and cp_successful:
         entity.files.append(f)
-        
-        # entity_annex_add
-        log(lf, 1, 'TODO entity_annex_add')
-        exit,status = entity_annex_add(git_name, git_mail,
-                                       entity.parent_path,
-                                       entity.id, dest_basename)
-        log(lf, 1, 'exit: %s' % exit)
-        log(lf, 1, 'status: %s' % status)
+        try:
+            log(lf, 1, 'entity_annex_add')
+            exit,status = entity_annex_add(git_name, git_mail,
+                                           entity.parent_path,
+                                           entity.id, dest_basename)
+            log(lf, 1, 'exit: %s' % exit)
+            log(lf, 1, 'status: %s' % status)
+        except:
+            log(lf, 0, 'error during entity_annex_add')
         
     entity.unlock()
     log(lf, 1, 'FINISHED\n')
