@@ -17,7 +17,7 @@ from ddrlocal.models.collection import DDRLocalCollection as Collection
 from ddrlocal.models.entity import DDRLocalEntity as Entity
 from ddrlocal.models.file import DDRFile, FILEMETA_BLANK
 from storage.decorators import storage_required
-from webui.forms.files import NewFileForm, EditFileForm
+from webui.forms.files import NewFileForm, EditFileForm, shared_folder_files
 from webui.tasks import entity_add_file
 from webui.views.decorators import login_required
 
@@ -88,7 +88,7 @@ def new( request, repo, org, cid, eid, role='master' ):
         data = {'role':role,
                 'sort': FILEMETA_BLANK['sort'],
                 'label': '',}
-        form = NewFileForm(data)
+        form = NewFileForm(data, path_choices=shared_folder_files())
     return render_to_response(
         'webui/files/new.html',
         {'repo': entity.repo,
