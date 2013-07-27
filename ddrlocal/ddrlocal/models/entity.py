@@ -327,7 +327,7 @@ class DDRLocalEntity( DDREntity ):
             filemeta[f.sha1] = fm
         entity.append( {'filemeta':filemeta} )
         # write
-        json_pretty = json.dumps(entity, indent=4, separators=(',', ': '))
+        json_pretty = json.dumps(entity, indent=4, separators=(',', ': '), sort_keys=True)
         with open(self.json_path, 'w') as f:
             f.write(json_pretty)
     
