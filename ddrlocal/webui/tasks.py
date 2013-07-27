@@ -3,6 +3,9 @@ import os
 import shutil
 
 from celery import task
+from celery import Task
+from celery.utils.log import get_task_logger
+logger = get_task_logger(__name__)
 
 from django.contrib import messages
 
@@ -12,11 +15,54 @@ from ddrlocal.models.file import DDRFile, hash
 from DDR.commands import entity_annex_add
 
 
-@task()
-def add(x, y):
-    return x + y
+def addfile_log( entity ):
+    return os.path.join(entity.path, 'addfile.log')
 
-@task(name='entity-add-file')
+def log(logfile, ok, msg):
+    if ok: ok = 'ok'
+    else:  ok = 'not ok'
+    entry = '[{}] {} - {}\n'.format(datetime.now().isoformat('T'), ok, msg)
+    with open(logfile, 'a') as f:
+        f.write(entry)
+
+
+class DebugTask(Task):
+    abstract = True
+
+    def after_return(self, status, retval, task_id, args, kwargs, einfo):
+        print('AFTER_RETURN')
+        print('task_id %s' % task_id)
+        print('status %s' % status)
+        #print('retval %s' % retval)
+        entity = args[2]
+        src_path = args[3]
+        print('entity.id %s' % entity.id)
+        print('entity.path %s' % entity.path)
+        print('src_path %s' % src_path)
+        print('kwargs: %s' % kwargs.keys())
+        entity.unlock(task_id)
+        
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
+        print('ON_FAILURE')
+        print('task_id %s' % task_id)
+        print('exc %s' % exc)
+        entity = args[2]
+        src_path = args[3]
+        print('entity.id %s' % entity.id)
+        print('entity.path %s' % entity.path)
+        print('src_path %s' % src_path)
+        print('einfo %s' % einfo)
+    
+    def on_success(self, retval, task_id, args, kwargs):
+        print('ON_SUCCESS')
+        print('task_id %s' % task_id)
+        entity = args[2]
+        src_path = args[3]
+        print('entity.id %s' % entity.id)
+        print('entity.path %s' % entity.path)
+        print('src_path %s' % src_path)
+
+@task(base=DebugTask, name='entity-add-file')
 def entity_add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
     """
     @param entity: DDRLocalEntity
@@ -25,6 +71,11 @@ def entity_add_file( git_name, git_mail, entity, src_path, role, sort, label='' 
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
     """
+    lf = addfile_log(entity)
+    with open(lf, 'a') as f:
+        f.write('LOCKING ENTITY')
+    with open(lf, 'a') as f:
+        f.write('LOCKED')
     file_ = None
     log = 'unknown error'
     file_,log = add_file(git_name, git_mail, entity, src_path, role, sort, label)
@@ -48,21 +99,11 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
     """
     f = None
     
-    def addfile_log( entity ):
-        return os.path.join(entity.path, 'addfile.log')
     lf = addfile_log(entity)
-    
-    def log(logfile, ok, msg):
-        if ok: ok = 'ok'
-        else:  ok = 'not ok'
-        entry = '[{}] {} - {}\n'.format(datetime.now().isoformat('T'), ok, msg)
-        with open(lf, 'a') as f:
-            f.write(entry)
-            
+                
     log(lf, 1, 'START')
     log(lf, 1, 'ENTITY: %s' % entity.id)
     log(lf, 1, 'ADDING: %s' % src_path)
-    entity.lock()
     
     src_basename      = os.path.basename(src_path)
     src_exists        = os.path.exists(src_path)
@@ -161,16 +202,15 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
     if f and cp_successful:
         entity.files.append(f)
         try:
-            log(lf, 1, 'entity_annex_add')
+            log(lf, 1, 'entity_annex_add: start')
             exit,status = entity_annex_add(git_name, git_mail,
                                            entity.parent_path,
                                            entity.id, dest_basename)
-            log(lf, 1, 'exit: %s' % exit)
-            log(lf, 1, 'status: %s' % status)
+            log(lf, 1, 'entity_annex_add: exit: %s' % exit)
+            log(lf, 1, 'entity_annex_add: status: %s' % status)
         except:
-            log(lf, 0, 'error during entity_annex_add')
+            log(lf, 0, 'entity_annex_add: ERROR')
         
-    entity.unlock()
     log(lf, 1, 'FINISHED\n')
     
     logtxt = ''

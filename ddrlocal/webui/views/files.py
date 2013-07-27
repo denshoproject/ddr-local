@@ -80,7 +80,10 @@ def new( request, repo, org, cid, eid, role='master' ):
             role = form.cleaned_data['role']
             sort = form.cleaned_data['sort']
             label = form.cleaned_data['label']
-            result = entity_add_file.delay(git_name, git_mail, entity, src_path, role, sort, label)
+            result = entity_add_file.apply_async(
+                (git_name, git_mail, entity, src_path, role, sort, label),
+                countdown=2)
+            lock_status = entity.lock(result.task_id)
             msg = 'Uploading <b>%s</b> (%s)' % (os.path.basename(src_path), result)
             messages.success(request, msg)
             return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
