@@ -38,7 +38,6 @@ class DDRLocalEntity( DDREntity ):
     cid = None
     eid = None
     _files = []
-    locked = 0
     
     def __init__(self, *args, **kwargs):
         super(DDRLocalEntity, self).__init__(*args, **kwargs)
@@ -60,6 +59,61 @@ class DDRLocalEntity( DDREntity ):
         collection_abs = os.path.join(settings.MEDIA_BASE, collection_uid)
         entity_abs     = os.path.join(collection_abs,'files',entity_uid)
         return entity_abs
+    
+    def _lockfile( self ):
+        return os.path.join(self.path, 'lock')
+     
+    def lock( self, task_id ):
+        """Writes lockfile to entity dir; complains if can't.
+        
+        Celery tasks don't seem to know their own task_id, and there don't
+        appear to be any handlers that can be called just *before* a task
+        is fired. so it appears to be impossible for a task to lock itself.
+        
+        This method should(?) be called immediately after starting the task:
+        >> result = entity_add_file.apply_async((args...), countdown=2)
+        >> lock_status = entity.lock(result.task_id)
+
+        @param task_id
+        @returns 'ok' or 'locked'
+        """
+        path = self._lockfile()
+        if os.path.exists(path):
+            return 'locked'
+        with open(self._lockfile(), 'w') as f:
+            f.write(task_id)
+        return 'ok'
+     
+    def unlock( self, task_id ):
+        """Removes lockfile or complains if can't
+        
+        This method should be called by celery Task.after_return()
+        See "Abstract classes" section of http://celery.readthedocs.org/en/latest/userguide/tasks.html#custom-task-classes
+        
+        @param task_id
+        @returns 'ok', 'not locked', 'task_id miss', 'blocked'
+        """
+        path = self._lockfile()
+        if not os.path.exists(path):
+            return 'not locked'
+        with open(path, 'r') as f:
+            lockfile_task_id = f.read().strip()
+        if lockfile_task_id and (lockfile_task_id != task_id):
+            return 'task_id miss'
+        os.remove(path)
+        if os.path.exists(path):
+            return 'blocked'
+        return 'ok'
+    
+    def locked( self ):
+        """Indicates whether entity is locked; if locked returns celery task_id.
+        """
+        path = self._lockfile()
+        if os.path.exists(path):
+            with open(path, 'r') as f:
+                task_id = f.read().strip()
+            return task_id
+        return False
     
     def files_master( self ):
         files = [f for f in self.files if f.role and (f.role == 'master')]
@@ -121,14 +175,6 @@ class DDRLocalEntity( DDREntity ):
                         'value': getattr(self, f['name'])}
                 lv.append(item)
         return lv
-    
-    def lock( self ):
-        self.locked = 1
-        self.dump_json()
-    
-    def unlock( self ):
-        self.locked = 0
-        self.dump_json()
     
     def form_data(self):
         """Prep data dict to pass into EntityForm object.
@@ -193,8 +239,6 @@ class DDRLocalEntity( DDREntity ):
         """
         json_data = self.json().data
         
-        self.locked = json_data[0].get('locked',0)
-        
         for ff in METS_FIELDS:
             for f in json_data:
                 if f.keys()[0] == ff['name']:
@@ -248,8 +292,7 @@ class DDRLocalEntity( DDREntity ):
         # TODO DUMP FILE AND FILEMETA PROPERLY!!!
         entity = [{'application': 'https://github.com/densho/ddr-local.git',
                    'commit': git_commit(),
-                   'release': VERSION,
-                   'locked': self.locked,}]
+                   'release': VERSION,}]
         exceptions = ['files', 'filemeta']
         for f in METS_FIELDS:
             item = {}
