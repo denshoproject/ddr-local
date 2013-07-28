@@ -204,7 +204,6 @@ def edit_json( request, repo, org, cid, eid ):
     #    messages.error(request, 'This entity is locked.')
     #    return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     #
-    jsonpath = os.path.join(entity.path, 'entity.json')
     if request.method == 'POST':
         form = JSONForm(request.POST)
         if form.is_valid():
@@ -213,13 +212,13 @@ def edit_json( request, repo, org, cid, eid ):
             if git_name and git_mail:
                 json = form.cleaned_data['json']
                 # TODO validate XML
-                with open(jsonpath, 'w') as f:
+                with open(entity.json_path, 'w') as f:
                     f.write(json)
                 
                 exit,status = commands.entity_update(
                     git_name, git_mail,
                     entity.parent_path, entity.id,
-                    [jsonpath])
+                    [entity.json_path])
                 
                 if exit:
                     messages.error(request, 'Error: {}'.format(status))
@@ -229,7 +228,7 @@ def edit_json( request, repo, org, cid, eid ):
             else:
                 messages.error(request, 'Login is required')
     else:
-        with open(jsonpath, 'r') as f:
+        with open(entity.json_path, 'r') as f:
             json = f.read()
         form = JSONForm({'json': json,})
     return render_to_response(
