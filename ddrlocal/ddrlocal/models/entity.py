@@ -523,14 +523,18 @@ def mets_id(tree, namespaces, field, value):
 
 
 def mets_created(tree, namespaces, field, value):
-    return _set_attr(tree, namespaces,
-                     '/mets:mets/mets:metsHdr', 'CREATEDATE',
-                     value.strftime(DATETIME_FORMAT))
+    try:
+        value = value.strftime(DATETIME_FORMAT)
+    except:
+        pass
+    return _set_attr(tree, namespaces, '/mets:mets/mets:metsHdr', 'CREATEDATE', value)
 
 def mets_lastmod(tree, namespaces, field, value):
-    return _set_attr(tree, namespaces,
-                     '/mets:mets/mets:metsHdr', 'LASTMODDATE',
-                     value.strftime(DATETIME_FORMAT))
+    try:
+        value = value.strftime(DATETIME_FORMAT)
+    except:
+        pass
+    return _set_attr(tree, namespaces, '/mets:mets/mets:metsHdr', 'LASTMODDATE', value)
 
 # parent
 # collection
