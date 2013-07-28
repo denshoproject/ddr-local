@@ -91,7 +91,10 @@ class DDRFile( object ):
             self.org = kwargs['entity'].org
             self.cid = kwargs['entity'].cid
             self.eid = kwargs['entity'].eid
-
+    
+    def __repr__(self):
+        return "<DDRFile %s (%s)>" % (self.basename, self.basename_orig)
+    
     @staticmethod
     def from_entity(entity, phile, meta):
         f = DDRFile()

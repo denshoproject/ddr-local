@@ -43,6 +43,9 @@ class DDRLocalCollection( DDRCollection ):
         self.org = self.id.split('-')[1]
         self.cid = self.id.split('-')[2]
     
+    def __repr__(self):
+        return "<DDRLocalCollection %s>" % (self.id)
+    
     def url( self ):
         return reverse('webui-collection', args=[self.repo, self.org, self.cid])
     

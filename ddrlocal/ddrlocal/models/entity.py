@@ -49,6 +49,9 @@ class DDRLocalEntity( DDREntity ):
         self._files = []
         self._filemeta = []
     
+    def __repr__(self):
+        return "<DDRLocalEntity %s>" % (self.id)
+    
     def url( self ):
         return reverse('webui-entity', args=[self.repo, self.org, self.cid, self.eid])
 
