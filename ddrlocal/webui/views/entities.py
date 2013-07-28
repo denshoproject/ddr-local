@@ -83,7 +83,9 @@ def changelog( request, repo, org, cid, eid ):
 def entity_json( request, repo, org, cid, eid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
-    return HttpResponse(json.dumps(entity.json().data), mimetype="application/json")
+    with open(entity.json_path, 'r') as f:
+        json = f.read()
+    return HttpResponse(json, mimetype="application/json")
 
 @storage_required
 def mets_xml( request, repo, org, cid, eid ):
