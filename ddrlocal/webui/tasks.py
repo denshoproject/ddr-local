@@ -15,52 +15,33 @@ from ddrlocal.models.file import DDRFile, hash
 from DDR.commands import entity_annex_add
 
 
-def addfile_log( entity ):
-    return os.path.join(entity.path, 'addfile.log')
-
-def log(logfile, ok, msg):
-    if ok: ok = 'ok'
-    else:  ok = 'not ok'
-    entry = '[{}] {} - {}\n'.format(datetime.now().isoformat('T'), ok, msg)
-    with open(logfile, 'a') as f:
-        f.write(entry)
-
-
 class DebugTask(Task):
     abstract = True
 
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
-        print('AFTER_RETURN')
-        print('task_id %s' % task_id)
-        print('status %s' % status)
-        #print('retval %s' % retval)
         entity = args[2]
-        src_path = args[3]
-        print('entity.id %s' % entity.id)
-        print('entity.path %s' % entity.path)
-        print('src_path %s' % src_path)
-        print('kwargs: %s' % kwargs.keys())
-        entity.unlock(task_id)
+        entity.files_log(1,'DDRTask.AFTER_RETURN')
+        entity.files_log(1,'task_id: %s' % task_id)
+        entity.files_log(1,'status: %s' % status)
+        entity.files_log(1,'Unlocking')
+        lockstatus = entity.unlock(task_id)
+        if lockstatus == 'ok':
+            entity.files_log(1,'unlocked')
+        else:
+            entity.files_log(0,lockstatus)
+        entity.files_log(1,'retval: %s' % retval)
         
     def on_failure(self, exc, task_id, args, kwargs, einfo):
-        print('ON_FAILURE')
-        print('task_id %s' % task_id)
-        print('exc %s' % exc)
         entity = args[2]
-        src_path = args[3]
-        print('entity.id %s' % entity.id)
-        print('entity.path %s' % entity.path)
-        print('src_path %s' % src_path)
-        print('einfo %s' % einfo)
+        entity.files_log(0,'DDRTask.ON_FAILURE')
+        entity.files_log(0,'task_id: %s' % task_id)
+        entity.files_log(0,'einfo: %s' % einfo)
     
     def on_success(self, retval, task_id, args, kwargs):
-        print('ON_SUCCESS')
-        print('task_id %s' % task_id)
         entity = args[2]
-        src_path = args[3]
-        print('entity.id %s' % entity.id)
-        print('entity.path %s' % entity.path)
-        print('src_path %s' % src_path)
+        entity.files_log(1,'DDRTask.ON_SUCCESS')
+        entity.files_log(1,'task_id: %s' % task_id)
+
 
 @task(base=DebugTask, name='entity-add-file')
 def entity_add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
@@ -71,15 +52,8 @@ def entity_add_file( git_name, git_mail, entity, src_path, role, sort, label='' 
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
     """
-    lf = addfile_log(entity)
-    with open(lf, 'a') as f:
-        f.write('LOCKING ENTITY')
-    with open(lf, 'a') as f:
-        f.write('LOCKED')
-    file_ = None
-    log = 'unknown error'
-    file_,log = add_file(git_name, git_mail, entity, src_path, role, sort, label)
-    return log
+    file_ = add_file(git_name, git_mail, entity, src_path, role, sort, label)
+    return file_
 
 
 def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
@@ -95,15 +69,16 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
     @param role: Keyword of a file role.
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
-    @return file_,log Tuple consisting of a DDRFile object and log text.
+    @return file_ DDRFile object
     """
     f = None
-    
-    lf = addfile_log(entity)
                 
-    log(lf, 1, 'START')
-    log(lf, 1, 'ENTITY: %s' % entity.id)
-    log(lf, 1, 'ADDING: %s' % src_path)
+    entity.files_log(1, 'ddrlocal.webui.tasks.add_file: START')
+    entity.files_log(1, 'entity: %s' % entity.id)
+    entity.files_log(1, 'src: %s' % src_path)
+    entity.files_log(1, 'role: %s' % role)
+    entity.files_log(1, 'sort: %s' % sort)
+    entity.files_log(1, 'label: %s' % label)
     
     src_basename      = os.path.basename(src_path)
     src_exists        = os.path.exists(src_path)
@@ -118,21 +93,21 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
     dest_path_exists  = os.path.exists(dest_path)
     s = []
     if src_exists:         s.append('ok')
-    else:                  log(lf, 0, 'Source file does not exist: {}'.format(src_path))
+    else:                  entity.files_log(0, 'Source file does not exist: {}'.format(src_path))
     if src_readable:       s.append('ok')
-    else:                  log(lf, 0, 'Source file not readable: {}'.format(src_path))
+    else:                  entity.files_log(0, 'Source file not readable: {}'.format(src_path))
     if dest_dir_exists:    s.append('ok')
-    else:                  log(lf, 0, 'Destination directory does not exist: {}'.format(dest_dir))
+    else:                  entity.files_log(0, 'Destination directory does not exist: {}'.format(dest_dir))
     if dest_dir_writable:  s.append('ok')
-    else:                  log(lf, 0, 'Destination directory not writable: {}'.format(dest_dir))
+    else:                  entity.files_log(0, 'Destination directory not writable: {}'.format(dest_dir))
     #if not dest_path_exists: s.append('ok')
-    #else:                  log(lf, 0, 'Destination file already exists!: {}'.format(dest_path))
+    #else:                  entity.files_log(0, 'Destination file already exists!: {}'.format(dest_path))
     preparations = ','.join(s)
     
     # do, or do not
     cp_successful = False
     if preparations == 'ok,ok,ok,ok':  # ,ok
-        log(lf, 1, 'Proceeding with copy.')
+        entity.files_log(1, 'Proceeding with copy.')
         
         f = DDRFile(entity=entity)
         f.role = role
@@ -141,79 +116,86 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
         
         # original filename
         f.basename_orig = src_basename
-        log(lf, 1, 'original filename: %s' % f.basename_orig)
+        entity.files_log(1, 'original filename: %s' % f.basename_orig)
         
         # task: get SHA1 checksum (links entity.filemeta entity.files records
+        entity.files_log(1, 'Checksumming...')
         try:
             f.sha1   = hash(src_path, 'sha1')
-            log(lf, 1, 'sha1: %s' % f.sha1)
+            entity.files_log(1, 'sha1: %s' % f.sha1)
         except:
-            log(lf, 0, 'error getting sha1')
+            entity.files_log(0, 'error getting sha1')
         try:
             f.md5    = hash(src_path, 'md5')
-            log(lf, 1, 'md5: %s' % f.md5)
+            entity.files_log(1, 'md5: %s' % f.md5)
         except:
-            log(lf, 0, 'error getting md5')
+            entity.files_log(0, 'error getting md5')
         try:
             f.sha256 = hash(src_path, 'sha256')
-            log(lf, 1, 'sha256: %s' % f.sha256)
+            entity.files_log(1, 'sha256: %s' % f.sha256)
         except:
-            log(lf, 0, 'error getting sha256')
+            entity.files_log(0, 'error getting sha256')
         
         # task: extract_xmp
+        entity.files_log(1, 'Extracting XMP data...')
         try:
             f.xmp = DDRFile.extract_xmp(src_path)
-            log(lf, 1, 'XMP extracted')
+            entity.files_log(1, 'done')
         except:
-            log(lf, 0, 'could not extract XMP')
+            entity.files_log(0, 'could not extract XMP')
         
         # task: copy
+        entity.files_log(1, 'Copying...')
         try:
-            log(lf, 1, 'copy start')
             shutil.copy(src_path, dest_path)
-            log(lf, 1, 'copy end')
         except:
-            log(lf, 0, 'could not copy!')
+            entity.files_log(0, 'copy failed!')
         if os.path.exists(dest_path):
             cp_successful = True
             f.set_path(dest_path, entity=entity)
-            log(lf, 1, 'copy success: %s' % f.path)
+            entity.files_log(1, 'copied: %s' % f.path)
     
+    thumbnail = None
     if f and cp_successful:
         # task: make thumbnail
+        entity.files_log(1, 'Thumbnailing...')
         # NOTE: do this before entity_annex_add so don't have to lock/unlock
         try:
             thumbnail = f.make_thumbnail('500x500')
         except:
-            thumbnail = None
-            log(lf, 0, 'could not make thumbnail!')
+            log(lf, 0, 'thumbnail failed')
         if thumbnail:
             f.thumb = 1
         else:
             f.thumb = 0
-        log(lf, 1, 'thumbnail attempted: %s' % f.thumb)
+        entity.files_log(1, 'f.thumb: %s' % f.thumb)
         if thumbnail and hasattr(thumbnail, 'name') and thumbnail.name:
-            log(lf, 1, 'thumbnail: %s' % thumbnail.name)
+            entity.files_log(1, 'thumbnail: %s' % thumbnail.name)
         
     if f and cp_successful:
         # TODO task: make access copy
-        log(lf, 1, 'TODO access copy')
+        entity.files_log(1, 'TODO access copy')
     
     if f and cp_successful:
+        entity.files_log(1, 'Adding %s to entity...' % f)
         entity.files.append(f)
+        entity.files_log(1, 'entity.files: %s' % entity.files)
+        entity.files_log(1, 'Writing entity JSON...')
+        entity.dump_json()
+        entity.files_log(1, 'done')
         try:
-            log(lf, 1, 'entity_annex_add: start')
-            exit,status = entity_annex_add(git_name, git_mail,
-                                           entity.parent_path,
-                                           entity.id, dest_basename)
-            log(lf, 1, 'entity_annex_add: exit: %s' % exit)
-            log(lf, 1, 'entity_annex_add: status: %s' % status)
+            entity.files_log(1, 'entity_annex_add(%s, %s, %s, %s, %s)' % (
+                git_name, git_mail,
+                entity.parent_path,
+                entity.id, dest_basename))
+            exit,status = entity_annex_add(
+                git_name, git_mail,
+                entity.parent_path,
+                entity.id, dest_basename)
+            entity.files_log(1, 'entity_annex_add: exit: %s' % exit)
+            entity.files_log(1, 'entity_annex_add: status: %s' % status)
         except:
-            log(lf, 0, 'entity_annex_add: ERROR')
+            entity.files_log(0, 'entity_annex_add: ERROR')
         
-    log(lf, 1, 'FINISHED\n')
-    
-    logtxt = ''
-    with open(lf, 'r') as l:
-        logtxt = l.read()
-    return f,logtxt
+    entity.files_log(1, 'ddrlocal.webui.tasks.add_file: FINISHED\n')
+    return f

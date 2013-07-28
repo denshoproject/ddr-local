@@ -148,11 +148,21 @@ class DDRLocalEntity( DDREntity ):
         # just do nothing
         return None
     
-    def files_log( self ):
-        """Returns log of add_files activity.
+    def files_log( self, ok=None, msg=None ):
+        """Returns log of add_files activity; adds an entry if status,msg given.
+        
+        @param ok: Boolean. ok or not ok.
+        @param msg: Text message.
+        @returns log: A text file.
         """
-        log = ''
         logpath = os.path.join(self.path, 'addfile.log')
+        if ok and msg:
+            if ok: ok = 'ok'
+            else:  ok = 'not ok'
+            entry = '[{}] {} - {}\n'.format(datetime.now().isoformat('T'), ok, msg)
+            with open(logpath, 'a') as f:
+                f.write(entry)
+        log = ''
         with open(logpath, 'r') as f:
             log = f.read()
         return log

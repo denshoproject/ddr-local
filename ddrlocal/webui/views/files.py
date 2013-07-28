@@ -83,9 +83,16 @@ def new( request, repo, org, cid, eid, role='master' ):
             result = entity_add_file.apply_async(
                 (git_name, git_mail, entity, src_path, role, sort, label),
                 countdown=2)
-            lock_status = entity.lock(result.task_id)
-            msg = 'Uploading <b>%s</b> (%s)' % (os.path.basename(src_path), result)
-            messages.success(request, msg)
+            entity.files_log(1,'------------------------------------------------------------------------')
+            entity.files_log(1,'ddrlocal.webui.file.new: START')
+            entity.files_log(1,'task_id: %s' % result.task_id)
+            entity.files_log(1,'Locking')
+            lockstatus = entity.lock(result.task_id)
+            if lockstatus == 'ok':
+                entity.files_log(1, 'locked')
+            else:
+                entity.files_log(0, lockstatus)
+            messages.success(request, 'Uploading <b>%s</b> (%s)' % (os.path.basename(src_path), result))
             return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     else:
         data = {'role':role,
