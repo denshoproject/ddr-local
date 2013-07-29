@@ -49,7 +49,13 @@ def hash(path, algo='sha1'):
 
 class DDRFile( object ):
     # files
+    # path relative to entity
+    # (ex: files/ddr-testing-71-6-dd9ec4305d.jpg)
     path = None
+    # path relative to /
+    # (ex: /var/www/media/base/ddr-testing-71/files/ddr-testing-71-6/files/ddr-testing-71-6-dd9ec4305d.jpg)
+    # not saved; constructed on instantiation
+    path_abs = None
     basename = None
     size = None
     role = None
@@ -72,6 +78,12 @@ class DDRFile( object ):
     eid = None
     
     def __init__(self, *args, **kwargs):
+        # entity
+        if kwargs.get('entity',None):
+            self.repo = kwargs['entity'].repo
+            self.org = kwargs['entity'].org
+            self.cid = kwargs['entity'].cid
+            self.eid = kwargs['entity'].eid
         # files
         if kwargs.get('path',None) and kwargs.get('entity',None):
             self.set_path(kwargs['path'], kwargs['entity'])
@@ -85,12 +97,6 @@ class DDRFile( object ):
         self.label = FILEMETA_BLANK['label']
         self.xmp = FILEMETA_BLANK['xmp']
         self.thumb = FILEMETA_BLANK['thumb']
-        # entity
-        if kwargs.get('entity',None):
-            self.repo = kwargs['entity'].repo
-            self.org = kwargs['entity'].org
-            self.cid = kwargs['entity'].cid
-            self.eid = kwargs['entity'].eid
     
     def __repr__(self):
         return "<DDRFile %s (%s)>" % (self.basename, self.basename_orig)
@@ -104,7 +110,7 @@ class DDRFile( object ):
         f.cid = entity.cid
         f.eid = entity.eid
         # files
-        f.path   = phile.get('path',None)
+        f.set_path(phile.get('path',None), entity)
         f.size   = phile.get('size',None)
         f.role   = phile.get('role',None)
         f.sha1   = phile.get('sha1',None)
@@ -124,11 +130,23 @@ class DDRFile( object ):
         return f
     
     def set_path( self, path, entity=None ):
+        """
+        Reminder:
+        self.path is relative to entity
+        self.path_abs is relative to filesystem root
+        """
         self.path = path
-        self.size = os.path.getsize(self.path)
-        self.basename = os.path.basename(self.path)
         if entity:
+            self.path = self.path.replace(entity.path, '')
+        if self.path and (self.path[0] == '/'):
+            # remove initial slash (ex: '/files/...')
+            self.path = self.path[1:]
+        if entity:
+            self.path_abs = os.path.join(entity.path, self.path)
             self.src = os.path.join('base', entity.path_rel, self.path)
+        if self.path_abs:
+            self.size = os.path.getsize(self.path_abs)
+        self.basename = os.path.basename(self.path)
     
     def file( self ):
         """Simulates an entity['files'] dict used to construct file"""
