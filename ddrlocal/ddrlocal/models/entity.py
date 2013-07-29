@@ -208,7 +208,7 @@ class DDRLocalEntity( DDREntity ):
         @returns log: A text file.
         """
         logpath = os.path.join(self.path, 'addfile.log')
-        if ok and msg:
+        if msg:
             if ok: ok = 'ok'
             else:  ok = 'not ok'
             entry = '[{}] {} - {}\n'.format(datetime.now().isoformat('T'), ok, msg)
