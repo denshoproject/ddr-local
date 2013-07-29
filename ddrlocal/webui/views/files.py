@@ -86,7 +86,7 @@ def new( request, repo, org, cid, eid, role='master' ):
             entity.files_log(1,'------------------------------------------------------------------------')
             entity.files_log(1,'ddrlocal.webui.file.new: START')
             entity.files_log(1,'task_id: %s' % result.task_id)
-            entity.files_log(1,'Locking')
+            entity.files_log(1,'Locking %s' % entity.id)
             lockstatus = entity.lock(result.task_id)
             if lockstatus == 'ok':
                 entity.files_log(1, 'locked')

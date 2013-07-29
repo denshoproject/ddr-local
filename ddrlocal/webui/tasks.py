@@ -17,30 +17,28 @@ from DDR.commands import entity_annex_add
 
 class DebugTask(Task):
     abstract = True
-
+        
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
+        entity = args[2]
+        entity.files_log(0,'DDRTask.ON_FAILURE')
+    
+    def on_success(self, retval, task_id, args, kwargs):
+        entity = args[2]
+        entity.files_log(1,'DDRTask.ON_SUCCESS')
+    
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
         entity = args[2]
         entity.files_log(1,'DDRTask.AFTER_RETURN')
         entity.files_log(1,'task_id: %s' % task_id)
         entity.files_log(1,'status: %s' % status)
-        entity.files_log(1,'Unlocking')
+        entity.files_log(1,'retval: %s' % retval)
+        entity.files_log(1,'Unlocking %s' % entity.id)
         lockstatus = entity.unlock(task_id)
         if lockstatus == 'ok':
             entity.files_log(1,'unlocked')
         else:
             entity.files_log(0,lockstatus)
-        entity.files_log(1,'retval: %s' % retval)
-        
-    def on_failure(self, exc, task_id, args, kwargs, einfo):
-        entity = args[2]
-        entity.files_log(0,'DDRTask.ON_FAILURE')
-        entity.files_log(0,'task_id: %s' % task_id)
-        entity.files_log(0,'einfo: %s' % einfo)
-    
-    def on_success(self, retval, task_id, args, kwargs):
-        entity = args[2]
-        entity.files_log(1,'DDRTask.ON_SUCCESS')
-        entity.files_log(1,'task_id: %s' % task_id)
+        entity.files_log(1, 'DONE\n')
 
 
 @task(base=DebugTask, name='entity-add-file')
@@ -107,16 +105,14 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
     # do, or do not
     cp_successful = False
     if preparations == 'ok,ok,ok,ok':  # ,ok
-        entity.files_log(1, 'Proceeding with copy.')
+        entity.files_log(1, 'Source file exists; is readable.  Destination dir exists, is writable.')
         
         f = DDRFile(entity=entity)
         f.role = role
         f.sort = sort
         f.label = label
-        
-        # original filename
         f.basename_orig = src_basename
-        entity.files_log(1, 'original filename: %s' % f.basename_orig)
+        entity.files_log(1, 'Original filename: %s' % f.basename_orig)
         
         # task: get SHA1 checksum (links entity.filemeta entity.files records
         entity.files_log(1, 'Checksumming...')
@@ -124,32 +120,35 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
             f.sha1   = hash(src_path, 'sha1')
             entity.files_log(1, 'sha1: %s' % f.sha1)
         except:
-            entity.files_log(0, 'error getting sha1')
+            entity.files_log(0, 'sha1 FAIL')
         try:
             f.md5    = hash(src_path, 'md5')
             entity.files_log(1, 'md5: %s' % f.md5)
         except:
-            entity.files_log(0, 'error getting md5')
+            entity.files_log(0, 'md5 FAIL')
         try:
             f.sha256 = hash(src_path, 'sha256')
             entity.files_log(1, 'sha256: %s' % f.sha256)
         except:
-            entity.files_log(0, 'error getting sha256')
+            entity.files_log(0, 'sha256 FAIL')
         
         # task: extract_xmp
         entity.files_log(1, 'Extracting XMP data...')
         try:
             f.xmp = DDRFile.extract_xmp(src_path)
-            entity.files_log(1, 'done')
+            if f.xmp:
+                entity.files_log(1, 'got some XMP')
+            else:
+                entity.files_log(1, 'no XMP data')
         except:
-            entity.files_log(0, 'could not extract XMP')
+            entity.files_log(0, 'XMP extract FAIL')
         
         # task: copy
         entity.files_log(1, 'Copying...')
         try:
             shutil.copy(src_path, dest_path)
         except:
-            entity.files_log(0, 'copy failed!')
+            entity.files_log(0, 'copy FAIL')
         if os.path.exists(dest_path):
             cp_successful = True
             f.set_path(dest_path, entity=entity)
@@ -163,7 +162,7 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
         try:
             thumbnail = f.make_thumbnail('500x500')
         except:
-            log(lf, 0, 'thumbnail failed')
+            log(lf, 0, 'thumbnail FAIL')
         if thumbnail:
             f.thumb = 1
         else:
@@ -180,7 +179,7 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
         entity.files_log(1, 'Adding %s to entity...' % f)
         entity.files.append(f)
         entity.files_log(1, 'entity.files: %s' % entity.files)
-        entity.files_log(1, 'Writing entity JSON...')
+        entity.files_log(1, 'Writing %s' % entity.json_path)
         entity.dump_json()
         entity.files_log(1, 'done')
         try:
@@ -197,5 +196,5 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
         except:
             entity.files_log(0, 'entity_annex_add: ERROR')
         
-    entity.files_log(1, 'ddrlocal.webui.tasks.add_file: FINISHED\n')
+    entity.files_log(1, 'ddrlocal.webui.tasks.add_file: FINISHED')
     return f
