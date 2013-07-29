@@ -1,7 +1,30 @@
 # update.sh - Pulls down new code, copies configs, restarts
 #
-# NOTE: This script is meant to be run from the ddr-local/ddrlocal dir.
+# NOTE: This script must be run as root!
+# 
+# WARNING: This script makes assumptions!
+# - That ddr-local is installed in /usr/local/src.
+# - That ddr-cmdln is installed in /usr/local/src.
+# If these is not the case, expect breakage!
+#
 # NOTE: Does not flush caches.
+
+echo "ddr-cmdln"
+cd /usr/local/src/ddr-cmdln
+
+echo "git fetch"
+git fetch
+
+echo "git pull"
+git pull
+
+echo "python setup.py install"
+cd /usr/local/src/ddr-cmdln/ddr
+python setup.py install
+
+
+echo "ddr-local"
+cd /usr/local/src/ddr-local
 
 echo "git fetch"
 git fetch
@@ -10,30 +33,33 @@ echo "git pull"
 git pull
 
 echo "/etc/ddr/ddr.cfg"
-sudo cp ../debian/conf/ddr.cfg /etc/ddr/
+cp /usr/local/src/ddr-local/debian/conf/ddr.cfg /etc/ddr/
 
 echo "./ddrlocal/ddrlocal/settings.py"
-cp ../debian/conf/settings.py ./ddrlocal/
+cp /usr/local/src/ddr-local/debian/conf/settings.py ./ddrlocal/
 
 echo "/etc/nginx/sites-available/ddrlocal.conf"
-sudo cp ../debian/conf/ddrlocal.conf /etc/nginx/sites-available/
+cp /usr/local/src/ddr-local/debian/conf/ddrlocal.conf /etc/nginx/sites-available/
 
 echo "/etc/supervisor/conf.d/celeryd.conf"
-sudo cp ../debian/conf/celeryd.conf /etc/supervisor/conf.d/
+cp /usr/local/src/ddr-local/debian/conf/celeryd.conf /etc/supervisor/conf.d/
 
 echo "/etc/supervisor/conf.d/gunicorn_ddrlocal.conf"
-sudo cp ../debian/conf/gunicorn_ddrlocal.conf /etc/supervisor/conf.d/
+cp /usr/local/src/ddr-local/debian/conf/gunicorn_ddrlocal.conf /etc/supervisor/conf.d/
+
+echo "supervisorctl stop celeryd"
+supervisorctl stop celery
+
+echo "supervisorctl stop ddrlocal"
+supervisorctl stop ddrlocal
 
 echo "supervisorctl reload"
-sudo supervisorctl reload
+supervisorctl reload
 
-echo "supervisorctl restart celeryd"
-sudo supervisorctl restart celeryd
-
-echo "supervisorctl restart ddrlocal"
-sudo supervisorctl restart ddrlocal
+echo "supervisorctl status"
+supervisorctl status
 
 echo "/etc/init.d/nginx restart"
-sudo /etc/init.d/nginx restart
+/etc/init.d/nginx restart
 
 
