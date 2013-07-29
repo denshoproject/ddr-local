@@ -8,6 +8,7 @@ from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
 from django.contrib import messages
+from django.conf import settings
 
 from ddrlocal.models.entity import DDRLocalEntity
 from ddrlocal.models.file import DDRFile, hash
@@ -163,13 +164,31 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
             thumbnail = f.make_thumbnail('500x500')
         except:
             log(lf, 0, 'thumbnail FAIL')
-        if thumbnail:
-            f.thumb = 1
-        else:
-            f.thumb = 0
-        entity.files_log(1, 'f.thumb: %s' % f.thumb)
+        f.thumb = -1
         if thumbnail and hasattr(thumbnail, 'name') and thumbnail.name:
-            entity.files_log(1, 'thumbnail: %s' % thumbnail.name)
+            entity.files_log(1, 'thumbnail.name: %s' % thumbnail.name)
+            if thumbnail.name.find(settings.MEDIA_ROOT) == -1:
+                tpath = os.path.join(settings.MEDIA_ROOT, thumbnail.name)
+            else:
+                tpath = thumbnail.name
+            entity.files_log(1, 'tpath: %s' % tpath)
+            if os.path.exists(tpath):
+                if os.path.getsize(tpath):
+                    f.thumb = 1
+                    entity.files_log(1, 'thumbnail: ok')
+                else:
+                    f.thumb = 0
+                    entity.files_log(0, 'thumbnail present but not valid (zero length?)')
+                    entity.files_log(0, 'removing %s' % tpath)
+                    os.remove(tpath)
+                    if os.path.exists(tpath):
+                        entity.files_log(0, 'could not remove!')
+                    else:
+                        entity.files_log(1, 'removed')
+            else:
+                f.thumb = 0
+                entity.files_log(0, 'thumbnail not generated')
+        entity.files_log(1, 'f.thumb: %s' % f.thumb)
         
     if f and cp_successful:
         # TODO task: make access copy
