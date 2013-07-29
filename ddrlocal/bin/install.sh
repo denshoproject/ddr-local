@@ -91,7 +91,7 @@ chown -R ddr /var/www/media
 
 echo "${bldgrn}Bootstrap, jQuery, Modernizr${txtrst}"
 cd /var/www/static
-wget http://twitter.github.io/bootstrap/assets/bootstrap.zip
+wget http://twitter.github.io/bootstrap/2.3.2/assets/bootstrap.zip
 7z x bootstrap.zip
 cd /var/www/static/js
 wget http://modernizr.com/downloads/modernizr-latest.js
