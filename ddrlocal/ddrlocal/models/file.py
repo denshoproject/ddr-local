@@ -207,8 +207,8 @@ class DDRFile( object ):
         thumbnail = default.backend.get_thumbnail(file_, geometry)
         """
         thumbnail = None
-        if self.path:
-            with open(self.path, 'r') as f:
+        if self.path_abs:
+            with open(self.path_abs, 'r') as f:
                 file_ = File(f)
             thumbnail = default.backend.get_thumbnail(file_, geometry)
         return thumbnail
