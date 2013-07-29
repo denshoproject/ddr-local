@@ -74,7 +74,7 @@ def new( request, repo, org, cid, eid, role='master' ):
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     #
     if request.method == 'POST':
-        form = NewFileForm(request.POST, request.FILES)
+        form = NewFileForm(request.POST, path_choices=shared_folder_files())
         if form.is_valid():
             src_path = form.cleaned_data['path']
             role = form.cleaned_data['role']
