@@ -197,7 +197,7 @@ class DDRFile( object ):
         
         from django.core.files import File
         from sorl.thumbnail import default
-        from ddrlocal.models.entity import DDRLocalEntity
+        from ddrlocal.models import DDRLocalEntity
         entity = DDRLocalEntity.from_json('/var/www/media/base/ddr-testing-61/files/ddr-testing-61-3')
         ef = entity.files[0]
         with open(ef.path, 'r') as f:

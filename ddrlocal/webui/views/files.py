@@ -14,7 +14,7 @@ from django.template import RequestContext
 
 from DDR import commands
 from ddrlocal.models.collection import DDRLocalCollection as Collection
-from ddrlocal.models.entity import DDRLocalEntity as Entity
+from ddrlocal.models import DDRLocalEntity as Entity
 from ddrlocal.models.file import DDRFile, FILEMETA_BLANK
 from storage.decorators import storage_required
 from webui.forms.files import NewFileForm, EditFileForm, shared_folder_files

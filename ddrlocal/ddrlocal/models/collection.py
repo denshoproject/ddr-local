@@ -9,7 +9,7 @@ from django.conf import settings
 from django.core.urlresolvers import reverse
 
 from DDR.models import DDRCollection
-from ddrlocal.models.entity import DDRLocalEntity
+from ddrlocal.models import DDRLocalEntity
 from ddrlocal import VERSION, git_commit
 
 

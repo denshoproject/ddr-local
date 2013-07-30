@@ -10,7 +10,7 @@ logger = get_task_logger(__name__)
 from django.contrib import messages
 from django.conf import settings
 
-from ddrlocal.models.entity import DDRLocalEntity
+from ddrlocal.models import DDRLocalEntity
 from ddrlocal.models.file import DDRFile, hash
 
 from DDR.commands import entity_annex_add
