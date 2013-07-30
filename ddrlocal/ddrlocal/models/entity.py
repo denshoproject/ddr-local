@@ -584,10 +584,8 @@ def mets_id(tree, namespaces, field, value):
 
 
 def mets_created(tree, namespaces, field, value):
-    try:
+    if type(value) == type(datetime.now()):
         value = value.strftime(settings.DATETIME_FORMAT)
-    except:
-        pass
     return _set_attr(tree, namespaces, '/mets:mets/mets:metsHdr', 'CREATEDATE', value)
 
 def mets_lastmod(tree, namespaces, field, value):
