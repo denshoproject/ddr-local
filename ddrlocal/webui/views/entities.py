@@ -14,11 +14,12 @@ from django.template import RequestContext
 
 from DDR import commands
 
-from ddrlocal.models.collection import DDRLocalCollection as Collection
-from ddrlocal.models.entity import DDRLocalEntity as Entity
+from ddrlocal.models import DDRLocalCollection as Collection
+from ddrlocal.models import DDRLocalEntity as Entity
 from ddrlocal.forms import EntityForm
 
 from storage.decorators import storage_required
+from webui import WEBUI_MESSAGES
 from webui import api
 from webui.forms.entities import NewEntityForm, JSONForm, UpdateForm
 from webui.mets import NAMESPACES, NAMESPACES_XPATH
@@ -120,7 +121,7 @@ def new( request, repo, org, cid ):
     git_name = request.session.get('git_name')
     git_mail = request.session.get('git_mail')
     if not (git_name and git_mail):
-        messages.error(request, 'Login is required')
+        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     # get new entity ID
     eid = None
@@ -132,15 +133,15 @@ def new( request, repo, org, cid ):
         entity_uid = '{}-{}-{}-{}'.format(repo,org,cid,eid)
         exit,status = commands.entity_create(git_name, git_mail, collection.path, entity_uid)
         if exit:
-            messages.error(request, 'Error: {}'.format(status))
+            messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
         else:
             redirect_url = reverse('webui-entity', args=[repo,org,cid,eid])
-            messages.success(request, 'New entity created: {}'.format(entity_uid))
+            messages.success(request, WEBUI_MESSAGES['VIEWS_ENT_CREATED'].format(entity_uid))
             return HttpResponseRedirect(redirect_url)
     else:
-        messages.error(request, 'Error: Could not get new entity IDs from workbench.')
+        messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_ERR_NO_IDS'])
     # something happened...
-    messages.error(request, 'Error: Could not create new entity.')
+    messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_ERR_CREATE'])
     return HttpResponseRedirect(reverse('webui-collection', args=[repo,org,cid]))
 
 @login_required
@@ -149,11 +150,11 @@ def edit( request, repo, org, cid, eid ):
     git_name = request.session.get('git_name')
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
-        messages.error(request, 'Login is required')
+        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
     if entity.locked():
-        messages.error(request, 'This entity is locked.')
+        messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     #
     if request.method == 'POST':
@@ -169,12 +170,12 @@ def edit( request, repo, org, cid, eid ):
                                                      entity.parent_path, entity.id,
                                                      [entity.json_path, entity.mets_path,])
                 if exit:
-                    messages.error(request, 'Error: {}'.format(status))
+                    messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
                 else:
-                    messages.success(request, 'Entity updated')
+                    messages.success(request, WEBUI_MESSAGES['VIEWS_ENT_UPDATED'])
                     return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
             else:
-                messages.error(request, 'Login is required')
+                messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     else:
         form = EntityForm(entity.form_data())
     return render_to_response(
@@ -201,7 +202,7 @@ def edit_json( request, repo, org, cid, eid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
     #if entity.locked():
-    #    messages.error(request, 'This entity is locked.')
+    #    messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
     #    return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     #
     if request.method == 'POST':
@@ -221,12 +222,12 @@ def edit_json( request, repo, org, cid, eid ):
                     [entity.json_path])
                 
                 if exit:
-                    messages.error(request, 'Error: {}'.format(status))
+                    messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
                 else:
-                    messages.success(request, 'Entity updated')
+                    messages.success(request, WEBUI_MESSAGES['VIEWS_ENT_UPDATED'])
                     return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
             else:
-                messages.error(request, 'Login is required')
+                messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     else:
         with open(entity.json_path, 'r') as f:
             json = f.read()
@@ -258,7 +259,7 @@ def edit_mets_xml( request, repo, org, cid, eid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
     if entity.locked():
-        messages.error(request, 'This entity is locked.')
+        messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     #
     if request.method == 'POST':
@@ -278,12 +279,12 @@ def edit_mets_xml( request, repo, org, cid, eid ):
                     [entity.mets_path])
                 
                 if exit:
-                    messages.error(request, 'Error: {}'.format(status))
+                    messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
                 else:
-                    messages.success(request, 'Entity updated')
+                    messages.success(request, WEBUI_MESSAGES['VIEWS_ENT_UPDATED'])
                     return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
             else:
-                messages.error(request, 'Login is required')
+                messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     else:
         form = UpdateForm({'xml': entity.mets().xml,})
     return render_to_response(
@@ -306,7 +307,7 @@ def edit_xml( request, repo, org, cid, eid, slug, Form, FIELDS, namespaces=None 
     git_name = request.session.get('git_name')
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
-        messages.error(request, 'Login is required')
+        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     collection_uid = '{}-{}-{}'.format(repo, org, cid)
     entity_uid     = '{}-{}-{}-{}'.format(repo, org, cid, eid)
     collection_abs = os.path.join(settings.MEDIA_BASE, collection_uid)
@@ -330,7 +331,7 @@ def edit_xml( request, repo, org, cid, eid, slug, Form, FIELDS, namespaces=None 
             # TODO validate XML
             exit,status = commands.entity_update(git_name, git_mail, collection_abs, entity_uid, [xml_path_rel])
             if exit:
-                messages.error(request, 'Error: {}'.format(status))
+                messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
             else:
                 messages.success(request, '<{}> updated'.format(slug))
                 return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )

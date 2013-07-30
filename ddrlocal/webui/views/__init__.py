@@ -45,12 +45,10 @@ def login( request ):
             if s and (type(s) != type('')) and s.cookies.get('sessionid', None):
                 messages.success(
                     request,
-                    'Logged in as <strong>{}</strong>.'.format(form.cleaned_data['username']))
+                    WEBUI_MESSAGES['LOGIN_SUCCESS'].format(form.cleaned_data['username']))
                 return HttpResponseRedirect( reverse('webui-index') )
             else:
-                messages.warning(
-                    request,
-                    "Couldn't log in. Please enter a valid username and password.")
+                messages.warning(request, WEBUI_MESSAGES['LOGIN_FAIL'])
     else:
         form = LoginForm()
     return render_to_response(
@@ -68,7 +66,7 @@ def logout( request ):
         request.session['git_name'] = None
         request.session['git_mail'] = None
         # feedback
-        messages.success(request, 'Logged out')
+        messages.success(request, WEBUI_MESSAGES['LOGOUT_SUCCESS'])
     else:
-        messages.warning(request, "Couldn't log out ({}).".format(status))
+        messages.warning(request, WEBUI_MESSAGES['LOGOUT_FAIL'].format(status))
     return HttpResponseRedirect( reverse('webui-index') )

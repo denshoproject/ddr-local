@@ -8,6 +8,9 @@ import requests
 from django.conf import settings
 from django.contrib import messages
 
+from webui import WEBUI_MESSAGES
+
+
 
 def logout():
     """Logs out of the workbench server.
@@ -45,7 +48,7 @@ def login( request, username, password ):
                 cookies=cookies,
                 data=data,)
     if r1.status_code != 200:
-        return 'error: status code {} on POST'.format(r1.status_code)
+        return WEBUI_MESSAGES['API_LOGIN_NOT_200'].format(r1.status_code)
     # it would be better to look for a success message...
     error_msg = 'Please enter a correct username and password.'
     if r1.text:
@@ -60,17 +63,13 @@ def login( request, username, password ):
                 data = json.loads(r2.text)
                 email = data.get('email', None)
                 if not email:
-                    messages.error(
-                        request,
-                        'Your email is invalid! Please log in to workbench and enter a valid email!')
+                    messages.error(request, WEBUI_MESSAGES['API_LOGIN_INVALID_EMAIL'])
                 firstname = data.get('firstname', '')
                 lastname = data.get('lastname', '')
                 user_name = '{} {}'.format(firstname, lastname).strip()
                 if email and (not user_name):
                     user_name = email
-                    messages.error(
-                        request,
-                        'Please log in to workbench and enter your first/last name(s).')
+                    messages.error(request, WEBUI_MESSAGES['API_LOGIN_INVALID_NAME'])
                 request.session['git_name'] = user_name
                 request.session['git_mail'] = email
             return s

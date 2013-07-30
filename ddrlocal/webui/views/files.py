@@ -13,10 +13,11 @@ from django.shortcuts import Http404, get_object_or_404, render_to_response
 from django.template import RequestContext
 
 from DDR import commands
-from ddrlocal.models.collection import DDRLocalCollection as Collection
-from ddrlocal.models.entity import DDRLocalEntity as Entity
-from ddrlocal.models.file import DDRFile, FILEMETA_BLANK
+from ddrlocal.models import DDRLocalCollection as Collection
+from ddrlocal.models import DDRLocalEntity as Entity
+from ddrlocal.models import DDRFile, FILEMETA_BLANK
 from storage.decorators import storage_required
+from webui import WEBUI_MESSAGES
 from webui.forms.files import NewFileForm, EditFileForm, shared_folder_files
 from webui.tasks import entity_add_file
 from webui.views.decorators import login_required
@@ -66,11 +67,11 @@ def new( request, repo, org, cid, eid, role='master' ):
     git_name = request.session.get('git_name')
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
-        messages.error(request, 'Login is required')
+        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
     if entity.locked():
-        messages.error(request, 'This entity is locked.')
+        messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     #
     if request.method == 'POST':
@@ -92,7 +93,7 @@ def new( request, repo, org, cid, eid, role='master' ):
                 entity.files_log(1, 'locked')
             else:
                 entity.files_log(0, lockstatus)
-            messages.success(request, 'Uploading <b>%s</b> (%s)' % (os.path.basename(src_path), result))
+            messages.success(request, WEBUI_MESSAGES['VIEWS_FILES_UPLOADING'] % (os.path.basename(src_path), result))
             return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     else:
         data = {'role':role,
@@ -120,7 +121,7 @@ def batch( request, repo, org, cid, eid, role='master' ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
     if entity.locked():
-        messages.error(request, 'This entity is locked.')
+        messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     return render_to_response(
         'webui/files/new.html',
@@ -137,12 +138,12 @@ def edit( request, repo, org, cid, eid, sha1 ):
     git_name = request.session.get('git_name')
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
-        messages.error(request, 'Login is required')
+        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
     f = entity.file(sha1)
     if entity.locked():
-        messages.error(request, "This file's parent entity is locked.")
+        messages.error(request, WEBUI_MESSAGES['VIEWS_FILES_PARENT_LOCKED'])
         return HttpResponseRedirect( f.url() )
     if request.method == 'POST':
         form = EditFileForm(request.POST, request.FILES)
@@ -161,9 +162,9 @@ def edit( request, repo, org, cid, eid, sha1 ):
                                                      entity.parent_path, entity.id,
                                                      [entity.json_path, entity.mets_path,])
                 if exit:
-                    messages.error(request, 'Error: {}'.format(status))
+                    messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
                 else:
-                    messages.success(request, 'File metadata updated')
+                    messages.success(request, WEBUI_MESSAGES['VIEWS_FILES_UPDATED'])
                     return HttpResponseRedirect( reverse('webui-file', args=[repo,org,cid,eid,sha1]) )
             # something went wrong
             assert False
