@@ -13,12 +13,6 @@ from ddrlocal.models.entity import DDRLocalEntity
 from ddrlocal import VERSION, git_commit
 
 
-DATE_FORMAT = '%Y-%m-%d'
-DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
-# Django uses a slightly different datetime format
-DATETIME_FORMAT_FORM = '%Y-%m-%d %H:%M:%S'
-
-
 
 LANGUAGE_CHOICES = [['eng','English'],
                     ['jpn','Japanese'],
@@ -151,11 +145,11 @@ class DDRLocalCollection( DDRCollection ):
                     setattr(self, f.keys()[0], f.values()[0])
         # special cases
         if self.created:
-            self.created = datetime.strptime(self.created, DATETIME_FORMAT)
+            self.created = datetime.strptime(self.created, settings.DATETIME_FORMAT)
         else:
             self.created = datetime.now()
         if self.lastmod:
-            self.lastmod = datetime.strptime(self.lastmod, DATETIME_FORMAT)
+            self.lastmod = datetime.strptime(self.lastmod, settings.DATETIME_FORMAT)
         else:
             self.lastmod = datetime.now()
         # end special cases
@@ -180,9 +174,9 @@ class DDRLocalCollection( DDRCollection ):
                 val = getattr(self, ff['name'])
                 # special cases
                 if key in ['created', 'lastmod']:
-                    val = val.strftime(DATETIME_FORMAT)
+                    val = val.strftime(settings.DATETIME_FORMAT)
                 elif key in ['digitize_date']:
-                    val = val.strftime(DATE_FORMAT)
+                    val = val.strftime(settings.DATE_FORMAT)
                 # end special cases
             item[key] = val
             collection.append(item)
@@ -391,10 +385,10 @@ def ead_id(tree, namespaces, field, value):
     return tree
 
 def ead_created(tree, namespaces, field, value):
-    return _set_attr(tree, namespaces, "/ead/eadheader/eadid", "created", value.strftime(DATETIME_FORMAT))
+    return _set_attr(tree, namespaces, "/ead/eadheader/eadid", "created", value.strftime(settings.DATETIME_FORMAT))
 
 def ead_lastmod(tree, namespaces, field, value):
-    return _set_attr(tree, namespaces, "/ead/eadheader/eadid", "lastmod", value.strftime(DATETIME_FORMAT))
+    return _set_attr(tree, namespaces, "/ead/eadheader/eadid", "lastmod", value.strftime(settings.DATETIME_FORMAT))
 
 def ead_title(tree, namespaces, field, value):
     tree = _set_tag_text(tree, namespaces, "/ead/eadheader/filedesc/titlestmt/titleproper", value)

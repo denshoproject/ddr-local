@@ -14,10 +14,6 @@ from ddrlocal import VERSION, git_commit
 from ddrlocal.models.file import DDRFile, hash, FILE_KEYS, FILEMETA_KEYS
 from DDR.models import DDREntity
 
-DATE_FORMAT = '%Y-%m-%d'
-DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
-# Django uses a slightly different datetime format
-DATETIME_FORMAT_FORM = '%Y-%m-%d %H:%M:%S'
 
 
 
@@ -589,14 +585,14 @@ def mets_id(tree, namespaces, field, value):
 
 def mets_created(tree, namespaces, field, value):
     try:
-        value = value.strftime(DATETIME_FORMAT)
+        value = value.strftime(settings.DATETIME_FORMAT)
     except:
         pass
     return _set_attr(tree, namespaces, '/mets:mets/mets:metsHdr', 'CREATEDATE', value)
 
 def mets_lastmod(tree, namespaces, field, value):
     try:
-        value = value.strftime(DATETIME_FORMAT)
+        value = value.strftime(settings.DATETIME_FORMAT)
     except:
         pass
     return _set_attr(tree, namespaces, '/mets:mets/mets:metsHdr', 'LASTMODDATE', value)
