@@ -14,7 +14,7 @@ from django.template import RequestContext
 
 from DDR import commands
 
-from ddrlocal.models.collection import DDRLocalCollection as Collection
+from ddrlocal.models import DDRLocalCollection as Collection
 from ddrlocal.models import DDRLocalEntity as Entity
 from ddrlocal.forms import EntityForm
 

@@ -6,10 +6,196 @@ from StringIO import StringIO
 from django.conf import settings
 from django.core.urlresolvers import reverse
 
-from DDR.models import DDREntity
+from DDR.models import DDRCollection, DDREntity
 from ddrlocal import VERSION, git_commit
+from ddrlocal.models.collection import COLLECTION_FIELDS
 from ddrlocal.models.entity import ENTITY_FIELDS
 from ddrlocal.models.file import DDRFile, FILE_KEYS, FILEMETA_KEYS
+
+
+
+class DDRLocalCollection( DDRCollection ):
+    """
+    This subclass of Entity and DDREntity adds functions for reading and writing
+    entity.json, and preparing/processing Django forms.
+    """
+    id = 'whatever'
+    repo = None
+    org = None
+    cid = None
+
+    def __init__(self, *args, **kwargs):
+        super(DDRLocalCollection, self).__init__(*args, **kwargs)
+        self.id = self.uid
+        self.repo = self.id.split('-')[0]
+        self.org = self.id.split('-')[1]
+        self.cid = self.id.split('-')[2]
+    
+    def __repr__(self):
+        return "<DDRLocalCollection %s>" % (self.id)
+    
+    def url( self ):
+        return reverse('webui-collection', args=[self.repo, self.org, self.cid])
+    
+    @staticmethod
+    def collection_path(request, repo, org, cid):
+        return os.path.join(settings.MEDIA_BASE, '{}-{}-{}'.format(repo, org, cid))
+    
+    @staticmethod
+    def create(path):
+        """Creates a new collection with the specified collection ID.
+        @param path: Absolute path to collection; must end in valid DDR collection id.
+        """
+        collection = Collection(path)
+        for f in COLLECTION_FIELDS:
+            if hasattr(f, 'name') and hasattr(f, 'initial'):
+                setattr(collection, f['name'], f['initial'])
+        return collection
+    
+    def entities( self ):
+        """Returns relative paths to entities."""
+        entities = []
+        if os.path.exists(self.files_path):
+            for eid in os.listdir(self.files_path):
+                path = os.path.join(self.files_path, eid)
+                entity = DDRLocalEntity.from_json(path)
+                for lv in entity.labels_values():
+                    if lv['label'] == 'title':
+                        entity.title = lv['value']
+                entities.append(entity)
+        return entities
+    
+    def labels_values(self):
+        """Generic display
+        """
+        lv = []
+        for f in COLLECTION_FIELDS:
+            if hasattr(self, f['name']) and f.get('form',None):
+                item = {'label': f['form']['label'],
+                        'value': getattr(self, f['name'])}
+                lv.append(item)
+        return lv
+    
+    def form_data(self):
+        """Prep data dict to pass into CollectionForm object.
+        
+        Certain fields may require special processing, which will be performed
+        by the function specified in field['prep_func'].
+        
+        @returns data: dict object as used by Django Form object.
+        """
+        data = {}
+        for f in COLLECTION_FIELDS:
+            if hasattr(self, f['name']) and f.get('form',None):
+                key = f['name']
+                value = getattr(self, f['name'])
+                # hand off special processing to function specified in COLLECTION_FIELDS
+                if f.get('prep_func',None):
+                    func = f['prep_func']
+                    value = func(value)
+                # end special processing
+                data[key] = value
+        return data
+    
+    def form_process(self, form):
+        """Process cleaned_data coming from CollectionForm
+        
+        Certain fields may require special processing, which will be performed
+        by the function specified in field['proc_func'].
+        
+        @param form
+        """
+        for f in COLLECTION_FIELDS:
+            if hasattr(self, f['name']) and f.get('form',None):
+                key = f['name']
+                cleaned_data = form.cleaned_data[key]
+                # hand off special processing to function specified in COLLECTION_FIELDS
+                if f.get('proc_func',None):
+                    func = f['proc_func']
+                    cleaned_data = func(cleaned_data)
+                # end special processing
+                setattr(self, key, cleaned_data)
+        # update lastmod
+        self.lastmod = datetime.now()
+    
+    @staticmethod
+    def from_json(collection_abs):
+        collection = DDRLocalCollection(collection_abs)
+        collection_uid = collection.id  # save this just in case
+        collection.load_json(collection.json_path)
+        if not collection.id:
+            # id gets overwritten if collection.json is blank
+            collection.id = collection_uid
+        return collection
+    
+    def load_json(self, path):
+        """Populate Collection data from .json file.
+        @param path: Absolute path to collection directory
+        """
+        json_data = self.json().data
+        for ff in COLLECTION_FIELDS:
+            for f in json_data:
+                if f.keys()[0] == ff['name']:
+                    setattr(self, f.keys()[0], f.values()[0])
+        # special cases
+        if self.created:
+            self.created = datetime.strptime(self.created, settings.DATETIME_FORMAT)
+        else:
+            self.created = datetime.now()
+        if self.lastmod:
+            self.lastmod = datetime.strptime(self.lastmod, settings.DATETIME_FORMAT)
+        else:
+            self.lastmod = datetime.now()
+        # end special cases
+        # Ensure that every field in COLLECTION_FIELDS is represented
+        # even if not present in json_data.
+        for ff in COLLECTION_FIELDS:
+            if not hasattr(self, ff['name']):
+                setattr(self, ff['name'], ff.get('default',None))
+    
+    def dump_json(self):
+        """Dump Collection data to .json file.
+        @param path: Absolute path to .json file.
+        """
+        collection = [{'application': 'https://github.com/densho/ddr-local.git',
+                       'commit': git_commit(),
+                       'release': VERSION,}]
+        for ff in COLLECTION_FIELDS:
+            item = {}
+            key = ff['name']
+            val = ''
+            if hasattr(self, ff['name']):
+                val = getattr(self, ff['name'])
+                # special cases
+                if key in ['created', 'lastmod']:
+                    val = val.strftime(settings.DATETIME_FORMAT)
+                elif key in ['digitize_date']:
+                    val = val.strftime(settings.DATE_FORMAT)
+                # end special cases
+            item[key] = val
+            collection.append(item)
+        json_pretty = json.dumps(collection, indent=4, separators=(',', ': '))
+        with open(self.json_path, 'w') as f:
+            f.write(json_pretty)
+    
+    def dump_ead(self):
+        """Dump Collection data to ead.xml file.
+        """
+        NAMESPACES = None
+        tree = etree.fromstring(self.ead().xml)
+        for f in COLLECTION_FIELDS:
+            key = f['name']
+            value = ''
+            if hasattr(self, f['name']):
+                value = getattr(self, f['name'])
+                # hand off special processing to function specified in COLLECTION_FIELDS
+                if f.get('ead_func',None):
+                    func = f['ead_func']
+                    tree = func(tree, NAMESPACES, f, value)
+                # end special processing
+        xml_pretty = etree.tostring(tree, pretty_print=True)
+        with open(self.ead_path, 'w') as f:
+            f.write(xml_pretty)
 
 
 

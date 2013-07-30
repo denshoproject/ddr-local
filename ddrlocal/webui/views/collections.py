@@ -15,7 +15,7 @@ from django.template.loader import get_template
 
 from DDR import commands
 
-from ddrlocal.models.collection import DDRLocalCollection as Collection
+from ddrlocal.models import DDRLocalCollection as Collection
 from ddrlocal.forms import CollectionForm
 
 from storage.decorators import storage_required
