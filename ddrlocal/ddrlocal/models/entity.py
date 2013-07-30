@@ -7,7 +7,6 @@ from django import forms
 from django.conf import settings
 
 import tematres
-from ddrlocal.models.file import DDRFile, hash, FILE_KEYS, FILEMETA_KEYS
 
 
 
