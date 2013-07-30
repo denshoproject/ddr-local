@@ -165,16 +165,23 @@ def _expand_attrib_namespace(attr, namespaces):
 def _getval(tree, namespaces, xpath):
     """Gets the first value; yes this is probably suboptimal
     """
-    return tree.xpath(xpath, namespaces=namespaces)[0]
+    val = None
+    vals = tree.xpath(xpath, namespaces=namespaces)
+    if vals:
+        val = vals[0]
+    return val
 
 def _set_attr(tree, namespaces, xpath, attr, value):
-    tag = tree.xpath(xpath, namespaces=namespaces)[0]
-    tag.set(attr, value)
+    tags = tree.xpath(xpath, namespaces=namespaces)
+    if tags:
+        tag = tags[0]
+        tag.set(attr, value)
     return tree
 
 def _set_tag_text(tree, namespaces, xpath, value):
     tag = _getval(tree, namespaces, xpath)
-    tag.text = value
+    if tag and value:
+        tag.text = value
     return tree
 
 def _duplicate(tree, namespaces, src_xpath, dest_xpath):
