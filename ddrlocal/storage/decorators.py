@@ -8,6 +8,7 @@ from django.utils.decorators import available_attrs
 
 from DDR import commands
 
+from storage import STORAGE_MESSAGES
 from storage import base_path
 from storage import REMOUNT_POST_REDIRECT_URL_SESSION_KEY
 
@@ -37,7 +38,7 @@ def storage_required(func):
                 messages.debug(request, '<b>{}</b>: {}'.format(REMOUNT_POST_REDIRECT_URL_SESSION_KEY, remount_uri))
                 return HttpResponseRedirect(reverse('storage-remount0'))
             else:
-                messages.error(request, 'ERROR: Could not get list of collections. Is USB HDD plugged in?')
+                messages.error(request, STORAGE_MESSAGES['ERROR'])
             return HttpResponseRedirect(reverse('storage-required'))
         return func(request, *args, **kwargs)
     return inner

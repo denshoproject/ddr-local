@@ -7,6 +7,26 @@ from django.core.cache import cache
 from DDR import commands
 
 
+STORAGE_MESSAGES = {
+    # storage.__init__
+    'MOUNT_ERR_MISSING_INFO': 'storage.mount(): devicefile or label missing [{} {}]', # devicefile, label
+    'MOUNT_SUCCESS': 'Mounted {}', # label
+    'MOUNT_FAIL_PATH': 'Count not mount device  [{} {}: {},{}]', # devicefile, label, stat, mount_path
+    'MOUNT_FAIL':      'Problem mounting device [{} {}: {},{}]', # devicefile, label, stat, mount_path
+    'UNMOUNT_SUCCESS': 'Umounted {}', # label
+    'UNMOUNT_FAIL_1': 'Count not unmount device  [{} {}: {},{}]', # devicefile, label, stat, mounted
+    'UNMOUNT_FAIL':   'Problem unmounting device [{} {}: {},{}]', # devicefile, label, stat, mounted
+    
+    # storage.decorators
+    'ERROR': 'ERROR: Could not get list of collections. Is USB HDD plugged in?',
+    
+    # storage.views
+    'REMOUNT_FAIL': 'Unable to attempt remount. Please remount manually.',
+    
+}
+
+
+
 REMOUNT_POST_REDIRECT_URL_SESSION_KEY = 'remount_redirect_uri'
 
 
@@ -74,11 +94,11 @@ def mount( request, devicefile, label ):
     """Mounts requested device, adds /var/www/ddr/media symlink, gives feedback.
     """
     if not (devicefile and label):
-        messages.error(request, 'storage.mount(): devicefile or label missing [{} {}]'.format(devicefile, label))
+        messages.error(request, STORAGE_MESSAGES['MOUNT_ERR_MISSING_INFO'].format(devicefile, label))
         return None
     stat,mount_path = commands.mount(devicefile, label)
     if mount_path:
-        messages.success(request, 'Mounted {}'.format(label))
+        messages.success(request, STORAGE_MESSAGES['MOUNT_SUCCESS'].format(label))
         add_media_symlink(base_path())
         # save label,mount_path in session
         request.session['storage_devicefile'] = devicefile
@@ -87,9 +107,9 @@ def mount( request, devicefile, label ):
         # write mount_path to cache
         bp = base_path(request)
     elif mount_path == False:
-        messages.warning(request, 'Count not mount device [{} {}: {},{}]'.format(devicefile, label, stat,mount_path))
+        messages.warning(request, STORAGE_MESSAGES['MOUNT_FAIL_PATH'].format(devicefile, label, stat, mount_path))
     else:
-        messages.error(request, 'Problem mounting device [{} {}: {},{}]'.format(devicefile, label, stat,mount_path))
+        messages.error(request, STORAGE_MESSAGES['MOUNT_FAIL'].format(devicefile, label, stat, mount_path))
     return mount_path
 
 def unmount( request, devicefile, label ):
@@ -106,9 +126,9 @@ def unmount( request, devicefile, label ):
         except KeyError:
             pass
     if unmounted:
-        messages.success(request, 'Umounted {}'.format(label))
+        messages.success(request, STORAGE_MESSAGES['UNMOUNT_SUCCESS'].format(label))
     elif unmounted == False:
-        messages.warning(request, 'Count not unmount device [{} {}: {},{}]'.format(devicefile, label, stat,mounted))
+        messages.warning(request, STORAGE_MESSAGES['UNMOUNT_FAIL_1'].format(devicefile, label, stat, mounted))
     else:
-        messages.error(request, 'Problem unmounting device [{} {}: {},{}]'.format(devicefile, label, stat,mounted))
+        messages.error(request, STORAGE_MESSAGES['UNMOUNT_FAIL'].format(devicefile, label, stat, mounted))
     return unmounted

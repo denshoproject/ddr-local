@@ -19,6 +19,7 @@ from ddrlocal.models import DDRLocalCollection as Collection
 from ddrlocal.forms import CollectionForm
 
 from storage.decorators import storage_required
+from webui import WEBUI_MESSAGES
 from webui import api
 from webui.forms.collections import NewCollectionForm, UpdateForm
 from webui.views.decorators import login_required
@@ -147,11 +148,11 @@ def sync( request, repo, org, cid ):
             exit,status = commands.sync(git_name, git_mail, collection.path)
             #
             if exit:
-                messages.error(request, 'Error: {}'.format(status))
+                messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
             else:
-                messages.success(request, 'Collection synced with server: {}'.format(status))
+                messages.success(request, WEBUI_MESSAGES['VIEWS_COLL_SYNCED'].format(status))
         else:
-            messages.error(request, 'Login is required')
+            messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
 
 @login_required
@@ -164,7 +165,7 @@ def new( request, repo, org ):
     git_name = request.session.get('git_name')
     git_mail = request.session.get('git_mail')
     if not (git_name and git_mail):
-        messages.error(request, 'Login is required')
+        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     # get new collection ID
     cid = None
     cids = api.collections_next(request, repo, org, 1)
@@ -175,14 +176,14 @@ def new( request, repo, org ):
         collection_uid,collection_path = _uid_path(request, repo, org, cid)
         exit,status = commands.create(git_name, git_mail, collection_path)
         if exit:
-            messages.error(request, 'Error: {}'.format(status))
+            messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
         else:
-            messages.success(request, 'New collection created: {}'.format(status))
+            messages.success(request, WEBUI_MESSAGES['VIEWS_COLL_CREATED'].format(status))
             return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
     else:
-        messages.error(request, 'Error: Could not get new collection IDs from workbench.')
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_ERR_NO_IDS'])
     # something happened...
-    messages.error(request, 'Error: Could not create new collection.')
+    messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_ERR_CREATE'])
     return HttpResponseRedirect(reverse('webui-collections'))
 
 @login_required
@@ -191,7 +192,7 @@ def edit( request, repo, org, cid ):
     git_name = request.session.get('git_name')
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
-        messages.error(request, 'Login is required')
+        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     if request.method == 'POST':
         form = CollectionForm(request.POST)
@@ -206,12 +207,12 @@ def edit( request, repo, org, cid ):
                                               collection.path,
                                               [collection.json_path, collection.ead_path,])
                 if exit:
-                    messages.error(request, 'Error: {}'.format(status))
+                    messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
                 else:
-                    messages.success(request, 'Collection updated')
+                    messages.success(request, WEBUI_MESSAGES['VIEWS_COLL_UPDATED'])
                     return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
             else:
-                messages.error(request, 'Login is required')
+                messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     else:
         form = CollectionForm(collection.form_data())
     return render_to_response(
@@ -255,12 +256,12 @@ def edit_ead( request, repo, org, cid ):
                 exit,status = commands.update(git_name, git_mail, collection.path, [ead_path_rel])
                 
                 if exit:
-                    messages.error(request, 'Error: {}'.format(status))
+                    messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
                 else:
                     messages.success(request, 'Collection metadata updated')
                     return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
             else:
-                messages.error(request, 'Login is required')
+                messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     else:
         with open(ead_path_abs, 'r') as f:
             xml = f.read()
@@ -284,7 +285,7 @@ def edit_xml( request, repo, org, cid, slug, Form, FIELDS ):
     git_name = request.session.get('git_name')
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
-        messages.error(request, 'Login is required')
+        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     collection_uid,collection_path = _uid_path(request, repo, org, cid)
     ead_path_rel = 'ead.xml'
     ead_path_abs = os.path.join(collection_path, ead_path_rel)
@@ -304,7 +305,7 @@ def edit_xml( request, repo, org, cid, slug, Form, FIELDS ):
             # TODO validate XML
             exit,status = commands.update(git_name, git_mail, collection_path, [ead_path_rel])
             if exit:
-                messages.error(request, 'Error: {}'.format(status))
+                messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
             else:
                 messages.success(request, '<{}> updated'.format(slug))
                 return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )

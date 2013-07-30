@@ -10,6 +10,7 @@ from django.template import RequestContext
 
 from DDR import commands
 
+from storage import STORAGE_MESSAGES
 from storage import base_path, mount, unmount
 from storage import REMOUNT_POST_REDIRECT_URL_SESSION_KEY
 from storage.forms import MountForm, UmountForm
@@ -105,7 +106,7 @@ def remount1( request ):
         mount_path = mount(request, devicefile_udisks, label)
         remount_attempted = True
     else:
-        messages.warning(request, 'Unable to attempt remount. Please remount manually.')
+        messages.warning(request, STORAGE_MESSAGES['REMOUNT_FAIL'])
     # redirect
     url = reverse('storage-index')
     if remount_attempted and mount_path:
