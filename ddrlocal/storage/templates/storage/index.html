@@ -124,7 +124,12 @@ Reload this page.<br/>
 </div>
 
 <p>
-remount_uri: {{ remount_uri }}
+remount_uri:
+{% if removables_mounted %}
+<a href="{{ remount_uri }}">{{ remount_uri }}</a>
+{% else %}
+{{ remount_uri }}
+{% endif %}
 </p>
 
     </div><!-- .span12 -->
