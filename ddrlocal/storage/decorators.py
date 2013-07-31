@@ -17,13 +17,17 @@ from storage import REMOUNT_POST_REDIRECT_URL_SESSION_KEY
 def storage_required(func):
     """Checks for storage; if problem redirects to remount page or shows error.
     
+    Looks for list of collection repositories in MEDIA_BASE rather than
+    storage.base_path, because the former is the path that is actually used by
+    the higher-level parts of the app and by the www server.
+    
     Saves requested URI in session; remount view will try to retrieve and redirect.
     NOTE: We don't remember GET/POST args!!!
     """
     @wraps(func, assigned=available_attrs(func))
     def inner(request, *args, **kwargs):
         # if we can get list of collections, storage must be readable
-        basepath = base_path(request)
+        basepath = settings.MEDIA_BASE
         repo,org = settings.DDR_ORGANIZATIONS[0].split('-')
         try:
             collections = commands.collections_local(basepath, repo, org)
