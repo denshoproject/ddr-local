@@ -67,9 +67,7 @@ def media_target_dir(base_path):
     return os.path.join(base_path, settings.DDR_USBHDD_BASE_DIR)
 
 def ddr_media_dir():
-    """TODO: Is this the same as settings.MEDIA_BASE?
-    """
-    return os.path.join(settings.MEDIA_ROOT, 'base')
+    return settings.MEDIA_BASE
 
 def add_media_symlink(base_path):
     """Creates symlink to base_path in /var/www/media/
