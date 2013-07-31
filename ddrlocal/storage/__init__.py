@@ -113,6 +113,7 @@ def mount( request, devicefile, label ):
     stat,mount_path = commands.mount(devicefile, label)
     if mount_path:
         messages.success(request, STORAGE_MESSAGES['MOUNT_SUCCESS'].format(label))
+        rm_media_symlink(base_path())
         add_media_symlink(base_path())
         # save label,mount_path in session
         request.session['storage_devicefile'] = devicefile
