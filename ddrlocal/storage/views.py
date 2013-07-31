@@ -113,6 +113,9 @@ def remount1( request ):
         url = remount_uri
         if url and (not url.find('remount') > -1):
             del request.session[REMOUNT_POST_REDIRECT_URL_SESSION_KEY]
+    # just to be sure we have a url...
+    if not url:
+        url = reverse('storage-index')
     return redirect(url)
 
 def storage_required( request ):
