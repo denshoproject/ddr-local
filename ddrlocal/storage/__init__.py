@@ -35,6 +35,16 @@ BASE_PATH_DEFAULT = '/tmp/ddr'
 
 
 def base_path(request=None):
+    """The actual base path to the Repository; includes USB device name.
+    
+    We don't know this in advance.
+    We also don't want the user to have to edit a settings file in order
+    to use a different device.
+    
+    MEDIA_ROOT, which is used by the rest of the application and by
+    the www server, uses the symlink managed by add_media_symlink() and
+    rm_media_symlink().
+    """
     key = 'ddrlocal:base_path'
     path = cache.get(key)
     if path and (path != BASE_PATH_DEFAULT):
@@ -52,17 +62,21 @@ def base_path(request=None):
     return path
 
 def media_target_dir(base_path):
+    """TODO: Is this the same as settings.MEDIA_BASE?
+    """
     return os.path.join(base_path, settings.DDR_USBHDD_BASE_DIR)
 
 def ddr_media_dir():
+    """TODO: Is this the same as settings.MEDIA_BASE?
+    """
     return os.path.join(settings.MEDIA_ROOT, 'base')
 
 def add_media_symlink(base_path):
-    """Creates symlink to base_path in /var/www/ddr/
+    """Creates symlink to base_path in /var/www/media/
 
     We don't know the USB HDD name in advance, so we can't specify a path
-    to the media directory in the nginx config.  This func adds a symlink
-    from /var/www/ddr/media/ to the ddr/ directory of the USB HDD.
+    to the real media directory in the nginx config.  This func adds a symlink
+    from /var/www/media/ to the ddr/ directory of the USB HDD.
     """
     target = base_path
     link = ddr_media_dir()
@@ -79,6 +93,8 @@ def add_media_symlink(base_path):
         os.symlink(target, link)
 
 def rm_media_symlink(base_path):
+    """Remove the media symlink (see add_media_symlink).
+    """
     link = ddr_media_dir()
     s = []
     if os.path.exists(link):     s.append('1') 
@@ -113,6 +129,8 @@ def mount( request, devicefile, label ):
     return mount_path
 
 def unmount( request, devicefile, label ):
+    """Removes /var/www/ddr/media symlink, unmounts requested device, gives feedback.
+    """
     unmounted = None
     if devicefile:
         rm_media_symlink(base_path())
