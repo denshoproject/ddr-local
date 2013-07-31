@@ -111,13 +111,64 @@ Reload this page.<br/>
     <ol>
       <li>Keep this browser window open.</li>
       <li>Find the "VirtualBox Manager" window (title may be slightly different).</li>
-      <li>Find Virtual Machine</li>
-      <li>Right-click on the VM, select "Close" and then "ACPI Shutdown" from the pop-up menu.</li>
-      <li>Wait for the VM to finish shutting down.</li>
+      <li>Locate the "ddrworkbench-*" Virtual Machine in the left-hand sidebar.</li>
+      <li>Right-click on the VM, select "Close" and then "ACPI Shutdown" (or "Send the shutdown signal") from the pop-up menu.</li>
+      <li>Wait for the VM to finish shutting down.  Take a deep breath.</li>
       <li>Right-click on the VM and select "Start".</li>
+      <li>
+        Wait a minute to give the VM time to boot and reconnect to the USB drive.
+	Look at <a href="https://www.google.com/search?q=kittens&tbm=isch" target="kittens">some pictures</a> while you're waiting.
+      </li>
       <li>Refresh the browser window.</li>
     </ol>
-    
+  </dd>
+
+  <dt>
+    I don't see my USB device in the <em>Devices > USB Devices</em> menu, and it's not in the "Hard Disk Drives" list in Windows Explorer either!  WTH???
+  </dt>
+  <dd>
+    <p>
+    Take a deep breath.
+    Sometimes VirtualBox and your host computer can't decide which one of them is connected to a USB device.
+    This occasionally happens you shut down VM without unmounting its USB device first.
+    </p>
+    <p>
+    In this case the only thing to do is to take off and nuke the entire site from orbit.  It's the only way to be sure.
+    </p>
+    <p>
+    All kidding aside, if you can't find the drive anywhere (and you have confirmed that it is in fact plugged in to your computer), you'll just have to reboot your computer.
+    Go get yourself a cup of coffee and look out the window for a bit.
+    Things should be back to normal when it's finished rebooting.
+    </p>
+  </dd>
+
+  <dt>
+    Seriously, nothing you've said on this page has helped me at all.  I'm really frustrated here.  How can I get this working?
+  </dt>
+  <dd>
+    <p>
+    It sounds like you've found a new bug!
+    I know this is frustrating, but if you can take a little time to tell us about the problem we can probably help.
+    We can probably fix your problem, and this will make DDR better for you and everyone else who uses it.
+    </p>
+    <p>
+    Here's how to report a bug in a way that will help us help you as quickly as possible:
+    </p>
+    <ul>
+      <li>
+	Describe what you were trying to do when you saw the problem.
+	If possible, try to describe the previous two or three steps too.
+      </li>
+      <li>
+	What result were you looking for?
+        What result did you actually get?
+      </li>
+      <li>
+        Do you see any error messages?
+        If possible, include them in your communications with us.
+        If you can't cut-and-paste them, try taking a screenshot.
+      </li>
+    </ul>
   </dd>
 
 </dl>
