@@ -36,7 +36,7 @@ echo "/etc/ddr/ddr.cfg"
 cp /usr/local/src/ddr-local/debian/conf/ddr.cfg /etc/ddr/
 
 echo "./ddrlocal/ddrlocal/settings.py"
-cp /usr/local/src/ddr-local/debian/conf/settings.py ./ddrlocal/
+cp /usr/local/src/ddr-local/debian/conf/settings.py /usr/local/src/ddr-local/ddrlocal/ddrlocal
 
 echo "/etc/nginx/sites-available/ddrlocal.conf"
 cp /usr/local/src/ddr-local/debian/conf/ddrlocal.conf /etc/nginx/sites-available/
