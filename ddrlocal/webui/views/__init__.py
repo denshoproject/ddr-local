@@ -11,6 +11,7 @@ from django.template import RequestContext
 
 from DDR import commands
 
+from webui import WEBUI_MESSAGES
 from webui import api
 from webui.forms import LoginForm
 
