@@ -108,16 +108,14 @@ cp /usr/local/src/ddr-local/debian/conf/settings.py /usr/local/src/ddr-local/ddr
 chown root.root /usr/local/src/ddr-local/ddrlocal/ddrlocal/settings.py
 chmod 644 /usr/local/src/ddr-local/ddrlocal/ddrlocal/settings.py
 
+cp /usr/local/src/ddr-local/debian/conf/supervisord.conf /etc/supervisor/
 cp /usr/local/src/ddr-local/debian/conf/celeryd.conf /etc/supervisor/conf.d/
 cp /usr/local/src/ddr-local/debian/conf/gunicorn_ddrlocal.conf /etc/supervisor/conf.d/
 chown root.root /etc/supervisor/conf.d/celeryd.conf
 chown root.root /etc/supervisor/conf.d/gunicorn_ddrlocal.conf
 chmod 644 /etc/supervisor/conf.d/celeryd.conf
 chmod 644 /etc/supervisor/conf.d/gunicorn_ddrlocal.conf
-
-supervisorctl reload
-supervisorctl restart celery
-supervisorctl restart ddrlocal
+/etc/init.d/supervisor restart
 
 cp /usr/local/src/ddr-local/debian/conf/ddrlocal.conf /etc/nginx/sites-available
 ln -s /etc/nginx/sites-available/ddrlocal.conf /etc/nginx/sites-enabled

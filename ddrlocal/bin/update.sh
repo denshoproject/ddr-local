@@ -41,20 +41,18 @@ cp /usr/local/src/ddr-local/debian/conf/settings.py /usr/local/src/ddr-local/ddr
 echo "/etc/nginx/sites-available/ddrlocal.conf"
 cp /usr/local/src/ddr-local/debian/conf/ddrlocal.conf /etc/nginx/sites-available/
 
+echo "/etc/supervisor/supervisord.conf"
+cp /usr/local/src/ddr-local/debian/conf/supervisord.conf /etc/supervisor/
+
+
 echo "/etc/supervisor/conf.d/celeryd.conf"
 cp /usr/local/src/ddr-local/debian/conf/celeryd.conf /etc/supervisor/conf.d/
 
 echo "/etc/supervisor/conf.d/gunicorn_ddrlocal.conf"
 cp /usr/local/src/ddr-local/debian/conf/gunicorn_ddrlocal.conf /etc/supervisor/conf.d/
 
-echo "supervisorctl stop celeryd"
-supervisorctl stop celery
-
-echo "supervisorctl stop ddrlocal"
-supervisorctl stop ddrlocal
-
-echo "supervisorctl reload"
-supervisorctl reload
+echo "supervisord restart"
+/etc/init.d/supervisor restart
 
 echo "supervisorctl status"
 supervisorctl status
