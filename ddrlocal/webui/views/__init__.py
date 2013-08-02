@@ -40,6 +40,9 @@ def login( request ):
     if request.method == 'POST':
         form = LoginForm(request.POST)
         if form.is_valid():
+            redirect_uri = form.cleaned_data['next']
+            if not redirect_uri:
+                redirect_uri = reverse('webui-index')
             s = api.login(request,
                           form.cleaned_data['username'],
                           form.cleaned_data['password'])
@@ -47,11 +50,13 @@ def login( request ):
                 messages.success(
                     request,
                     WEBUI_MESSAGES['LOGIN_SUCCESS'].format(form.cleaned_data['username']))
-                return HttpResponseRedirect( reverse('webui-index') )
+                return HttpResponseRedirect(redirect_uri)
             else:
                 messages.warning(request, WEBUI_MESSAGES['LOGIN_FAIL'])
     else:
-        form = LoginForm()
+        form = LoginForm(initial={'next':request.GET.get('next',''),})
+        # Using "initial" rather than passing in data dict lets form include
+        # redirect link without complaining about blank username/password fields.
     return render_to_response(
         'webui/login.html',
         {'form': form,},

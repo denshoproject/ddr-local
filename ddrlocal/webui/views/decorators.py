@@ -12,8 +12,7 @@ def login_required(func):
         git_name = request.session.get('git_name')
         git_mail = request.session.get('git_mail')
         if not (git_name and git_mail):
-            url = reverse('webui-login')
-            #url = '%s?next=%s'.format(reverse('webui-login'), request.META['PATH_INFO'])
+            url = '{}?next={}'.format(reverse('webui-login'), request.META['PATH_INFO'])
             return HttpResponseRedirect(url)
         return func(request, *args, **kwargs)
     return inner
