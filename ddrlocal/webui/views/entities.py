@@ -2,6 +2,7 @@ import json
 import os
 
 from bs4 import BeautifulSoup
+import requests
 
 from django.conf import settings
 from django.contrib import messages
@@ -36,6 +37,7 @@ def detail( request, repo, org, cid, eid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     epath = Entity.entity_path(request,repo,org,cid,eid)
     entity = Entity.from_json(epath)
+    tasks = request.session.get('celery-tasks', [])
     return render_to_response(
         'webui/entities/detail.html',
         {'repo': entity.repo,
@@ -44,7 +46,8 @@ def detail( request, repo, org, cid, eid ):
          'eid': entity.eid,
          'collection_uid': collection.id,
          'collection': collection,
-         'entity': entity,},
+         'entity': entity,
+         'tasks': tasks,},
         context_instance=RequestContext(request, processors=[])
     )
 

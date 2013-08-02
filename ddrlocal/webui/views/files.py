@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 import os
 
@@ -81,6 +82,7 @@ def new( request, repo, org, cid, eid, role='master' ):
             role = form.cleaned_data['role']
             sort = form.cleaned_data['sort']
             label = form.cleaned_data['label']
+            # start tasks
             result = entity_add_file.apply_async(
                 (git_name, git_mail, entity, src_path, role, sort, label),
                 countdown=2)
@@ -88,12 +90,25 @@ def new( request, repo, org, cid, eid, role='master' ):
             entity.files_log(1,'ddrlocal.webui.file.new: START')
             entity.files_log(1,'task_id: %s' % result.task_id)
             entity.files_log(1,'Locking %s' % entity.id)
+            # lock entity
             lockstatus = entity.lock(result.task_id)
             if lockstatus == 'ok':
                 entity.files_log(1, 'locked')
             else:
                 entity.files_log(0, lockstatus)
+            # add celery task_id to session
+            tasks = request.session.get('celery-tasks', [])
+            if result.task_id not in tasks:
+                task = {'task_id': result.task_id,
+                        'action': 'webui-file-new-%s' % role,
+                        'filename': os.path.basename(src_path),
+                        'entity_id': entity.id,
+                        'start': datetime.now(),}
+                tasks.append(task)
+            request.session['celery-tasks'] = tasks
+            # feedback
             messages.success(request, WEBUI_MESSAGES['VIEWS_FILES_UPLOADING'] % (os.path.basename(src_path), result))
+            # redirect to entity
             return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     else:
         data = {'role':role,

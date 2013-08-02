@@ -121,6 +121,13 @@ form .helptext { color:#aaa; }
 {% endfor %}
 
 
+{% for task in celery_tasks %}
+<div class="alert alert-info">
+  <button type="button" class="close" data-dismiss="alert">&times;</button>
+  {{ task }}
+</div>
+{% endfor %}
+
 
     </div><!-- .span12 -->
   </div><!-- .row-fluid -->

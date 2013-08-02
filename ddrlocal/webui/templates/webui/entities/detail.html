@@ -23,8 +23,10 @@
 
 <div id="overview">
 <h3>
-{% if entity.locked %}<a class="muted" title="This entity is locked">edit</a>
-{% else %}<a href="{% url "webui-entity-edit" repo org cid eid %}">edit</a>
+{% if entity.locked %}
+<a class="muted" title="This entity is locked">edit [locked]</a><br/>
+{% else %}
+<a href="{% url "webui-entity-edit" repo org cid eid %}">edit</a>
 {% endif %}
 </h3>
 <dl class="dl-horizontal">
