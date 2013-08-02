@@ -70,7 +70,7 @@ form .helptext { color:#aaa; }
 <p id="user-info" class="navbar-text pull-right">
     
 {% if username %}
-    {{ username }} / <a href="{% url "webui-logout" %}">Log out</a>
+    {{ username }} / <a href="{% url "webui-logout" %}?redirect={{ logout_next }}">Log out</a>
 {% else %}
     <a href="{% url "webui-login" %}">Log in</a>
 {% endif %}

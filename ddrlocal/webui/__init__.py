@@ -10,7 +10,7 @@ WEBUI_MESSAGES = {
     'LOGIN_REQUIRED': 'Login is required',
     'LOGIN_SUCCESS': 'Logged in as <strong>{}</strong>.', # username
     'LOGIN_FAIL': "Couldn't log in. Please enter a valid username and password.", # status code
-    'LOGOUT_SUCCESS': 'Logged out',
+    'LOGOUT_SUCCESS': 'Logged out <strong>{}</strong>.', # username
     'LOGOUT_FAIL': "Couldn't log out ({}).", # status code
     
     # webui.views.collections

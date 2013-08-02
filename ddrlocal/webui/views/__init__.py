@@ -64,15 +64,19 @@ def login( request ):
     )
 
 def logout( request ):
+    redirect_uri = request.GET.get('redirect',None)
+    if not redirect_uri:
+        redirect_uri = reverse('webui-index')
     status = api.logout()
     if status == 'ok':
+        username = request.session.get('username')
         # remove user info from session
         request.session['workbench_sessionid'] = None
         request.session['username'] = None
         request.session['git_name'] = None
         request.session['git_mail'] = None
         # feedback
-        messages.success(request, WEBUI_MESSAGES['LOGOUT_SUCCESS'])
+        messages.success(request, WEBUI_MESSAGES['LOGOUT_SUCCESS'].format(username))
     else:
         messages.warning(request, WEBUI_MESSAGES['LOGOUT_FAIL'].format(status))
-    return HttpResponseRedirect( reverse('webui-index') )
+    return HttpResponseRedirect(redirect_uri)
