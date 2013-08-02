@@ -63,7 +63,18 @@ Reload this page.<br/>
 
 {% endif %}
 
+
+{% if remount_uri %}
+<h4>
+&laquo; <a href="{{ remount_uri }}">Back to {{ remount_uri }}</a>
+</h4>
+{% endif %}
+
+
 <div class="muted">
+
+<p>&nbsp;</p>
+
 <h4>Help / Troubleshooting</h4>
 
 <dl>
@@ -173,15 +184,6 @@ Reload this page.<br/>
 
 </dl>
 </div>
-
-<p>
-remount_uri:
-{% if removables_mounted %}
-<a href="{{ remount_uri }}">{{ remount_uri }}</a>
-{% else %}
-{{ remount_uri }}
-{% endif %}
-</p>
 
     </div><!-- .span12 -->
   </div><!-- .row-fluid -->
