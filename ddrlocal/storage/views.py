@@ -2,6 +2,7 @@ import logging
 logger = logging.getLogger(__name__)
 import os
 
+from django.conf import settings
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
@@ -12,7 +13,6 @@ from DDR import commands
 
 from storage import STORAGE_MESSAGES
 from storage import base_path, mount, unmount
-from storage import REMOUNT_POST_REDIRECT_URL_SESSION_KEY
 from storage.forms import MountForm, UmountForm
 
 
@@ -56,7 +56,7 @@ def index( request ):
          'removables_mounted': mounted,
          'mount_form': mount_form,
          'umount_form': umount_form,
-         'remount_uri': request.session.get(REMOUNT_POST_REDIRECT_URL_SESSION_KEY, None),
+         'remount_uri': request.session.get(settings.REDIRECT_URL_SESSION_KEY, None),
         },
         context_instance=RequestContext(request, processors=[])
     )
@@ -67,7 +67,7 @@ def remount0( request ):
     while remount1 is running.
     """
     remount_uri = request.session.get(
-        REMOUNT_POST_REDIRECT_URL_SESSION_KEY,
+        settings.REDIRECT_URL_SESSION_KEY,
         reverse('storage-index'))
     return render_to_response(
         'storage/remount.html',
@@ -86,7 +86,7 @@ def remount1( request ):
     We need to unmount from the old device file and remount with the new
     device file that we get from looking directly at the system's device info.
     """
-    remount_uri = request.session.get(REMOUNT_POST_REDIRECT_URL_SESSION_KEY, None)
+    remount_uri = request.session.get(settings.REDIRECT_URL_SESSION_KEY, None)
     # device label
     label = request.session.get('storage_label', None)
     # current "mounted" devicefile
@@ -112,7 +112,7 @@ def remount1( request ):
     if remount_attempted and mount_path:
         url = remount_uri
         if url and (not url.find('remount') > -1):
-            del request.session[REMOUNT_POST_REDIRECT_URL_SESSION_KEY]
+            del request.session[settings.REDIRECT_URL_SESSION_KEY]
     # just to be sure we have a url...
     if not url:
         url = reverse('storage-index')

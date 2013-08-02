@@ -27,9 +27,6 @@ STORAGE_MESSAGES = {
 
 
 
-REMOUNT_POST_REDIRECT_URL_SESSION_KEY = 'remount_redirect_uri'
-
-
 BASE_PATH_TIMEOUT = 60 * 30  # 30 min
 BASE_PATH_DEFAULT = '/tmp/ddr'
 

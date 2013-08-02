@@ -10,7 +10,6 @@ from DDR import commands
 
 from storage import STORAGE_MESSAGES
 from storage import base_path
-from storage import REMOUNT_POST_REDIRECT_URL_SESSION_KEY
 
 
 
@@ -37,9 +36,9 @@ def storage_required(func):
         if not readable:
             status,msg = commands.storage_status(basepath)
             remount_uri = request.META.get('PATH_INFO',None)
-            request.session[REMOUNT_POST_REDIRECT_URL_SESSION_KEY] = remount_uri
+            request.session[settings.REDIRECT_URL_SESSION_KEY] = remount_uri
             if msg == 'unmounted':
-                messages.debug(request, '<b>{}</b>: {}'.format(REMOUNT_POST_REDIRECT_URL_SESSION_KEY, remount_uri))
+                messages.debug(request, '<b>{}</b>: {}'.format(settings.REDIRECT_URL_SESSION_KEY, remount_uri))
                 return HttpResponseRedirect(reverse('storage-remount0'))
             else:
                 messages.error(request, STORAGE_MESSAGES['ERROR'])
