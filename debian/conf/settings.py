@@ -72,6 +72,8 @@ DATETIME_FORMAT_FORM = '%Y-%m-%d %H:%M:%S'
 # when redirected to either login or storage remount page
 REDIRECT_URL_SESSION_KEY = 'remount_redirect_uri'
 
+CELERY_TASKS_SESSION_KEY = 'celery-tasks'
+
 # ----------------------------------------------------------------------
 
 import djcelery

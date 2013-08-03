@@ -215,4 +215,4 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
             entity.files_log(0, 'entity_annex_add: ERROR')
         
     entity.files_log(1, 'ddrlocal.webui.tasks.add_file: FINISHED')
-    return f
+    return f.__dict__

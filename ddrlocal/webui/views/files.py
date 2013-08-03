@@ -96,16 +96,19 @@ def new( request, repo, org, cid, eid, role='master' ):
                 entity.files_log(1, 'locked')
             else:
                 entity.files_log(0, lockstatus)
+            
+
             # add celery task_id to session
-            tasks = request.session.get('celery-tasks', [])
-            if result.task_id not in tasks:
-                task = {'task_id': result.task_id,
-                        'action': 'webui-file-new-%s' % role,
-                        'filename': os.path.basename(src_path),
-                        'entity_id': entity.id,
-                        'start': datetime.now(),}
-                tasks.append(task)
-            request.session['celery-tasks'] = tasks
+            celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
+            task = {'task_id': result.task_id,
+                    'action': 'webui-file-new-%s' % role,
+                    'filename': os.path.basename(src_path),
+                    'entity_id': entity.id,
+                    'start': datetime.now(),}
+            celery_tasks[result.task_id] = task
+            #del request.session[settings.CELERY_TASKS_SESSION_KEY]
+            request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
+            
             # feedback
             messages.success(request, WEBUI_MESSAGES['VIEWS_FILES_UPLOADING'] % (os.path.basename(src_path), result))
             # redirect to entity
