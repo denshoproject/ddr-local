@@ -13,7 +13,8 @@ from DDR import commands
 
 from webui import WEBUI_MESSAGES
 from webui import api
-from webui.forms import LoginForm
+from webui.forms import LoginForm, TaskDismissForm
+from webui.tasks import dismiss_session_task
 
 # helpers --------------------------------------------------------------
 
@@ -80,3 +81,31 @@ def logout( request ):
     else:
         messages.warning(request, WEBUI_MESSAGES['LOGOUT_FAIL'].format(status))
     return HttpResponseRedirect(redirect_uri)
+
+
+
+def tasks( request ):
+    """Show pending/successful/failed tasks; UI for dismissing tasks.
+    """
+    if request.method == 'POST':
+        form = TaskDismissForm(request.POST)
+        if form.is_valid():
+            # dismiss task notification
+            task_id = None
+            for key in request.POST.keys():
+                if key.find('task_id') > -1:
+                    label,task_id = key.split(':')
+            if task_id:
+                dismiss_session_task(request, task_id)
+            # redirect
+            redirect_uri = form.cleaned_data['next']
+            if not redirect_uri:
+                redirect_uri = reverse('webui-index')
+            return HttpResponseRedirect(redirect_uri)
+    else:
+        form = TaskDismissForm(initial={'next':request.GET.get('next',''),})
+    return render_to_response(
+        'webui/tasks.html',
+        {'form': form,},
+        context_instance=RequestContext(request, processors=[])
+    )

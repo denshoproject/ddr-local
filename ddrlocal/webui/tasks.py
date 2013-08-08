@@ -255,3 +255,13 @@ def session_tasks( request ):
             tasks[task['id']] = ctask
     # done
     return tasks.values
+
+def dismiss_session_task( request, task_id ):
+    """Dismiss a task from session_tasks.
+    """
+    newtasks = {}
+    tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
+    for tid in tasks.keys():
+        if tid != task_id:
+            newtasks[tid] = tasks[tid]
+    request.session[settings.CELERY_TASKS_SESSION_KEY] = newtasks

@@ -5,7 +5,7 @@ urlpatterns = patterns(
     '',
     url(r'^login/$', 'webui.views.login', name='webui-login'),
     url(r'^logout/$', 'webui.views.logout', name='webui-logout'),
-    url(r'^working/$', TemplateView.as_view(template_name="webui/working.html"), name='webui-working'),
+    url(r'^tasks/$', 'webui.views.tasks', name='webui-tasks'),
 
     # collections
 
