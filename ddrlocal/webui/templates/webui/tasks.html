@@ -15,23 +15,38 @@
 
 <h1>Tasks</h1>
 
-<table id="tasks">
+<table id="tasks" class="table">
 <form name="task-dismiss" action="" method="post">{% csrf_token %}
   {{ form.next }}
 {% for task in celery_tasks %}
   <tr>
     <td class="status {{ task.status }}">
-      {{ task.status }}
+{{ task.status }}
+    </td>
+    <td width="100">
+{{ task.start|timesince }} ago
     </td>
     <td>
-      {{ task.start|date:"Y-m-d H:i:s" }}
+{{ task.message|safe }}
+<div id="{{ task.task_id }}" class="muted collapse">
+  <table class="table table-condensed">
+{% for key, value in task.items %}
+    <tr>
+      <th><small>{{ key }}</small></th>
+      <td><small>{{ value }}</small></td>
+    </tr>
+{% endfor %}
+  </table>
+</div>
     </td>
     <td>
-      {{ task.message|safe }}
+<button type="button" class="btn btn-mini btn-link" data-toggle="collapse" data-target="#{{ task.task_id }}">
+more&nbsp;info
+</button>
     </td>
     <td>
 {% if task.dismissable %}
-      <input type="submit" name="task_id:{{ task.task_id }}" value="dismiss" class="btn-mini btn-link" />
+<input type="submit" name="task_id:{{ task.task_id }}" value="dismiss" class="btn-mini btn-link" />
 {% endif %}
     </td>
   </tr>
