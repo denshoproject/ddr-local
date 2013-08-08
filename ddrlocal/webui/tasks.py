@@ -7,8 +7,11 @@ from celery import Task
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
-from django.contrib import messages
+import requests
+
 from django.conf import settings
+from django.contrib import messages
+from django.core.urlresolvers import reverse
 
 from ddrlocal.models import DDRLocalEntity, DDRFile, hash
 
@@ -216,3 +219,39 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
         
     entity.files_log(1, 'ddrlocal.webui.tasks.add_file: FINISHED')
     return f.__dict__
+
+
+
+def session_tasks( request ):
+    """Gets task statuses from Celery API, appends to task dicts from session.
+    """
+    tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
+    # add entity URLs
+    for task_id in tasks.keys():
+        task = tasks.get(task_id, None)
+        if task:
+            repo,org,cid,eid = task['entity_id'].split('-')
+            task['entity_url'] = reverse('webui-entity', args=[repo,org,cid,eid])
+    # get status, retval from celery
+    for task_id in tasks.keys():
+        url = 'http://127.0.0.1/%s' % reverse('celery-task_status', args=[task_id])
+        r = requests.get(url)
+        try:
+            data = r.json()
+            task = data['task']
+        except:
+            task = None
+        if task:
+            ctask = tasks[task['id']]
+            ctask['status'] = task.get('status', None)
+            ctask['result'] = task.get('result', None)
+            if ctask.get('result', None):
+                url = reverse('webui-file', args=[ctask['result']['repo'],
+                                                  ctask['result']['org'],
+                                                  ctask['result']['cid'],
+                                                  ctask['result']['eid'],
+                                                  ctask['result']['sha1'],])
+                ctask['file_url'] = url
+            tasks[task['id']] = ctask
+    # done
+    return tasks.values
