@@ -273,7 +273,7 @@ def session_tasks( request ):
             ctask = tasks[task['id']]
             ctask['status'] = task.get('status', None)
             ctask['result'] = task.get('result', None)
-            if ctask.get('result', None):
+            if ctask['result']:
                 url = reverse('webui-file', args=[ctask['result']['repo'],
                                                   ctask['result']['org'],
                                                   ctask['result']['cid'],
