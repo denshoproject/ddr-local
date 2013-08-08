@@ -10,6 +10,7 @@ def sitewide(request):
     elif logout_next.find('new') > -1:   logout_next = logout_next.split('new')[0]
     elif logout_next.find('batch') > -1: logout_next = logout_next.split('batch')[0]
     return {
+        'request': request,
         # user info
         'username': request.session.get('username', None),
         'git_name': request.session.get('git_name', None),
