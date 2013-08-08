@@ -1,4 +1,4 @@
-from webui.tasks import session_tasks
+from webui.tasks import session_tasks_list
 
 
 def sitewide(request):
@@ -15,6 +15,6 @@ def sitewide(request):
         'username': request.session.get('username', None),
         'git_name': request.session.get('git_name', None),
         'git_mail': request.session.get('git_mail', None),
-        'celery_tasks': session_tasks(request),
+        'celery_tasks': session_tasks_list(request),
         'logout_next': logout_next,
     }

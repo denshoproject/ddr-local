@@ -252,6 +252,9 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
 
 def session_tasks( request ):
     """Gets task statuses from Celery API, appends to task dicts from session.
+    
+    @param request: A Django request object
+    @return tasks: a dict with task_id for key
     """
     tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
     # add entity URLs
@@ -300,7 +303,17 @@ def session_tasks( request ):
         if task.get('status', None):
             task['dismissable'] = (task['status'] in TASK_STATUSES_DISMISSABLE)
     # done
-    return tasks.values
+    return tasks
+
+def session_tasks_list( request ):
+    """session_tasks as a list, sorted in reverse chronological order.
+    
+    @param request: A Django request object
+    @return tasks: A list of task dicts.
+    """
+    return sorted(session_tasks(request).values(),
+                  key=lambda t: t['start'],
+                  reverse=True)
 
 def dismiss_session_task( request, task_id ):
     """Dismiss a task from session_tasks.
