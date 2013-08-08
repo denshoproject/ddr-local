@@ -60,7 +60,7 @@ GENRE_CHOICES = [['advertisement','Advertisement'],
                     ['timetable','Timetable'],
                     ['transcription','Transcription'],]
 
-FORMAT_CHOICES = [['photo','Photo'],
+FORMAT_CHOICES = [['img','Still Image'],
                     ['doc','Document'],
                     ['vh','Oral History'],]
 
