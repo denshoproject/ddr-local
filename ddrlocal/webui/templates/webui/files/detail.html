@@ -41,7 +41,12 @@
     <td>sort</td><td>{{ file.sort }}</td>
   </tr>
   <tr>
-    <td>xmp</td><td>{{ file.xmp }}</td>
+    <td>size</td><td>{{ file.size|filesizeformat }}</td>
+  </tr>
+  <tr>
+    <td>path</td><td>{{ file.path }}</td>
+  <tr>
+    <td>original name</td><td>{{ file.basename_orig }}</td>
   </tr>
 </table>
 
@@ -54,23 +59,12 @@
 {% endif %}
 
 <table class="table table-condensed table-striped muted">
-  <tr>
-    <td>path</td>
-    <td>
-    {{ file.path }}<br/>
-    </td>
-  </tr>
-  <tr>
-    <td>size</td><td>{{ file.size }} ({{ file.size|filesizeformat }})</td>
   </tr>
 <!--
   <tr>
     <td>src</td><td>{{ file.src }}</td>
   </tr>
 -->
-  <tr>
-    <td>basename_orig</td><td>{{ file.basename_orig }}</td>
-  </tr>
   <tr>
     <td>SHA256</td><td>{{ file.sha256 }}</td>
   </tr>
@@ -79,6 +73,9 @@
   </tr>
   <tr>
     <td>MD5</td><td>{{ file.md5 }}</td>
+  </tr>
+  <tr>
+    <td>xmp</td><td>{{ file.xmp }}</td>
   </tr>
 </table>
 
