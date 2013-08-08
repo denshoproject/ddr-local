@@ -41,6 +41,11 @@ table#removables label { margin-right:20px; }
 form th { vertical-align:top; }
 form label { font-weight:bold; }
 form .helptext { color:#aaa; }
+
+/* celery tasks */
+.status.FAILED { color:red; }
+.status.PENDING { color:orange; }
+.status.SUCCESS { color:green; }
 </style>
 
 {% block pagecss %}{% endblock %}
@@ -121,13 +126,19 @@ form .helptext { color:#aaa; }
 {% endfor %}
 
 
-celery_tasks: {{ celery_tasks }}
-{% for task in celery_tasks %}
+{% if celery_tasks %}
 <div class="alert alert-info">
   <button type="button" class="close" data-dismiss="alert">&times;</button>
-  {{ task }}
-</div>
+  <a href="{% url "webui-tasks" %}?next={{ logout_next }}">Background Tasks &mdash;
+
+{% regroup celery_tasks by status as celery_tasks_status %}
+{% for status in celery_tasks_status %}
+<span class="status {{ status.grouper }}">{{ status.grouper }}:{{ status.list|length }}</span>
 {% endfor %}
+
+</a>
+</div>
+{% endif %}
 
 
     </div><!-- .span12 -->
