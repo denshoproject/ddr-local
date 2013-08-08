@@ -30,7 +30,9 @@
       {{ task.message|safe }}
     </td>
     <td>
-      <input type="submit" name="task_id:{{ task.task_id }}" value="dismiss" class="btn-mini btn-link" /> 
+{% if task.dismissable %}
+      <input type="submit" name="task_id:{{ task.task_id }}" value="dismiss" class="btn-mini btn-link" />
+{% endif %}
     </td>
   </tr>
 {% endfor %}

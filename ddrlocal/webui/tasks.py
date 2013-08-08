@@ -19,6 +19,9 @@ from DDR.commands import entity_annex_add
 
 
 
+TASK_STATUSES = ['STARTED', 'PENDING', 'SUCCESS', 'FAILURE', 'RETRY', 'REVOKED',]
+TASK_STATUSES_DISMISSABLE = ['STARTED', 'SUCCESS', 'FAILURE', 'RETRY', 'REVOKED',]
+
 # Background task status messages.
 # IMPORTANT: These are templates.  Arguments (words in {parentheses}) MUST match keys in the task dict. 
 # See "Accessing arguments by name" section on http://docs.python.org/2.7/library/string.html#format-examples
@@ -291,6 +294,11 @@ def session_tasks( request ):
         if template:
             msg = template.format(**task)
             task['message'] = msg
+    # can dismiss or not
+    for task_id in tasks.keys():
+        task = tasks[task_id]
+        if task.get('status', None):
+            task['dismissable'] = (task['status'] in TASK_STATUSES_DISMISSABLE)
     # done
     return tasks.values
 
