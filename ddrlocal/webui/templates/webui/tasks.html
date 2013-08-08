@@ -19,21 +19,15 @@
 <form name="task-dismiss" action="" method="post">{% csrf_token %}
   {{ form.next }}
 {% for task in celery_tasks %}
-<!--
-{{ task|safe }}
--->
   <tr>
     <td class="status {{ task.status }}">
       {{ task.status }}
-      &nbsp;
-      &nbsp;
     </td>
     <td>
-      {{ task.start|date:"Y-m-d H:i:s" }}:
-      Upload <a href="{{ task.file_url }}">{{ task.filename }}</a>
-      to <a href="{{ task.entity_url }}">{{ task.entity_id }}</a>.
-      &nbsp;
-      &nbsp;
+      {{ task.start|date:"Y-m-d H:i:s" }}
+    </td>
+    <td>
+      {{ task.message|safe }}
     </td>
     <td>
       <input type="submit" name="task_id:{{ task.task_id }}" value="dismiss" class="btn-mini btn-link" /> 

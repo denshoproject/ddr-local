@@ -18,6 +18,31 @@ from ddrlocal.models import DDRLocalEntity, DDRFile, hash
 from DDR.commands import entity_annex_add
 
 
+
+# Background task status messages.
+# IMPORTANT: These are templates.  Arguments (words in {parentheses}) MUST match keys in the task dict. 
+# See "Accessing arguments by name" section on http://docs.python.org/2.7/library/string.html#format-examples
+TASK_STATUS_MESSAGES = {
+    'webui-file-new-master': {
+        #'STARTED': '',
+        'PENDING': 'Uploading <b>{filename}</b> to <a href="{entity_url}">{entity_id}</a>.',
+        'SUCCESS': 'Uploaded <a href="{file_url}">{filename}</a> to <a href="{entity_url}">{entity_id}</a>.',
+        'FAILURE': 'Could not upload <a href="{file_url}">{filename}</a> to <a href="{entity_url}">{entity_id}</a>.',
+        #'RETRY': '',
+        #'REVOKED': '',
+        },
+    'webui-file-new-mezzanine': {
+        #'STARTED': '',
+        'PENDING': 'Uploading <b>{filename}</b> to <a href="{entity_url}">{entity_id}</a>.',
+        'SUCCESS': 'Uploaded <a href="{file_url}">{filename}</a> to <a href="{entity_url}">{entity_id}</a>.',
+        'FAILURE': 'Could not upload <a href="{file_url}">{filename}</a> to <a href="{entity_url}">{entity_id}</a>.',
+        #'RETRY': '',
+        #'REVOKED': '',
+        },
+}
+
+
+
 class DebugTask(Task):
     abstract = True
         
@@ -253,6 +278,19 @@ def session_tasks( request ):
                                                   ctask['result']['sha1'],])
                 ctask['file_url'] = url
             tasks[task['id']] = ctask
+    # pretty status messages
+    for task_id in tasks.keys():
+        task = tasks[task_id]
+        action = task.get('action', None)
+        if action:
+            messages = TASK_STATUS_MESSAGES.get(action, None)
+        status = task.get('status', None)
+        template = None
+        if messages and status:
+            template = messages.get(status, None)
+        if template:
+            msg = template.format(**task)
+            task['message'] = msg
     # done
     return tasks.values
 

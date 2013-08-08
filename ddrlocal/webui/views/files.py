@@ -100,6 +100,7 @@ def new( request, repo, org, cid, eid, role='master' ):
 
             # add celery task_id to session
             celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
+            # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
             task = {'task_id': result.task_id,
                     'action': 'webui-file-new-%s' % role,
                     'filename': os.path.basename(src_path),
