@@ -19,6 +19,7 @@ WEBUI_MESSAGES = {
     'VIEWS_COLL_ERR_NO_IDS': 'Error: Could not get new collection IDs from workbench.',
     'VIEWS_COLL_ERR_CREATE': 'Error: Could not create new collection.',
     'VIEWS_COLL_UPDATED': 'Collection updated',
+    'VIEWS_COLL_LOCKED': 'Collection is locked: <strong>{}</strong>', # collection_id
     
     # webui.views.entities
     'VIEWS_ENT_CREATED': 'New entity created: {}', # entity id

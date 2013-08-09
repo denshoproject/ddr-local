@@ -141,6 +141,9 @@ def ead_xml( request, repo, org, cid ):
 @storage_required
 def sync( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    if collection.locked():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
+        return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
     if request.method == 'POST':
         git_name = request.session.get('git_name')
         git_mail = request.session.get('git_mail')
@@ -194,6 +197,9 @@ def edit( request, repo, org, cid ):
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    if collection.locked():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
+        return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
     if request.method == 'POST':
         form = CollectionForm(request.POST)
         if form.is_valid():
@@ -239,6 +245,9 @@ def edit_ead( request, repo, org, cid ):
     - commands.update
     """
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    if collection.locked():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
+        return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
     ead_path_rel = 'ead.xml'
     ead_path_abs = os.path.join(collection.path, ead_path_rel)
     #

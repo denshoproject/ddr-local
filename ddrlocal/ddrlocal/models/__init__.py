@@ -46,6 +46,61 @@ class DDRLocalCollection( DDRCollection ):
     def collection_path(request, repo, org, cid):
         return os.path.join(settings.MEDIA_BASE, '{}-{}-{}'.format(repo, org, cid))
     
+    def _lockfile( self ):
+        return os.path.join(self.path, 'lock')
+     
+    def lock( self, task_id ):
+        """Writes lockfile to collection dir; complains if can't.
+        
+        Celery tasks don't seem to know their own task_id, and there don't
+        appear to be any handlers that can be called just *before* a task
+        is fired. so it appears to be impossible for a task to lock itself.
+        
+        This method should(?) be called immediately after starting the task:
+        >> result = collection_sync.apply_async((args...), countdown=2)
+        >> lock_status = collection.lock(result.task_id)
+
+        @param task_id
+        @returns 'ok' or 'locked'
+        """
+        path = self._lockfile()
+        if os.path.exists(path):
+            return 'locked'
+        with open(self._lockfile(), 'w') as f:
+            f.write(task_id)
+        return 'ok'
+     
+    def unlock( self, task_id ):
+        """Removes lockfile or complains if can't
+        
+        This method should be called by celery Task.after_return()
+        See "Abstract classes" section of http://celery.readthedocs.org/en/latest/userguide/tasks.html#custom-task-classes
+        
+        @param task_id
+        @returns 'ok', 'not locked', 'task_id miss', 'blocked'
+        """
+        path = self._lockfile()
+        if not os.path.exists(path):
+            return 'not locked'
+        with open(path, 'r') as f:
+            lockfile_task_id = f.read().strip()
+        if lockfile_task_id and (lockfile_task_id != task_id):
+            return 'task_id miss'
+        os.remove(path)
+        if os.path.exists(path):
+            return 'blocked'
+        return 'ok'
+    
+    def locked( self ):
+        """Indicates whether collection is locked; if locked returns celery task_id.
+        """
+        path = self._lockfile()
+        if os.path.exists(path):
+            with open(path, 'r') as f:
+                task_id = f.read().strip()
+            return task_id
+        return False
+    
     @staticmethod
     def create(path):
         """Creates a new collection with the specified collection ID.

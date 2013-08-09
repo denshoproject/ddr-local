@@ -14,9 +14,13 @@
     <div class="span12">
 
 <div id="admin" style="float:right; margin-left:10px;">
+{% if collection.locked %}
+    <input class="btn muted" name="sync" type="submit" value="Sync [locked]"/>
+{% else %}
   <form name="collection-sync" action="{% url "webui-collection-sync" repo org cid %}" method="POST">{% csrf_token %}
     <input class="btn btn-primary" name="sync" type="submit" value="Sync"/>
   </form>
+{% endif %}
 </div>
 
 <h1>{{ collection.title }}</h1>
@@ -28,7 +32,13 @@
 
 
 <div id="overview">
-<h3><a href="{% url "webui-collection-edit" repo org cid %}">edit</a></h3>
+<p>
+{% if collection.locked %}
+<a class="btn btn-mini muted" title="This collection is locked">Edit [locked]</a><br/>
+{% else %}
+<a class="btn btn-mini" href="{% url "webui-collection-edit" repo org cid %}">Edit</a>
+{% endif %}
+</p>
 <dl class="dl-horizontal">
 {% for lv in collection.labels_values %}
   {% if lv.value %}<dt>{{ lv.label }}</dt><dd>{{ lv.value|linebreaks }}</dd>{% endif %}
@@ -51,7 +61,13 @@ Entities
     </a>
   </li>
 {% endfor %}
-  <li><a href="{% url "webui-entity-new" repo org cid %}">New entity</a></li>
+  <li>
+{% if collection.locked %}
+    <a class="muted" title="This collection is locked">New entity [locked]</a>
+{% else %}
+    <a href="{% url "webui-entity-new" repo org cid %}">New entity</a>
+{% endif %}
+  </li>
 </ul>
 {% if entities %}
 <a class="pull-right" href="{% url "webui-collection-entities" repo org cid %}">more &raquo;</a>
