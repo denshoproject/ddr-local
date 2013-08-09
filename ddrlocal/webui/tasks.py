@@ -264,11 +264,15 @@ def session_tasks( request ):
             repo,org,cid,eid = task['entity_id'].split('-')
             task['entity_url'] = reverse('webui-entity', args=[repo,org,cid,eid])
     # get status, retval from celery
+    # TODO Don't create a new ctask/task dict here!!! >:-O
     for task_id in tasks.keys():
         url = 'http://127.0.0.1/%s' % reverse('celery-task_status', args=[task_id])
         r = requests.get(url)
+        traceback = None
         try:
             data = r.json()
+            if data.get('task', None) and data['task'].get('traceback', None):
+                traceback = data['task']['traceback']
             task = data['task']
         except:
             task = None
@@ -320,6 +324,9 @@ def session_tasks( request ):
         task = tasks[task_id]
         if task.get('status', None):
             task['dismissable'] = (task['status'] in TASK_STATUSES_DISMISSABLE)
+    # include traceback in task if present
+    if traceback:
+        task['traceback'] = traceback
     # done
     return tasks
 
