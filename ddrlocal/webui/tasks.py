@@ -172,6 +172,7 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
             else:
                 entity.files_log(1, 'no XMP data')
         except:
+            # TODO would be nice to know why XMP extract failed
             entity.files_log(0, 'XMP extract FAIL')
         
         # task: copy
@@ -179,6 +180,7 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
         try:
             shutil.copy(src_path, dest_path)
         except:
+            # TODO would be nice to know why copy failed
             entity.files_log(0, 'copy FAIL')
         if os.path.exists(dest_path):
             cp_successful = True
@@ -193,6 +195,7 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
         try:
             thumbnail = f.make_thumbnail('500x500')
         except:
+            # TODO would be nice to know why thumbnail failed
             entity.files_log(0, 'thumbnail FAIL')
         f.thumb = -1
         if thumbnail and hasattr(thumbnail, 'name') and thumbnail.name:
@@ -243,6 +246,7 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
             entity.files_log(1, 'entity_annex_add: exit: %s' % exit)
             entity.files_log(1, 'entity_annex_add: status: %s' % status)
         except:
+            # TODO would be nice to know why entity_annex_add failed
             entity.files_log(0, 'entity_annex_add: ERROR')
         
     entity.files_log(1, 'ddrlocal.webui.tasks.add_file: FINISHED')
