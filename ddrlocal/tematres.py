@@ -1,3 +1,7 @@
+from urlparse import urlparse
+
+import requests
+
 """Interact with a TemaTres vocabulary server.
 """
 
@@ -9,14 +13,17 @@ def get_terms(urls):
     @param urls: List of urls
     @returns list of (url,term) tuples
     """
-    import requests
     terms = []
     for url in urls:
         if url:
-            r = requests.get(url)
-            if (r.status_code == 200) and r.text:
-                json = r.json()
-                terms.append( {'url':url, 'label':json['string']} )
+            u = urlparse(url)
+            if u.scheme and u.netloc and u.path:
+                r = requests.get(url)
+                if (r.status_code == 200) and r.text:
+                    json = r.json()
+                    terms.append( {'url':url, 'label':json['string']} )
+            else:
+                terms.append(url)
     #import grequests
     #rs = (grequests.get(u) for u in urls)
     #responses = grequests.map(rs, size=2)
