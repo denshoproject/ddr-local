@@ -276,13 +276,31 @@ def session_tasks( request ):
             ctask = tasks[task['id']]
             ctask['status'] = task.get('status', None)
             ctask['result'] = task.get('result', None)
-            if ctask['result']:
-                url = reverse('webui-file', args=[ctask['result']['repo'],
-                                                  ctask['result']['org'],
-                                                  ctask['result']['cid'],
-                                                  ctask['result']['eid'],
-                                                  ctask['result']['sha1'],])
-                ctask['file_url'] = url
+            # try to convert 'result' into a collection/entity/file URL
+            if (ctask['status'] != 'FAILURE') and ctask['result']:
+                r = ctask['result']
+                if type(r) == type({}):
+                    if r.get('sha1', None):
+                        url = reverse('webui-file',
+                                      args=[ctask['result']['repo'],
+                                            ctask['result']['org'],
+                                            ctask['result']['cid'],
+                                            ctask['result']['eid'],
+                                            ctask['result']['sha1'],])
+                        ctask['file_url'] = url
+                    elif r.get('eid', None):
+                        url = reverse('webui-entity',
+                                      args=[ctask['result']['repo'],
+                                            ctask['result']['org'],
+                                            ctask['result']['cid'],
+                                            ctask['result']['eid'],])
+                        ctask['entity_url'] = url
+                    elif r.get('cid', None):
+                        url = reverse('webui-collection',
+                                      args=[ctask['result']['repo'],
+                                            ctask['result']['org'],
+                                            ctask['result']['cid'],])
+                        ctask['collection_url'] = url
             tasks[task['id']] = ctask
     # pretty status messages
     for task_id in tasks.keys():
