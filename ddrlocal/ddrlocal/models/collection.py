@@ -264,7 +264,7 @@ COLLECTION_FIELDS = [
             'label':      'Collection ID',
             'help_text':  '',
             'max_length': 255,
-            'widget':     '',
+            'widget':     forms.HiddenInput,
             'initial':    '',
             'required':   True,
         },

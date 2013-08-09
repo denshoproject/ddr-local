@@ -340,7 +340,7 @@ ENTITY_FIELDS = [
             'label':      'Object ID',
             'help_text':  '',
             'max_length': 255,
-            'widget':     '',
+            'widget':     forms.HiddenInput,
             'initial':    '',
             'required':   True,
         },

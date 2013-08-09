@@ -18,6 +18,7 @@
 
 <form name="edit" action="" method="POST">{% csrf_token %}
 <table>
+  <tr><th><label>Object ID:</label></th><td>{{ entity.id }}</td></tr>
   {{ form.as_table }}
 </table>
 <input name="submit" type="submit" value="submit"/><br/>
