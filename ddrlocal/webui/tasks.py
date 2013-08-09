@@ -317,8 +317,12 @@ def session_tasks( request ):
         if messages and status:
             template = messages.get(status, None)
         if template:
-            msg = template.format(**task)
-            task['message'] = msg
+            try:
+                msg = template.format(**task)
+                task['message'] = msg
+            except:
+                if not task.get('message', None):
+                    task['message'] = template
     # can dismiss or not
     for task_id in tasks.keys():
         task = tasks[task_id]
