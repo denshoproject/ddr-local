@@ -265,10 +265,10 @@ def session_tasks( request ):
             task['entity_url'] = reverse('webui-entity', args=[repo,org,cid,eid])
     # get status, retval from celery
     # TODO Don't create a new ctask/task dict here!!! >:-O
+    traceback = None
     for task_id in tasks.keys():
         url = 'http://127.0.0.1/%s' % reverse('celery-task_status', args=[task_id])
         r = requests.get(url)
-        traceback = None
         try:
             data = r.json()
             if data.get('task', None) and data['task'].get('traceback', None):
