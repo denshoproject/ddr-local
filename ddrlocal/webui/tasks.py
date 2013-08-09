@@ -193,7 +193,7 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
         try:
             thumbnail = f.make_thumbnail('500x500')
         except:
-            log(lf, 0, 'thumbnail FAIL')
+            entity.files_log(0, 'thumbnail FAIL')
         f.thumb = -1
         if thumbnail and hasattr(thumbnail, 'name') and thumbnail.name:
             entity.files_log(1, 'thumbnail.name: %s' % thumbnail.name)
