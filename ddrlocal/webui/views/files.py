@@ -89,9 +89,8 @@ def new( request, repo, org, cid, eid, role='master' ):
             result = entity_add_file.apply_async(
                 (git_name, git_mail, entity, src_path, role, sort, label),
                 countdown=2)
-            entity.files_log(1,'------------------------------------------------------------------------')
-            entity.files_log(1,'ddrlocal.webui.file.new: START')
-            entity.files_log(1,'task_id: %s' % result.task_id)
+            entity.files_log(1,'START task_id %s' % result.task_id)
+            entity.files_log(1,'ddrlocal.webui.file.new')
             entity.files_log(1,'Locking %s' % entity.id)
             # lock entity
             lockstatus = entity.lock(result.task_id)

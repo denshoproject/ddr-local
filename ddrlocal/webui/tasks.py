@@ -69,7 +69,7 @@ class DebugTask(Task):
             entity.files_log(1,'unlocked')
         else:
             entity.files_log(0,lockstatus)
-        entity.files_log(1, 'DONE\n')
+        entity.files_log(1, 'END task_id %s\n' % task_id)
 
 
 @task(base=DebugTask, name='entity-add-file')
