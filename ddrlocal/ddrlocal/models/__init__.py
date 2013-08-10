@@ -746,7 +746,7 @@ class DDRFile( object ):
         if entity:
             self.path_abs = os.path.join(entity.path, self.path)
             self.src = os.path.join('base', entity.path_rel, self.path)
-        if self.path_abs:
+        if self.path_abs and os.path.exists(self.path_abs):
             self.size = os.path.getsize(self.path_abs)
         self.basename = os.path.basename(self.path)
     
