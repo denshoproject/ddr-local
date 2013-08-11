@@ -187,8 +187,27 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
             f.set_path(dest_path, entity=entity)
             entity.files_log(1, 'copied: %s' % f.path)
     
-    thumbnail = None
+    access_file = None
+    apath = None
     if f and cp_successful:
+        # task: make access file
+        entity.files_log(1, 'Making access file...')
+        # NOTE: do this before entity_annex_add so don't have to lock/unlock
+        status,result = DDRFile.make_access_file(f.path_abs,
+                                                 settings.ACCESS_FILE_APPEND,
+                                                 settings.ACCESS_FILE_GEOMETRY,
+                                                 settings.ACCESS_FILE_OPTIONS)
+        if status:
+            entity.files_log(0, 'access file FAIL: %s' % result)
+            f.access_rel = None
+        else:
+            access_rel = result
+            f.set_access(access_rel, entity)
+            entity.files_log(1, 'access_rel: %s' % f.access_rel)
+            entity.files_log(1, 'access_abs: %s' % f.access_abs)
+    
+    thumbnail = None
+    if f and cp_successful and apath and os.path.exists(apath):
         # task: make thumbnail
         entity.files_log(1, 'Thumbnailing...')
         # NOTE: do this before entity_annex_add so don't have to lock/unlock
@@ -224,10 +243,6 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
                 f.thumb = 0
                 entity.files_log(0, 'thumbnail not generated')
         entity.files_log(1, 'f.thumb: %s' % f.thumb)
-        
-    if f and cp_successful:
-        # TODO task: make access copy
-        entity.files_log(1, 'TODO access copy')
     
     if f and cp_successful:
         entity.files_log(1, 'Adding %s to entity...' % f)
@@ -250,6 +265,24 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
         except:
             # TODO would be nice to know why entity_annex_add failed
             entity.files_log(0, 'entity_annex_add: ERROR')
+        # access file
+        if f.access_rel:
+            access_basename = os.path.basename(f.access_rel)
+            entity.files_log(1, 'access file: %s' % access_basename)
+            try:
+                entity.files_log(1, 'entity_annex_add(%s, %s, %s, %s, %s)' % (
+                    git_name, git_mail,
+                    entity.parent_path,
+                    entity.id, access_basename))
+                exit,status = entity_annex_add(
+                    git_name, git_mail,
+                    entity.parent_path,
+                    entity.id, access_basename)
+                entity.files_log(1, 'entity_annex_add: exit: %s' % exit)
+                entity.files_log(1, 'entity_annex_add: status: %s' % status)
+            except:
+                # TODO would be nice to know why entity_annex_add failed
+                entity.files_log(0, 'entity_annex_add: ERROR')
         
     entity.files_log(1, 'ddrlocal.webui.tasks.add_file: FINISHED')
     return f.__dict__
