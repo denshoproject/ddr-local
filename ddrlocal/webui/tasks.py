@@ -193,7 +193,9 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
         entity.files_log(1, 'Thumbnailing...')
         # NOTE: do this before entity_annex_add so don't have to lock/unlock
         try:
-            thumbnail = f.make_thumbnail('500x500')
+            thumbnail = DDRFile.make_thumbnail(apath,
+                                               settings.THUMBNAIL_GEOMETRY,
+                                               settings.THUMBNAIL_OPTIONS)
         except:
             # TODO would be nice to know why thumbnail failed
             entity.files_log(0, 'thumbnail FAIL')
