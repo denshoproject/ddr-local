@@ -4,6 +4,7 @@ import json
 import os
 from StringIO import StringIO
 
+import envoy
 import libxmp
 from lxml import etree
 from sorl.thumbnail import default
@@ -790,6 +791,39 @@ class DDRFile( object ):
             str = str.replace('\n','')
             return str
         return None
+    
+    @staticmethod
+    def make_access_file( src_abs, append, geometry, options='' ):
+        """Attempt to make access file.
+        
+        Note: uses Imagemagick 'convert'.
+        
+        @param src_abs: Absolute path to the source file.
+        @param append: string to be appended to end of basename.
+        @param geometry: String (ex: '200x200')
+        @returns status,result: Status bit (0 if OK), Absolute page to access file or error message.
+        """
+        result = 'unknown'
+        status = -1
+        EXTENSION = 'jpg'
+        dest_abs = '%s%s.%s' % (os.path.splitext(src_abs)[0], append, EXTENSION)
+        if 'pdf' in os.path.splitext(src_abs)[1]:
+            pdf_page = '[0]' # only capture the first page
+        else:
+            pdf_page = ''
+        cmd = "convert %s%s -resize '%s' %s" % (src_abs, pdf_page, geometry, dest_abs)
+        r = envoy.run(cmd)
+        status = r.status_code # 0 means everything's okay
+        if status:
+            result = r.std_err
+        else:
+            if os.path.exists(dest_abs) and os.path.getsize(dest_abs):
+                result = dest_abs
+            elif os.path.exists(dest_abs) and not os.path.getsize(dest_abs):
+                status = 2
+                result = 'dest file created but zero length'
+                os.remove(dest_abs)
+        return status,result
     
     @staticmethod
     def make_thumbnail( path_abs, geometry, options={} ):
