@@ -626,6 +626,7 @@ FILEMETA_BLANK = {'sha1':None,
                   'sort':-1,
                   'label':'',
                   'thumb':-1,
+                  'access_rel':None,
                   'xmp':'',}
 FILEMETA_KEYS = FILEMETA_BLANK.keys()
 
@@ -673,6 +674,12 @@ class DDRFile( object ):
     label = FILEMETA_BLANK['label']
     xmp = FILEMETA_BLANK['xmp']
     thumb = FILEMETA_BLANK['thumb']
+    # access file path relative to entity
+    access_rel = FILEMETA_BLANK['access_rel']
+    # access file path relative to /
+    # not saved; constructed on instantiation
+    access_abs = None
+    access_size = None
     # entity
     src = None
     repo = None
@@ -700,6 +707,7 @@ class DDRFile( object ):
         self.label = FILEMETA_BLANK['label']
         self.xmp = FILEMETA_BLANK['xmp']
         self.thumb = FILEMETA_BLANK['thumb']
+        self.set_access(FILEMETA_BLANK['access_rel'])
     
     def __repr__(self):
         return "<DDRFile %s (%s)>" % (self.basename, self.basename_orig)
@@ -727,6 +735,7 @@ class DDRFile( object ):
         f.label  = meta.get('label',  FILEMETA_BLANK['label'])
         f.xmp   = meta.get('xmp',   FILEMETA_BLANK['xmp'])
         f.thumb  = meta.get('thumb',  FILEMETA_BLANK['thumb'])
+        f.set_access(meta.get('access_rel'), entity)
         if f.path:
             f.basename = os.path.basename(f.path)
             f.src = os.path.join('base', entity.path_rel, f.path)
@@ -750,6 +759,25 @@ class DDRFile( object ):
         if self.path_abs and os.path.exists(self.path_abs):
             self.size = os.path.getsize(self.path_abs)
         self.basename = os.path.basename(self.path)
+    
+    def set_access( self, access_rel, entity=None ):
+        """
+        @param access_rel: path relative to entity (ex: 'files/thisfile.ext')
+        @param entity: A DDRLocalEntity object (optional)
+        """
+        if access_rel:
+            self.access_rel = access_rel
+            if entity:
+                self.access_rel = self.access_rel.replace(entity.path, '')
+            if self.access_rel and (self.access_rel[0] == '/'):
+                # remove initial slash (ex: '/files/...')
+                self.access_rel = self.access_rel[1:]
+            if entity:
+                a = os.path.join(entity.path, self.access_rel)
+                if os.path.exists(a):
+                    self.access_abs = a
+            if self.access_abs and os.path.exists(self.access_abs):
+                self.access_size = os.path.getsize(self.access_abs)
     
     def file( self ):
         """Simulates an entity['files'] dict used to construct file"""
