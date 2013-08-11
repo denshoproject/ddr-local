@@ -791,7 +791,8 @@ class DDRFile( object ):
             return str
         return None
     
-    def make_thumbnail( self, geometry, options={} ):
+    @staticmethod
+    def make_thumbnail( path_abs, geometry, options={} ):
         """Attempt to make thumbnail.
         
         See sorl.thumbnail.templatetags.thumbnail.ThumbnailNode.render 
@@ -809,10 +810,10 @@ class DDRFile( object ):
         thumbnail = default.backend.get_thumbnail(file_, geometry)
         """
         thumbnail = None
-        if self.path_abs:
-            with open(self.path_abs, 'r') as f:
+        if os.path.exists(path_abs):
+            with open(path_abs, 'r') as f:
                 file_ = File(f)
-            thumbnail = default.backend.get_thumbnail(file_, geometry)
+            thumbnail = default.backend.get_thumbnail(file_, geometry, options)
         return thumbnail
     
     @staticmethod
