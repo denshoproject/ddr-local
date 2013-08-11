@@ -24,8 +24,8 @@
 <input name="submit" type="submit" value="submit"/><br/>
 </form>
 
-{% if file and file.src and file.thumb == 1 %}
-{% thumbnail file.src "500x500" crop="center" as img %}
+{% if file and file.access_abs %}
+{% thumbnail file.access_abs "500x500" crop="center" as img %}
 <img src="{{ img.url }}" width="200" height="200">
 {% empty %}
 <p>No image</p>

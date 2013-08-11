@@ -50,8 +50,8 @@
   </tr>
 </table>
 
-{% if file and file.src and file.thumb == 1 %}
-{% thumbnail file.src "500x500" crop="center" as img %}
+{% if file and file.access_abs %}
+{% thumbnail file.access_abs "500x500" crop="center" as img %}
 <img src="{{ img.url }}" width="{{ img.width }}" height="{{ img.height }}">
 {% empty %}
 <p>No image</p>
@@ -65,6 +65,12 @@
     <td>src</td><td>{{ file.src }}</td>
   </tr>
 -->
+  <tr>
+    <td>access_abs</td><td>{{ file.access_abs }}</td>
+  <tr>
+  <tr>
+    <td>access_rel</td><td>{{ file.access_rel }}</td>
+  <tr>
   <tr>
     <td>SHA256</td><td>{{ file.sha256 }}</td>
   </tr>
