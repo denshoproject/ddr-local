@@ -19,8 +19,8 @@ from ddrlocal.models import DDRLocalEntity as Entity
 from ddrlocal.models import DDRFile, FILEMETA_BLANK
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
-from webui.forms.files import NewFileForm, EditFileForm, shared_folder_files
-from webui.tasks import entity_add_file
+from webui.forms.files import NewFileForm, EditFileForm, NewAccessFileForm, shared_folder_files
+from webui.tasks import entity_add_file, entity_add_access
 from webui.views.decorators import login_required
 
 
@@ -49,6 +49,8 @@ def detail( request, repo, org, cid, eid, sha1 ):
     """
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+    file_ = entity.file(sha1)
+    formdata = {'path':file_.path}
     return render_to_response(
         'webui/files/detail.html',
         {'repo': entity.repo,
@@ -58,7 +60,8 @@ def detail( request, repo, org, cid, eid, sha1 ):
          'collection_uid': collection.id,
          'collection': collection,
          'entity': entity,
-         'file': entity.file(sha1)},
+         'file': file_,
+         'new_access_form': NewAccessFileForm(formdata),},
         context_instance=RequestContext(request, processors=[])
     )
 
@@ -133,6 +136,61 @@ def new( request, repo, org, cid, eid, role='master' ):
          'form': form,},
         context_instance=RequestContext(request, processors=[])
     )
+
+@login_required
+@storage_required
+def new_access( request, repo, org, cid, eid, sha1 ):
+    """Generate a new access file for the specified file.
+    
+    NOTE: There is no GET for this view.  GET requests will redirect to entity.
+    """
+    git_name = request.session.get('git_name')
+    git_mail = request.session.get('git_mail')
+    if not git_name and git_mail:
+        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
+    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+    if collection.locked():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
+        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+    if entity.locked():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
+        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+    file_ = entity.file(sha1)
+    #
+    if request.method == 'POST':
+        form = NewAccessFileForm(request.POST)
+        if form.is_valid():
+            src_path = form.cleaned_data['path']
+            # start tasks
+            result = entity_add_access.apply_async(
+                (git_name, git_mail, entity, file_),
+                countdown=2)
+            result_dict = result.__dict__
+            entity.files_log(1,'START task_id %s' % result.task_id)
+            entity.files_log(1,'ddrlocal.webui.file.new_access')
+            entity.files_log(1,'Locking %s' % entity.id)
+            # lock entity
+            lockstatus = entity.lock(result.task_id)
+            if lockstatus == 'ok':
+                entity.files_log(1, 'locked')
+            else:
+                entity.files_log(0, lockstatus)
+            # add celery task_id to session
+            celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
+            # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
+            task = {'task_id': result.task_id,
+                    'action': 'webui-file-new-access',
+                    'filename': os.path.basename(src_path),
+                    'entity_id': entity.id,
+                    'start': datetime.now(),}
+            celery_tasks[result.task_id] = task
+            #del request.session[settings.CELERY_TASKS_SESSION_KEY]
+            request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
+            # feedback
+            messages.success(request, WEBUI_MESSAGES['VIEWS_FILES_NEWACCESS'] % os.path.basename(src_path))
+    # redirect to entity
+    return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
 
 @login_required
 @storage_required

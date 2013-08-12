@@ -34,3 +34,6 @@ class EditFileForm(forms.Form):
     label = forms.CharField(max_length=255, required=False)
     sort = forms.IntegerField()
     xmp = forms.CharField(widget=forms.Textarea, required=False)
+
+class NewAccessFileForm(forms.Form):
+    path = forms.CharField(max_length=255, widget=forms.HiddenInput)

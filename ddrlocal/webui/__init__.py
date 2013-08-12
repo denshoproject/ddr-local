@@ -32,5 +32,6 @@ WEBUI_MESSAGES = {
     'VIEWS_FILES_UPLOADING': 'Uploading <b>%s</b> (%s)', # filename, original filename
     'VIEWS_FILES_PARENT_LOCKED': "This file's parent entity is locked.",
     'VIEWS_FILES_UPDATED': 'File metadata updated',
+    'VIEWS_FILES_NEWACCESS': 'Generating access file for <strong>%s</strong>.' # filename
     
 }
