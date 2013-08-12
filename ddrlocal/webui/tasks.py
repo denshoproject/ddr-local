@@ -42,6 +42,14 @@ TASK_STATUS_MESSAGES = {
         #'RETRY': '',
         #'REVOKED': '',
         },
+    'webui-file-new-access': {
+        #'STARTED': '',
+        'PENDING': 'Generating new access file for <b>{filename}</b> (<a href="{entity_url}">{entity_id}</a>).',
+        'SUCCESS': 'Generated new access file for <a href="{file_url}">{filename}</a> (<a href="{entity_url}">{entity_id}</a>).',
+        'FAILURE': 'Could not generate new access file for <a href="{file_url}">{filename}</a> (<a href="{entity_url}">{entity_id}</a>).',
+        #'RETRY': '',
+        #'REVOKED': '',
+        },
 }
 
 
@@ -285,6 +293,124 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
                 entity.files_log(0, 'entity_annex_add: ERROR')
         
     entity.files_log(1, 'ddrlocal.webui.tasks.add_file: FINISHED')
+    return f.__dict__
+
+
+
+
+
+@task(base=DebugTask, name='entity-add-access')
+def entity_add_access( git_name, git_mail, entity, ddrfile ):
+    """
+    @param entity: DDRLocalEntity
+    @param ddrfile: DDRFile
+    @param src_path: Absolute path to an uploadable file.
+    @param git_name: Username of git committer.
+    @param git_mail: Email of git committer.
+    """
+    file_ = add_access(git_name, git_mail, entity, ddrfile)
+    return file_
+
+
+def add_access( git_name, git_mail, entity, ddrfile ):
+    """Generate new access file for entity
+    
+    This method breaks out of OOP and manipulates entity.json directly.
+    Thus it needs to lock to prevent other edits while it does its thing.
+    Writes a log to ${entity}/addfile.log, formatted in pseudo-TAP.
+    This log is returned along with a DDRFile object.
+    
+    @param entity: DDRLocalEntity
+    @param ddrfile: DDRFile
+    @param git_name: Username of git committer.
+    @param git_mail: Email of git committer.
+    @return file_ DDRFile object
+    """
+    f = ddrfile
+    src_path = f.path_abs
+    
+    entity.files_log(1, 'ddrlocal.webui.tasks.add_access: START')
+    entity.files_log(1, 'entity: %s' % entity.id)
+    entity.files_log(1, 'src: %s' % f.path)
+    
+    src_basename      = os.path.basename(src_path)
+    src_exists        = os.path.exists(src_path)
+    src_readable      = os.access(src_path, os.R_OK)
+    if not os.path.exists(entity.files_path):
+        os.mkdir(entity.files_path)
+    dest_dir          = entity.files_path
+    dest_dir_exists   = os.path.exists(dest_dir)
+    dest_dir_writable = os.access(dest_dir, os.W_OK)
+    dest_basename     = DDRFile.file_name(entity, src_path)
+    dest_path         = os.path.join(dest_dir, dest_basename)
+    dest_path_exists  = os.path.exists(dest_path)
+    s = []
+    if src_exists:         s.append('ok')
+    else:                  entity.files_log(0, 'Source file does not exist: {}'.format(src_path))
+    if src_readable:       s.append('ok')
+    else:                  entity.files_log(0, 'Source file not readable: {}'.format(src_path))
+    if dest_dir_exists:    s.append('ok')
+    else:                  entity.files_log(0, 'Destination directory does not exist: {}'.format(dest_dir))
+    if dest_dir_writable:  s.append('ok')
+    else:                  entity.files_log(0, 'Destination directory not writable: {}'.format(dest_dir))
+    #if not dest_path_exists: s.append('ok')
+    #else:                  entity.files_log(0, 'Destination file already exists!: {}'.format(dest_path))
+    preparations = ','.join(s)
+    
+    # do, or do not
+    src_dest_ok = False
+    if preparations == 'ok,ok,ok,ok':  # ,ok
+        entity.files_log(1, 'Source file exists; is readable.  Destination dir exists, is writable.')
+        src_dest_ok = True
+        
+    access_file = None
+    apath = None
+    if f and src_dest_ok:
+        # task: make access file
+        entity.files_log(1, 'Making access file...')
+        # NOTE: do this before entity_annex_add so don't have to lock/unlock
+        status,result = DDRFile.make_access_file(f.path_abs,
+                                                 settings.ACCESS_FILE_APPEND,
+                                                 settings.ACCESS_FILE_GEOMETRY,
+                                                 settings.ACCESS_FILE_OPTIONS)
+        if status:
+            entity.files_log(0, 'status: %s' % status)
+            entity.files_log(0, 'result: %s' % result)
+            entity.files_log(0, 'access file FAIL: %s' % result)
+            f.access_rel = None
+        else:
+            entity.files_log(1, 'status: %s' % status)
+            entity.files_log(1, 'result: %s' % result)
+            access_rel = result
+            f.set_access(access_rel, entity)
+            entity.files_log(1, 'access_rel: %s' % f.access_rel)
+            entity.files_log(1, 'access_abs: %s' % f.access_abs)
+    
+    if f and src_dest_ok and f.access_rel:
+        entity.files_log(1, 'Adding %s to entity...' % f)
+        # We have to write entity.json again so that access file gets recorded there.
+        entity.files_log(1, 'Writing %s' % entity.json_path)
+        entity.dump_json()
+        entity.files_log(1, 'done')
+        if f.access_rel:
+            access_basename = os.path.basename(f.access_rel)
+            entity.files_log(1, 'access file: %s' % access_basename)
+            try:
+                entity.files_log(1, 'entity_annex_add(%s, %s, %s, %s, %s)' % (
+                    git_name, git_mail,
+                    entity.parent_path,
+                    entity.id, access_basename))
+                exit,status = entity_annex_add(
+                    git_name, git_mail,
+                    entity.parent_path,
+                    entity.id, access_basename)
+                entity.files_log(1, 'entity_annex_add: exit: %s' % exit)
+                entity.files_log(1, 'entity_annex_add: status: %s' % status)
+            except:
+                # TODO would be nice to know why entity_annex_add failed
+                entity.files_log(0, 'entity_annex_add: ERROR')
+        
+    entity.files_log(1, 'ddrlocal.webui.tasks.add_access: FINISHED')
     return f.__dict__
 
 
