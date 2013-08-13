@@ -139,7 +139,7 @@ def prepare_topics(data):
     """Present as semicolon-separated list"""
     a = []
     for t in data:
-        if hasattr(t, 'url'):
+        if type(t) == type({}):
             x = t['url']
         else:
             x = t
