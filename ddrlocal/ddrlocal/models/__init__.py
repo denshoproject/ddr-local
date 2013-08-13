@@ -824,7 +824,7 @@ class DDRFile( object ):
     def make_access_file( src_abs, append, geometry, options='' ):
         """Attempt to make access file.
         
-        Note: uses Imagemagick 'convert'.
+        Note: uses Imagemagick 'convert' and 'identify'.
         
         @param src_abs: Absolute path to the source file.
         @param append: string to be appended to end of basename.
@@ -837,11 +837,18 @@ class DDRFile( object ):
         status = -1
         EXTENSION = 'jpg'
         dest_abs = '%s%s.%s' % (os.path.splitext(src_abs)[0], append, EXTENSION)
-        if 'pdf' in os.path.splitext(src_abs)[1]:
-            pdf_page = '[0]' # only capture the first page
+        # test for multiple frames/layers/pages
+        # if there are multiple frames, we only want the first one
+        frame = ''
+        ri = envoy.run('identify %s' % src_abs)
+        if ri.status_code:
+            return ri.status_code, ri.std_err
         else:
-            pdf_page = ''
-        cmd = "convert %s%s -resize '%s' %s" % (src_abs, pdf_page, geometry, dest_abs)
+            frames = ri.std_out.strip().split('\n')
+            if len(frames) > 1:
+                frame = '[0]'
+        # resize the file
+        cmd = "convert %s%s -resize '%s' %s" % (src_abs, frame, geometry, dest_abs)
         r = envoy.run(cmd)
         status = r.status_code # 0 means everything's okay
         if status:
