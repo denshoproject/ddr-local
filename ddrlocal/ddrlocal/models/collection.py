@@ -8,7 +8,8 @@ from django.conf import settings
 
 
 
-LANGUAGE_CHOICES = [['eng','English'],
+LANGUAGE_CHOICES = [['',''],
+                    ['eng','English'],
                     ['jpn','Japanese'],
                     ['esp','Spanish'],]
 
