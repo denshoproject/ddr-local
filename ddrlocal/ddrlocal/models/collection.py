@@ -268,7 +268,6 @@ COLLECTION_FIELDS = [
             'initial':    '',
             'required':   True,
         },
-        'ead_func':   ead_id,
         'default':    '',
     },
     {
@@ -285,7 +284,6 @@ COLLECTION_FIELDS = [
             'initial':    '',
             'required':   True,
         },
-        'ead_func':   ead_created,
         'default':    '',
     },
     {
@@ -302,7 +300,6 @@ COLLECTION_FIELDS = [
             'initial':    '',
             'required':   True,
         },
-        'ead_func':   ead_lastmod,
         'default':    '',
     },
     # overview ---------------------------------------------------------
@@ -321,7 +318,6 @@ COLLECTION_FIELDS = [
             'initial':    '',
             'required':   True,
         },
-        'ead_func':   ead_title,
         'default':    '',
     },
     {
@@ -339,7 +335,6 @@ COLLECTION_FIELDS = [
             'initial':    '',
             'required':   True,
         },
-        'ead_func':   _ead_simple,
         'default':    '',
     },
     {
@@ -357,7 +352,6 @@ COLLECTION_FIELDS = [
             'initial':    '',
             'required':   True,
         },
-        'ead_func':   _ead_simple,
         'default':    '',
     },
     {
@@ -375,7 +369,6 @@ COLLECTION_FIELDS = [
             'initial':    '',
             'required':   False,
         },
-        'ead_func':   _ead_simple,
         'default':    '',
     },
     {
@@ -393,7 +386,6 @@ COLLECTION_FIELDS = [
             'initial':    '',
             'required':   False,
         },
-        'ead_func':   _ead_simple,
         'default':    '',
     },
     {
@@ -411,7 +403,6 @@ COLLECTION_FIELDS = [
             'initial':    '',
             'required':   False,
         },
-        'ead_func':   ead_language,
         'default':    '',
     },
     {
@@ -429,7 +420,6 @@ COLLECTION_FIELDS = [
             'initial':    '',
             'required':   True,
         },
-        'ead_func':   _ead_simple,
         'default':    '',
     },
     {
@@ -446,7 +436,6 @@ COLLECTION_FIELDS = [
             'initial':    '',
             'required':   True,
         },
-        'ead_func':   _ead_simple,
         'default':    '',
     },
     {
@@ -463,7 +452,6 @@ COLLECTION_FIELDS = [
             'initial':    '',
             'required':   False,
         },
-        'ead_func':   _ead_simple,
         'default':    '',
     },
     {
@@ -481,7 +469,6 @@ COLLECTION_FIELDS = [
             'initial':    '',
             'required':   False,
         },
-        'ead_func':   _ead_simple,
         'default':    '',
     },
     # administative ----------------------------------------------------
@@ -499,7 +486,6 @@ COLLECTION_FIELDS = [
             'initial':    '',
             'required':   True,
         },
-        'ead_func':   _ead_simple,
         'default':    '',
     },
     {
@@ -516,7 +502,6 @@ COLLECTION_FIELDS = [
             'initial':    '',
             'required':   False,
         },
-        'ead_func':   _ead_simple,
         'default':    '',
     },
     {
@@ -533,7 +518,6 @@ COLLECTION_FIELDS = [
             'initial':    '',
             'required':   False,
         },
-        'ead_func':   _ead_simple,
         'default':    '',
     },
     {
@@ -550,7 +534,6 @@ COLLECTION_FIELDS = [
             'initial':    '',
             'required':   False,
         },
-        'ead_func':   _ead_simple,
         'default':    '',
     },
     {
@@ -567,7 +550,6 @@ COLLECTION_FIELDS = [
             'initial':    '',
             'required':   False,
         },
-        'ead_func':   _ead_simple,
         'default':    '',
     },
     {
@@ -584,7 +566,6 @@ COLLECTION_FIELDS = [
             'initial':    '',
             'required':   False,
         },
-        'ead_func':   _ead_simple,
         'default':    '',
     },
     {
@@ -602,7 +583,6 @@ COLLECTION_FIELDS = [
             'initial':    '',
             'required':   True,
         },
-        'ead_func':   _ead_simple,
         'default':    '',
     },
     # bioghist ---------------------------------------------------------
@@ -620,7 +600,6 @@ COLLECTION_FIELDS = [
             'initial':    '',
             'required':   False,
         },
-        'ead_func':   _ead_simple,
         'default':    '',
     },
     # scopecontent -----------------------------------------------------
@@ -638,7 +617,6 @@ COLLECTION_FIELDS = [
             'initial':    '',
             'required':   False,
         },
-        'ead_func':   _ead_simple,
         'default':    '',
     },
     # related ----------------------------------------------------------
@@ -656,7 +634,6 @@ COLLECTION_FIELDS = [
             'initial':    '',
             'required':   False,
         },
-        'ead_func':   _ead_simple,
         'default':    '',
     },
     {
@@ -673,7 +650,6 @@ COLLECTION_FIELDS = [
             'initial':    '',
             'required':   False,
         },
-        'ead_func':   _ead_simple,
         'default':    '',
     },
 

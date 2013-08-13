@@ -106,9 +106,14 @@ def prepare_language(data):
 
 def prepare_topics(data):
     """Present as semicolon-separated list"""
-    a = [t['url'] for t in data]
-    data = ';\n'.join(a)
-    return data
+    a = []
+    for t in data:
+        if hasattr(t, 'url'):
+            x = t['url']
+        else:
+            x = t
+        a.append(x)
+    return ';\n'.join(a)
 
 def prepare_persons(data):
     return ';\n'.join(data)
@@ -344,7 +349,6 @@ ENTITY_FIELDS = [
             'initial':    '',
             'required':   True,
         },
-        'mets_func':  mets_id,
         'default':    '',
     },
     {
@@ -360,7 +364,6 @@ ENTITY_FIELDS = [
             'initial':    '',
             'required':   True,
         },
-        'mets_func':  mets_created,
         'default':    '',
     },
     {
@@ -376,7 +379,6 @@ ENTITY_FIELDS = [
             'initial':    '',
             'required':   True,
         },
-        'mets_func':  mets_lastmod,
         'default':    '',
     },
     {
@@ -393,8 +395,6 @@ ENTITY_FIELDS = [
             'initial':    '',
             'required':   False,
         },
-        'prep_func':  prepare_parent,
-        'proc_func':  process_parent,
         'default':    '',
     },
     {
@@ -411,8 +411,6 @@ ENTITY_FIELDS = [
             'initial':    '',
             'required':   True,
         },
-        'prep_func':  prepare_collection,
-        'proc_func':  process_collection,
         'default':    '',
     },
     # Scan ID
@@ -432,7 +430,6 @@ ENTITY_FIELDS = [
             'initial':    '',
             'required':   True,
         },
-        'mets_func':  mets_title,
         'default':    '',
     },
     {
@@ -449,7 +446,6 @@ ENTITY_FIELDS = [
             'initial':    '',
             'required':   False,
         },
-        'mets_func':  _mets_simple,
         'default':    '',
     },
     {
@@ -466,8 +462,6 @@ ENTITY_FIELDS = [
             'initial':    '',
             'required':   False,
         },
-        'prep_func':  prepare_creation,
-        'proc_func':  process_creation,
         'default':    '',
     },
     {
@@ -500,9 +494,6 @@ ENTITY_FIELDS = [
             'initial':    '',
             'required':   False,
         },
-        'prep_func':  prepare_creators,
-        'proc_func':  process_creators,
-        'mets_func':  mets_creators,
         'default':    '',
     },
     {
@@ -519,9 +510,6 @@ ENTITY_FIELDS = [
             'initial':    '',
             'required':   False,
         },
-        'prep_func':  prepare_language,
-        'proc_func':  process_language,
-        'mets_func':  mets_language,
         'default':    '',
     },
     {
@@ -538,7 +526,6 @@ ENTITY_FIELDS = [
             'initial':    '',
             'required':   False,
         },
-        'mets_func':  _mets_simple,
         'default':    '',
     },
     {
@@ -555,7 +542,6 @@ ENTITY_FIELDS = [
             'initial':    '',
             'required':   True,
         },
-        'mets_func':  _mets_simple,
         'default':    '',
     },
     {
@@ -572,7 +558,6 @@ ENTITY_FIELDS = [
             'initial':    '',
             'required':   True,
         },
-        'mets_func':  _mets_simple,
         'default':    '',
     },
     {
@@ -589,7 +574,6 @@ ENTITY_FIELDS = [
             'initial':    '',
             'required':   True,
         },
-        'mets_func':  _mets_simple,
         'default':    '',
     },
     {
@@ -701,9 +685,6 @@ ENTITY_FIELDS = [
             'initial':    '',
             'required':   False,
         },
-        'prep_func':  prepare_topics,
-        'proc_func':  process_topics,
-        'mets_func':  mets_topics,
         'default':    '',
     },
     {
@@ -719,9 +700,6 @@ ENTITY_FIELDS = [
             'initial':    '',
             'required':   False,
         },
-        'prep_func':  prepare_persons,
-        'proc_func':  process_persons,
-        'mets_func':  mets_persons,
         'default':    '',
     },
     {
@@ -737,8 +715,6 @@ ENTITY_FIELDS = [
             'initial':    '',
             'required':   False,
         },
-        'prep_func':  prepare_facility,
-        'proc_func':  process_facility,
         'default':    '',
     },
     {
