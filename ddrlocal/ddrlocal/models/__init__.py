@@ -831,6 +831,8 @@ class DDRFile( object ):
         @param geometry: String (ex: '200x200')
         @returns status,result: Status bit (0 if OK), Absolute page to access file or error message.
         """
+        if not os.path.exists(src_abs):
+            return 1,'err: source file does not exist: %s' % src_abs
         result = 'unknown'
         status = -1
         EXTENSION = 'jpg'
