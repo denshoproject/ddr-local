@@ -31,7 +31,7 @@
 <div id="overview">
 <p>
 {% if entity.locked %}
-<a class="btn btn-mini muted" title="This entity is locked">Edit [locked]</a><br/>
+<a class="btn btn-mini muted" title="This object is locked">Edit [locked]</a><br/>
 {% else %}
 <a class="btn btn-mini" href="{% url "webui-entity-edit" repo org cid eid %}">Edit</a>
 {% endif %}

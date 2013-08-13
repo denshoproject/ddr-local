@@ -22,15 +22,15 @@ WEBUI_MESSAGES = {
     'VIEWS_COLL_LOCKED': 'Collection is locked: <strong>{}</strong>', # collection_id
     
     # webui.views.entities
-    'VIEWS_ENT_CREATED': 'New entity created: {}', # entity id
-    'VIEWS_ENT_ERR_NO_IDS': 'Error: Could not get new entity IDs from workbench.',
-    'VIEWS_ENT_ERR_CREATE': 'Error: Could not create new entity.',
-    'VIEWS_ENT_UPDATED': 'Entity updated',
-    'VIEWS_ENT_LOCKED': 'This entity is locked.',
+    'VIEWS_ENT_CREATED': 'New object created: {}', # entity id
+    'VIEWS_ENT_ERR_NO_IDS': 'Error: Could not get new object IDs from workbench.',
+    'VIEWS_ENT_ERR_CREATE': 'Error: Could not create new object.',
+    'VIEWS_ENT_UPDATED': 'Object updated',
+    'VIEWS_ENT_LOCKED': 'This object is locked.',
     
     # webui.views.files
     'VIEWS_FILES_UPLOADING': 'Uploading <b>%s</b> (%s)', # filename, original filename
-    'VIEWS_FILES_PARENT_LOCKED': "This file's parent entity is locked.",
+    'VIEWS_FILES_PARENT_LOCKED': "This file's parent object is locked.",
     'VIEWS_FILES_UPDATED': 'File metadata updated',
     'VIEWS_FILES_NEWACCESS': 'Generating access file for <strong>%s</strong>.' # filename
     

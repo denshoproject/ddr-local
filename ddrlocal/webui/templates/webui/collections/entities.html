@@ -1,11 +1,11 @@
 {% extends "webui/collections/base.html" %}
 
 
-{% block title %}entities | {{ collection_uid }}{% endblock %}
+{% block title %}Objects | {{ collection_uid }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
 <li><a href="{{ collection.url }}">{{ collection.id }}</a></li>
-<li class="active">entities</li>
+<li class="active">Objects</li>
 {% endblock breadcrumbs %}
 
 
@@ -19,12 +19,12 @@
 {% if collection.title %}&mdash; {{ collection.title }}{% endif %}
 </h2>
 <h1>
-entities
+Objects
 </h1>
 
 <ul>
 {% for entity in entities %}
-<li><a href="{% url "webui-entity" entity.repo entity.org entity.cid entity.eid %}">{{ entity.uid }}: {{ entity.title }}</a></li>
+<li><a href="{% url "webui-entity" entity.repo entity.org entity.cid entity.eid %}">{{ entity.id }}</a></li>
 {% endfor %}
 {% if username %}
 {% endif %}

@@ -55,7 +55,7 @@
 
 
 <h3>
-Entities
+Objects
 </h3>
 <ul>
 {% for entity in collection.entities %}
@@ -66,9 +66,9 @@ Entities
 {% endfor %}
   <li>
 {% if collection.locked %}
-    <a class="muted" title="This collection is locked">New entity [locked]</a>
+    <a class="muted" title="This collection is locked">New object [locked]</a>
 {% else %}
-    <a href="{% url "webui-entity-new" repo org cid %}">New entity</a>
+    <a href="{% url "webui-entity-new" repo org cid %}">New object</a>
 {% endif %}
   </li>
 </ul>
