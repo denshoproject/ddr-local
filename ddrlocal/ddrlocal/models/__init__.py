@@ -847,12 +847,15 @@ class DDRFile( object ):
         if status:
             result = r.std_err
         else:
-            if os.path.exists(dest_abs) and os.path.getsize(dest_abs):
-                result = dest_abs
-            elif os.path.exists(dest_abs) and not os.path.getsize(dest_abs):
-                status = 2
-                result = 'dest file created but zero length'
-                os.remove(dest_abs)
+            if os.path.exists(dest_abs):
+                if os.path.getsize(dest_abs):
+                    result = dest_abs
+                elif not os.path.getsize(dest_abs):
+                    status = 2
+                    result = 'dest file created but zero length'
+                    os.remove(dest_abs)
+            else:
+                result = 'access file was not created: %s' % dest_abs
         return status,result
     
     @staticmethod
