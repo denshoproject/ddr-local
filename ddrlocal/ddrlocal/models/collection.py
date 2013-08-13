@@ -14,263 +14,6 @@ LANGUAGE_CHOICES = [['eng','English'],
 
 
 
-# display pre-processing functions -------------------------------------
-
-def _render_multiline_dict( template, data ):
-    t = []
-    for x in data:
-        if type(x) == type({}):
-            t.append(template.format(**x))
-        else:
-            t.append(x)
-    return '\n'.join(t)
-
-def display_creators( data ):
-    lines = []
-    for l in data.split(';'):
-        lines.append({'person': l.strip()})
-    return _render_multiline_dict('<a href="{person}">{person}</a>', lines )
-
-
-
-# XML grow functions ---------------------------------------------------
-# Add tags to XML if not found in xpath
-
-def _find_existing_ancestor(tree, xpath):
-    frag = xpath
-    while not tree.xpath(frag):
-        frag = frag.rsplit('/', 1)[0]
-    return frag
-
-def _next_tag(frag, xpath):
-    ftags = frag.split('/')
-    xtags = xpath.split('/')
-    last = xtags.pop()
-    while xtags != ftags:
-        last = xtags.pop()
-    return last
-
-def _graft(tree, frag, tag):
-    if ('@' not in tag):
-        parent = tree.xpath(frag)[0]
-        t = etree.Element(tag)
-        parent.append(t)
-
-def _grow(tree, xpath):
-    """
-    THIS needs to be aware of attrib
-    """
-    frag = _find_existing_ancestor(tree, xpath)
-    while frag != xpath:
-        tag = _next_tag(frag, xpath)
-        _graft(tree, frag, tag)
-        frag = _find_existing_ancestor(tree, xpath)
-
-def _mktagp(tree, COLLECTION_FIELDS):
-    """If tags specified in xpaths don't exist, make 'em.
-    """
-    for f in COLLECTION_FIELDS:
-        x = f['xpath']
-        if x:
-            something = tree.xpath(x)
-            if ('@' not in x) and (not something):
-                _grow(tree, x)
-
-"""
-from lxml import etree
-from ddrlocal.models import collection
-from ddrlocal.models.collection import COLLECTION_FIELDS
-p = '/media/WD5000BMV-2/ddr/ddr-testing-61/ead.xml'
-with open(p, 'rw') as f:
-    xml0 = f.read()
-
-print(xml0)
-tree = etree.fromstring(xml0)
-collection._mktagp(tree, COLLECTION_FIELDS)
-xml1 = etree.tostring(tree, pretty_print=True)
-print(xml1)
-with open(p, 'w') as f:
-    f.write(xml1)
-"""
-
-
-
-# forms pre-processing functions ---------------------------------------
-# convert from Python objects to form(data)
-
-def _prepare_basic(data):
-    if data:
-        return json.dumps(data)
-    return ''
-
-# id
-# created
-# lastmod
-# title
-# creators
-# extent
-# language
-# organization
-# description
-# notes
-# physloc
-#
-# acqinfo
-# custodhist
-# accruals
-# processinfo
-# accessrestrict
-# userrestrict
-# prefercite
-#
-# bioghist
-#
-# scopecontent
-#
-# relatedmaterial
-# separatedmaterial
-
-
-
-# forms post-processing functions --------------------------------------
-# convert from form.cleaned_data to Python objects
-
-def _process_basic(data):
-    if data:
-        try:
-            return json.loads(data)
-        except:
-            return data
-    return ''
-
-# id
-# created
-# lastmod
-# title
-# unitdate_inclusive
-# unitdate_bulk
-# creators
-# extent
-# language
-# organization
-# description
-# notes
-# physloc
-#
-# acqinfo
-# custodhist
-# accruals
-# processinfo
-# accessrestrict
-# userrestrict
-# prefercite
-#
-# bioghist
-#
-# scopecontent
-#
-# relatedmaterial
-# separatedmaterial
-
-
-
-# XML export functions -------------------------------------------------
-#
-
-def _expand_attrib_namespace(attr, namespaces):
-    ns,a = attr.split(':')
-    return '{%s}%s' % (namespaces[ns], a)
-
-def _getval(tree, namespaces, xpath):
-    """Gets the first value; yes this is probably suboptimal
-    """
-    val = None
-    vals = tree.xpath(xpath, namespaces=namespaces)
-    if vals:
-        val = vals[0]
-    return val
-
-def _set_attr(tree, namespaces, xpath, attr, value):
-    tags = tree.xpath(xpath, namespaces=namespaces)
-    if tags:
-        tag = tags[0]
-        tag.set(attr, value)
-    return tree
-
-def _set_tag_text(tree, namespaces, xpath, value):
-    tag = _getval(tree, namespaces, xpath)
-    if tag and value:
-        tag.text = value
-    return tree
-
-def _duplicate(tree, namespaces, src_xpath, dest_xpath):
-    i = tree.xpath( src_xpath,  namespaces=namespaces )[0]
-    tag = tree.xpath( dest_xpath, namespaces=namespaces )[0]
-    tag.text = i
-    return tree
-
-def _ead_simple(tree, namespaces, field, value):
-    return _set_tag_text(tree, namespaces, field['xpath'], value)
-
-# - - - - - - - - - - - - - - - -
-
-def ead_id(tree, namespaces, field, value):
-    tree = _set_tag_text(tree, namespaces, "/ead/eadheader/eadid", value)
-    tree = _set_tag_text(tree, namespaces, "/ead/archdesc/did/unitid", value)
-    return tree
-
-def ead_created(tree, namespaces, field, value):
-    return _set_attr(tree, namespaces, "/ead/eadheader/eadid", "created", value.strftime(settings.DATETIME_FORMAT))
-
-def ead_lastmod(tree, namespaces, field, value):
-    return _set_attr(tree, namespaces, "/ead/eadheader/eadid", "lastmod", value.strftime(settings.DATETIME_FORMAT))
-
-def ead_title(tree, namespaces, field, value):
-    tree = _set_tag_text(tree, namespaces, "/ead/eadheader/filedesc/titlestmt/titleproper", value)
-    tree = _set_tag_text(tree, namespaces, "/ead/archdesc/did/unittitle", value)
-    return tree
-
-# unitdate_inclusive
-# unitdate_bulk
-# creators
-# extent
-
-def ead_language(tree, namespaces, field, value):
-    code = value
-    label = ''
-    for l in LANGUAGE_CHOICES:
-        if l[0] == code:
-            label = l[1]
-    tree = _set_attr(tree, namespaces, "/ead/eadheader/profiledesc/langusage/language", "langcode", code)
-    tree = _set_tag_text(tree, namespaces, "/ead/eadheader/profiledesc/langusage/language", label)
-    tree = _set_attr(tree, namespaces, "/ead/archdesc/did/langmaterial/language", "langcode", code)
-    tree = _set_tag_text(tree, namespaces, "/ead/archdesc/did/langmaterial/language", label)
-    return tree
-
-# organization
-# description
-# notes
-# physloc
-#
-# acqinfo
-# custodhist
-# accruals
-# processinfo
-# accessrestrict
-# userrestrict
-# prefercite
-#
-# bioghist
-#
-# scopecontent
-#
-# relatedmaterial
-# separatedmaterial
-
-
-
-# ----------------------------------------------------------------------
-
 COLLECTION_FIELDS = [
     {
         'name':       'id',
@@ -673,3 +416,277 @@ COLLECTION_FIELDS = [
     },
 
 ]
+
+
+
+# display_* --- Display functions --------------------------------------
+#
+# These functions take Python data from the corresponding Collection field
+# and format it for display.
+#
+
+def display_creators( data ):
+    lines = []
+    for l in data.split(';'):
+        lines.append({'person': l.strip()})
+    return _render_multiline_dict('<a href="{person}">{person}</a>', lines )
+
+# The following are utility functions used by display_* functions.
+
+def _render_multiline_dict( template, data ):
+    t = []
+    for x in data:
+        if type(x) == type({}):
+            t.append(template.format(**x))
+        else:
+            t.append(x)
+    return '\n'.join(t)
+
+
+
+# formprep_* --- Form pre-processing functions.--------------------------
+#
+# These functions take Python data from the corresponding Collection field
+# and format it so that it can be used in an HTML form.
+#
+
+# id
+# created
+# lastmod
+# title
+# creators
+# extent
+# language
+# organization
+# description
+# notes
+# physloc
+#
+# acqinfo
+# custodhist
+# accruals
+# processinfo
+# accessrestrict
+# userrestrict
+# prefercite
+#
+# bioghist
+#
+# scopecontent
+#
+# relatedmaterial
+# separatedmaterial
+
+# The following are utility functions used by formprep_* functions.
+
+def _formprep_basic(data):
+    if data:
+        return json.dumps(data)
+    return ''
+
+
+
+# formpost_* --- Form post-processing functions ------------------------
+#
+# These functions take data from the corresponding form field and turn it
+# into Python objects that are inserted into the Collection.
+#
+
+# id
+# created
+# lastmod
+# title
+# unitdate_inclusive
+# unitdate_bulk
+# creators
+# extent
+# language
+# organization
+# description
+# notes
+# physloc
+#
+# acqinfo
+# custodhist
+# accruals
+# processinfo
+# accessrestrict
+# userrestrict
+# prefercite
+#
+# bioghist
+#
+# scopecontent
+#
+# relatedmaterial
+# separatedmaterial
+
+# The following are utility functions used by formpost_* functions.
+
+def _formpost_basic(data):
+    if data:
+        try:
+            return json.loads(data)
+        except:
+            return data
+    return ''
+
+
+
+# ead_* --- EAD XML export functions -----------------------------------
+#
+# These functions take Python data from the corresponding Collection field
+# and write it to a EAD XML document.
+#
+
+def ead_id(tree, namespaces, field, value):
+    tree = _set_tag_text(tree, namespaces, "/ead/eadheader/eadid", value)
+    tree = _set_tag_text(tree, namespaces, "/ead/archdesc/did/unitid", value)
+    return tree
+
+def ead_created(tree, namespaces, field, value):
+    return _set_attr(tree, namespaces, "/ead/eadheader/eadid", "created", value.strftime(settings.DATETIME_FORMAT))
+
+def ead_lastmod(tree, namespaces, field, value):
+    return _set_attr(tree, namespaces, "/ead/eadheader/eadid", "lastmod", value.strftime(settings.DATETIME_FORMAT))
+
+def ead_title(tree, namespaces, field, value):
+    tree = _set_tag_text(tree, namespaces, "/ead/eadheader/filedesc/titlestmt/titleproper", value)
+    tree = _set_tag_text(tree, namespaces, "/ead/archdesc/did/unittitle", value)
+    return tree
+
+# unitdate_inclusive
+# unitdate_bulk
+# creators
+# extent
+
+def ead_language(tree, namespaces, field, value):
+    code = value
+    label = ''
+    for l in LANGUAGE_CHOICES:
+        if l[0] == code:
+            label = l[1]
+    tree = _set_attr(tree, namespaces, "/ead/eadheader/profiledesc/langusage/language", "langcode", code)
+    tree = _set_tag_text(tree, namespaces, "/ead/eadheader/profiledesc/langusage/language", label)
+    tree = _set_attr(tree, namespaces, "/ead/archdesc/did/langmaterial/language", "langcode", code)
+    tree = _set_tag_text(tree, namespaces, "/ead/archdesc/did/langmaterial/language", label)
+    return tree
+
+# organization
+# description
+# notes
+# physloc
+#
+# acqinfo
+# custodhist
+# accruals
+# processinfo
+# accessrestrict
+# userrestrict
+# prefercite
+#
+# bioghist
+#
+# scopecontent
+#
+# relatedmaterial
+# separatedmaterial
+
+# The following are utility functions used by ead_* functions.
+
+def _expand_attrib_namespace(attr, namespaces):
+    ns,a = attr.split(':')
+    return '{%s}%s' % (namespaces[ns], a)
+
+def _getval(tree, namespaces, xpath):
+    """Gets the first value; yes this is probably suboptimal
+    """
+    val = None
+    vals = tree.xpath(xpath, namespaces=namespaces)
+    if vals:
+        val = vals[0]
+    return val
+
+def _set_attr(tree, namespaces, xpath, attr, value):
+    tags = tree.xpath(xpath, namespaces=namespaces)
+    if tags:
+        tag = tags[0]
+        tag.set(attr, value)
+    return tree
+
+def _set_tag_text(tree, namespaces, xpath, value):
+    tag = _getval(tree, namespaces, xpath)
+    if tag and value:
+        tag.text = value
+    return tree
+
+def _duplicate(tree, namespaces, src_xpath, dest_xpath):
+    i = tree.xpath( src_xpath,  namespaces=namespaces )[0]
+    tag = tree.xpath( dest_xpath, namespaces=namespaces )[0]
+    tag.text = i
+    return tree
+
+def _ead_simple(tree, namespaces, field, value):
+    return _set_tag_text(tree, namespaces, field['xpath'], value)
+
+
+
+# XML grow functions ---------------------------------------------------
+# Add tags to XML if not found in xpath
+
+def _find_existing_ancestor(tree, xpath):
+    frag = xpath
+    while not tree.xpath(frag):
+        frag = frag.rsplit('/', 1)[0]
+    return frag
+
+def _next_tag(frag, xpath):
+    ftags = frag.split('/')
+    xtags = xpath.split('/')
+    last = xtags.pop()
+    while xtags != ftags:
+        last = xtags.pop()
+    return last
+
+def _graft(tree, frag, tag):
+    if ('@' not in tag):
+        parent = tree.xpath(frag)[0]
+        t = etree.Element(tag)
+        parent.append(t)
+
+def _grow(tree, xpath):
+    """
+    THIS needs to be aware of attrib
+    """
+    frag = _find_existing_ancestor(tree, xpath)
+    while frag != xpath:
+        tag = _next_tag(frag, xpath)
+        _graft(tree, frag, tag)
+        frag = _find_existing_ancestor(tree, xpath)
+
+def _mktagp(tree, COLLECTION_FIELDS):
+    """If tags specified in xpaths don't exist, make 'em.
+    """
+    for f in COLLECTION_FIELDS:
+        x = f['xpath']
+        if x:
+            something = tree.xpath(x)
+            if ('@' not in x) and (not something):
+                _grow(tree, x)
+
+"""
+from lxml import etree
+from ddrlocal.models import collection
+from ddrlocal.models.collection import COLLECTION_FIELDS
+p = '/media/WD5000BMV-2/ddr/ddr-testing-61/ead.xml'
+with open(p, 'rw') as f:
+    xml0 = f.read()
+
+print(xml0)
+tree = etree.fromstring(xml0)
+collection._mktagp(tree, COLLECTION_FIELDS)
+xml1 = etree.tostring(tree, pretty_print=True)
+print(xml1)
+with open(p, 'w') as f:
+    f.write(xml1)
+"""

@@ -172,7 +172,7 @@ def edit( request, repo, org, cid, eid ):
             git_name = request.session.get('git_name')
             git_mail = request.session.get('git_mail')
             if git_name and git_mail:
-                entity.form_process(form)
+                entity.form_post(form)
                 entity.dump_json()
                 entity.dump_mets()
                 exit,status = commands.entity_update(git_name, git_mail,
@@ -186,7 +186,7 @@ def edit( request, repo, org, cid, eid ):
             else:
                 messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     else:
-        form = EntityForm(entity.form_data())
+        form = EntityForm(entity.form_prep())
     return render_to_response(
         'webui/entities/edit-json.html',
         {'repo': entity.repo,

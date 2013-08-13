@@ -148,7 +148,7 @@ class DDRLocalCollection( DDRCollection ):
                 lv.append(item)
         return lv
     
-    def form_data(self):
+    def form_prep(self):
         """Prep data dict to pass into CollectionForm object.
         
         Certain fields require special processing.
@@ -165,7 +165,7 @@ class DDRLocalCollection( DDRCollection ):
                 
                 # if function is present in ddrlocal.models.collection and is callable,
                 # pass field info to it and collect the result
-                functionname = 'prepare_%s' % key
+                functionname = 'formprep_%s' % key
                 if (functionname in dir(collectionspec)):
                     function = getattr(collectionspec, functionname)
                     value = function(value)
@@ -174,7 +174,7 @@ class DDRLocalCollection( DDRCollection ):
                 data[key] = value
         return data
     
-    def form_process(self, form):
+    def form_post(self, form):
         """Process cleaned_data coming from CollectionForm
         
         Certain fields require special processing.
@@ -190,7 +190,7 @@ class DDRLocalCollection( DDRCollection ):
                 
                 # if function is present in ddrlocal.models.collection and is callable,
                 # pass field info to it and collect the result
-                functionname = 'process_%s' % key
+                functionname = 'formpost_%s' % key
                 if (functionname in dir(collectionspec)):
                     function = getattr(collectionspec, functionname)
                     cleaned_data = function(cleaned_data)
@@ -458,7 +458,7 @@ class DDRLocalEntity( DDREntity ):
                 lv.append(item)
         return lv
     
-    def form_data(self):
+    def form_prep(self):
         """Prep data dict to pass into EntityForm object.
         
         Certain fields require special processing.
@@ -475,7 +475,7 @@ class DDRLocalEntity( DDREntity ):
                 
                 # if function is present in ddrlocal.models.entity and is callable,
                 # pass field info to it and collect the result
-                functionname = 'prepare_%s' % key
+                functionname = 'formprep_%s' % key
                 if (functionname in dir(entityspec)):
                     function = getattr(entityspec, functionname)
                     value = function(value)
@@ -488,7 +488,7 @@ class DDRLocalEntity( DDREntity ):
             data['lastmod'] = datetime.now()
         return data
     
-    def form_process(self, form):
+    def form_post(self, form):
         """Process cleaned_data coming from EntityForm
         
         Certain fields require special processing.
@@ -504,7 +504,7 @@ class DDRLocalEntity( DDREntity ):
                 
                 # if function is present in ddrlocal.models.entity and is callable,
                 # pass field info to it and collect the result
-                functionname = 'process_%s' % key
+                functionname = 'formpost_%s' % key
                 if (functionname in dir(entityspec)):
                     function = getattr(entityspec, functionname)
                     cleaned_data = function(cleaned_data)

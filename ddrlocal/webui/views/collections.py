@@ -206,7 +206,7 @@ def edit( request, repo, org, cid ):
             git_name = request.session.get('git_name')
             git_mail = request.session.get('git_mail')
             if git_name and git_mail:
-                collection.form_process(form)
+                collection.form_post(form)
                 collection.dump_json()
                 collection.dump_ead()
                 exit,status = commands.update(git_name, git_mail,
@@ -220,7 +220,7 @@ def edit( request, repo, org, cid ):
             else:
                 messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     else:
-        form = CollectionForm(collection.form_data())
+        form = CollectionForm(collection.form_prep())
     return render_to_response(
         'webui/collections/edit-json.html',
         {'repo': repo,

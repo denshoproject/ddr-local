@@ -66,302 +66,6 @@ FORMAT_CHOICES = [['img','Still Image'],
 
 
 
-# display pre-processing functions -------------------------------------
-
-def _render_multiline_dict( template, data ):
-    t = []
-    for x in data:
-        if type(x) == type({}):
-            t.append(template.format(**x))
-        else:
-            t.append(x)
-    return '\n'.join(t)
-
-def display_creators( data ):
-    return _render_multiline_dict('<a href="{namepart}">{role}: {namepart}</a>', data)
-
-def display_topics( data ):
-    return _render_multiline_dict('<a href="{url}">{label}</a>', data)
-
-def display_persons( data ):
-    d = []
-    for line in data:
-        d.append({'person': line.strip()})
-    return _render_multiline_dict('<a href="{person}">{person}</a>', d)
-
-#def display_facility( data ):
-#    d = []
-#    for line in data:
-#        d.append({'facility': line.strip()})
-#    return _render_multiline_dict('<a href="">{facility}</a>', d)
-
-
-
-# forms pre-processing functions ---------------------------------------
-# convert from Python objects to form(data)
-
-def _prepare_basic(data):
-    if data:
-        return json.dumps(data)
-    return ''
-                   
-# id
-# created
-# lastmod
-def prepare_parent(data):     return _prepare_basic(data)
-def prepare_collection(data): return _prepare_basic(data)
-# title
-# description
-def prepare_creation(data):   return _prepare_basic(data)
-# location
-
-def prepare_creators(data):
-    data = ';\n'.join([n['namepart'] for n in data])
-    return data
-
-def prepare_language(data):
-    if data.get('code', None):
-        data = data['code']
-    return data
-
-# genre
-# format
-# dimensions
-# organization
-# organization_id
-# digitize_person
-# digitize_organization
-# digitize_date
-# credit
-# rights
-
-def prepare_topics(data):
-    """Present as semicolon-separated list"""
-    a = []
-    for t in data:
-        if type(t) == type({}):
-            x = t['url']
-        else:
-            x = t
-        a.append(x)
-    return ';\n'.join(a)
-
-def prepare_persons(data):
-    return ';\n'.join(data)
-
-def prepare_facility(data):   return _prepare_basic(data)
-# notes
-
-
-
-# forms post-processing functions --------------------------------------
-# convert from form.cleaned_data to Python objects
-
-def _process_basic(data):
-    if data:
-        try:
-            return json.loads(data)
-        except:
-            return data
-    return ''
-
-# id
-# created
-# lastmod
-def process_parent(data):     return _process_basic(data)
-def process_collection(data): return _process_basic(data)
-# title
-# description
-def process_creation(data):   return _process_basic(data)
-# location
-
-def process_creators(data):
-    a = []
-    for n in data.split(';'):
-        b = {'namepart': n.strip(), 'role': 'author',}
-        a.append(b)
-    return a
-
-def process_language(data):
-    a = {'code': data,
-         'label': '',}
-    for l in LANGUAGE_CHOICES:
-        if l[0] == a['code']:
-            a['label'] = l[1]
-    return a
-
-# genre
-# format
-# dimensions
-# organization
-# organization_id
-# digitize_person
-# digitize_organization
-# digitize_date
-# credit
-# rights
-
-def process_topics(data):
-    a = []
-    form_urls = [t.strip() for t in data.split(';')]
-    a = tematres.get_terms(form_urls)
-    return a
-
-def process_persons(data):
-    return [n.strip() for n in data.split(';')]
-
-def process_facility(data):   return _process_basic(data)
-# notes
-
-
-
-# XML export functions -------------------------------------------------
-# 
-
-def _expand_attrib_namespace(attr, namespaces):
-    ns,a = attr.split(':')
-    return '{%s}%s' % (namespaces[ns], a)
-
-def _getval(tree, namespaces, xpath):
-    """Gets the first value; yes this is probably suboptimal
-    """
-    return tree.xpath(xpath, namespaces=namespaces)[0]
-
-def _set_attr(tree, namespaces, xpath, attr, value):
-    tag = tree.xpath(xpath, namespaces=namespaces)[0]
-    tag.set(attr, value)
-    return tree
-
-def _set_tag_text(tree, namespaces, xpath, value):
-    tag = _getval(tree, namespaces, xpath)
-    tag.text = value
-    return tree
-
-def _duplicate(tree, namespaces, src_xpath, dest_xpath):
-    i = tree.xpath( src_xpath,  namespaces=namespaces )[0]
-    tag = tree.xpath( dest_xpath, namespaces=namespaces )[0]
-    tag.text = i
-    return tree
-
-def _mets_simple(tree, namespaces, field, value):
-    return _set_tag_text(tree, namespaces, field['xpath'], value)
-
-def mets_id(tree, namespaces, field, value):
-    tree = _set_attr(tree, namespaces, '/mets:mets', 'OBJID', value)
-    tree = _set_tag_text(tree, namespaces,
-                         "/mets:mets/mets:dmdSec[@ID='DM1']/mets:mdWrap/mets:xmlData/mods:mods/mods:identifier",
-                         value)
-    #tree = _set_tag_text(tree, namespaces,
-    #                     "/mets:mets/mets:amdSec/mets:digiProvMD[@ID='PROV1']/mets:mdWrap/mets:xmlData/premis:premis/premis:object/premis:objectIdentifierValue",
-    #                     value)
-    return tree
-
-
-
-def mets_created(tree, namespaces, field, value):
-    if type(value) == type(datetime.now()):
-        value = value.strftime(settings.DATETIME_FORMAT)
-    return _set_attr(tree, namespaces, '/mets:mets/mets:metsHdr', 'CREATEDATE', value)
-
-def mets_lastmod(tree, namespaces, field, value):
-    try:
-        value = value.strftime(settings.DATETIME_FORMAT)
-    except:
-        pass
-    return _set_attr(tree, namespaces, '/mets:mets/mets:metsHdr', 'LASTMODDATE', value)
-
-# parent
-# collection
-
-def mets_title(tree, namespaces, field, value):
-    tree = _set_attr(tree, namespaces, '/mets:mets', 'LABEL', value)
-    tree = _set_tag_text(tree, namespaces, "/mets:mets/mets:dmdSec[@ID='DM1']/mets:mdWrap/mets:xmlData/mods:mods/mods:titleInfo/mods:title", value)
-    return tree
-
-def mets_description(tree, namespaces, field, value):
-    return _set_tag_text(tree, namespaces, field['xpath'], value)
-
-# creation
-# location
-def mets_creators(tree, namespaces, field, value):
-    """
-    <mods:name authority="naf" type="organization">
-      <mods:namePart>Anderson Photo Service</mods:namePart>
-      <mods:role>
-        <mods:roleTerm authority="marcrelator" type="text">Artist</mods:roleTerm>
-      </mods:role>
-    </mods:name>
-    """
-    return tree
-
-def mets_language(tree, namespaces, field, value):
-    """
-    """
-    return tree
-
-# genre
-# format
-# dimensions
-# organization
-# organization_id
-# digitize_person
-# digitize_organization
-# digitize_date
-# credit
-# rights
-
-def mets_topics(tree, namespaces, field, value):
-    """
-    <mods:subject ID="topics">
-      <mods:topic xlink:href="http://id.densho.org/cv/topics/8">Small Business [8]</mods:topic>
-      ...
-    </mods:subject>
-    """
-    ## remove existing tags
-    #parent = None
-    #for tag in tree.xpath(field['xpath'], namespaces=namespaces):
-    #    parent = tag.getparent()
-    #    parent.remove(tag)
-    ## replace with new tags
-    #if parent:
-    #    for kv in value:
-    #        tag = etree.Element(_expand_attrib_namespace('mods:topic', namespaces))
-    #        tag.set(_expand_attrib_namespace('xlink:href', namespaces), kv['url'])
-    #        tag.text = kv['label']
-    #        parent.append(tag)
-    return tree
-
-def mets_persons(tree, namespaces, field, value):
-    """
-    <mods:subject ID="persons">
-      <mods:name authority="naf" type="personal">
-        <mods:namePart>Hatchimonji, Kumezo</mods:namePart>
-      </mods:name>
-      ...
-    </mods:subject>
-    """
-    #parent = None
-    #xpath = field['xpath']
-    #tags = tree.xpath(field['xpath'], namespaces=namespaces)
-    #assert False
-    ## replace with new tags
-    #if parent:
-    #    for kv in value:
-    #        name = etree.Element(_expand_attrib_namespace('mods:name', namespaces))
-    #        name.set('authority', 'naf')
-    #        name.set('type', 'unknown')
-    #        namePart = etree.Element(_expand_attrib_namespace('mods:namePart', namespaces))
-    #        namePart.text = kv
-    #        name.append(namePart)
-    #        parent.append(name)
-    return tree
-
-# facility
-# notes
-# files
-
-
-
 ENTITY_FIELDS = [
     {
         'name':       'id',
@@ -773,3 +477,319 @@ ENTITY_FIELDS = [
         'default':    '',
     },
 ]
+
+
+
+# display_* --- Display functions --------------------------------------
+#
+# These functions take Python data from the corresponding Entity field
+# and format it for display.
+#
+
+def display_creators( data ):
+    return _render_multiline_dict('<a href="{namepart}">{role}: {namepart}</a>', data)
+
+def display_topics( data ):
+    return _render_multiline_dict('<a href="{url}">{label}</a>', data)
+
+def display_persons( data ):
+    d = []
+    for line in data:
+        d.append({'person': line.strip()})
+    return _render_multiline_dict('<a href="{person}">{person}</a>', d)
+
+#def display_facility( data ):
+#    d = []
+#    for line in data:
+#        d.append({'facility': line.strip()})
+#    return _render_multiline_dict('<a href="">{facility}</a>', d)
+
+# The following are utility functions used by functions.
+
+def _render_multiline_dict( template, data ):
+    t = []
+    for x in data:
+        if type(x) == type({}):
+            t.append(template.format(**x))
+        else:
+            t.append(x)
+    return '\n'.join(t)
+
+
+
+# formprep_* --- Form pre-processing functions.--------------------------
+#
+# These functions take Python data from the corresponding Entity field
+# and format it so that it can be used in an HTML form.
+#
+                   
+# id
+# created
+# lastmod
+def formprep_parent(data):     return _formprep_basic(data)
+def formprep_collection(data): return _formprep_basic(data)
+# title
+# description
+def formprep_creation(data):   return _formprep_basic(data)
+# location
+
+def formprep_creators(data):
+    data = ';\n'.join([n['namepart'] for n in data])
+    return data
+
+def formprep_language(data):
+    if data.get('code', None):
+        data = data['code']
+    return data
+
+# genre
+# format
+# dimensions
+# organization
+# organization_id
+# digitize_person
+# digitize_organization
+# digitize_date
+# credit
+# rights
+
+def formprep_topics(data):
+    """Present as semicolon-separated list"""
+    a = []
+    for t in data:
+        if type(t) == type({}):
+            x = t['url']
+        else:
+            x = t
+        a.append(x)
+    return ';\n'.join(a)
+
+def formprep_persons(data):
+    return ';\n'.join(data)
+
+def formprep_facility(data):   return _formprep_basic(data)
+# notes
+
+# The following are utility functions used by formprep_* functions.
+
+def _formprep_basic(data):
+    if data:
+        return json.dumps(data)
+    return ''
+
+
+
+# formpost_* --- Form post-processing functions ------------------------
+#
+# These functions take data from the corresponding form field and turn it
+# into Python objects that are inserted into the Entity.
+#
+
+# id
+# created
+# lastmod
+def formpost_parent(data):     return _formpost_basic(data)
+def formpost_collection(data): return _formpost_basic(data)
+# title
+# description
+def formpost_creation(data):   return _formpost_basic(data)
+# location
+
+def formpost_creators(data):
+    a = []
+    for n in data.split(';'):
+        b = {'namepart': n.strip(), 'role': 'author',}
+        a.append(b)
+    return a
+
+def formpost_language(data):
+    a = {'code': data,
+         'label': '',}
+    for l in LANGUAGE_CHOICES:
+        if l[0] == a['code']:
+            a['label'] = l[1]
+    return a
+
+# genre
+# format
+# dimensions
+# organization
+# organization_id
+# digitize_person
+# digitize_organization
+# digitize_date
+# credit
+# rights
+
+def formpost_topics(data):
+    a = []
+    form_urls = [t.strip() for t in data.split(';')]
+    a = tematres.get_terms(form_urls)
+    return a
+
+def formpost_persons(data):
+    return [n.strip() for n in data.split(';')]
+
+def formpost_facility(data):   return _formpost_basic(data)
+# notes
+
+# The following are utility functions used by formpost_* functions.
+
+def _formpost_basic(data):
+    if data:
+        try:
+            return json.loads(data)
+        except:
+            return data
+    return ''
+
+
+
+# mets_* --- METS XML export functions ---------------------------------
+#
+# These functions take Python data from the corresponding Entity field
+# and write it to a METS XML document.
+#
+
+def mets_id(tree, namespaces, field, value):
+    tree = _set_attr(tree, namespaces, '/mets:mets', 'OBJID', value)
+    tree = _set_tag_text(tree, namespaces,
+                         "/mets:mets/mets:dmdSec[@ID='DM1']/mets:mdWrap/mets:xmlData/mods:mods/mods:identifier",
+                         value)
+    #tree = _set_tag_text(tree, namespaces,
+    #                     "/mets:mets/mets:amdSec/mets:digiProvMD[@ID='PROV1']/mets:mdWrap/mets:xmlData/premis:premis/premis:object/premis:objectIdentifierValue",
+    #                     value)
+    return tree
+
+def mets_created(tree, namespaces, field, value):
+    if type(value) == type(datetime.now()):
+        value = value.strftime(settings.DATETIME_FORMAT)
+    return _set_attr(tree, namespaces, '/mets:mets/mets:metsHdr', 'CREATEDATE', value)
+
+def mets_lastmod(tree, namespaces, field, value):
+    try:
+        value = value.strftime(settings.DATETIME_FORMAT)
+    except:
+        pass
+    return _set_attr(tree, namespaces, '/mets:mets/mets:metsHdr', 'LASTMODDATE', value)
+
+# parent
+# collection
+
+def mets_title(tree, namespaces, field, value):
+    tree = _set_attr(tree, namespaces, '/mets:mets', 'LABEL', value)
+    tree = _set_tag_text(tree, namespaces, "/mets:mets/mets:dmdSec[@ID='DM1']/mets:mdWrap/mets:xmlData/mods:mods/mods:titleInfo/mods:title", value)
+    return tree
+
+def mets_description(tree, namespaces, field, value):
+    return _set_tag_text(tree, namespaces, field['xpath'], value)
+
+# creation
+# location
+
+def mets_creators(tree, namespaces, field, value):
+    """
+    <mods:name authority="naf" type="organization">
+      <mods:namePart>Anderson Photo Service</mods:namePart>
+      <mods:role>
+        <mods:roleTerm authority="marcrelator" type="text">Artist</mods:roleTerm>
+      </mods:role>
+    </mods:name>
+    """
+    return tree
+
+def mets_language(tree, namespaces, field, value):
+    """
+    """
+    return tree
+
+# genre
+# format
+# dimensions
+# organization
+# organization_id
+# digitize_person
+# digitize_organization
+# digitize_date
+# credit
+# rights
+
+def mets_topics(tree, namespaces, field, value):
+    """
+    <mods:subject ID="topics">
+      <mods:topic xlink:href="http://id.densho.org/cv/topics/8">Small Business [8]</mods:topic>
+      ...
+    </mods:subject>
+    """
+    ## remove existing tags
+    #parent = None
+    #for tag in tree.xpath(field['xpath'], namespaces=namespaces):
+    #    parent = tag.getparent()
+    #    parent.remove(tag)
+    ## replace with new tags
+    #if parent:
+    #    for kv in value:
+    #        tag = etree.Element(_expand_attrib_namespace('mods:topic', namespaces))
+    #        tag.set(_expand_attrib_namespace('xlink:href', namespaces), kv['url'])
+    #        tag.text = kv['label']
+    #        parent.append(tag)
+    return tree
+
+def mets_persons(tree, namespaces, field, value):
+    """
+    <mods:subject ID="persons">
+      <mods:name authority="naf" type="personal">
+        <mods:namePart>Hatchimonji, Kumezo</mods:namePart>
+      </mods:name>
+      ...
+    </mods:subject>
+    """
+    #parent = None
+    #xpath = field['xpath']
+    #tags = tree.xpath(field['xpath'], namespaces=namespaces)
+    #assert False
+    ## replace with new tags
+    #if parent:
+    #    for kv in value:
+    #        name = etree.Element(_expand_attrib_namespace('mods:name', namespaces))
+    #        name.set('authority', 'naf')
+    #        name.set('type', 'unknown')
+    #        namePart = etree.Element(_expand_attrib_namespace('mods:namePart', namespaces))
+    #        namePart.text = kv
+    #        name.append(namePart)
+    #        parent.append(name)
+    return tree
+
+# facility
+# notes
+# files
+
+# The following are utility functions used by mets_* functions.
+
+def _expand_attrib_namespace(attr, namespaces):
+    ns,a = attr.split(':')
+    return '{%s}%s' % (namespaces[ns], a)
+
+def _getval(tree, namespaces, xpath):
+    """Gets the first value; yes this is probably suboptimal
+    """
+    return tree.xpath(xpath, namespaces=namespaces)[0]
+
+def _set_attr(tree, namespaces, xpath, attr, value):
+    tag = tree.xpath(xpath, namespaces=namespaces)[0]
+    tag.set(attr, value)
+    return tree
+
+def _set_tag_text(tree, namespaces, xpath, value):
+    tag = _getval(tree, namespaces, xpath)
+    tag.text = value
+    return tree
+
+def _duplicate(tree, namespaces, src_xpath, dest_xpath):
+    i = tree.xpath( src_xpath,  namespaces=namespaces )[0]
+    tag = tree.xpath( dest_xpath, namespaces=namespaces )[0]
+    tag.text = i
+    return tree
+
+def _mets_simple(tree, namespaces, field, value):
+    return _set_tag_text(tree, namespaces, field['xpath'], value)
