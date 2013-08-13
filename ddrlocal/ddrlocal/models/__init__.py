@@ -132,8 +132,19 @@ class DDRLocalCollection( DDRCollection ):
         lv = []
         for f in collectionspec.COLLECTION_FIELDS:
             if hasattr(self, f['name']) and f.get('form',None):
-                item = {'label': f['form']['label'],
-                        'value': getattr(self, f['name'])}
+                key = f['name']
+                value = getattr(self, f['name'])
+                
+                # if function is present in ddrlocal.models.entity and is callable,
+                # pass field info to it and collect the result
+                functionname = 'display_%s' % key
+                if (functionname in dir(collectionspec)):
+                    function = getattr(collectionspec, functionname)
+                    value = function(value)
+                # end special processing
+                
+                item = {'label':key,
+                        'value':value,}
                 lv.append(item)
         return lv
     
@@ -431,8 +442,19 @@ class DDRLocalEntity( DDREntity ):
         lv = []
         for f in entityspec.ENTITY_FIELDS:
             if hasattr(self, f['name']) and f.get('form',None):
-                item = {'label': f['form']['label'],
-                        'value': getattr(self, f['name'])}
+                key = f['name']
+                value = getattr(self, f['name'])
+                
+                # if function is present in ddrlocal.models.entity and is callable,
+                # pass field info to it and collect the result
+                functionname = 'display_%s' % key
+                if (functionname in dir(entityspec)):
+                    function = getattr(entityspec, functionname)
+                    value = function(value)
+                # end special processing
+                
+                item = {'label':key,
+                        'value':value,}
                 lv.append(item)
         return lv
     

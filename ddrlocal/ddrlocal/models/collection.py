@@ -14,6 +14,25 @@ LANGUAGE_CHOICES = [['eng','English'],
 
 
 
+# display pre-processing functions -------------------------------------
+
+def _render_multiline_dict( template, data ):
+    t = []
+    for x in data:
+        if type(x) == type({}):
+            t.append(template.format(**x))
+        else:
+            t.append(x)
+    return '\n'.join(t)
+
+def display_creators( data ):
+    lines = []
+    for l in data.split(';'):
+        lines.append({'person': l.strip()})
+    return _render_multiline_dict('<a href="{person}">{person}</a>', lines )
+
+
+
 # XML grow functions ---------------------------------------------------
 # Add tags to XML if not found in xpath
 
