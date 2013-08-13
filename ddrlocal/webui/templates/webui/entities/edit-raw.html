@@ -4,17 +4,18 @@
 {% block title %}{{ entity.title }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{{ entity.url }}">{% if entity.title %}{{ entity.title }}{% else %}{{ entity.id }}{% endif %}</a></li>
+<li><a href="{{ entity.url }}">{{ entity.id }}</a></li>
 <li class="active">Edit</li>
 {% endblock breadcrumbs %}
 
 
 {% block content %}
 
+<h2>
+{{ entity.id }}
+</h2>
 <h1>
-{{ entity.title }}
-&mdash;
-Edit
+EDIT
 </h1>
 
 <div class="alert alert-block">

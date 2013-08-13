@@ -4,7 +4,7 @@
 {% block title %}{{ collection.id }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li class="active">{% if collection.title %}{{ collection.title }}{% else %}{{ collection.id }}{% endif %}</li>
+<li class="active">{{ collection.id }}</li>
 {% endblock breadcrumbs %}
 
 
@@ -23,7 +23,10 @@
 {% endif %}
 </div>
 
-<h1>{{ collection.title }}</h1>
+<h1>
+{{ collection.id }}
+{% if collection.title %}&mdash; {{ collection.title }}{% endif %}
+</h1>
 
     </div><!-- .span12 -->
   </div><!-- .row -->

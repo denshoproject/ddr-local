@@ -4,7 +4,7 @@
 {% block title %}git status | {{ collection.title }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{{ collection.url }}">{% if collection.title %}{{ collection.title }}{% else %}{{ collection.id }}{% endif %}</a></li>
+<li><a href="{{ collection.url }}">{{ collection.id }}</a></li>
 <li class="active">git status</li>
 {% endblock breadcrumbs %}
 
@@ -14,7 +14,13 @@
   <div class="row-fluid">
     <div class="span12">
 
-<h1>{{ collection.title }} - git status</h1>
+<h2>
+{{ collection.id }}
+{% if collection.title %}&mdash; {{ collection.title }}{% endif %}
+</h2>
+<h1>
+git status
+</h1>
 
 <h3>git status</h3>
 <pre>

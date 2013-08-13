@@ -4,14 +4,20 @@
 {% block title %}eadheader | {{ collection_uid }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{{ collection.url }}">{% if collection.title %}{{ collection.title }}{% else %}{{ collection.id }}{% endif %}</a></li>
+<li><a href="{{ collection.url }}">{{ collection.id }}</a></li>
 <li class="active">eadheader</li>
 {% endblock breadcrumbs %}
 
 
 {% block content %}
 
-<h1>{{ collection_uid }} - eadheader</h1>
+<h2>
+{{ collection.id }}
+{% if collection.title %}&mdash; {{ collection.title }}{% endif %}
+</h2>
+<h1>
+eadheader
+</h1>
 
 <form name="collection-new" action="" method="POST">{% csrf_token %}
 <table>

@@ -5,7 +5,7 @@
 {% block title %}{{ entity.title }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li class="active">{% if file.label %}{{ file.label }}{% else %}{{ file.basename }}{% endif %}</li>
+<li class="active">{{ file.basename }}</li>
 {% endblock breadcrumbs %}
 
 
@@ -14,7 +14,9 @@
   <div class="row-fluid">
     <div class="span12">
 
-<h1>{% if file.label %}{{ file.label }}{% else %}{{ file.basename }}{% endif %}</h1>
+<h1>
+{{ file.basename }}
+</h1>
 
 <h3>
 {% if entity.locked %}<a class="muted" title="This entity is locked">edit</a>

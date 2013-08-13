@@ -4,14 +4,20 @@
 {% block title %}{{ collection.title }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{{ collection.url }}">{% if collection.title %}{{ collection.title }}{% else %}{{ collection.id }}{% endif %}</a></li>
+<li><a href="{{ collection.url }}">{{ collection.id }}</a></li>
 <li class="active">Edit</li>
 {% endblock breadcrumbs %}
 
 
 {% block content %}
 
-<h1>{{ collection.title }} - Edit</h1>
+<h2>
+{{ collection.id }}
+{% if collection.title %}&mdash; {{ collection.title }}{% endif %}
+</h2>
+<h1>
+EDIT
+</h1>
 
 <div class="alert alert-block">
   <b>IMPORTANT:</b>

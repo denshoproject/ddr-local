@@ -4,7 +4,7 @@
 {% block title %}EDIT | {{ collection.title }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{{ collection.url }}">{% if collection.title %}{{ collection.title }}{% else %}{{ collection.id }}{% endif %}</a></li>
+<li><a href="{{ collection.url }}">{{ collection.id }}</a></li>
 <li class="active">Edit</li>
 {% endblock breadcrumbs %}
 
@@ -14,7 +14,13 @@
   <div class="row-fluid">
     <div class="span12">
 
-<h1>{% if collection.title %}{{ collection.title }}{% else %}{{ collection.id }}{% endif %} - EDIT</h1>
+<h2>
+{{ collection.id }}
+{% if collection.title %}&mdash; {{ collection.title }}{% endif %}
+</h2>
+<h1>
+EDIT
+</h1>
 
 <form name="edit" action="" method="POST">{% csrf_token %}
 <table>

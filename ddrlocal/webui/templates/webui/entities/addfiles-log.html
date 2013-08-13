@@ -4,14 +4,19 @@
 {% block title %}addfiles.log | {{ entity.title }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{{ entity.url }}">{% if entity.title %}{{ entity.title }}{% else %}{{ entity.id }}{% endif %}</a></li>
+<li><a href="{{ entity.url }}">{{ entity.id }}</a></li>
 <li class="active">addfiles.log</li>
 {% endblock breadcrumbs %}
 
 
 {% block content %}
 
-<h1>{% if entity.title %}{{ entity.title }}{% else %}{{ entity.id }}{% endif %} - addfiles.log</h1>
+<h2>
+{{ entity.id }}
+</h2>
+<h1>
+addfiles.log
+</h1>
 
 <pre>
 {{ entity.files_log }}

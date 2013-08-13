@@ -5,7 +5,7 @@
 {% block title %}{{ entity.id }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li class="active">{% if entity.title %}{{ entity.title }}{% else %}{{ entity.id }}{% endif %}</li>
+<li class="active">{{ entity.id }}</li>
 {% endblock breadcrumbs %}
 
 
@@ -16,7 +16,7 @@
     <div class="span12">
 
 
-<h1>{% if entity.title %}{{ entity.title }}{% else %}{{ entity.id }}{% endif %}</h1>
+<h1>{{ entity.id }}</h1>
 
 
       <ul class="nav nav-tabs" id="tabs">

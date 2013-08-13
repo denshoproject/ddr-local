@@ -4,14 +4,19 @@
 {% block title %}changelog | {{ entity.title }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{{ entity.url }}">{% if entity.title %}{{ entity.title }}{% else %}{{ entity.id }}{% endif %}</a></li>
+<li><a href="{{ entity.url }}">{{ entity.id }}</a></li>
 <li class="active">changelog</li>
 {% endblock breadcrumbs %}
 
 
 {% block content %}
 
-<h1>{% if entity.title %}{{ entity.title }}{% else %}{{ entity.id }}{% endif %} - changelog</h1>
+<h2>
+{{ entity.id }}
+</h2>
+<h1>
+changelog
+</h1>
 
 <pre>
 {{ entity.changelog }}

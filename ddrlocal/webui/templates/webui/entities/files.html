@@ -5,7 +5,7 @@
 {% block title %}files | {{ entity.id }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{{ entity.url }}">{% if entity.title %}{{ entity.title }}{% else %}{{ entity.id }}{% endif %}</a></li>
+<li><a href="{{ entity.url }}">{{ entity.id }}</a></li>
 <li class="active">Files</li>
 {% endblock breadcrumbs %}
 
@@ -15,7 +15,12 @@
   <div class="row-fluid">
     <div class="span12">
 
-<h1>{{ entity.id }} - files</h1>
+<h2>
+{{ entity.id }}
+</h2>
+<h1>
+Files
+</h1>
 
 <h3>Master</h3>
 {% if entity.files_master %}
