@@ -427,7 +427,9 @@ COLLECTION_FIELDS = [
 
 def display_creators( data ):
     lines = []
-    for l in data.split(';'):
+    if type(data) == type(''):
+        data = data.strip().split(';')
+    for l in data:
         lines.append({'person': l.strip()})
     return _render_multiline_dict('<a href="{person}">{person}</a>', lines )
 
