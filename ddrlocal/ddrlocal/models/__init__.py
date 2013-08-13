@@ -159,11 +159,12 @@ class DDRLocalCollection( DDRCollection ):
         for f in collectionmodule.COLLECTION_FIELDS:
             if hasattr(self, f['name']) and f.get('form',None):
                 key = f['name']
+                label = f['form']['label']
                 # run display_* functions on field data if present
                 value = module_function(collectionmodule,
                                         'display_%s' % key,
                                         getattr(self, f['name']))
-                lv.append( {'label':key, 'value':value,} )
+                lv.append( {'label':label, 'value':value,} )
         return lv
     
     def form_prep(self):
@@ -449,11 +450,12 @@ class DDRLocalEntity( DDREntity ):
         for f in entitymodule.ENTITY_FIELDS:
             if hasattr(self, f['name']) and f.get('form',None):
                 key = f['name']
+                label = f['form']['label']
                 # run display_* functions on field data if present
                 value = module_function(entitymodule,
                                         'display_%s' % key,
                                         getattr(self, f['name']))
-                lv.append( {'label':key, 'value':value,} )
+                lv.append( {'label':label, 'value':value,} )
         return lv
     
     def form_prep(self):
