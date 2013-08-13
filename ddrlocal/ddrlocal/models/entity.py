@@ -487,16 +487,16 @@ ENTITY_FIELDS = [
 #
 
 def display_creators( data ):
-    return _render_multiline_dict('<a href="{namepart}">{role}: {namepart}</a>', data)
+    return _display_multiline_dict('<a href="{namepart}">{role}: {namepart}</a>', data)
 
 def display_topics( data ):
-    return _render_multiline_dict('<a href="{url}">{label}</a>', data)
+    return _display_multiline_dict('<a href="{url}">{label}</a>', data)
 
 def display_persons( data ):
     d = []
     for line in data:
         d.append({'person': line.strip()})
-    return _render_multiline_dict('<a href="{person}">{person}</a>', d)
+    return _display_multiline_dict('<a href="{person}">{person}</a>', d)
 
 #def display_facility( data ):
 #    d = []
@@ -506,7 +506,7 @@ def display_persons( data ):
 
 # The following are utility functions used by functions.
 
-def _render_multiline_dict( template, data ):
+def _display_multiline_dict( template, data ):
     t = []
     for x in data:
         if type(x) == type({}):

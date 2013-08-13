@@ -15,8 +15,30 @@ from django.core.urlresolvers import reverse
 
 from DDR.models import DDRCollection, DDREntity
 from ddrlocal import VERSION, git_commit
-from ddrlocal.models import collection as collectionspec
-from ddrlocal.models import entity as entityspec
+from ddrlocal.models import collection as collectionmodule
+from ddrlocal.models import entity as entitymodule
+
+
+
+def module_function(module, function_name, value):
+    """
+    If function is present in ddrlocal.models.entity and is callable,
+    pass field info to it and return the result
+    """
+    if (function_name in dir(module)):
+        function = getattr(module, function_name)
+        value = function(value)
+    return value
+
+def module_xml_function(module, function_name, tree, NAMESPACES, f, value):
+    """
+    If function is present in ddrlocal.models.entity and is callable,
+    pass field info to it and return the result
+    """
+    if (function_name in dir(module)):
+        function = getattr(module, function_name)
+        tree = function(tree, NAMESPACES, f, value)
+    return tree
 
 
 
@@ -108,7 +130,7 @@ class DDRLocalCollection( DDRCollection ):
         @param path: Absolute path to collection; must end in valid DDR collection id.
         """
         collection = Collection(path)
-        for f in collectionspec.COLLECTION_FIELDS:
+        for f in collectionmodule.COLLECTION_FIELDS:
             if hasattr(f, 'name') and hasattr(f, 'initial'):
                 setattr(collection, f['name'], f['initial'])
         return collection
@@ -128,49 +150,39 @@ class DDRLocalCollection( DDRCollection ):
     
     def labels_values(self):
         """Generic display
+        
+        Certain fields require special processing.
+        If a "display_{field}" function is present in the ddrlocal.models.collection
+        module it will be executed.
         """
         lv = []
-        for f in collectionspec.COLLECTION_FIELDS:
+        for f in collectionmodule.COLLECTION_FIELDS:
             if hasattr(self, f['name']) and f.get('form',None):
                 key = f['name']
-                value = getattr(self, f['name'])
-                
-                # if function is present in ddrlocal.models.entity and is callable,
-                # pass field info to it and collect the result
-                functionname = 'display_%s' % key
-                if (functionname in dir(collectionspec)):
-                    function = getattr(collectionspec, functionname)
-                    value = function(value)
-                # end special processing
-                
-                item = {'label':key,
-                        'value':value,}
-                lv.append(item)
+                # run display_* functions on field data if present
+                value = module_function(collectionmodule,
+                                        'display_%s' % key,
+                                        getattr(self, f['name']))
+                lv.append( {'label':key, 'value':value,} )
         return lv
     
     def form_prep(self):
         """Prep data dict to pass into CollectionForm object.
         
         Certain fields require special processing.
-        If a "prepare_{field}" function is present in the ddrlocal.models.collection
+        If a "formprep_{field}" function is present in the ddrlocal.models.collection
         module it will be executed.
         
         @returns data: dict object as used by Django Form object.
         """
         data = {}
-        for f in collectionspec.COLLECTION_FIELDS:
+        for f in collectionmodule.COLLECTION_FIELDS:
             if hasattr(self, f['name']) and f.get('form',None):
                 key = f['name']
-                value = getattr(self, f['name'])
-                
-                # if function is present in ddrlocal.models.collection and is callable,
-                # pass field info to it and collect the result
-                functionname = 'formprep_%s' % key
-                if (functionname in dir(collectionspec)):
-                    function = getattr(collectionspec, functionname)
-                    value = function(value)
-                # end special processing
-                
+                # run formprep_* functions on field data if present
+                value = module_function(collectionmodule,
+                                        'formprep_%s' % key,
+                                        getattr(self, f['name']))
                 data[key] = value
         return data
     
@@ -178,24 +190,18 @@ class DDRLocalCollection( DDRCollection ):
         """Process cleaned_data coming from CollectionForm
         
         Certain fields require special processing.
-        If a "process_{field}" function is present in the ddrlocal.models.entity
+        If a "formpost_{field}" function is present in the ddrlocal.models.entity
         module it will be executed.
         
         @param form
         """
-        for f in collectionspec.COLLECTION_FIELDS:
+        for f in collectionmodule.COLLECTION_FIELDS:
             if hasattr(self, f['name']) and f.get('form',None):
                 key = f['name']
-                cleaned_data = form.cleaned_data[key]
-                
-                # if function is present in ddrlocal.models.collection and is callable,
-                # pass field info to it and collect the result
-                functionname = 'formpost_%s' % key
-                if (functionname in dir(collectionspec)):
-                    function = getattr(collectionspec, functionname)
-                    cleaned_data = function(cleaned_data)
-                # end special processing
-                
+                # run formpost_* functions on field data if present
+                cleaned_data = module_function(collectionmodule,
+                                               'formpost_%s' % key,
+                                               form.cleaned_data[key])
                 setattr(self, key, cleaned_data)
         # update lastmod
         self.lastmod = datetime.now()
@@ -215,7 +221,7 @@ class DDRLocalCollection( DDRCollection ):
         @param path: Absolute path to collection directory
         """
         json_data = self.json().data
-        for ff in collectionspec.COLLECTION_FIELDS:
+        for ff in collectionmodule.COLLECTION_FIELDS:
             for f in json_data:
                 if f.keys()[0] == ff['name']:
                     setattr(self, f.keys()[0], f.values()[0])
@@ -229,9 +235,9 @@ class DDRLocalCollection( DDRCollection ):
         else:
             self.lastmod = datetime.now()
         # end special cases
-        # Ensure that every field in collectionspec.COLLECTION_FIELDS is represented
+        # Ensure that every field in collectionmodule.COLLECTION_FIELDS is represented
         # even if not present in json_data.
-        for ff in collectionspec.COLLECTION_FIELDS:
+        for ff in collectionmodule.COLLECTION_FIELDS:
             if not hasattr(self, ff['name']):
                 setattr(self, ff['name'], ff.get('default',None))
     
@@ -242,7 +248,7 @@ class DDRLocalCollection( DDRCollection ):
         collection = [{'application': 'https://github.com/densho/ddr-local.git',
                        'commit': git_commit(),
                        'release': VERSION,}]
-        for ff in collectionspec.COLLECTION_FIELDS:
+        for ff in collectionmodule.COLLECTION_FIELDS:
             item = {}
             key = ff['name']
             val = ''
@@ -265,20 +271,16 @@ class DDRLocalCollection( DDRCollection ):
         """
         NAMESPACES = None
         tree = etree.fromstring(self.ead().xml)
-        for f in collectionspec.COLLECTION_FIELDS:
+        for f in collectionmodule.COLLECTION_FIELDS:
             key = f['name']
             value = ''
             if hasattr(self, f['name']):
-                value = getattr(self, f['name'])
-                
-                # if function is present in ddrlocal.models.collection and is callable,
-                # pass field info to it and collect the result
-                functionname = 'ead_%s' % key
-                if (functionname in dir(collectionspec)):
-                    function = getattr(collectionspec, functionname)
-                    tree = function(tree, NAMESPACES, f, value)
-                # end special processing
-                
+                value = getattr(self, key)
+                # run ead_* functions on field data if present
+                tree = module_xml_function(collectionmodule,
+                                           'ead_%s' % key,
+                                           tree, NAMESPACES, f,
+                                           value)
         xml_pretty = etree.tostring(tree, pretty_print=True)
         with open(self.ead_path, 'w') as f:
             f.write(xml_pretty)
@@ -431,56 +433,46 @@ class DDRLocalEntity( DDREntity ):
         @param path: Absolute path to entity; must end in valid DDR entity id.
         """
         entity = Entity(path)
-        for f in entityspec.ENTITY_FIELDS:
+        for f in entitymodule.ENTITY_FIELDS:
             if hasattr(f, 'name') and hasattr(f, 'initial'):
                 setattr(entity, f['name'], f['initial'])
         return entity
     
     def labels_values(self):
         """Generic display
+        
+        Certain fields require special processing.
+        If a "display_{field}" function is present in the ddrlocal.models.entity
+        module it will be executed.
         """
         lv = []
-        for f in entityspec.ENTITY_FIELDS:
+        for f in entitymodule.ENTITY_FIELDS:
             if hasattr(self, f['name']) and f.get('form',None):
                 key = f['name']
-                value = getattr(self, f['name'])
-                
-                # if function is present in ddrlocal.models.entity and is callable,
-                # pass field info to it and collect the result
-                functionname = 'display_%s' % key
-                if (functionname in dir(entityspec)):
-                    function = getattr(entityspec, functionname)
-                    value = function(value)
-                # end special processing
-                
-                item = {'label':key,
-                        'value':value,}
-                lv.append(item)
+                # run display_* functions on field data if present
+                value = module_function(entitymodule,
+                                        'display_%s' % key,
+                                        getattr(self, f['name']))
+                lv.append( {'label':key, 'value':value,} )
         return lv
     
     def form_prep(self):
         """Prep data dict to pass into EntityForm object.
         
         Certain fields require special processing.
-        If a "prepare_{field}" function is present in the ddrlocal.models.entity
+        If a "formprep_{field}" function is present in the ddrlocal.models.entity
         module it will be executed.
         
         @returns data: dict object as used by Django Form object.
         """
         data = {}
-        for f in entityspec.ENTITY_FIELDS:
+        for f in entitymodule.ENTITY_FIELDS:
             if hasattr(self, f['name']) and f.get('form',None):
                 key = f['name']
-                value = getattr(self, f['name'])
-                
-                # if function is present in ddrlocal.models.entity and is callable,
-                # pass field info to it and collect the result
-                functionname = 'formprep_%s' % key
-                if (functionname in dir(entityspec)):
-                    function = getattr(entityspec, functionname)
-                    value = function(value)
-                # end special processing
-                
+                # run formprep_* functions on field data if present
+                value = module_function(entitymodule,
+                                        'formprep_%s' % key,
+                                        getattr(self, f['name']))
                 data[key] = value
         if not data.get('created', None):
             data['created'] = datetime.now()
@@ -492,24 +484,18 @@ class DDRLocalEntity( DDREntity ):
         """Process cleaned_data coming from EntityForm
         
         Certain fields require special processing.
-        If a "process_{field}" function is present in the ddrlocal.models.entity
+        If a "formpost_{field}" function is present in the ddrlocal.models.entity
         module it will be executed.
         
         @param form
         """
-        for f in entityspec.ENTITY_FIELDS:
+        for f in entitymodule.ENTITY_FIELDS:
             if hasattr(self, f['name']) and f.get('form',None):
                 key = f['name']
-                cleaned_data = form.cleaned_data[key]
-                
-                # if function is present in ddrlocal.models.entity and is callable,
-                # pass field info to it and collect the result
-                functionname = 'formpost_%s' % key
-                if (functionname in dir(entityspec)):
-                    function = getattr(entityspec, functionname)
-                    cleaned_data = function(cleaned_data)
-                # end special processing
-                
+                # run formpost_* functions on field data if present
+                cleaned_data = module_function(entitymodule,
+                                               'formpost_%s' % key,
+                                               form.cleaned_data[key])
                 setattr(self, key, cleaned_data)
         # update lastmod
         self.lastmod = datetime.now()
@@ -531,7 +517,7 @@ class DDRLocalEntity( DDREntity ):
         """
         json_data = self.json().data
         
-        for ff in entityspec.ENTITY_FIELDS:
+        for ff in entitymodule.ENTITY_FIELDS:
             for f in json_data:
                 if f.keys()[0] == ff['name']:
                     setattr(self, f.keys()[0], f.values()[0])
@@ -553,9 +539,9 @@ class DDRLocalEntity( DDREntity ):
         if self.digitize_date: self.digitize_date = parsedt(self.digitize_date)
         # end special cases
         
-        # Ensure that every field in entityspec.ENTITY_FIELDS is represented
+        # Ensure that every field in entitymodule.ENTITY_FIELDS is represented
         # even if not present in json_data.
-        for ff in entityspec.ENTITY_FIELDS:
+        for ff in entitymodule.ENTITY_FIELDS:
             if not hasattr(self, ff['name']):
                 setattr(self, ff['name'], ff.get('default',None))
         
@@ -586,7 +572,7 @@ class DDRLocalEntity( DDREntity ):
                    'commit': git_commit(),
                    'release': VERSION,}]
         exceptions = ['files', 'filemeta']
-        for f in entityspec.ENTITY_FIELDS:
+        for f in entitymodule.ENTITY_FIELDS:
             item = {}
             key = f['name']
             val = ''
@@ -642,20 +628,16 @@ class DDRLocalEntity( DDREntity ):
         NS = NAMESPACES_TAGPREFIX
         ns = NAMESPACES_XPATH
         tree = etree.parse(StringIO(self.mets().xml))
-        for f in entityspec.ENTITY_FIELDS:
+        for f in entitymodule.ENTITY_FIELDS:
             key = f['name']
             value = ''
             if hasattr(self, f['name']):
                 value = getattr(self, f['name'])
-                
-                # if function is present in ddrlocal.models.entity and is callable,
-                # pass field info to it and collect the result
-                functionname = 'mets_%s' % key
-                if (functionname in dir(entityspec)):
-                    function = getattr(entityspec, functionname)
-                    tree = function(tree, NAMESPACES, f, value)
-                # end special processing
-                
+                # run mets_* functions on field data if present
+                tree = module_xml_function(entitymodule,
+                                           'mets_%s' % key,
+                                           tree, NAMESPACES, f,
+                                           value)
         xml_pretty = etree.tostring(tree, pretty_print=True)
         with open(self.mets_path, 'w') as f:
             f.write(xml_pretty)
