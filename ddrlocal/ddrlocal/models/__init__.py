@@ -308,7 +308,6 @@ class DDRLocalEntity( DDREntity ):
         self.cid = self.id.split('-')[2]
         self.eid = self.id.split('-')[3]
         self._files = []
-        self._filemeta = []
     
     def __repr__(self):
         return "<DDRLocalEntity %s>" % (self.id)
@@ -546,23 +545,14 @@ class DDRLocalEntity( DDREntity ):
         for ff in entitymodule.ENTITY_FIELDS:
             if not hasattr(self, ff['name']):
                 setattr(self, ff['name'], ff.get('default',None))
-        
-        # files, filemeta
-        filemetas = {}
-        for x in json_data:
-            if x.keys()[0] == 'filemeta':
-                filemetas = x.values()[0]
+                
         _files = []
         for y in json_data:
             if y.keys()[0] == 'files':
                 _files = y.values()[0]
         self.files = []
         for z in _files:
-            if z.get('sha1', None):
-                m = filemetas.get(z['sha1'], DDRFile.filemeta_blank())
-            # This is a little weird since the entity is kinda still being loaded
-            # but we only need it for the repo/org/cid/eid and path_rel.
-            f = DDRFile.from_entity(self, z, m)
+            f = DDRFile.from_entity(self, z)
             self.files.append(f)
     
     def dump_json(self):
@@ -598,14 +588,6 @@ class DDRLocalEntity( DDREntity ):
                     fd[key] = getattr(f, key, None)
             files.append(fd)
         entity.append( {'files':files} )
-        filemeta = {}
-        for f in self.files:
-            fm = {}
-            for key in FILEMETA_KEYS:
-                if hasattr(f, key) and (key != 'sha1'):
-                    fm[key] = getattr(f, key, None)
-            filemeta[f.sha1] = fm
-        entity.append( {'filemeta':filemeta} )
         # write
         json_pretty = json.dumps(entity, indent=4, separators=(',', ': '), sort_keys=True)
         with open(self.json_path, 'w') as f:
@@ -652,17 +634,15 @@ FILE_KEYS = ['path',
              'role', 
              'sha1', 
              'sha256', 
-             'md5',]
-FILEMETA_BLANK = {'sha1':None,
-                  'basename_orig':'',
-                  'status':'',
-                  'public':0,
-                  'sort':1,
-                  'label':'',
-                  'thumb':-1,
-                  'access_rel':None,
-                  'xmp':'',}
-FILEMETA_KEYS = FILEMETA_BLANK.keys()
+             'md5',
+             'basename_orig',
+             'status',
+             'public',
+             'sort',
+             'label',
+             'thumb',
+             'access_rel',
+             'xmp',]
 
 
 
@@ -695,25 +675,24 @@ class DDRFile( object ):
     # not saved; constructed on instantiation
     path_abs = None
     basename = None
+    basename_orig = ''
     size = None
     role = None
     sha1 = None
     sha256 = None
     md5 = None
-    # filemeta
-    basename_orig = FILEMETA_BLANK['basename_orig']
-    status = FILEMETA_BLANK['status']
-    public = FILEMETA_BLANK['public']
-    sort = FILEMETA_BLANK['sort']
-    label = FILEMETA_BLANK['label']
-    xmp = FILEMETA_BLANK['xmp']
-    thumb = FILEMETA_BLANK['thumb']
+    status = ''
+    public = 0
+    sort = 1
+    label = ''
+    thumb = -1
     # access file path relative to entity
-    access_rel = FILEMETA_BLANK['access_rel']
+    access_rel = None
     # access file path relative to /
     # not saved; constructed on instantiation
     access_abs = None
     access_size = None
+    xmp = ''
     # entity
     src = None
     repo = None
@@ -733,21 +712,12 @@ class DDRFile( object ):
             self.set_path(kwargs['path'], kwargs['entity'])
         elif kwargs.get('path',None):
             self.set_path(kwargs['path'])
-        # filemeta
-        self.basename_orig = FILEMETA_BLANK['basename_orig']
-        self.status = FILEMETA_BLANK['status']
-        self.public = FILEMETA_BLANK['public']
-        self.sort = FILEMETA_BLANK['sort']
-        self.label = FILEMETA_BLANK['label']
-        self.xmp = FILEMETA_BLANK['xmp']
-        self.thumb = FILEMETA_BLANK['thumb']
-        self.set_access(FILEMETA_BLANK['access_rel'])
     
     def __repr__(self):
         return "<DDRFile %s (%s)>" % (self.basename, self.basename_orig)
     
     @staticmethod
-    def from_entity(entity, phile, meta):
+    def from_entity(entity, phile):
         f = DDRFile()
         # entity
         f.repo = entity.repo
@@ -756,20 +726,19 @@ class DDRFile( object ):
         f.eid = entity.eid
         # files
         f.set_path(phile.get('path',None), entity)
+        f.set_access(phile.get('access_rel'), entity)
         f.size   = phile.get('size',None)
         f.role   = phile.get('role',None)
         f.sha1   = phile.get('sha1',None)
         f.sha256 = phile.get('sha256',None)
         f.md5    = phile.get('md5',None)
-        # filemeta
-        f.basename_orig = meta.get('basename_orig', FILEMETA_BLANK['basename_orig'])
-        f.status = meta.get('status', FILEMETA_BLANK['status'])
-        f.public = meta.get('public', FILEMETA_BLANK['public'])
-        f.sort   = meta.get('sort',   FILEMETA_BLANK['sort'])
-        f.label  = meta.get('label',  FILEMETA_BLANK['label'])
-        f.xmp   = meta.get('xmp',   FILEMETA_BLANK['xmp'])
-        f.thumb  = meta.get('thumb',  FILEMETA_BLANK['thumb'])
-        f.set_access(meta.get('access_rel'), entity)
+        f.basename_orig = phile.get('basename_orig', None)
+        f.status = phile.get('status', None)
+        f.public = phile.get('public', None)
+        f.sort   = phile.get('sort',   None)
+        f.label  = phile.get('label',  None)
+        f.xmp    = phile.get('xmp',    None)
+        f.thumb  = phile.get('thumb',  None)
         if f.path:
             f.basename = os.path.basename(f.path)
             f.src = os.path.join('base', entity.path_rel, f.path)
@@ -818,14 +787,6 @@ class DDRFile( object ):
         f = {}
         for key in FILE_KEYS:
             if hasattr(self, key):
-                f[key] = getattr(self, key, None)
-        return f
-    
-    def filemeta( self ):
-        """Simulates an entity['filemeta'] dict used to construct file"""
-        f = {}
-        for key in FILEMETA_KEYS:
-            if hasattr(self, key) and (key != 'sha1'):
                 f[key] = getattr(self, key, None)
         return f
         
@@ -938,15 +899,12 @@ class DDRFile( object ):
             if sha1:
                 base = '-'.join([
                     entity.repo, entity.org, entity.cid, entity.eid,
+                    role,
                     sha1[:10]
                 ])
                 name = '{}{}'.format(base, ext)
                 return name
         return None
-    
-    @staticmethod
-    def filemeta_blank():
-        return FILEMETA_BLANK
     
     def url( self ):
         return reverse('webui-file', args=[self.repo, self.org, self.cid, self.eid, self.sha1[:10]])

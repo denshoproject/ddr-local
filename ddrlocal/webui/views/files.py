@@ -16,7 +16,7 @@ from django.template import RequestContext
 from DDR import commands
 from ddrlocal.models import DDRLocalCollection as Collection
 from ddrlocal.models import DDRLocalEntity as Entity
-from ddrlocal.models import DDRFile, FILEMETA_BLANK
+from ddrlocal.models import DDRFile
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
 from webui.forms.files import NewFileForm, EditFileForm, NewAccessFileForm, shared_folder_files
@@ -121,7 +121,7 @@ def new( request, repo, org, cid, eid, role='master' ):
             return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     else:
         data = {'role':role,
-                'sort': FILEMETA_BLANK['sort'],
+                'sort': 1,
                 'label': '',}
         form = NewFileForm(data, path_choices=shared_folder_files())
     return render_to_response(
