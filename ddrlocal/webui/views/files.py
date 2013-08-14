@@ -236,7 +236,6 @@ def edit( request, repo, org, cid, eid, sha1 ):
             #f.status = form.cleaned_data['status']
             #f.public = form.cleaned_data['public']
             f.sort = form.cleaned_data['sort']
-            f.role = form.cleaned_data['role']
             f.label = form.cleaned_data['label']
             f.xmp = form.cleaned_data['xmp']
             result = entity.file(sha1, f)
@@ -257,7 +256,6 @@ def edit( request, repo, org, cid, eid, sha1 ):
         data = {
             #'status': f.status,
             #'public': f.public,
-            'role': f.role,
             'sort': f.sort,
             'label': f.label,
             'xmp': f.xmp,

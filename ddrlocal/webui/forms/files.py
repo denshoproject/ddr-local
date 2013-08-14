@@ -30,7 +30,6 @@ class NewFileForm(forms.Form):
             self.fields['path'].choices = path_choices
 
 class EditFileForm(forms.Form):
-    role = forms.ChoiceField(choices=settings.ENTITY_FILE_ROLES)
     label = forms.CharField(max_length=255, required=False)
     sort = forms.IntegerField()
     xmp = forms.CharField(widget=forms.Textarea, required=False)
