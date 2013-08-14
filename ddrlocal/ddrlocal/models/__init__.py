@@ -386,7 +386,7 @@ class DDRLocalEntity( DDREntity ):
         files = [f for f in self.files if f.role and (f.role == 'mezzanine')]
         return sorted(files, key=lambda f: f.sort)
     
-    def file( self, sha1, newfile=None ):
+    def file( self, repo, org, cid, eid, role, sha1, newfile=None ):
         """Given a SHA1 hash, get the corresponding file dict.
         
         @param sha1
@@ -717,6 +717,38 @@ class DDRFile( object ):
         return "<DDRFile %s (%s)>" % (self.basename, self.basename_orig)
     
     @staticmethod
+    def file_name( entity, path_abs, role ):
+        """Generate a new name for the specified file; Use only when ingesting a file!
+        
+        rename files to standard names on ingest:
+        %{repo}-%{org}-%{cid}-%{eid}-%{role}%{sha1}.%{ext}
+        example: ddr-testing-56-101-master-fb73f9de29.jpg
+        
+        @param entity
+        @param path_abs: Absolute path to the file.
+        @param role
+        """
+        if os.path.exists and os.access(path_abs, os.R_OK):
+            ext = os.path.splitext(path_abs)[1]
+            sha1 = hash(path_abs, 'sha1')
+            if sha1:
+                base = '-'.join([
+                    entity.repo, entity.org, entity.cid, entity.eid,
+                    role,
+                    sha1[:10]
+                ])
+                name = '{}{}'.format(base, ext)
+                return name
+        return None
+    
+    def url( self ):
+        return reverse('webui-file', args=[self.repo, self.org, self.cid, self.eid, self.role, self.sha1[:10]])
+    
+    @staticmethod
+    def file_path(request, repo, org, cid, eid, role, sha1):
+        return os.path.join(settings.MEDIA_BASE, '{}-{}-{}'.format(repo, org, cid, eid, role, sha1))
+    
+    @staticmethod
     def from_entity(entity, phile):
         f = DDRFile()
         # entity
@@ -889,27 +921,3 @@ class DDRFile( object ):
                 file_ = File(f)
             thumbnail = default.backend.get_thumbnail(file_, geometry, options)
         return thumbnail
-    
-    @staticmethod
-    def file_name( entity, path ):
-        """Generate a new name for the specified file
-        
-        rename files to standard names on ingest:
-        %{repo}-%{org}-%{cid}-%{eid}-%{sha1}.%{ext}
-        example: ddr-testing-56-101-fb73f9de29.jpg
-        """
-        if os.path.exists and os.access(path, os.R_OK):
-            ext = os.path.splitext(path)[1]
-            sha1 = hash(path, 'sha1')
-            if sha1:
-                base = '-'.join([
-                    entity.repo, entity.org, entity.cid, entity.eid,
-                    role,
-                    sha1[:10]
-                ])
-                name = '{}{}'.format(base, ext)
-                return name
-        return None
-    
-    def url( self ):
-        return reverse('webui-file', args=[self.repo, self.org, self.cid, self.eid, self.sha1[:10]])

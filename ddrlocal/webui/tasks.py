@@ -125,7 +125,7 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
     dest_dir          = entity.files_path
     dest_dir_exists   = os.path.exists(dest_dir)
     dest_dir_writable = os.access(dest_dir, os.W_OK)
-    dest_basename     = DDRFile.file_name(entity, src_path)
+    dest_basename     = DDRFile.file_name(entity, src_path, role)
     dest_path         = os.path.join(dest_dir, dest_basename)
     dest_path_exists  = os.path.exists(dest_path)
     s = []
@@ -458,6 +458,7 @@ def session_tasks( request ):
                                             ctask['result']['org'],
                                             ctask['result']['cid'],
                                             ctask['result']['eid'],
+                                            ctask['result']['role'],
                                             ctask['result']['sha1'],])
                         ctask['file_url'] = url
                     elif r.get('eid', None):

@@ -49,7 +49,7 @@ def detail( request, repo, org, cid, eid, role, sha1 ):
     """
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
-    file_ = entity.file(sha1)
+    file_ = entity.file(repo, org, cid, eid, role, sha1)
     formdata = {'path':file_.path_rel}
     return render_to_response(
         'webui/files/detail.html',
@@ -139,7 +139,7 @@ def new( request, repo, org, cid, eid, role='master' ):
 
 @login_required
 @storage_required
-def new_access( request, repo, org, cid, eid, sha1 ):
+def new_access( request, repo, org, cid, eid, role, sha1 ):
     """Generate a new access file for the specified file.
     
     NOTE: There is no GET for this view.  GET requests will redirect to entity.
@@ -156,7 +156,7 @@ def new_access( request, repo, org, cid, eid, sha1 ):
     if entity.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
-    file_ = entity.file(sha1)
+    file_ = entity.file(repo, org, cid, eid, role, sha1)
     #
     if request.method == 'POST':
         form = NewAccessFileForm(request.POST)
@@ -214,7 +214,7 @@ def batch( request, repo, org, cid, eid, role='master' ):
 
 @login_required
 @storage_required
-def edit( request, repo, org, cid, eid, sha1 ):
+def edit( request, repo, org, cid, eid, role, sha1 ):
     """Edit file metadata
     """
     git_name = request.session.get('git_name')
@@ -223,7 +223,7 @@ def edit( request, repo, org, cid, eid, sha1 ):
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
-    f = entity.file(sha1)
+    f = entity.file(repo, org, cid, eid, role, sha1)
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect( f.url() )
@@ -238,7 +238,7 @@ def edit( request, repo, org, cid, eid, sha1 ):
             f.sort = form.cleaned_data['sort']
             f.label = form.cleaned_data['label']
             f.xmp = form.cleaned_data['xmp']
-            result = entity.file(sha1, f)
+            result = entity.file(repo, org, cid, eid, role, sha1, f)
             if result in ['added','updated']:
                 entity.dump_json()
                 entity.dump_mets()
@@ -249,7 +249,7 @@ def edit( request, repo, org, cid, eid, sha1 ):
                     messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
                 else:
                     messages.success(request, WEBUI_MESSAGES['VIEWS_FILES_UPDATED'])
-                    return HttpResponseRedirect( reverse('webui-file', args=[repo,org,cid,eid,sha1]) )
+                    return HttpResponseRedirect( reverse('webui-file', args=[repo,org,cid,eid,role,sha1]) )
             # something went wrong
             assert False
     else:
