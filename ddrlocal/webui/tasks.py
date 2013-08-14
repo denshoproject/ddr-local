@@ -341,7 +341,10 @@ def add_access( git_name, git_mail, entity, ddrfile ):
     dest_dir          = entity.files_path
     dest_dir_exists   = os.path.exists(dest_dir)
     dest_dir_writable = os.access(dest_dir, os.W_OK)
-    dest_basename     = DDRFile.file_name(entity, src_path)
+    access_filename = DDRFile.access_file_name(os.path.splitext(src_path)[0],
+                                               settings.ACCESS_FILE_APPEND,
+                                               'jpg') # see DDRFile.make_access_file
+    dest_basename     = os.path.basename(access_filename)
     dest_path         = os.path.join(dest_dir, dest_basename)
     dest_path_exists  = os.path.exists(dest_path)
     s = []

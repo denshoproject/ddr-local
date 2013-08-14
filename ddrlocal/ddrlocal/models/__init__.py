@@ -815,7 +815,11 @@ class DDRFile( object ):
             str = str.replace('\n','')
             return str
         return None
-    
+        
+    @staticmethod
+    def access_file_name( src_abs, append, extension ):
+        return '%s%s.%s' % (os.path.splitext(src_abs)[0], append, extension)
+
     @staticmethod
     def make_access_file( src_abs, append, geometry, options='' ):
         """Attempt to make access file.
