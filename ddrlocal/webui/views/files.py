@@ -44,13 +44,13 @@ def handle_uploaded_file(f, dest_dir):
 
 @login_required
 @storage_required
-def detail( request, repo, org, cid, eid, sha1 ):
+def detail( request, repo, org, cid, eid, role, sha1 ):
     """Add file to entity.
     """
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
     file_ = entity.file(sha1)
-    formdata = {'path':file_.path}
+    formdata = {'path':file_.path_rel}
     return render_to_response(
         'webui/files/detail.html',
         {'repo': entity.repo,

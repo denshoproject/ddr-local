@@ -193,7 +193,7 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
         if os.path.exists(dest_path):
             cp_successful = True
             f.set_path(dest_path, entity=entity)
-            entity.files_log(1, 'copied: %s' % f.path)
+            entity.files_log(1, 'copied: %s' % f.path_abs)
     
     access_file = None
     apath = None
@@ -331,7 +331,7 @@ def add_access( git_name, git_mail, entity, ddrfile ):
     
     entity.files_log(1, 'ddrlocal.webui.tasks.add_access: START')
     entity.files_log(1, 'entity: %s' % entity.id)
-    entity.files_log(1, 'src: %s' % f.path)
+    entity.files_log(1, 'src: %s' % f.path_rel)
     
     src_basename      = os.path.basename(src_path)
     src_exists        = os.path.exists(src_path)

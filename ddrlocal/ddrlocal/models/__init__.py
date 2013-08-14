@@ -628,7 +628,7 @@ class DDRLocalEntity( DDREntity ):
 
 
 
-FILE_KEYS = ['path', 
+FILE_KEYS = ['path_rel',
              'basename', 
              'size', 
              'role', 
@@ -669,7 +669,7 @@ class DDRFile( object ):
     # files
     # path relative to entity
     # (ex: files/ddr-testing-71-6-dd9ec4305d.jpg)
-    path = None
+    path_rel = None
     # path relative to /
     # (ex: /var/www/media/base/ddr-testing-71/files/ddr-testing-71-6/files/ddr-testing-71-6-dd9ec4305d.jpg)
     # not saved; constructed on instantiation
@@ -708,10 +708,10 @@ class DDRFile( object ):
             self.cid = kwargs['entity'].cid
             self.eid = kwargs['entity'].eid
         # files
-        if kwargs.get('path',None) and kwargs.get('entity',None):
-            self.set_path(kwargs['path'], kwargs['entity'])
-        elif kwargs.get('path',None):
-            self.set_path(kwargs['path'])
+        if kwargs.get('path_rel',None) and kwargs.get('entity',None):
+            self.set_path(kwargs['path_rel'], kwargs['entity'])
+        elif kwargs.get('path_rel',None):
+            self.set_path(kwargs['path_rel'])
     
     def __repr__(self):
         return "<DDRFile %s (%s)>" % (self.basename, self.basename_orig)
@@ -725,7 +725,7 @@ class DDRFile( object ):
         f.cid = entity.cid
         f.eid = entity.eid
         # files
-        f.set_path(phile.get('path',None), entity)
+        f.set_path(phile.get('path_rel',None), entity)
         f.set_access(phile.get('access_rel'), entity)
         f.size   = phile.get('size',None)
         f.role   = phile.get('role',None)
@@ -739,29 +739,29 @@ class DDRFile( object ):
         f.label  = phile.get('label',  None)
         f.xmp    = phile.get('xmp',    None)
         f.thumb  = phile.get('thumb',  None)
-        if f.path:
-            f.basename = os.path.basename(f.path)
-            f.src = os.path.join('base', entity.path_rel, f.path)
+        if f.path_rel:
+            f.basename = os.path.basename(f.path_rel)
+            f.src = os.path.join('base', entity.path_rel, f.path_rel)
         return f
     
-    def set_path( self, path, entity=None ):
+    def set_path( self, path_rel, entity=None ):
         """
         Reminder:
-        self.path is relative to entity
+        self.path_rel is relative to entity
         self.path_abs is relative to filesystem root
         """
-        self.path = path
+        self.path_rel = path_rel
         if entity:
-            self.path = self.path.replace(entity.path, '')
-        if self.path and (self.path[0] == '/'):
+            self.path_rel = self.path_rel.replace(entity.path, '')
+        if self.path_rel and (self.path_rel[0] == '/'):
             # remove initial slash (ex: '/files/...')
-            self.path = self.path[1:]
+            self.path_rel = self.path_rel[1:]
         if entity:
-            self.path_abs = os.path.join(entity.path, self.path)
-            self.src = os.path.join('base', entity.path_rel, self.path)
+            self.path_abs = os.path.join(entity.path, self.path_rel)
+            self.src = os.path.join('base', entity.path_rel, self.path_rel)
         if self.path_abs and os.path.exists(self.path_abs):
             self.size = os.path.getsize(self.path_abs)
-        self.basename = os.path.basename(self.path)
+        self.basename = os.path.basename(self.path_rel)
     
     def set_access( self, access_rel, entity=None ):
         """
@@ -794,14 +794,15 @@ class DDRFile( object ):
         return self.__dict__
     
     @staticmethod
-    def extract_xmp( path ):
+    def extract_xmp( path_abs ):
         """Attempts to extract XMP data from a file, returns as dict.
         
+        @param path_abs: Absolute path to file.
         @return dict NOTE: this is not an XML file!
         """
         xmpfile = libxmp.files.XMPFiles()
         try:
-            xmpfile.open_file(path, open_read=True)
+            xmpfile.open_file(path_abs, open_read=True)
             xmp = xmpfile.get_xmp()
         except:
             xmp = None
