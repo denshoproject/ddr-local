@@ -145,14 +145,26 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
     cp_successful = False
     if preparations == 'ok,ok,ok,ok':  # ,ok
         entity.files_log(1, 'Source file exists; is readable.  Destination dir exists, is writable.')
-        
-        f = DDRFile(entity=entity)
+        # task: copy
+        entity.files_log(1, 'Copying...')
+        try:
+            shutil.copy(src_path, dest_path)
+        except:
+            # TODO would be nice to know why copy failed
+            entity.files_log(0, 'copy FAIL')
+        if os.path.exists(dest_path):
+            cp_successful = True
+            entity.files_log(1, 'copied: %s' % dest_path)
+    
+    if cp_successful:
+        f = DDRFile(dest_path)
+        entity.files_log(1, 'Created DDRFile: %s' % f)
+        f.basename_orig = src_basename
+        entity.files_log(1, 'Original filename: %s' % f.basename_orig)
         f.role = role
         f.sort = sort
         f.label = label
-        f.basename_orig = src_basename
-        entity.files_log(1, 'Original filename: %s' % f.basename_orig)
-        
+        f.size = os.path.getsize(f.path_abs)
         # task: get SHA1 checksum (links entity.filemeta entity.files records
         entity.files_log(1, 'Checksumming...')
         try:
@@ -170,7 +182,6 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
             entity.files_log(1, 'sha256: %s' % f.sha256)
         except:
             entity.files_log(0, 'sha256 FAIL')
-        
         # task: extract_xmp
         entity.files_log(1, 'Extracting XMP data...')
         try:
@@ -182,18 +193,6 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
         except:
             # TODO would be nice to know why XMP extract failed
             entity.files_log(0, 'XMP extract FAIL')
-        
-        # task: copy
-        entity.files_log(1, 'Copying...')
-        try:
-            shutil.copy(src_path, dest_path)
-        except:
-            # TODO would be nice to know why copy failed
-            entity.files_log(0, 'copy FAIL')
-        if os.path.exists(dest_path):
-            cp_successful = True
-            f.set_path(dest_path, entity=entity)
-            entity.files_log(1, 'copied: %s' % f.path_abs)
     
     access_file = None
     apath = None
@@ -214,43 +213,6 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
             entity.files_log(1, 'access_rel: %s' % f.access_rel)
             entity.files_log(1, 'access_abs: %s' % f.access_abs)
     
-    thumbnail = None
-    if f and cp_successful and apath and os.path.exists(apath):
-        # task: make thumbnail
-        entity.files_log(1, 'Thumbnailing...')
-        # NOTE: do this before entity_annex_add so don't have to lock/unlock
-        try:
-            thumbnail = DDRFile.make_thumbnail(apath,
-                                               settings.THUMBNAIL_GEOMETRY,
-                                               settings.THUMBNAIL_OPTIONS)
-        except:
-            # TODO would be nice to know why thumbnail failed
-            entity.files_log(0, 'thumbnail FAIL')
-        f.thumb = -1
-        if thumbnail and hasattr(thumbnail, 'name') and thumbnail.name:
-            entity.files_log(1, 'thumbnail.name: %s' % thumbnail.name)
-            if thumbnail.name.find(settings.MEDIA_ROOT) == -1:
-                tpath = os.path.join(settings.MEDIA_ROOT, thumbnail.name)
-            else:
-                tpath = thumbnail.name
-            entity.files_log(1, 'tpath: %s' % tpath)
-            if os.path.exists(tpath):
-                if os.path.getsize(tpath):
-                    f.thumb = 1
-                    entity.files_log(1, 'thumbnail: ok')
-                else:
-                    f.thumb = 0
-                    entity.files_log(0, 'thumbnail present but not valid (zero length?)')
-                    entity.files_log(0, 'removing %s' % tpath)
-                    os.remove(tpath)
-                    if os.path.exists(tpath):
-                        entity.files_log(0, 'could not remove!')
-                    else:
-                        entity.files_log(1, 'removed')
-            else:
-                f.thumb = 0
-                entity.files_log(0, 'thumbnail not generated')
-        entity.files_log(1, 'f.thumb: %s' % f.thumb)
     
     if f and cp_successful:
         entity.files_log(1, 'Adding %s to entity...' % f)
@@ -258,8 +220,10 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
         entity.files_log(1, 'entity.files: %s' % entity.files)
         entity.files_log(1, 'Writing %s' % entity.json_path)
         entity.dump_json()
+        f.dump_json()
         entity.files_log(1, 'done')
         try:
+            # entity.json gets written as part of this
             entity.files_log(1, 'entity_annex_add(%s, %s, %s, %s, %s)' % (
                 git_name, git_mail,
                 entity.parent_path,
@@ -273,6 +237,21 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
         except:
             # TODO would be nice to know why entity_annex_add failed
             entity.files_log(0, 'entity_annex_add: ERROR')
+        # file JSON
+        entity.files_log(1, 'entity_update(%s, %s, %s, %s, %s)' % (
+            git_name, git_mail,
+            entity.parent_path, entity.id,
+            f.json_path))
+        try:
+            exit,status = commands.entity_update(
+                git_name, git_mail,
+                entity.parent_path, entity.id,
+                [f.json_path,])
+            entity.files_log(1, 'entity_update: exit: %s' % exit)
+            entity.files_log(1, 'entity_update: status: %s' % status)
+        except:
+            # TODO would be nice to know why entity_annex_add failed
+            entity.files_log(0, 'entity_update: ERROR')
         # access file
         if f.access_rel:
             access_basename = os.path.basename(f.access_rel)
