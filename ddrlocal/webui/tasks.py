@@ -15,7 +15,7 @@ from django.core.urlresolvers import reverse
 
 from ddrlocal.models import DDRLocalEntity, DDRFile, hash
 
-from DDR.commands import entity_annex_add
+from DDR.commands import entity_annex_add, entity_update
 
 
 
@@ -238,12 +238,12 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
             # TODO would be nice to know why entity_annex_add failed
             entity.files_log(0, 'entity_annex_add: ERROR')
         # file JSON
-        entity.files_log(1, 'entity_update(%s, %s, %s, %s, %s)' % (
-            git_name, git_mail,
-            entity.parent_path, entity.id,
-            f.json_path))
         try:
-            exit,status = commands.entity_update(
+            entity.files_log(1, 'entity_update(%s, %s, %s, %s, %s)' % (
+                git_name, git_mail,
+                entity.parent_path, entity.id,
+                f.json_path))
+            exit,status = entity_update(
                 git_name, git_mail,
                 entity.parent_path, entity.id,
                 [f.json_path,])
