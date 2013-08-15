@@ -704,33 +704,58 @@ class DDRFile( object ):
     org = None
     cid = None
     eid = None
+    collection_path = None
+    entity_path = None
     
     def __init__(self, *args, **kwargs):
-        if args and args[0] and os.path.exists(args[0]):
-            self.path_abs = args[0]
+        """
+        """
+        # accept either path_abs or path_rel
+        if kwargs and kwargs.get('path_abs',None):
+            self.path_abs = path_abs
+        elif kwargs and kwargs.get('path_rel',None):
+            self.path_rel = path_rel
+        else:
+            if args and args[0]:
+                s = os.path.splitext(args[0])
+                if os.path.exists(args[0]):
+                    self.path_abs = args[0]
+                elif (len(s) == 2) and s[0] and s[1]:
+                    self.path_rel = args[0]
         if self.path_abs:
             self.basename = os.path.basename(self.path_abs)
+        elif self.path_rel:
+            self.basename = os.path.basename(self.path_rel)
+        # much info is encoded in filename
+        if self.basename:
+            parts = os.path.splitext(self.basename)[0].split('-')
+            self.repo = parts[0]
+            self.org = parts[1]
+            self.cid = parts[2]
+            self.eid = parts[3]
+            self.role = parts[4]
+            self.sha1 = parts[5]
+            self.collection_path = DDRLocalCollection.collection_path(None, self.repo, self.org, self.cid)
+            self.entity_path = DDRLocalEntity.entity_path(None, self.repo, self.org, self.cid, self.eid)
+        # get one path if the other not present
+        if self.entity_path and self.path_rel and not self.path_abs:
+            self.path_abs = os.path.join(self.entity_path, self.path_rel)
+        elif self.entity_path and self.path_abs and not self.path_rel:
+            self.path_rel = self.path_abs.replace(self.entity_path, '')
+        # clean up path_rel if necessary
+        if self.path_rel and (self.path_rel[0] == '/'):
+            self.path_rel = self.path_rel[1:]
+        # load JSON
+        if self.path_abs:
+            # file JSON
             self.json_path = os.path.join(os.path.splitext(self.path_abs)[0], '.json')
             self.json_path = self.json_path.replace('/.json', '.json')
             self.load_json()
-        # Ensure that every field in filemodule.FILE_FIELDS is represented
-        # even if not present in json_data.
-        for ff in filemodule.FILE_FIELDS:
-            if not hasattr(self, ff['name']):
-                setattr(self, ff['name'], ff.get('default',None))
-        # squeeze as much as we can from path_abs
-        parts = os.path.splitext(self.basename)[0].split('-')
-        self.repo = parts[0]
-        self.org = parts[1]
-        self.cid = parts[2]
-        self.eid = parts[3]
-        self.role = parts[4]
-        self.sha1 = parts[5]
-        self.collection_path = DDRLocalCollection.collection_path(None, self.repo, self.org, self.cid)
-        self.entity_path = DDRLocalEntity.entity_path(None, self.repo, self.org, self.cid, self.eid)
-        self.path_rel = self.path_abs.replace(self.entity_path, '')
-        if self.path_rel and (self.path_rel[0] == '/'):
-            self.path_rel = self.path_rel[1:]
+            access_abs = None
+            if self.access_rel and self.entity_path:
+                access_abs = os.path.join(self.entity_path, self.access_rel)
+                if os.path.exists(access_abs):
+                    self.access_abs = os.path.join(self.entity_path, self.access_rel)
     
     def __repr__(self):
         return "<DDRFile %s (%s)>" % (self.basename, self.basename_orig)
@@ -816,18 +841,11 @@ class DDRFile( object ):
             with open(self.json_path, 'r') as f:
                 raw = f.read()
             data = json.loads(raw)
-            
+            # everything else
             for ff in filemodule.FILE_FIELDS:
                 for f in data:
                     if f.keys()[0] == ff['name']:
                         setattr(self, f.keys()[0], f.values()[0])
-        
-        
-#        # entity
-#        self.repo = entity.repo
-#        self.org = entity.org
-#        self.cid = entity.cid
-#        self.eid = entity.eid
     
     def dump_json(self):
         """Dump File data to .json file.
@@ -835,8 +853,10 @@ class DDRFile( object ):
         """
         # TODO DUMP FILE AND FILEMETA PROPERLY!!!
         file_ = [{'application': 'https://github.com/densho/ddr-local.git',
-              'commit': git_commit(),
-              'release': VERSION,}]
+                  'commit': git_commit(),
+                  'release': VERSION,},]
+        if self.access_rel:
+            file_.append({'access_rel': self.access_rel})
         for ff in filemodule.FILE_FIELDS:
             item = {}
             key = ff['name']

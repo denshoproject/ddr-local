@@ -5,6 +5,60 @@ from django.conf import settings
 
 FILE_FIELDS = [
     {
+        'name':       'sha1',
+        'xpath':      "",
+        'xpath_dup':  [],
+        'model_type': str,
+        # no form_type
+        # no form
+        'default':    '',
+    },
+    {
+        'name':       'sha256',
+        'xpath':      "",
+        'xpath_dup':  [],
+        'model_type': str,
+        # no form_type
+        # no form
+        'default':    '',
+    },
+    {
+        'name':       'md5',
+        'xpath':      "",
+        'xpath_dup':  [],
+        'model_type': str,
+        # no form_type
+        # no form
+        'default':    '',
+    },
+    {
+        'name':       'size',
+        'xpath':      "",
+        'xpath_dup':  [],
+        'model_type': str,
+        # no form_type
+        # no form
+        'default':    '',
+    },
+    {
+        'name':       'basename_orig',
+        'xpath':      "",
+        'xpath_dup':  [],
+        'model_type': str,
+        # no form_type
+        # no form
+        'default':    '',
+    },
+    {
+        'name':       'access_rel',
+        'xpath':      "",
+        'xpath_dup':  [],
+        'model_type': str,
+        # no form_type
+        # no form
+        'default':    '',
+    },
+    {
         'name':       'status',
         'group':      '',
         'xpath':      "",
