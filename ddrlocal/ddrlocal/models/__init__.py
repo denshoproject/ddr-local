@@ -407,7 +407,7 @@ class DDRLocalEntity( DDREntity ):
             return 'added'
         # get a file
         for f in self.files:
-            if sha1 in f.sha1:
+            if (f.sha1[:10] == sha1[:10]) and (f.role == role):
                 return f
         # just do nothing
         return None
