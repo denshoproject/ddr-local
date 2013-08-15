@@ -91,7 +91,7 @@
   </tr>
 </table>
 
-<form name="new-access" action="{% url "webui-file-new-access" file.repo file.org file.cid file.eid file.role file.sha1 %}" method="post">{% csrf_token %}
+<form name="new-access" action="{# url "webui-file-new-access" file.repo file.org file.cid file.eid file.role file.sha1 #}" method="post">{% csrf_token %}
 {{ new_access_form.as_p }}
 <input class="btn btn-mini" type="submit" value="Generate New Access File">
 </form>
@@ -100,3 +100,20 @@
   </div><!-- .row-fluid -->
 
 {% endblock content %}
+
+
+
+{% block footer %}
+
+<div class="muted" id="expert">
+  <span>
+    <a class="muted" href="{% url "webui-file-json" repo org cid eid role sha1 %}">json</a>
+    <a class="muted" href="{# url "webui-file-edit-json" repo org cid eid role sha1 #}">(edit)</a>
+  </span>
+  <span class="bullsep">&bull;&bull;</span>
+  <span>
+  {{ file.path_abs }}
+  </span>
+</div>
+
+{% endblock footer %}

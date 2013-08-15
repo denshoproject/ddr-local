@@ -1,0 +1,35 @@
+{% extends "webui/entities/base.html" %}
+
+
+{% block title %}Edit | {{ entity.title }}{% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+<li><a href="{{ entity.url }}">{{ entity.id }}</a></li>
+<li class="active">Edit</li>
+{% endblock breadcrumbs %}
+
+
+{% block content %}
+
+  <div class="row-fluid">
+    <div class="span12">
+
+<h2>
+{{ entity.id }}
+</h2>
+<h1>
+Edit
+</h1>
+
+<form name="edit" action="" method="POST">{% csrf_token %}
+<table>
+  <tr><th><label>Object ID:</label></th><td>{{ entity.id }}</td></tr>
+  {{ form.as_table }}
+</table>
+<input name="submit" type="submit" value="submit"/><br/>
+</form>
+
+    </div><!-- .span12 -->
+  </div><!-- .row-fluid -->
+
+{% endblock content %}

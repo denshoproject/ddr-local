@@ -17,6 +17,8 @@ from DDR import commands
 from ddrlocal.models import DDRLocalCollection as Collection
 from ddrlocal.models import DDRLocalEntity as Entity
 from ddrlocal.models import DDRFile
+from ddrlocal.forms import FileForm
+
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
 from webui.forms.files import NewFileForm, EditFileForm, NewAccessFileForm, shared_folder_files
@@ -53,10 +55,12 @@ def detail( request, repo, org, cid, eid, role, sha1 ):
     formdata = {'path':file_.path_rel}
     return render_to_response(
         'webui/files/detail.html',
-        {'repo': entity.repo,
-         'org': entity.org,
-         'cid': entity.cid,
-         'eid': entity.eid,
+        {'repo': file_.repo,
+         'org': file_.org,
+         'cid': file_.cid,
+         'eid': file_.eid,
+         'role': file_.role,
+         'sha1': file_.sha1,
          'collection_uid': collection.id,
          'collection': collection,
          'entity': entity,
@@ -64,6 +68,14 @@ def detail( request, repo, org, cid, eid, role, sha1 ):
          'new_access_form': NewAccessFileForm(formdata),},
         context_instance=RequestContext(request, processors=[])
     )
+
+@storage_required
+def json( request, repo, org, cid, eid, role, sha1 ):
+    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+    file_ = entity.file(repo, org, cid, eid, role, sha1)
+    with open(file_.json_path, 'r') as f:
+        json = f.read()
+    return HttpResponse(json, mimetype="application/json")
 
 @login_required
 @storage_required
@@ -215,6 +227,54 @@ def batch( request, repo, org, cid, eid, role='master' ):
 @login_required
 @storage_required
 def edit( request, repo, org, cid, eid, role, sha1 ):
+    git_name = request.session.get('git_name')
+    git_mail = request.session.get('git_mail')
+    if not git_name and git_mail:
+        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
+    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+    if collection.locked():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
+        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+    if entity.locked():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
+        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+    file_ = entity.file(repo, org, cid, eid, role, sha1)
+    #
+    if request.method == 'POST':
+        form = FileForm(request.POST)
+        if form.is_valid():
+            file_.form_post(form)
+            file_.dump_json()
+            exit,status = commands.entity_update(git_name, git_mail,
+                                                 entity.parent_path, entity.id,
+                                                 [file_.json_path,])
+            if exit:
+                messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
+            else:
+                messages.success(request, WEBUI_MESSAGES['VIEWS_FILES_UPDATED'])
+                return HttpResponseRedirect( reverse('webui-file', args=[repo,org,cid,eid,role,sha1]) )
+            # something went wrong
+            assert False
+    else:
+        form = FileForm(file_.form_prep())
+    return render_to_response(
+        'webui/files/edit-json.html',
+        {'repo': file_.repo,
+         'org': file_.org,
+         'cid': file_.cid,
+         'eid': file_.eid,
+         'collection': collection,
+         'entity': entity,
+         'file': file_,
+         'form': form,
+         },
+        context_instance=RequestContext(request, processors=[])
+    )
+
+@login_required
+@storage_required
+def edit_old( request, repo, org, cid, eid, role, sha1 ):
     """Edit file metadata
     """
     git_name = request.session.get('git_name')

@@ -17,6 +17,7 @@ from DDR.models import DDRCollection, DDREntity
 from ddrlocal import VERSION, git_commit
 from ddrlocal.models import collection as collectionmodule
 from ddrlocal.models import entity as entitymodule
+from ddrlocal.models import files as filemodule
 
 
 
@@ -379,11 +380,11 @@ class DDRLocalEntity( DDREntity ):
         return False
     
     def files_master( self ):
-        files = [f for f in self.files if f.role and (f.role == 'master')]
+        files = [f for f in self.files if hasattr(f,'role') and (f.role == 'master')]
         return sorted(files, key=lambda f: f.sort)
     
     def files_mezzanine( self ):
-        files = [f for f in self.files if f.role and (f.role == 'mezzanine')]
+        files = [f for f in self.files if hasattr(f,'role') and (f.role == 'mezzanine')]
         return sorted(files, key=lambda f: f.sort)
     
     def file( self, repo, org, cid, eid, role, sha1, newfile=None ):
@@ -545,15 +546,13 @@ class DDRLocalEntity( DDREntity ):
         for ff in entitymodule.ENTITY_FIELDS:
             if not hasattr(self, ff['name']):
                 setattr(self, ff['name'], ff.get('default',None))
-                
+        
         _files = []
-        for y in json_data:
-            if y.keys()[0] == 'files':
-                _files = y.values()[0]
-        self.files = []
-        for z in _files:
-            f = DDRFile.from_entity(self, z)
-            self.files.append(f)
+        for f in self.files:
+            path_abs = os.path.join(settings.MEDIA_BASE, self.path_rel, f['path_rel'])
+            if os.path.exists(path_abs):
+                _files.append(DDRFile(path_abs))
+        self.files = _files
     
     def dump_json(self):
         """Dump Entity data to .json file.
@@ -583,7 +582,7 @@ class DDRLocalEntity( DDREntity ):
         files = []
         for f in self.files:
             fd = {}
-            for key in FILE_KEYS:
+            for key in ENTITY_FILE_KEYS:
                 if hasattr(f, key):
                     fd[key] = getattr(f, key, None)
             files.append(fd)
@@ -628,6 +627,11 @@ class DDRLocalEntity( DDREntity ):
 
 
 
+ENTITY_FILE_KEYS = ['path_rel',
+                    'sha1',
+                    'sha256',
+                    'md5',]
+
 FILE_KEYS = ['path_rel',
              'basename', 
              'size', 
@@ -666,14 +670,15 @@ def hash(path, algo='sha1'):
 
 
 class DDRFile( object ):
-    # files
-    # path relative to entity
-    # (ex: files/ddr-testing-71-6-dd9ec4305d.jpg)
-    path_rel = None
     # path relative to /
     # (ex: /var/www/media/base/ddr-testing-71/files/ddr-testing-71-6/files/ddr-testing-71-6-dd9ec4305d.jpg)
     # not saved; constructed on instantiation
     path_abs = None
+    # files
+    # path relative to entity
+    # (ex: files/ddr-testing-71-6-dd9ec4305d.jpg)
+    path_rel = None
+    json_path = None
     basename = None
     basename_orig = ''
     size = None
@@ -701,20 +706,149 @@ class DDRFile( object ):
     eid = None
     
     def __init__(self, *args, **kwargs):
-        # entity
-        if kwargs.get('entity',None):
-            self.repo = kwargs['entity'].repo
-            self.org = kwargs['entity'].org
-            self.cid = kwargs['entity'].cid
-            self.eid = kwargs['entity'].eid
-        # files
-        if kwargs.get('path_rel',None) and kwargs.get('entity',None):
-            self.set_path(kwargs['path_rel'], kwargs['entity'])
-        elif kwargs.get('path_rel',None):
-            self.set_path(kwargs['path_rel'])
+        if args and args[0] and os.path.exists(args[0]):
+            self.path_abs = args[0]
+        if self.path_abs:
+            self.basename = os.path.basename(self.path_abs)
+            self.json_path = os.path.join(os.path.splitext(self.path_abs)[0], '.json')
+            self.json_path = self.json_path.replace('/.json', '.json')
+            self.load_json()
+        # Ensure that every field in filemodule.FILE_FIELDS is represented
+        # even if not present in json_data.
+        for ff in filemodule.FILE_FIELDS:
+            if not hasattr(self, ff['name']):
+                setattr(self, ff['name'], ff.get('default',None))
+        # squeeze as much as we can from path_abs
+        parts = os.path.splitext(self.basename)[0].split('-')
+        self.repo = parts[0]
+        self.org = parts[1]
+        self.cid = parts[2]
+        self.eid = parts[3]
+        self.role = parts[4]
+        self.sha1 = parts[5]
+        self.collection_path = DDRLocalCollection.collection_path(None, self.repo, self.org, self.cid)
+        self.entity_path = DDRLocalEntity.entity_path(None, self.repo, self.org, self.cid, self.eid)
+        self.path_rel = self.path_abs.replace(self.entity_path, '')
+        if self.path_rel and (self.path_rel[0] == '/'):
+            self.path_rel = self.path_rel[1:]
     
     def __repr__(self):
         return "<DDRFile %s (%s)>" % (self.basename, self.basename_orig)
+    
+    def url( self ):
+        return reverse('webui-file', args=[self.repo, self.org, self.cid, self.eid, self.role, self.sha1[:10]])
+    
+    @staticmethod
+    def file_path(request, repo, org, cid, eid, role, sha1):
+        return os.path.join(settings.MEDIA_BASE, '{}-{}-{}'.format(repo, org, cid, eid, role, sha1))
+    
+    # _lockfile
+    # lock
+    # unlock
+    # locked
+    
+    # create(path)
+    
+    # entities/files/???
+    
+    def labels_values(self):
+        """Generic display
+        
+        Certain fields require special processing.
+        If a "display_{field}" function is present in the ddrlocal.models.files
+        module it will be executed.
+        """
+        lv = []
+        for f in filemodule.FILE_FIELDS:
+            if hasattr(self, f['name']) and f.get('form',None):
+                key = f['name']
+                label = f['form']['label']
+                # run display_* functions on field data if present
+                value = module_function(filemodule,
+                                        'display_%s' % key,
+                                        getattr(self, f['name']))
+                lv.append( {'label':label, 'value':value,} )
+        return lv
+    
+    def form_prep(self):
+        """Prep data dict to pass into FileForm object.
+        
+        Certain fields require special processing.
+        If a "formprep_{field}" function is present in the ddrlocal.models.files
+        module it will be executed.
+        
+        @returns data: dict object as used by Django Form object.
+        """
+        data = {}
+        for f in filemodule.FILE_FIELDS:
+            if hasattr(self, f['name']) and f.get('form',None):
+                key = f['name']
+                # run formprep_* functions on field data if present
+                value = module_function(filemodule,
+                                        'formprep_%s' % key,
+                                        getattr(self, f['name']))
+                data[key] = value
+        return data
+    
+    def form_post(self, form):
+        """Process cleaned_data coming from FileForm
+        
+        Certain fields require special processing.
+        If a "formpost_{field}" function is present in the ddrlocal.models.files
+        module it will be executed.
+        
+        @param form
+        """
+        for f in filemodule.FILE_FIELDS:
+            if hasattr(self, f['name']) and f.get('form',None):
+                key = f['name']
+                # run formpost_* functions on field data if present
+                cleaned_data = module_function(filemodule,
+                                               'formpost_%s' % key,
+                                               form.cleaned_data[key])
+                setattr(self, key, cleaned_data)
+    
+    def load_json(self):
+        """Populate File data from .json file.
+        @param path: Absolute path to file
+        """
+        if os.path.exists(self.json_path):
+            with open(self.json_path, 'r') as f:
+                raw = f.read()
+            data = json.loads(raw)
+            
+            for ff in filemodule.FILE_FIELDS:
+                for f in data:
+                    if f.keys()[0] == ff['name']:
+                        setattr(self, f.keys()[0], f.values()[0])
+        
+        
+#        # entity
+#        self.repo = entity.repo
+#        self.org = entity.org
+#        self.cid = entity.cid
+#        self.eid = entity.eid
+    
+    def dump_json(self):
+        """Dump File data to .json file.
+        @param path: Absolute path to .json file.
+        """
+        # TODO DUMP FILE AND FILEMETA PROPERLY!!!
+        file_ = [{'application': 'https://github.com/densho/ddr-local.git',
+              'commit': git_commit(),
+              'release': VERSION,}]
+        for ff in filemodule.FILE_FIELDS:
+            item = {}
+            key = ff['name']
+            val = ''
+            if hasattr(self, ff['name']):
+                val = getattr(self, ff['name'])
+            item[key] = val
+            file_.append(item)
+        # write
+        json_pretty = json.dumps(file_, indent=4, separators=(',', ': '), sort_keys=True)
+        with open(self.json_path, 'w') as fw:
+            fw.write(json_pretty)
     
     @staticmethod
     def file_name( entity, path_abs, role ):
@@ -740,41 +874,6 @@ class DDRFile( object ):
                 name = '{}{}'.format(base, ext)
                 return name
         return None
-    
-    def url( self ):
-        return reverse('webui-file', args=[self.repo, self.org, self.cid, self.eid, self.role, self.sha1[:10]])
-    
-    @staticmethod
-    def file_path(request, repo, org, cid, eid, role, sha1):
-        return os.path.join(settings.MEDIA_BASE, '{}-{}-{}'.format(repo, org, cid, eid, role, sha1))
-    
-    @staticmethod
-    def from_entity(entity, phile):
-        f = DDRFile()
-        # entity
-        f.repo = entity.repo
-        f.org = entity.org
-        f.cid = entity.cid
-        f.eid = entity.eid
-        # files
-        f.set_path(phile.get('path_rel',None), entity)
-        f.set_access(phile.get('access_rel'), entity)
-        f.size   = phile.get('size',None)
-        f.role   = phile.get('role',None)
-        f.sha1   = phile.get('sha1',None)
-        f.sha256 = phile.get('sha256',None)
-        f.md5    = phile.get('md5',None)
-        f.basename_orig = phile.get('basename_orig', None)
-        f.status = phile.get('status', None)
-        f.public = phile.get('public', None)
-        f.sort   = phile.get('sort',   None)
-        f.label  = phile.get('label',  None)
-        f.xmp    = phile.get('xmp',    None)
-        f.thumb  = phile.get('thumb',  None)
-        if f.path_rel:
-            f.basename = os.path.basename(f.path_rel)
-            f.src = os.path.join('base', entity.path_rel, f.path_rel)
-        return f
     
     def set_path( self, path_rel, entity=None ):
         """
