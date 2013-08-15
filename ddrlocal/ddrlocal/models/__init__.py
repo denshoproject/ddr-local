@@ -41,6 +41,11 @@ def module_xml_function(module, function_name, tree, NAMESPACES, f, value):
         tree = function(tree, NAMESPACES, f, value)
     return tree
 
+def write_json(data, path):
+    json_pretty = json.dumps(data, indent=4, separators=(',', ': '), sort_keys=True)
+    with open(path, 'w') as f:
+        f.write(json_pretty)
+
 
 
 class DDRLocalCollection( DDRCollection ):
@@ -264,9 +269,7 @@ class DDRLocalCollection( DDRCollection ):
                 # end special cases
             item[key] = val
             collection.append(item)
-        json_pretty = json.dumps(collection, indent=4, separators=(',', ': '))
-        with open(self.json_path, 'w') as f:
-            f.write(json_pretty)
+        write_json(collection, self.json_path)
     
     def dump_ead(self):
         """Dump Collection data to ead.xml file.
@@ -587,10 +590,7 @@ class DDRLocalEntity( DDREntity ):
                     fd[key] = getattr(f, key, None)
             files.append(fd)
         entity.append( {'files':files} )
-        # write
-        json_pretty = json.dumps(entity, indent=4, separators=(',', ': '), sort_keys=True)
-        with open(self.json_path, 'w') as f:
-            f.write(json_pretty)
+        write_json(entity, self.json_path)
     
     def dump_mets(self):
         """Dump Entity data to mets.xml file.
@@ -845,10 +845,7 @@ class DDRFile( object ):
                 val = getattr(self, ff['name'])
             item[key] = val
             file_.append(item)
-        # write
-        json_pretty = json.dumps(file_, indent=4, separators=(',', ': '), sort_keys=True)
-        with open(self.json_path, 'w') as fw:
-            fw.write(json_pretty)
+        write_json(file_, self.json_path)
     
     @staticmethod
     def file_name( entity, path_abs, role ):
