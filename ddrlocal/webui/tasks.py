@@ -373,11 +373,28 @@ def add_access( git_name, git_mail, entity, ddrfile ):
         # We have to write entity.json again so that access file gets recorded there.
         entity.files_log(1, 'Writing %s' % entity.json_path)
         entity.dump_json()
+        f.dump_json()
         entity.files_log(1, 'done')
+        # file JSON
+        try:
+            entity.files_log(1, 'entity_update(%s, %s, %s, %s, %s)' % (
+                git_name, git_mail,
+                entity.parent_path, entity.id,
+                f.json_path))
+            exit,status = entity_update(
+                git_name, git_mail,
+                entity.parent_path, entity.id,
+                [f.json_path,])
+            entity.files_log(1, 'entity_update: exit: %s' % exit)
+            entity.files_log(1, 'entity_update: status: %s' % status)
+        except:
+            # TODO would be nice to know why entity_annex_add failed
+            entity.files_log(0, 'entity_update: ERROR')
         if f.access_rel:
             access_basename = os.path.basename(f.access_rel)
             entity.files_log(1, 'access file: %s' % access_basename)
             try:
+                # entity.json gets written as part of this
                 entity.files_log(1, 'entity_annex_add(%s, %s, %s, %s, %s)' % (
                     git_name, git_mail,
                     entity.parent_path,
