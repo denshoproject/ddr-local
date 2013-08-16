@@ -770,6 +770,18 @@ class DDRFile( object ):
     def url( self ):
         return reverse('webui-file', args=[self.repo, self.org, self.cid, self.eid, self.role, self.sha1[:10]])
     
+    def media_url( self ):
+        if self.path_rel:
+            stub = os.path.join(self.entity_path.replace(settings.MEDIA_ROOT,''), self.path_rel)
+            return '%s%s' % (settings.MEDIA_URL, stub)
+        return None
+    
+    def access_url( self ):
+        if self.access_rel:
+            stub = os.path.join(self.entity_path.replace(settings.MEDIA_ROOT,''), self.access_rel)
+            return '%s%s' % (settings.MEDIA_URL, stub)
+        return None
+    
     @staticmethod
     def file_path(request, repo, org, cid, eid, role, sha1):
         return os.path.join(settings.MEDIA_BASE, '{}-{}-{}'.format(repo, org, cid, eid, role, sha1))

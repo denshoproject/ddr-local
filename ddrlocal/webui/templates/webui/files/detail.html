@@ -47,7 +47,11 @@
     <td>path_abs</td><td>{{ file.path_abs }}</td>
   </tr>
   <tr>
-    <td>path_rel</td><td>{{ file.path_rel }}</td>
+    <td>path_rel</td>
+    <td>
+      {{ file.path_rel }}
+      &nbsp;&bull;&nbsp; <a href="{{ file.media_url }}">download fullsize</a>
+    </td>
   </tr>
   <tr>
     <td>original name</td><td>{{ file.basename_orig }}</td>
@@ -73,7 +77,11 @@
     <td>access_abs</td><td>{{ file.access_abs }}</td>
   <tr>
   <tr>
-    <td>access_rel</td><td>{{ file.access_rel }}</td>
+    <td>access_rel</td>
+    <td>
+      {{ file.access_rel }}
+      &nbsp;&bull;&nbsp; <a href="{{ file.access_url }}">download access</a>
+    </td>
   <tr>
   <tr>
     <td>SHA256</td><td>{{ file.sha256 }}</td>
