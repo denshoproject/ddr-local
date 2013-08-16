@@ -10,6 +10,9 @@ import tematres
 
 
 
+PERMISSIONS_CHOICES = [['1','public'],
+                       ['0','private'],]
+
 LANGUAGE_CHOICES = [['',''],
                     ['eng','English'],
                     ['jpn','Japanese'],
@@ -113,6 +116,23 @@ ENTITY_FIELDS = [
             'help_text':  '',
             'widget':     forms.HiddenInput,
             'initial':    '',
+            'required':   True,
+        },
+        'default':    '',
+    },
+    {
+        'name':       'public',
+        'group':      '',
+        'xpath':      "",
+        'xpath_dup':  [],
+        'model_type': int,
+        'form_type':  forms.ChoiceField,
+        'form': {
+            'label':      'Public',
+            'help_text':  'Setting applies permission to everything under this object.',
+            'widget':     '',
+            'choices':    PERMISSIONS_CHOICES,
+            'initial':    settings.DEFAULT_PERMISSION_COLLECTION,
             'required':   True,
         },
         'default':    '',

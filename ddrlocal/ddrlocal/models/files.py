@@ -3,6 +3,11 @@ from django.conf import settings
 
 
 
+PERMISSIONS_CHOICES = [['1','public'],
+                       ['0','private'],]
+
+
+
 FILE_FIELDS = [
     {
         'name':       'sha1',
@@ -81,12 +86,13 @@ FILE_FIELDS = [
         'xpath':      "",
         'xpath_dup':  [],
         'model_type': int,
-        'form_type':  forms.IntegerField,
+        'form_type':  forms.ChoiceField,
         'form': {
             'label':      'Public',
-            'help_text':  '',
+            'help_text':  'Setting applies permission to everything under this object.',
             'widget':     '',
-            'initial':    0,
+            'choices':    PERMISSIONS_CHOICES,
+            'initial':    settings.DEFAULT_PERMISSION_COLLECTION,
             'required':   True,
         },
         'default':    '',
