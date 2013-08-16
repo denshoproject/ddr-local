@@ -1,10 +1,10 @@
-{% extends "webui/entities/base.html" %}
+{% extends "webui/files/base.html" %}
 
 
 {% block title %}Edit | {{ entity.title }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{{ entity.url }}">{{ entity.id }}</a></li>
+<li><a href="{{ file.url }}">{{ file.basename }}</a></li>
 <li class="active">Edit</li>
 {% endblock breadcrumbs %}
 
