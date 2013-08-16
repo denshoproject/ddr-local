@@ -3,3 +3,22 @@
 {% block breadcrumbs %}{{ block.super }}
 <li><a href="{{ entity.url }}">{{ entity.id }}</a></li>
 {% endblock breadcrumbs %}
+
+
+
+{% block footer %}
+
+{% if file %}
+<div class="muted" id="expert">
+  <span>
+    <a class="muted" href="{% url "webui-file-json" repo org cid eid role sha1 %}">json</a>
+    <a class="muted" href="{# url "webui-file-edit-json" repo org cid eid role sha1 #}">(edit)</a>
+  </span>
+  <span class="bullsep">&bull;&bull;</span>
+  <span>
+  {{ file.path_abs }}
+  </span>
+</div>
+{% endif %}
+
+{% endblock footer %}

@@ -3,3 +3,31 @@
 {% block breadcrumbs %}{{ block.super }}
 <li><a href="{{ collection.url }}">{{ collection.id }}</a></li>
 {% endblock breadcrumbs %}
+
+
+
+{% block footer %}
+
+{% if entity %}
+<div class="muted" id="expert">
+  <span>
+    <a class="muted" href="{% url "webui-entity-json" repo org cid eid %}">json</a>
+    <a class="muted" href="{% url "webui-entity-edit-json" repo org cid eid %}">(edit)</a>
+  </span>
+  <span class="bullsep">&bull;</span>
+  <span>
+    <a class="muted" href="{% url "webui-entity-mets-xml" repo org cid eid %}">mets.xml</a>
+    <a class="muted" href="{% url "webui-entity-edit-mets-xml" repo org cid eid %}">(edit)</a>
+  </span>
+  <span class="bullsep">&bull;</span>
+  <span><a class="muted" href="{% url "webui-entity-changelog" repo org cid eid %}">changelog</a></span>
+  <span class="bullsep">&bull;</span>
+  <span><a class="muted" href="{% url "webui-entity-addfilelog" repo org cid eid %}">addfile.log</a></span>
+  <span class="bullsep">&bull;&bull;</span>
+  <span>
+  {{ entity.path }}
+  </span>
+</div>
+{% endif %}
+
+{% endblock footer %}

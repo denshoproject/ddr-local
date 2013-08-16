@@ -3,3 +3,32 @@
 {% block breadcrumbs %}{{ block.super }}
 <li><a href="{% url "webui-collections" %}">Collections</a></li>
 {% endblock breadcrumbs %}
+
+
+
+{% block footer %}
+
+{% if collection %}
+<div class="muted" id="expert">
+  <span><a class="muted" href="{% url "webui-collection-json" repo org cid %}">json</a></span>
+  <span class="bullsep">&bull;</span>
+  <span>
+   <a class="muted" href="{% url "webui-collection-ead-xml" repo org cid %}">ead.xml</a>
+   <a class="muted" href="{% url "webui-collection-edit-ead" repo org cid %}">(edit)</a>
+  </span>
+  <span class="bullsep">&bull;</span>
+  <span><a class="muted" href="{% url "webui-collection-changelog" repo org cid %}">changelog</a></span>
+  <span class="bullsep">&bull;</span>
+  <span><a class="muted" href="{% url "webui-collection-git-status" repo org cid %}">git status</a></span>
+  <span class="bullsep">&bull;&bull;</span>
+  <span><a class="muted" href="{{ workbench_url }}" target="workbench">workbench</a></span>
+  <span class="bullsep">&bull;</span>
+  <span><a class="muted" href="{{ collection.cgit_url }}" target="cgit">cgit</a></span>
+  <span class="bullsep">&bull;</span>
+  <span>
+  {{ collection.path }}
+  </span>
+</div>
+{% endif %}
+
+{% endblock footer %}
