@@ -630,7 +630,8 @@ class DDRLocalEntity( DDREntity ):
 ENTITY_FILE_KEYS = ['path_rel',
                     'sha1',
                     'sha256',
-                    'md5',]
+                    'md5',
+                    'public',]
 
 FILE_KEYS = ['path_rel',
              'basename', 
