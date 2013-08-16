@@ -28,11 +28,6 @@ from xmlforms.models import XMLModel
 
 # helpers --------------------------------------------------------------
 
-def collection_cgit_url(collection_uid):
-    """Returns cgit URL for collection.
-    """
-    return '{}/cgit.cgi/{}/'.format(settings.CGIT_URL, collection_uid)
-
 def _uid_path(request, repo, org, cid):
     uid = '{}-{}-{}'.format(repo, org, cid)
     path = os.path.join(settings.MEDIA_BASE, uid)
@@ -71,10 +66,7 @@ def detail( request, repo, org, cid ):
         {'repo': repo,
          'org': org,
          'cid': cid,
-         'collection': collection,
-         'cgit_url': collection_cgit_url(collection.id),
-         'workbench_url': settings.WORKBENCH_URL,
-         },
+         'collection': collection,},
         context_instance=RequestContext(request, processors=[])
     )
 

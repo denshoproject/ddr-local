@@ -1,3 +1,5 @@
+from django.conf import settings
+
 from webui.tasks import session_tasks_list
 
 
@@ -17,4 +19,5 @@ def sitewide(request):
         'git_mail': request.session.get('git_mail', None),
         'celery_tasks': session_tasks_list(request),
         'logout_next': logout_next,
+        'workbench_url': settings.WORKBENCH_URL,
     }

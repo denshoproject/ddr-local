@@ -71,6 +71,11 @@ class DDRLocalCollection( DDRCollection ):
     def url( self ):
         return reverse('webui-collection', args=[self.repo, self.org, self.cid])
     
+    def cgit_url( self ):
+        """Returns cgit URL for collection.
+        """
+        return '{}/cgit.cgi/{}/'.format(settings.CGIT_URL, self.uid)
+
     @staticmethod
     def collection_path(request, repo, org, cid):
         return os.path.join(settings.MEDIA_BASE, '{}-{}-{}'.format(repo, org, cid))
@@ -427,8 +432,9 @@ class DDRLocalEntity( DDREntity ):
             with open(logpath, 'a') as f:
                 f.write(entry)
         log = ''
-        with open(logpath, 'r') as f:
-            log = f.read()
+        if os.path.exists(logpath):
+            with open(logpath, 'r') as f:
+                log = f.read()
         return log
     
     @staticmethod
