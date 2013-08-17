@@ -48,8 +48,14 @@ def index( request ):
                 unmount(request, devicefile, mountpoint)
                 return HttpResponseRedirect( reverse('storage-index') )
     else:
-        mount_form = MountForm(devices=rdevices)
-        umount_form = UmountForm(devices=mdevices)
+        rinitial = {}
+        minitial = {}
+        if len(rdevices) == 1:
+            rinitial = { 'device': '{} {}'.format(rdevices[0][0], rdevices[0][1]) }
+        if len(mdevices) == 1:
+            minitial = { 'device': '{} {}'.format(mdevices[0][0], mdevices[0][1]) }
+        mount_form = MountForm(devices=rdevices, initial=rinitial)
+        umount_form = UmountForm(devices=mdevices, initial=minitial)
     return render_to_response(
         'storage/index.html',
         {'removables': removables,
