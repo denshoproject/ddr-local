@@ -76,6 +76,10 @@ DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
 # Django uses a slightly different datetime format
 DATETIME_FORMAT_FORM = '%Y-%m-%d %H:%M:%S'
 
+PRETTY_DATE_FORMAT = '%d %B %Y'
+PRETTY_TIME_FORMAT = '%I:%M %p'
+PRETTY_DATETIME_FORMAT = '%d %B %Y, %I:%M %p'
+
 # cache key used for storing URL of page user was requesting
 # when redirected to either login or storage remount page
 REDIRECT_URL_SESSION_KEY = 'remount_redirect_uri'

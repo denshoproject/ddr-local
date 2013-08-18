@@ -446,13 +446,62 @@ COLLECTION_FIELDS = [
 # and format it for display.
 #
 
+
+# id
+
+def display_created( data ):
+    if type(data) == type(datetime.now()):
+        data = data.strftime(settings.PRETTY_DATETIME_FORMAT)
+    return data
+
+def display_lastmod( data ):
+    if type(data) == type(datetime.now()):
+        data = data.strftime(settings.PRETTY_DATETIME_FORMAT)
+    return data
+
+def display_public( data ):
+    for c in PERMISSIONS_CHOICES:
+        if data == c[0]:
+            return c[1]
+    return data
+
+# title
+
 def display_creators( data ):
     lines = []
-    if type(data) == type(''):
-        data = data.strip().split(';')
+    if type(data) != type([]):
+        data = data.split(';')
     for l in data:
         lines.append({'person': l.strip()})
-    return _render_multiline_dict('<a href="{person}">{person}</a>', lines )
+    return _render_multiline_dict('<a href="{person}">{person}</a>', lines)
+
+# extent
+
+def display_language( data ):
+    for c in LANGUAGE_CHOICES:
+        if data == c[0]:
+            return c[1]
+    return data
+
+# organization
+# description
+# notes
+# physloc
+#
+# acqinfo
+# custodhist
+# accruals
+# processinfo
+# accessrestrict
+# userrestrict
+# prefercite
+#
+# bioghist
+#
+# scopecontent
+#
+# relatedmaterial
+# separatedmaterial
 
 # The following are utility functions used by display_* functions.
 
@@ -476,6 +525,7 @@ def _render_multiline_dict( template, data ):
 # id
 # created
 # lastmod
+# public
 # title
 # creators
 # extent
@@ -518,6 +568,7 @@ def _formprep_basic(data):
 # id
 # created
 # lastmod
+# public
 # title
 # unitdate_inclusive
 # unitdate_bulk
@@ -572,6 +623,8 @@ def ead_created(tree, namespaces, field, value):
 
 def ead_lastmod(tree, namespaces, field, value):
     return _set_attr(tree, namespaces, "/ead/eadheader/eadid", "lastmod", value.strftime(settings.DATETIME_FORMAT))
+
+# public
 
 def ead_title(tree, namespaces, field, value):
     tree = _set_tag_text(tree, namespaces, "/ead/eadheader/filedesc/titlestmt/titleproper", value)

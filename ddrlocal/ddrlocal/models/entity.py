@@ -507,8 +507,54 @@ ENTITY_FIELDS = [
 # and format it for display.
 #
 
+# id
+
+def display_created( data ):
+    if type(data) == type(datetime.now()):
+        data = data.strftime(settings.PRETTY_DATETIME_FORMAT)
+    return data
+
+def display_lastmod( data ):
+    if type(data) == type(datetime.now()):
+        data = data.strftime(settings.PRETTY_DATETIME_FORMAT)
+    return data
+
+def display_public( data ):
+    for c in PERMISSIONS_CHOICES:
+        if data == c[0]:
+            return c[1]
+    return data
+
+# collection
+# title
+# description
+# creation
+# location
+
 def display_creators( data ):
     return _display_multiline_dict('<a href="{namepart}">{role}: {namepart}</a>', data)
+
+def display_language( data ):
+    for c in LANGUAGE_CHOICES:
+        if data.get('code',None) and (data['code'] == c[0]):
+            return data['label']
+    return data
+
+# genre
+# format
+# dimensions
+# organization
+# organization_id
+# digitize_person
+# digitize_organization
+
+def display_digitize_date( data ):
+    if type(data) == type(datetime.now()):
+        data = data.strftime(settings.PRETTY_DATE_FORMAT)
+    return data
+
+# credit
+# rights
 
 def display_topics( data ):
     return _display_multiline_dict('<a href="{url}">{label}</a>', data)
@@ -524,6 +570,10 @@ def display_persons( data ):
 #    for line in data:
 #        d.append({'facility': line.strip()})
 #    return _render_multiline_dict('<a href="">{facility}</a>', d)
+
+# parent
+# notes
+# files
 
 # The following are utility functions used by functions.
 
@@ -547,11 +597,16 @@ def _display_multiline_dict( template, data ):
 # id
 # created
 # lastmod
+# public
+
 def formprep_parent(data):     return _formprep_basic(data)
 def formprep_collection(data): return _formprep_basic(data)
+
 # title
 # description
+
 def formprep_creation(data):   return _formprep_basic(data)
+
 # location
 
 def formprep_creators(data):
@@ -589,6 +644,7 @@ def formprep_persons(data):
     return ';\n'.join(data)
 
 def formprep_facility(data):   return _formprep_basic(data)
+
 # notes
 
 # The following are utility functions used by formprep_* functions.
@@ -609,11 +665,17 @@ def _formprep_basic(data):
 # id
 # created
 # lastmod
+# public
+
 def formpost_parent(data):     return _formpost_basic(data)
+
 def formpost_collection(data): return _formpost_basic(data)
+
 # title
 # description
+
 def formpost_creation(data):   return _formpost_basic(data)
+
 # location
 
 def formpost_creators(data):
@@ -652,6 +714,7 @@ def formpost_persons(data):
     return [n.strip() for n in data.split(';')]
 
 def formpost_facility(data):   return _formpost_basic(data)
+
 # notes
 
 # The following are utility functions used by formpost_* functions.
@@ -694,6 +757,7 @@ def mets_lastmod(tree, namespaces, field, value):
         pass
     return _set_attr(tree, namespaces, '/mets:mets/mets:metsHdr', 'LASTMODDATE', value)
 
+# public
 # parent
 # collection
 
