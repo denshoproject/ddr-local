@@ -21,6 +21,9 @@ from ddrlocal.models import files as filemodule
 
 
 
+COLLECTION_FILES_PREFIX = 'files'
+ENTITY_FILES_PREFIX = 'files'
+
 def module_function(module, function_name, value):
     """
     If function is present in ddrlocal.models.entity and is callable,
@@ -329,7 +332,7 @@ class DDRLocalEntity( DDREntity ):
         collection_uid = '{}-{}-{}'.format(repo, org, cid)
         entity_uid     = '{}-{}-{}-{}'.format(repo, org, cid, eid)
         collection_abs = os.path.join(settings.MEDIA_BASE, collection_uid)
-        entity_abs     = os.path.join(collection_abs,'files',entity_uid)
+        entity_abs     = os.path.join(collection_abs, COLLECTION_FILES_PREFIX, entity_uid)
         return entity_abs
     
     def _lockfile( self ):
@@ -558,7 +561,7 @@ class DDRLocalEntity( DDREntity ):
         
         _files = []
         for f in self.files:
-            path_abs = os.path.join(settings.MEDIA_BASE, self.path_rel, f['path_rel'])
+            path_abs = os.path.join(self.files_path, f['path_rel'])
             if os.path.exists(path_abs):
                 _files.append(DDRFile(path_abs))
         self.files = _files
@@ -682,8 +685,9 @@ class DDRFile( object ):
     # not saved; constructed on instantiation
     path_abs = None
     # files
-    # path relative to entity
-    # (ex: files/ddr-testing-71-6-dd9ec4305d.jpg)
+    # path relative to entity files directory
+    # (ex: ddr-testing-71-6-dd9ec4305d.jpg)
+    # (ex: subdir/ddr-testing-71-6-dd9ec4305d.jpg)
     path_rel = None
     json_path = None
     basename = None
@@ -713,6 +717,7 @@ class DDRFile( object ):
     eid = None
     collection_path = None
     entity_path = None
+    entity_files_path = None
     
     def __init__(self, *args, **kwargs):
         """
@@ -744,11 +749,12 @@ class DDRFile( object ):
             self.sha1 = parts[5]
             self.collection_path = DDRLocalCollection.collection_path(None, self.repo, self.org, self.cid)
             self.entity_path = DDRLocalEntity.entity_path(None, self.repo, self.org, self.cid, self.eid)
+            self.entity_files_path = os.path.join(self.entity_path, ENTITY_FILES_PREFIX)
         # get one path if the other not present
         if self.entity_path and self.path_rel and not self.path_abs:
-            self.path_abs = os.path.join(self.entity_path, self.path_rel)
+            self.path_abs = os.path.join(self.entity_files_path, self.path_rel)
         elif self.entity_path and self.path_abs and not self.path_rel:
-            self.path_rel = self.path_abs.replace(self.entity_path, '')
+            self.path_rel = self.path_abs.replace(self.entity_files_path, '')
         # clean up path_rel if necessary
         if self.path_rel and (self.path_rel[0] == '/'):
             self.path_rel = self.path_rel[1:]
@@ -760,9 +766,9 @@ class DDRFile( object ):
             self.load_json()
             access_abs = None
             if self.access_rel and self.entity_path:
-                access_abs = os.path.join(self.entity_path, self.access_rel)
+                access_abs = os.path.join(self.entity_files_path, self.access_rel)
                 if os.path.exists(access_abs):
-                    self.access_abs = os.path.join(self.entity_path, self.access_rel)
+                    self.access_abs = os.path.join(self.entity_files_path, self.access_rel)
     
     def __repr__(self):
         return "<DDRFile %s (%s)>" % (self.basename, self.basename_orig)
@@ -772,13 +778,13 @@ class DDRFile( object ):
     
     def media_url( self ):
         if self.path_rel:
-            stub = os.path.join(self.entity_path.replace(settings.MEDIA_ROOT,''), self.path_rel)
+            stub = os.path.join(self.entity_files_path.replace(settings.MEDIA_ROOT,''), self.path_rel)
             return '%s%s' % (settings.MEDIA_URL, stub)
         return None
     
     def access_url( self ):
         if self.access_rel:
-            stub = os.path.join(self.entity_path.replace(settings.MEDIA_ROOT,''), self.access_rel)
+            stub = os.path.join(self.entity_files_path.replace(settings.MEDIA_ROOT,''), self.access_rel)
             return '%s%s' % (settings.MEDIA_URL, stub)
         return None
     
@@ -919,13 +925,13 @@ class DDRFile( object ):
         """
         self.path_rel = path_rel
         if entity:
-            self.path_rel = self.path_rel.replace(entity.path, '')
+            self.path_rel = self.path_rel.replace(entity.files_path, '')
         if self.path_rel and (self.path_rel[0] == '/'):
             # remove initial slash (ex: '/files/...')
             self.path_rel = self.path_rel[1:]
         if entity:
-            self.path_abs = os.path.join(entity.path, self.path_rel)
-            self.src = os.path.join('base', entity.path_rel, self.path_rel)
+            self.path_abs = os.path.join(entity.files_path, self.path_rel)
+            self.src = os.path.join('base', entity.files_path, self.path_rel)
         if self.path_abs and os.path.exists(self.path_abs):
             self.size = os.path.getsize(self.path_abs)
         self.basename = os.path.basename(self.path_rel)
@@ -938,12 +944,12 @@ class DDRFile( object ):
         if access_rel:
             self.access_rel = access_rel
             if entity:
-                self.access_rel = self.access_rel.replace(entity.path, '')
+                self.access_rel = self.access_rel.replace(entity.files_path, '')
             if self.access_rel and (self.access_rel[0] == '/'):
                 # remove initial slash (ex: '/files/...')
                 self.access_rel = self.access_rel[1:]
             if entity:
-                a = os.path.join(entity.path, self.access_rel)
+                a = os.path.join(entity.files_path, self.access_rel)
                 if os.path.exists(a):
                     self.access_abs = a
             if self.access_abs and os.path.exists(self.access_abs):
