@@ -784,7 +784,7 @@ class DDRFile( object ):
     
     @staticmethod
     def file_path(request, repo, org, cid, eid, role, sha1):
-        return os.path.join(settings.MEDIA_BASE, '{}-{}-{}'.format(repo, org, cid, eid, role, sha1))
+        return os.path.join(settings.MEDIA_BASE, '{}-{}-{}-{}-{}-{}'.format(repo, org, cid, eid, role, sha1))
     
     # _lockfile
     # lock
