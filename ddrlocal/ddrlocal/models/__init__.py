@@ -880,8 +880,6 @@ class DDRFile( object ):
         file_ = [{'application': 'https://github.com/densho/ddr-local.git',
                   'commit': git_commit(),
                   'release': VERSION,},]
-        if self.access_rel:
-            file_.append({'access_rel': self.access_rel})
         for ff in filemodule.FILE_FIELDS:
             item = {}
             key = ff['name']
