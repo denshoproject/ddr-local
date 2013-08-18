@@ -92,21 +92,21 @@ form td { padding-bottom:20px; }
 <a href="{% url "storage-index" %}">Storage</a>
 
 {% if storage_type %}
-<span class="label {% if storage_type == 'unknown' %}label-warning{% else %}label-info{% endif %}">
+<span id="storage-type" class="label {% if storage_type == 'unknown' %}label-warning{% else %}label-info{% endif %}" title="storage type: {{ storage_type }}">
   {{ storage_type }}
 </span>
 {% else %}
-<span class="label label-important">
+<span id="storage-type" class="label label-important" title="storage type: unknown">
   unknown
 </span>
 {% endif %}
 
 {% if storage_status == 'ok' %}
-<span class="label label-success">
+<span id="storage-status" class="label label-success" title="storage status: OK">
   OK
 </span>
 {% else %}
-<span class="label label-important">
+<span id="storage-status" class="label label-important" title="storage status: {{ storage_status }}">
   {{ storage_status }}
 </span>
 {% endif %} 
@@ -171,6 +171,16 @@ form td { padding-bottom:20px; }
 
 <script type="text/javascript" src="{{ STATIC_URL }}js/jquery.js"></script>
 <script type="text/javascript" src="{{ STATIC_URL }}bootstrap/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}jquery-ui-bootstrap/js/jquery-ui-1.9.2.custom.min.js"></script>
+<script>
+  $(function () {
+
+    /* navbar storage tooltips */
+    $('#storage-type').tooltip({'placement':'bottom'});
+    $('#storage-status').tooltip({'placement':'bottom'});
+    
+  })
+</script>
 
 {% block javascript %}{% endblock %}
 
