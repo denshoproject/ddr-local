@@ -6,6 +6,7 @@ urlpatterns = patterns(
     url(r'^login/$', 'webui.views.login', name='webui-login'),
     url(r'^logout/$', 'webui.views.logout', name='webui-logout'),
     url(r'^tasks/$', 'webui.views.tasks', name='webui-tasks'),
+    url(r'^task-status/$', 'webui.views.task_status', name='webui-task-status'),
 
     # collections
 

@@ -132,21 +132,7 @@ form td { padding-bottom:20px; }
 </div>
 {% endfor %}
 
-
-{% if celery_tasks %}
-<div class="alert alert-info">
-  <button type="button" class="close" data-dismiss="alert">&times;</button>
-  <a href="{% url "webui-tasks" %}?next={{ logout_next }}">Background Tasks &mdash;
-
-{% regroup celery_tasks by status as celery_tasks_status %}
-{% for status in celery_tasks_status %}
-<span class="status {{ status.grouper }}">{{ status.grouper }}:{{ status.list|length }}</span>
-{% endfor %}
-
-</a>
-</div>
-{% endif %}
-
+<div id="celery-status"></div>
 
     </div><!-- .span12 -->
   </div><!-- .row-fluid -->
@@ -173,14 +159,23 @@ form td { padding-bottom:20px; }
 <script type="text/javascript" src="{{ STATIC_URL }}bootstrap/js/bootstrap.min.js"></script>
 <script type="text/javascript" src="{{ STATIC_URL }}jquery-ui-bootstrap/js/jquery-ui-1.9.2.custom.min.js"></script>
 <script>
+  /* navbar storage tooltips */
   $(function () {
-
-    /* navbar storage tooltips */
     $('#storage-type').tooltip({'placement':'bottom'});
     $('#storage-status').tooltip({'placement':'bottom'});
-    
   })
 </script>
+{% if not hide_celery_tasks %}
+<script>
+  /* update celery status */
+  $(function(){
+    $("#celery-status").load("{{ celery_status_url }}?this={{ request.META.PATH_INFO }}");
+    window.setInterval(function(){
+      $("#celery-status").load("{{ celery_status_url }}?this={{ request.META.PATH_INFO }}");
+    },3000);
+  });
+</script>
+{% endif %}
 
 {% block javascript %}{% endblock %}
 

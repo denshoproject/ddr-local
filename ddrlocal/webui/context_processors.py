@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.urlresolvers import reverse
 
 from webui.tasks import session_tasks_list
 
@@ -18,6 +19,7 @@ def sitewide(request):
         'git_name': request.session.get('git_name', None),
         'git_mail': request.session.get('git_mail', None),
         'celery_tasks': session_tasks_list(request),
+        'celery_status_url': reverse("webui-task-status"),
         'logout_next': logout_next,
         'workbench_url': settings.WORKBENCH_URL,
     }

@@ -106,6 +106,17 @@ def tasks( request ):
         form = TaskDismissForm(initial={'next':request.GET.get('next',''),})
     return render_to_response(
         'webui/tasks.html',
-        {'form': form,},
+        {'form': form,
+         'hide_celery_tasks': True,},
+        context_instance=RequestContext(request, processors=[])
+    )
+
+def task_status( request ):
+    """
+    Gets celery task status, generates HTML for display in alert box in base template.
+    """
+    return render_to_response(
+        'webui/task-include.html',
+        {'dismiss_next': request.GET.get('this', reverse('webui-index'))},
         context_instance=RequestContext(request, processors=[])
     )

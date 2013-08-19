@@ -131,7 +131,7 @@ def new( request, repo, org, cid, eid, role='master' ):
             request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
             
             # feedback
-            messages.success(request, WEBUI_MESSAGES['VIEWS_FILES_UPLOADING'] % (os.path.basename(src_path), result))
+#            messages.success(request, WEBUI_MESSAGES['VIEWS_FILES_UPLOADING'] % (os.path.basename(src_path), result))
             # redirect to entity
             return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     else:
