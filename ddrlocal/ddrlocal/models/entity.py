@@ -543,8 +543,18 @@ def display_language( data ):
         return ', '.join(labels)
     return ''
 
-# genre
-# format
+def display_genre( data ):
+    for c in GENRE_CHOICES:
+        if data == c[0]:
+            return c[1]
+    return data
+
+def display_format( data ):
+    for c in FORMAT_CHOICES:
+        if data == c[0]:
+            return c[1]
+    return data
+
 # dimensions
 # organization
 # organization_id
