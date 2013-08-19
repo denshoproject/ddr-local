@@ -607,9 +607,7 @@ def formprep_collection(data): return _formprep_basic(data)
 
 # title
 # description
-
-def formprep_creation(data):   return _formprep_basic(data)
-
+# creation
 # location
 
 def formprep_creators(data):
@@ -671,9 +669,7 @@ def formpost_collection(data): return _formpost_basic(data)
 
 # title
 # description
-
-def formpost_creation(data):   return _formpost_basic(data)
-
+# creation
 # location
 
 def formpost_creators(data):
