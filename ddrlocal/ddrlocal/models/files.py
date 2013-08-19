@@ -156,7 +156,7 @@ FILE_FIELDS = [
         'form': {
             'label':      'XMP Metadata',
             'help_text':  '',
-            'widget':     forms.Textarea,
+            'widget':     forms.HiddenInput,
             'initial':    '',
             'required':   False,
         },
