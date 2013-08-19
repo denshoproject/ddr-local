@@ -177,7 +177,7 @@ COLLECTION_FIELDS = [
         'xpath':      "/ead/archdesc/did/langmaterial/language/@langcode",
         'xpath_dup':  [],
         'model_type': str,
-        'form_type':  forms.ChoiceField,
+        'form_type':  forms.MultipleChoiceField,
         'form': {
             'label':      'Language',
             'help_text':  'The language that predominates in the original material being described.	Only needed for objects containing textual content (i.e. caption on a photograph, text of a letter). Use the Library of Congress Codes for the Representation of Names of Languages ISO 639-2 Codes (found here http://www.loc.gov/standards/iso639-2/php/code_list.php).',
@@ -478,10 +478,13 @@ def display_creators( data ):
 # extent
 
 def display_language( data ):
+    labels = []
     for c in LANGUAGE_CHOICES:
-        if data == c[0]:
-            return c[1]
-    return data
+        if c[0] in data:
+            labels.append(c[1])
+    if labels:
+        return ', '.join(labels)
+    return ''
 
 # organization
 # description
@@ -636,17 +639,17 @@ def ead_title(tree, namespaces, field, value):
 # creators
 # extent
 
-def ead_language(tree, namespaces, field, value):
-    code = value
-    label = ''
-    for l in LANGUAGE_CHOICES:
-        if l[0] == code:
-            label = l[1]
-    tree = _set_attr(tree, namespaces, "/ead/eadheader/profiledesc/langusage/language", "langcode", code)
-    tree = _set_tag_text(tree, namespaces, "/ead/eadheader/profiledesc/langusage/language", label)
-    tree = _set_attr(tree, namespaces, "/ead/archdesc/did/langmaterial/language", "langcode", code)
-    tree = _set_tag_text(tree, namespaces, "/ead/archdesc/did/langmaterial/language", label)
-    return tree
+#def ead_language(tree, namespaces, field, value):
+#    code = value
+#    label = ''
+#    for l in LANGUAGE_CHOICES:
+#        if l[0] == code:
+#            label = l[1]
+#    tree = _set_attr(tree, namespaces, "/ead/eadheader/profiledesc/langusage/language", "langcode", code)
+#    tree = _set_tag_text(tree, namespaces, "/ead/eadheader/profiledesc/langusage/language", label)
+#    tree = _set_attr(tree, namespaces, "/ead/archdesc/did/langmaterial/language", "langcode", code)
+#    tree = _set_tag_text(tree, namespaces, "/ead/archdesc/did/langmaterial/language", label)
+#    return tree
 
 # organization
 # description

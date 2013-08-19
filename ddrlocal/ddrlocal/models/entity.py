@@ -241,7 +241,7 @@ ENTITY_FIELDS = [
         'xpath':      "/mets:mets/mets:dmdSec[@ID='DM1']/mets:mdWrap/mets:xmlData/mods:mods/mods:language/mods:languageTerm",
         'xpath_dup':  [],
         'model_type': str,
-        'form_type':  forms.ChoiceField,
+        'form_type':  forms.MultipleChoiceField,
         'form': {
             'label':      'Language',
             'help_text':  '',
@@ -535,10 +535,13 @@ def display_creators( data ):
     return _display_multiline_dict('<a href="{namepart}">{role}: {namepart}</a>', data)
 
 def display_language( data ):
+    labels = []
     for c in LANGUAGE_CHOICES:
-        if data.get('code',None) and (data['code'] == c[0]):
-            return data['label']
-    return data
+        if c[0] in data:
+            labels.append(c[1])
+    if labels:
+        return ', '.join(labels)
+    return ''
 
 # genre
 # format
@@ -613,11 +616,6 @@ def formprep_creators(data):
     data = ';\n'.join([n['namepart'] for n in data])
     return data
 
-def formprep_language(data):
-    if data.get('code', None):
-        data = data['code']
-    return data
-
 # genre
 # format
 # dimensions
@@ -683,14 +681,6 @@ def formpost_creators(data):
     for n in data.split(';'):
         b = {'namepart': n.strip(), 'role': 'author',}
         a.append(b)
-    return a
-
-def formpost_language(data):
-    a = {'code': data,
-         'label': '',}
-    for l in LANGUAGE_CHOICES:
-        if l[0] == a['code']:
-            a['label'] = l[1]
     return a
 
 # genre
