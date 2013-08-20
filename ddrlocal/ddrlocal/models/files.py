@@ -72,7 +72,7 @@ FILE_FIELDS = [
         'form_type':  forms.ChoiceField,
         'form': {
             'label':      'Privacy Level',
-            'help_text':  'Setting applies permission to everything under this object.',
+            'help_text':  'Whether this file should be accessible from the public website.',
             'widget':     '',
             'choices':    PERMISSIONS_CHOICES,
             'initial':    settings.DEFAULT_PERMISSION_COLLECTION,
@@ -89,7 +89,7 @@ FILE_FIELDS = [
         'form_type':  forms.IntegerField,
         'form': {
             'label':      'Sort',
-            'help_text':  '',
+            'help_text':  'Order of this file in relation to others for this object (ordered low to high). Can be used to arrange images in a multi-page document.',
             'widget':     '',
             'initial':    1,
             'required':   True,
@@ -121,7 +121,7 @@ FILE_FIELDS = [
         'form_type':  forms.CharField,
         'form': {
             'label':      'Label',
-            'help_text':  '',
+            'help_text':  '(Optional) Friendly label for file describing partitive role (i.e., \"Page 1\", \"Cover\", \"Envelope\")',
             'max_length': 255,
             'widget':     '',
             'initial':    '',
