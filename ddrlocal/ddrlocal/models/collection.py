@@ -8,6 +8,9 @@ from django.conf import settings
 
 
 
+STATUS_CHOICES = [['inprocess', 'In Process'],
+                  ['completed', 'Completed'],]
+
 PERMISSIONS_CHOICES = [['1','public'],
                        ['0','private'],]
 
@@ -63,6 +66,23 @@ COLLECTION_FIELDS = [
             'label':      'Record Modified',
             'help_text':  '',
             'widget':     forms.HiddenInput,
+            'initial':    '',
+            'required':   True,
+        },
+        'default':    '',
+    },
+    {
+        'name':       'status',
+        'group':      '',
+        'xpath':      "",
+        'xpath_dup':  [],
+        'model_type': int,
+        'form_type':  forms.ChoiceField,
+        'form': {
+            'label':      'Production Status',
+            'help_text':  '',
+            'widget':     '',
+            'choices':    STATUS_CHOICES,
             'initial':    '',
             'required':   True,
         },
@@ -457,6 +477,12 @@ def display_created( data ):
 def display_lastmod( data ):
     if type(data) == type(datetime.now()):
         data = data.strftime(settings.PRETTY_DATETIME_FORMAT)
+    return data
+
+def display_status( data ):
+    for c in STATUS_CHOICES:
+        if data == c[0]:
+            return c[1]
     return data
 
 def display_public( data ):
