@@ -128,7 +128,7 @@ ENTITY_FIELDS = [
         'model_type': int,
         'form_type':  forms.ChoiceField,
         'form': {
-            'label':      'Public',
+            'label':      'Privacy Level',
             'help_text':  'Setting applies permission to everything under this object.',
             'widget':     '',
             'choices':    PERMISSIONS_CHOICES,
