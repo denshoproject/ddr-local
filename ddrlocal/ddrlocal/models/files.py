@@ -155,7 +155,7 @@ FILE_FIELDS = [
             'label':      'Associated Files',
             'help_text':  'Semicolon-separated list of file.path_rels that this file points to.',
             'max_length': 255,
-            'widget':     forms.Textarea,
+            'widget':     forms.HiddenInput,
             'initial':    '',
             'required':   False,
         },
