@@ -90,12 +90,15 @@ chown -R ddr /var/www/media
 
 
 echo "${bldgrn}Bootstrap, jQuery, Modernizr${txtrst}"
+rm /var/www/static/bootstrap-2.3.1.zip*
+rm /var/www/static/js/modernizr-2.6.2.js*
+rm /var/www/static/js/jquery-1.10.2.min.js*
 cd /var/www/static
-wget http://twitter.github.io/bootstrap/2.3.2/assets/bootstrap.zip
-7z x bootstrap.zip
+wget http://tank.densho.org/bootstrap-2.3.1.zip
+7z x bootstrap-2.3.1.zip
 cd /var/www/static/js
-wget http://modernizr.com/downloads/modernizr-latest.js
-wget http://code.jquery.com/jquery-1.10.2.min.js
+wget http://tank.densho.org/modernizr-2.6.2.js
+wget http://tank.densho.org/jquery-1.10.2.min.js
 ln -s jquery-1.10.2.min.js jquery.js
 
 
