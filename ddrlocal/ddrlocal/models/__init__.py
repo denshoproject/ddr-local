@@ -877,7 +877,8 @@ class DDRFile( object ):
         # TODO DUMP FILE AND FILEMETA PROPERLY!!!
         file_ = [{'application': 'https://github.com/densho/ddr-local.git',
                   'commit': git_commit(),
-                  'release': VERSION,},]
+                  'release': VERSION,},
+                 {'path_rel': self.path_rel},]
         for ff in filemodule.FILE_FIELDS:
             item = {}
             key = ff['name']
