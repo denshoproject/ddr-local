@@ -141,9 +141,7 @@ def new( request, repo, org, cid ):
         if exit:
             messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
         else:
-            redirect_url = reverse('webui-entity', args=[repo,org,cid,eid])
-            messages.success(request, WEBUI_MESSAGES['VIEWS_ENT_CREATED'].format(entity_uid))
-            return HttpResponseRedirect(redirect_url)
+            return HttpResponseRedirect(reverse('webui-entity-edit', args=[repo,org,cid,eid]))
     else:
         messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_ERR_NO_IDS'])
     # something happened...

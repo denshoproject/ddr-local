@@ -173,8 +173,7 @@ def new( request, repo, org ):
         if exit:
             messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
         else:
-            messages.success(request, WEBUI_MESSAGES['VIEWS_COLL_CREATED'].format(status))
-            return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+            return HttpResponseRedirect( reverse('webui-collection-edit', args=[repo,org,cid]) )
     else:
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_ERR_NO_IDS'])
     # something happened...
