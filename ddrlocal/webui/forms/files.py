@@ -3,6 +3,7 @@ import os
 from django import forms
 from django.conf import settings
 
+from ddrlocal.models.files import PERMISSIONS_CHOICES
 
 def shared_folder_files():
     d = settings.VIRTUALBOX_SHARED_FOLDER
@@ -15,6 +16,7 @@ def shared_folder_files():
             
 
 class NewFileForm(forms.Form):
+    public = forms.ChoiceField(choices=PERMISSIONS_CHOICES)
     #path = forms.FilePathField(path=settings.VIRTUALBOX_SHARED_FOLDER)
     path = forms.ChoiceField(choices=shared_folder_files(), required=False)
     role = forms.ChoiceField(choices=settings.ENTITY_FILE_ROLES)
