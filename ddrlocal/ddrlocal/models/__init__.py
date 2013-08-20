@@ -1059,3 +1059,40 @@ class DDRFile( object ):
                 file_ = File(f)
             thumbnail = default.backend.get_thumbnail(file_, geometry, options)
         return thumbnail
+    
+    def links_incoming( self ):
+        """List of path_rels of files that link to this file.
+        """
+        incoming = []
+        r = envoy.run('find {} -name "*.json" -print'.format(self.entity_files_path))
+        jsons = r.std_out.strip().split('\n')
+        for fn in jsons:
+            with open(fn, 'r') as f:
+                raw = f.read()
+            data = json.loads(raw)
+            path_rel = None
+            for field in data:
+                if field.get('path_rel',None):
+                    path_rel = field['path_rel']
+            for field in data:
+                linksraw = field.get('links', None)
+                if linksraw:
+                    for link in linksraw.strip().split(';'):
+                        link = link.strip()
+                        if self.basename in link:
+                            incoming.append(path_rel)
+        return incoming
+    
+    def links_outgoing( self ):
+        """List of path_rels of files this file links to.
+        """
+        return [link.strip() for link in self.links.strip().split(';')]
+    
+    def links_all( self ):
+        """List of path_rels of files that link to this file or are linked to from this file.
+        """
+        all = self.links_outgoing()
+        for l in self.links_incoming():
+            if l not in all:
+                all.append(l)
+        return all

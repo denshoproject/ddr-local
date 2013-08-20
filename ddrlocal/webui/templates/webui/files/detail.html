@@ -85,6 +85,14 @@
   <tr>
     <td>xmp</td><td>{{ file.xmp }}</td>
   </tr>
+  <tr>
+    <td>links</td>
+    <td>
+    {% for link in file.links_all %}
+    {{ link }}<br/>
+    {% endfor %}
+    </td>
+  </tr>
 </table>
 
 <form name="new-access" action="{% url "webui-file-new-access" file.repo file.org file.cid file.eid file.role file.sha1 %}" method="post">{% csrf_token %}
