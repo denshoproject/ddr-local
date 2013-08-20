@@ -64,23 +64,6 @@ FILE_FIELDS = [
         'default':    '',
     },
     {
-        'name':       'status',
-        'group':      '',
-        'xpath':      "",
-        'xpath_dup':  [],
-        'model_type': str,
-        'form_type':  forms.CharField,
-        'form': {
-            'label':      'Status',
-            'help_text':  '',
-            'max_length': 255,
-            'widget':     '',
-            'initial':    '',
-            'required':   False,
-        },
-        'default':    '',
-    },
-    {
         'name':       'public',
         'group':      '',
         'xpath':      "",

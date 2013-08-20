@@ -650,7 +650,6 @@ FILE_KEYS = ['path_rel',
              'sha256', 
              'md5',
              'basename_orig',
-             'status',
              'public',
              'sort',
              'label',
@@ -697,7 +696,6 @@ class DDRFile( object ):
     sha1 = None
     sha256 = None
     md5 = None
-    status = ''
     public = 0
     sort = 1
     label = ''
