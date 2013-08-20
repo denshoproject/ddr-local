@@ -37,6 +37,10 @@
 {% endif %}
 </p>
 <dl class="dl-horizontal">
+  <dt>Collection</dt>
+  <dd><p>
+  <a href="{{ collection.url }}">{{ collection.id }}: {% if collection.title %}{{ collection.title }}{% endif %}</a>
+  </p></dd>
 {% for lv in entity.labels_values %}
   {% if lv.value %}<dt>{{ lv.label }}</dt><dd>{{ lv.value|safe|linebreaks }}</dd>{% endif %}
 {% endfor %}

@@ -157,22 +157,6 @@ ENTITY_FIELDS = [
         },
         'default':    '',
     },
-    {
-        'name':       'collection',
-        'xpath':      "/mets:mets/mets:dmdSec[@ID='DM1']/mets:mdWrap/mets:xmlData/mods:mods/mods:relatedItem[@displayLabel='Collection' and @type='host']/mods:identifier[@type='local']",
-        'xpath_dup':  [],
-        'model_type': str,
-        'form_type':  forms.CharField,
-        'form': {
-            'label':      'Collection',
-            'help_text':  'Name of collection	Must refer to existing partner collection. See reference on collections.',
-            'max_length': 255,
-            'widget':     '',
-            'initial':    '',
-            'required':   True,
-        },
-        'default':    '',
-    },
     # Scan ID
     {
         'name':       'title',
@@ -639,7 +623,6 @@ def _display_multiline_dict( template, data ):
 # public
 
 def formprep_parent(data):     return _formprep_basic(data)
-def formprep_collection(data): return _formprep_basic(data)
 
 # title
 # description
@@ -700,8 +683,6 @@ def _formprep_basic(data):
 # public
 
 def formpost_parent(data):     return _formpost_basic(data)
-
-def formpost_collection(data): return _formpost_basic(data)
 
 # title
 # description
