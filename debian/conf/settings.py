@@ -86,6 +86,8 @@ REDIRECT_URL_SESSION_KEY = 'remount_redirect_uri'
 
 CELERY_TASKS_SESSION_KEY = 'celery-tasks'
 
+REPOS_ORGS_TIMEOUT = 60*30 # 30min
+
 # ----------------------------------------------------------------------
 
 import djcelery

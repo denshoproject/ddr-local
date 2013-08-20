@@ -18,7 +18,7 @@ from DDR import commands
 from ddrlocal.models import DDRLocalCollection as Collection
 from ddrlocal.forms import CollectionForm
 
-from storage.decorators import storage_required
+from storage.decorators import storage_required, get_repos_orgs
 from webui import WEBUI_MESSAGES
 from webui import api
 from webui.forms.collections import NewCollectionForm, UpdateForm
@@ -40,7 +40,7 @@ def _uid_path(request, repo, org, cid):
 @storage_required
 def collections( request ):
     collections = []
-    for o in settings.DDR_ORGANIZATIONS:
+    for o in get_repos_orgs():
         repo,org = o.split('-')
         colls = []
         for coll in commands.collections_local(settings.MEDIA_BASE, repo, org):

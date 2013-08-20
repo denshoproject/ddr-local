@@ -2,6 +2,7 @@ from functools import wraps
 
 from django.conf import settings
 from django.contrib import messages
+from django.core.cache import cache
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
 from django.utils.decorators import available_attrs
@@ -12,6 +13,25 @@ from storage import STORAGE_MESSAGES
 from storage import base_path
 
 
+
+def get_repos_orgs():
+    """Returns list of repo-orgs that the current SSH key gives access to.
+    
+    Hits up Gitolite for the info.
+    """
+    key = 'ddrlocal:gitolite_repos_orgs'
+    repos_orgs = cache.get(key)
+    if not repos_orgs:
+        repos_orgs = []
+        status,lines = commands.gitolite_info()
+        for line in lines:
+            if 'R W C' in line:
+                parts = line.replace('R W C', '').strip().split('-')
+                repo_org = '-'.join([parts[0], parts[1]])
+                if repo_org not in repos_orgs:
+                    repos_orgs.append(repo_org)
+        cache.set(key, repos_orgs, settings.REPOS_ORGS_TIMEOUT)
+    return repos_orgs
 
 def storage_required(func):
     """Checks for storage; if problem redirects to remount page or shows error.
@@ -27,7 +47,8 @@ def storage_required(func):
     def inner(request, *args, **kwargs):
         # if we can get list of collections, storage must be readable
         basepath = settings.MEDIA_BASE
-        repo,org = settings.DDR_ORGANIZATIONS[0].split('-')
+        repos_orgs = get_repos_orgs()
+        repo,org = repos_orgs[0].split('-')
         try:
             collections = commands.collections_local(basepath, repo, org)
             readable = True
