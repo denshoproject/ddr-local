@@ -24,18 +24,23 @@
 {% endif %}
 </h3>
 
-<table class="table table-condensed table-striped">
-  <tr>
-    <td>privacy level</td><td>{{ file.public }}</td>
-  </tr>
+<dl class="dl-horizontal">
+{% for lv in file.labels_values %}
+  {% if lv.value %}<dt>{{ lv.label }}</dt><dd>{{ lv.value|safe|linebreaks }}</dd>{% endif %}
+{% endfor %}
+</dl>
+
+{% if file and file.access_abs %}
+{% thumbnail file.access_abs "500x500" crop="center" as img %}
+<img src="{{ img.url }}" width="{{ img.width }}" height="{{ img.height }}">
+{% empty %}
+<p>No image</p>
+{% endthumbnail %}
+{% endif %}
+
+<table class="table table-condensed table-striped muted">
   <tr>
     <td>role</td><td>{{ file.role }}</td>
-  </tr>
-  <tr>
-    <td>label</td><td>{{ file.label }}</td>
-  </tr>
-  <tr>
-    <td>sort</td><td>{{ file.sort }}</td>
   </tr>
   <tr>
     <td>size</td><td>{{ file.size|filesizeformat }}</td>
@@ -52,18 +57,6 @@
   </tr>
   <tr>
     <td>original name</td><td>{{ file.basename_orig }}</td>
-  </tr>
-</table>
-
-{% if file and file.access_abs %}
-{% thumbnail file.access_abs "500x500" crop="center" as img %}
-<img src="{{ img.url }}" width="{{ img.width }}" height="{{ img.height }}">
-{% empty %}
-<p>No image</p>
-{% endthumbnail %}
-{% endif %}
-
-<table class="table table-condensed table-striped muted">
   </tr>
 <!--
   <tr>

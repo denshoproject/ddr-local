@@ -106,7 +106,7 @@ FILE_FIELDS = [
         'form': {
             'label':      'Thumbnail',
             'help_text':  '',
-            'widget':     '',
+            'widget':     forms.HiddenInput,
             'initial':    -1,
             'required':   True,
         },
@@ -154,6 +154,24 @@ FILE_FIELDS = [
 # These functions take Python data from the corresponding Collection field
 # and format it for display.
 #
+
+def display_public( data ):
+    for c in PERMISSIONS_CHOICES:
+        if data == c[0]:
+            return c[1]
+    return data
+
+def display_sort( data ):
+    return ''
+
+def display_thumb( data ):
+    return ''
+
+def display_xmp( data ):
+    return ''
+
+def display_links( data ):
+    return ''
 
 
 
