@@ -16,7 +16,8 @@ from django.template.loader import get_template
 from DDR import commands
 
 from ddrlocal.models import DDRLocalCollection as Collection
-from ddrlocal.forms import CollectionForm
+from ddrlocal.models.collection import COLLECTION_FIELDS
+from ddrlocal.forms import DDRForm
 
 from storage.decorators import storage_required, get_repos_orgs
 from webui import WEBUI_MESSAGES
@@ -192,7 +193,7 @@ def edit( request, repo, org, cid ):
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
     if request.method == 'POST':
-        form = CollectionForm(request.POST)
+        form = DDRForm(request.POST, fields=COLLECTION_FIELDS)
         if form.is_valid():
             git_name = request.session.get('git_name')
             git_mail = request.session.get('git_mail')
@@ -211,7 +212,7 @@ def edit( request, repo, org, cid ):
             else:
                 messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     else:
-        form = CollectionForm(collection.form_prep())
+        form = DDRForm(collection.form_prep(), fields=COLLECTION_FIELDS)
     return render_to_response(
         'webui/collections/edit-json.html',
         {'repo': repo,

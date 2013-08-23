@@ -17,7 +17,8 @@ from DDR import commands
 
 from ddrlocal.models import DDRLocalCollection as Collection
 from ddrlocal.models import DDRLocalEntity as Entity
-from ddrlocal.forms import EntityForm
+from ddrlocal.models.entity import ENTITY_FIELDS
+from ddrlocal.forms import DDRForm
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
@@ -165,7 +166,7 @@ def edit( request, repo, org, cid, eid ):
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     #
     if request.method == 'POST':
-        form = EntityForm(request.POST)
+        form = DDRForm(request.POST, fields=ENTITY_FIELDS)
         if form.is_valid():
             git_name = request.session.get('git_name')
             git_mail = request.session.get('git_mail')
@@ -184,7 +185,7 @@ def edit( request, repo, org, cid, eid ):
             else:
                 messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     else:
-        form = EntityForm(entity.form_prep())
+        form = DDRForm(entity.form_prep(), fields=ENTITY_FIELDS)
     return render_to_response(
         'webui/entities/edit-json.html',
         {'repo': entity.repo,

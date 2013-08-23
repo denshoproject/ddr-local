@@ -17,7 +17,8 @@ from DDR import commands
 from ddrlocal.models import DDRLocalCollection as Collection
 from ddrlocal.models import DDRLocalEntity as Entity
 from ddrlocal.models import DDRFile
-from ddrlocal.forms import FileForm
+from ddrlocal.models.files import FILE_FIELDS
+from ddrlocal.forms import DDRForm
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
@@ -245,7 +246,7 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
     file_ = entity.file(repo, org, cid, eid, role, sha1)
     #
     if request.method == 'POST':
-        form = FileForm(request.POST)
+        form = DDRForm(request.POST, fields=FILE_FIELDS)
         if form.is_valid():
             file_.form_post(form)
             file_.dump_json()
@@ -260,7 +261,7 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
             # something went wrong
             assert False
     else:
-        form = FileForm(file_.form_prep())
+        form = DDRForm(file_.form_prep(), fields=FILE_FIELDS)
     return render_to_response(
         'webui/files/edit-json.html',
         {'repo': file_.repo,
