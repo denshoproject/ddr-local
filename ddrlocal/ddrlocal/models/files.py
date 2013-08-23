@@ -1,4 +1,3 @@
-from django import forms
 from django.conf import settings
 
 
@@ -69,7 +68,7 @@ FILE_FIELDS = [
         'xpath':      "",
         'xpath_dup':  [],
         'model_type': int,
-        'form_type':  forms.ChoiceField,
+        'form_type':  'ChoiceField',
         'form': {
             'label':      'Privacy Level',
             'help_text':  'Whether this file should be accessible from the public website.',
@@ -86,7 +85,7 @@ FILE_FIELDS = [
         'xpath':      "",
         'xpath_dup':  [],
         'model_type': int,
-        'form_type':  forms.IntegerField,
+        'form_type':  'IntegerField',
         'form': {
             'label':      'Sort',
             'help_text':  'Order of this file in relation to others for this object (ordered low to high). Can be used to arrange images in a multi-page document.',
@@ -102,11 +101,11 @@ FILE_FIELDS = [
         'xpath':      "",
         'xpath_dup':  [],
         'model_type': int,
-        'form_type':  forms.IntegerField,
+        'form_type':  'IntegerField',
         'form': {
             'label':      'Thumbnail',
             'help_text':  '',
-            'widget':     forms.HiddenInput,
+            'widget':     'HiddenInput',
             'initial':    -1,
             'required':   True,
         },
@@ -118,7 +117,7 @@ FILE_FIELDS = [
         'xpath':      "",
         'xpath_dup':  [],
         'model_type': str,
-        'form_type':  forms.CharField,
+        'form_type':  'CharField',
         'form': {
             'label':      'Label',
             'help_text':  '(Optional) Friendly label for file describing partitive role (i.e., \"Page 1\", \"Cover\", \"Envelope\")',
@@ -135,11 +134,11 @@ FILE_FIELDS = [
         'xpath':      "",
         'xpath_dup':  [],
         'model_type': str,
-        'form_type':  forms.CharField,
+        'form_type':  'CharField',
         'form': {
             'label':      'XMP Metadata',
             'help_text':  '',
-            'widget':     forms.HiddenInput,
+            'widget':     'HiddenInput',
             'initial':    '',
             'required':   False,
         },
@@ -150,12 +149,12 @@ FILE_FIELDS = [
         'xpath':      "",
         'xpath_dup':  [],
         'model_type': str,
-        'form_type':  forms.CharField,
+        'form_type':  'CharField',
         'form': {
             'label':      'Associated Files',
             'help_text':  'Semicolon-separated list of file.path_rels that this file points to.',
             'max_length': 255,
-            'widget':     forms.HiddenInput,
+            'widget':     'HiddenInput',
             'initial':    '',
             'required':   False,
         },
