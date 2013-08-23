@@ -3,11 +3,18 @@ import json
 
 #from lxml import etree
 
-from django.conf import settings
-
 import tematres
 
 
+
+DEFAULT_PERMISSION_COLLECTION = 1
+
+DATE_FORMAT            = '%Y-%m-%d'
+TIME_FORMAT            = '%H:%M:%S'
+DATETIME_FORMAT        = '%Y-%m-%dT%H:%M:%S'
+PRETTY_DATE_FORMAT     = '%d %B %Y'
+PRETTY_TIME_FORMAT     = '%I:%M %p'
+PRETTY_DATETIME_FORMAT = '%d %B %Y, %I:%M %p'
 
 STATUS_CHOICES = [['inprocess', 'In Process'],
                   ['completed', 'Completed'],]
@@ -151,7 +158,7 @@ ENTITY_FIELDS = [
             'help_text':  'Setting applies permission to everything under this object.',
             'widget':     '',
             'choices':    PERMISSIONS_CHOICES,
-            'initial':    settings.DEFAULT_PERMISSION_COLLECTION,
+            'initial':    DEFAULT_PERMISSION_COLLECTION,
             'required':   True,
         },
         'default':    '',
@@ -514,12 +521,12 @@ ENTITY_FIELDS = [
 
 def display_created( data ):
     if type(data) == type(datetime.now()):
-        data = data.strftime(settings.PRETTY_DATETIME_FORMAT)
+        data = data.strftime(PRETTY_DATETIME_FORMAT)
     return data
 
 def display_lastmod( data ):
     if type(data) == type(datetime.now()):
-        data = data.strftime(settings.PRETTY_DATETIME_FORMAT)
+        data = data.strftime(PRETTY_DATETIME_FORMAT)
     return data
 
 def display_status( data ):
@@ -572,7 +579,7 @@ def display_format( data ):
 
 def display_digitize_date( data ):
     if type(data) == type(datetime.now()):
-        data = data.strftime(settings.PRETTY_DATE_FORMAT)
+        data = data.strftime(PRETTY_DATE_FORMAT)
     return data
 
 # credit
@@ -749,12 +756,12 @@ def mets_id(tree, namespaces, field, value):
 
 def mets_created(tree, namespaces, field, value):
     if type(value) == type(datetime.now()):
-        value = value.strftime(settings.DATETIME_FORMAT)
+        value = value.strftime(DATETIME_FORMAT)
     return _set_attr(tree, namespaces, '/mets:mets/mets:metsHdr', 'CREATEDATE', value)
 
 def mets_lastmod(tree, namespaces, field, value):
     try:
-        value = value.strftime(settings.DATETIME_FORMAT)
+        value = value.strftime(DATETIME_FORMAT)
     except:
         pass
     return _set_attr(tree, namespaces, '/mets:mets/mets:metsHdr', 'LASTMODDATE', value)

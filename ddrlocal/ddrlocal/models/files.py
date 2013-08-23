@@ -1,6 +1,11 @@
-from django.conf import settings
+DEFAULT_PERMISSION_COLLECTION = 1
 
-
+DATE_FORMAT            = '%Y-%m-%d'
+TIME_FORMAT            = '%H:%M:%S'
+DATETIME_FORMAT        = '%Y-%m-%dT%H:%M:%S'
+PRETTY_DATE_FORMAT     = '%d %B %Y'
+PRETTY_TIME_FORMAT     = '%I:%M %p'
+PRETTY_DATETIME_FORMAT = '%d %B %Y, %I:%M %p'
 
 PERMISSIONS_CHOICES = [['1','public'],
                        ['0','private'],]
@@ -74,7 +79,7 @@ FILE_FIELDS = [
             'help_text':  'Whether this file should be accessible from the public website.',
             'widget':     '',
             'choices':    PERMISSIONS_CHOICES,
-            'initial':    settings.DEFAULT_PERMISSION_COLLECTION,
+            'initial':    DEFAULT_PERMISSION_COLLECTION,
             'required':   True,
         },
         'default':    '',

@@ -3,9 +3,16 @@ import json
 
 from lxml import etree
 
-from django.conf import settings
 
 
+DEFAULT_PERMISSION_COLLECTION = 1
+
+DATE_FORMAT            = '%Y-%m-%d'
+TIME_FORMAT            = '%H:%M:%S'
+DATETIME_FORMAT        = '%Y-%m-%dT%H:%M:%S'
+PRETTY_DATE_FORMAT     = '%d %B %Y'
+PRETTY_TIME_FORMAT     = '%I:%M %p'
+PRETTY_DATETIME_FORMAT = '%d %B %Y, %I:%M %p'
 
 STATUS_CHOICES = [['inprocess', 'In Process'],
                   ['completed', 'Completed'],]
@@ -99,7 +106,7 @@ COLLECTION_FIELDS = [
             'help_text':  'Setting applies permission to everything under this object.',
             'widget':     '',
             'choices':    PERMISSIONS_CHOICES,
-            'initial':    settings.DEFAULT_PERMISSION_COLLECTION,
+            'initial':    DEFAULT_PERMISSION_COLLECTION,
             'required':   True,
         },
         'default':    '',
@@ -470,12 +477,12 @@ COLLECTION_FIELDS = [
 
 def display_created( data ):
     if type(data) == type(datetime.now()):
-        data = data.strftime(settings.PRETTY_DATETIME_FORMAT)
+        data = data.strftime(PRETTY_DATETIME_FORMAT)
     return data
 
 def display_lastmod( data ):
     if type(data) == type(datetime.now()):
-        data = data.strftime(settings.PRETTY_DATETIME_FORMAT)
+        data = data.strftime(PRETTY_DATETIME_FORMAT)
     return data
 
 def display_status( data ):
@@ -647,10 +654,10 @@ def ead_id(tree, namespaces, field, value):
     return tree
 
 def ead_created(tree, namespaces, field, value):
-    return _set_attr(tree, namespaces, "/ead/eadheader/eadid", "created", value.strftime(settings.DATETIME_FORMAT))
+    return _set_attr(tree, namespaces, "/ead/eadheader/eadid", "created", value.strftime(DATETIME_FORMAT))
 
 def ead_lastmod(tree, namespaces, field, value):
-    return _set_attr(tree, namespaces, "/ead/eadheader/eadid", "lastmod", value.strftime(settings.DATETIME_FORMAT))
+    return _set_attr(tree, namespaces, "/ead/eadheader/eadid", "lastmod", value.strftime(DATETIME_FORMAT))
 
 # public
 
