@@ -17,15 +17,17 @@
 
 {% for o in collections %}
 <h3>{{ o.0 }}</h3>
+
+{% if username %}
+<a href="{% url "webui-collection-new" o.1 o.2 %}" class="btn-primary btn-small"><i class="icon-plus-sign"></i> New Collection</a>
+{% endif %}
+
 <ul>
 {% for c in o.3 %}
   <li>
     <a href="{{ c.url }}">{{ c.id }} {% if c.title %}&mdash; {{ c.title }}{% endif %}</a>
   </li>
 {% endfor %}
-{% if username %}
-<li><a href="{% url "webui-collection-new" o.1 o.2 %}">New Collection</a></li>
-{% endif %}
 </ul>
 {% endfor %}
 

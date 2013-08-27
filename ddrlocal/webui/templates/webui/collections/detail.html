@@ -66,9 +66,9 @@
 {% endfor %}
   <li>
 {% if collection.locked %}
-    <a class="muted" title="This collection is locked">New object [locked]</a>
+    <a class="muted" title="This collection is locked" class="btn-primary btn-small muted"><i class="icon-plus-sign"></i> New object [locked]</a>
 {% else %}
-    <a href="{% url "webui-entity-new" repo org cid %}">New object</a>
+    <a href="{% url "webui-entity-new" repo org cid %}" class="btn-primary btn-small"><i class="icon-plus-sign"></i> New object</a>
 {% endif %}
   </li>
 </ul>

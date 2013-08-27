@@ -17,8 +17,8 @@ PRETTY_DATETIME_FORMAT = '%d %B %Y, %I:%M %p'
 STATUS_CHOICES = [['inprocess', 'In Process'],
                   ['completed', 'Completed'],]
 
-PERMISSIONS_CHOICES = [['1','public'],
-                       ['0','private'],]
+PERMISSIONS_CHOICES = [['1','Public'],
+                       ['0','Private'],]
 
 LANGUAGE_CHOICES = [['',''],
                     ['eng','English'],
@@ -191,7 +191,7 @@ COLLECTION_FIELDS = [
             'label':      'Physical Description',
             'help_text':  'A statement about the extent of the collection.',
             'max_length': 255,
-            'widget':     'Textarea',
+            'widget':     '',
             'initial':    '',
             'required':   False,
         },
@@ -210,7 +210,7 @@ COLLECTION_FIELDS = [
             'choices':  LANGUAGE_CHOICES,
             'widget':     '',
             'initial':    '',
-            'required':   False,
+            'required':   True,
         },
         'default':    '',
     },
@@ -243,7 +243,7 @@ COLLECTION_FIELDS = [
             'help_text':  'A brief statement about the creator and the scope of the collection.	Brief free text following basic Chicago Manual style guidelines.',
             'widget':     'Textarea',
             'initial':    '',
-            'required':   True,
+            'required':   False,
         },
         'default':    '',
     },
@@ -293,7 +293,7 @@ COLLECTION_FIELDS = [
             'help_text':  'Information about how the collection was acquired.',
             'widget':     'Textarea',
             'initial':    '',
-            'required':   True,
+            'required':   False,
         },
         'default':    '',
     },

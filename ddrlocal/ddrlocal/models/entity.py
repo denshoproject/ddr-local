@@ -19,12 +19,13 @@ PRETTY_DATETIME_FORMAT = '%d %B %Y, %I:%M %p'
 STATUS_CHOICES = [['inprocess', 'In Process'],
                   ['completed', 'Completed'],]
 
-PERMISSIONS_CHOICES = [['1','public'],
-                       ['0','private'],]
+PERMISSIONS_CHOICES = [['1','Public'],
+                       ['0','Private'],]
 
 LANGUAGE_CHOICES = [['',''],
                     ['eng','English'],
                     ['jpn','Japanese'],
+                    ['por','Portuguese'],
                     ['esp','Spanish'],]
 
 GENRE_CHOICES = [['advertisement','Advertisement'],
@@ -240,7 +241,7 @@ ENTITY_FIELDS = [
             'label':      'Creator',
             'help_text':  'For photographs, the name of the photographer. For letters, documents and other written materials, the name of the author. For newspapers, magazine and other printed matter, the name of the publisher.	For individuals, "LastName, FirstName: CreatorRole" (e.g., "Adams, Ansel:photographer"). Multiple creators are allowed, but must be separated using a semi-colon.',
             'max_length': 255,
-            'widget':     'Textarea',
+            'widget':     '',
             'initial':    '',
             'required':   False,
         },
@@ -274,7 +275,7 @@ ENTITY_FIELDS = [
             'choices': GENRE_CHOICES,
             'widget':     '',
             'initial':    '',
-            'required':   False,
+            'required':   True,
         },
         'default':    '',
     },
