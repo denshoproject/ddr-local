@@ -24,6 +24,7 @@ from ddrlocal.forms import DDRForm
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
+from webui.decorators import ddrview
 from webui.forms.files import NewFileForm, EditFileForm, NewAccessFileForm, shared_folder_files
 from webui.tasks import entity_add_file, entity_add_access
 from webui.views.decorators import login_required
@@ -83,6 +84,7 @@ def json( request, repo, org, cid, eid, role, sha1 ):
     messages.success(request, 'no JSON file. sorry.')
     return HttpResponseRedirect( reverse('webui-file', args=[repo,org,cid,eid,role,sha1]) )
 
+@ddrview
 @login_required
 @storage_required
 def new( request, repo, org, cid, eid, role='master' ):
@@ -155,6 +157,7 @@ def new( request, repo, org, cid, eid, role='master' ):
         context_instance=RequestContext(request, processors=[])
     )
 
+@ddrview
 @login_required
 @storage_required
 def new_access( request, repo, org, cid, eid, role, sha1 ):
@@ -210,6 +213,7 @@ def new_access( request, repo, org, cid, eid, role, sha1 ):
     # redirect to entity
     return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
 
+@ddrview
 @login_required
 @storage_required
 def batch( request, repo, org, cid, eid, role='master' ):
@@ -230,6 +234,7 @@ def batch( request, repo, org, cid, eid, role='master' ):
         context_instance=RequestContext(request, processors=[])
     )
 
+@ddrview
 @login_required
 @storage_required
 def edit( request, repo, org, cid, eid, role, sha1 ):
@@ -280,6 +285,7 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
         context_instance=RequestContext(request, processors=[])
     )
 
+@ddrview
 @login_required
 @storage_required
 def edit_old( request, repo, org, cid, eid, role, sha1 ):

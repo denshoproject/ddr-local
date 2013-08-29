@@ -25,6 +25,7 @@ from ddrlocal.forms import DDRForm
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
 from webui import api
+from webui.decorators import ddrview
 from webui.forms.entities import NewEntityForm, JSONForm, UpdateForm
 from webui.mets import NAMESPACES, NAMESPACES_XPATH
 from webui.mets import METS_FIELDS, MetsForm
@@ -117,6 +118,7 @@ def files( request, repo, org, cid, eid ):
         context_instance=RequestContext(request, processors=[])
     )
 
+@ddrview
 @login_required
 @storage_required
 def new( request, repo, org, cid ):
@@ -151,6 +153,7 @@ def new( request, repo, org, cid ):
     messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_ERR_CREATE'])
     return HttpResponseRedirect(reverse('webui-collection', args=[repo,org,cid]))
 
+@ddrview
 @login_required
 @storage_required
 def edit( request, repo, org, cid, eid ):
@@ -202,6 +205,7 @@ def edit( request, repo, org, cid, eid ):
         context_instance=RequestContext(request, processors=[])
     )
 
+@ddrview
 @login_required
 @storage_required
 def edit_json( request, repo, org, cid, eid ):
@@ -257,6 +261,7 @@ def edit_json( request, repo, org, cid, eid ):
         context_instance=RequestContext(request, processors=[])
     )
 
+@ddrview
 @login_required
 @storage_required
 def edit_mets_xml( request, repo, org, cid, eid ):
@@ -315,6 +320,7 @@ def edit_mets_xml( request, repo, org, cid, eid ):
         context_instance=RequestContext(request, processors=[])
     )
 
+@ddrview
 @login_required
 @storage_required
 def edit_xml( request, repo, org, cid, eid, slug, Form, FIELDS, namespaces=None ):

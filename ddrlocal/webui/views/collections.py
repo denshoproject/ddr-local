@@ -24,6 +24,7 @@ from ddrlocal.forms import DDRForm
 from storage.decorators import storage_required, get_repos_orgs
 from webui import WEBUI_MESSAGES
 from webui import api
+from webui.decorators import ddrview
 from webui.forms.collections import NewCollectionForm, UpdateForm
 from webui.views.decorators import login_required
 from xmlforms.models import XMLModel
@@ -109,6 +110,7 @@ def collection_json( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     return HttpResponse(json.dumps(collection.json().data), mimetype="application/json")
 
+@ddrview
 @storage_required
 def git_status( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
@@ -132,6 +134,7 @@ def ead_xml( request, repo, org, cid ):
     soup = BeautifulSoup(collection.ead().xml, 'xml')
     return HttpResponse(soup.prettify(), mimetype="application/xml")
 
+@ddrview
 @login_required
 @storage_required
 def sync( request, repo, org, cid ):
@@ -153,6 +156,7 @@ def sync( request, repo, org, cid ):
             messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
 
+@ddrview
 @login_required
 @storage_required
 def new( request, repo, org ):
@@ -183,6 +187,7 @@ def new( request, repo, org ):
     messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_ERR_CREATE'])
     return HttpResponseRedirect(reverse('webui-collections'))
 
+@ddrview
 @login_required
 @storage_required
 def edit( request, repo, org, cid ):
@@ -226,6 +231,7 @@ def edit( request, repo, org, cid ):
         context_instance=RequestContext(request, processors=[])
     )
 
+@ddrview
 @login_required
 @storage_required
 def edit_ead( request, repo, org, cid ):

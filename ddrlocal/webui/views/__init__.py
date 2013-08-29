@@ -13,6 +13,7 @@ from DDR import commands
 
 from webui import WEBUI_MESSAGES
 from webui import api
+from webui.decorators import ddrview
 from webui.forms import LoginForm, TaskDismissForm
 from webui.tasks import dismiss_session_task
 
@@ -37,6 +38,7 @@ what do we need to store?
 - orgs the user belongs to
 """
 
+@ddrview
 def login( request ):
     if request.method == 'POST':
         form = LoginForm(request.POST)
@@ -64,6 +66,7 @@ def login( request ):
         context_instance=RequestContext(request, processors=[])
     )
 
+@ddrview
 def logout( request ):
     redirect_uri = request.GET.get('redirect',None)
     if not redirect_uri:
