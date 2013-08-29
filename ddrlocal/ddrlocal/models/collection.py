@@ -1,5 +1,7 @@
 from datetime import datetime, date
 import json
+import logging
+logger = logging.getLogger(__name__)
 
 from lxml import etree
 

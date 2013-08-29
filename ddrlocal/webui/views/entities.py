@@ -1,4 +1,6 @@
 import json
+import logging
+logger = logging.getLogger(__name__)
 import os
 
 from bs4 import BeautifulSoup

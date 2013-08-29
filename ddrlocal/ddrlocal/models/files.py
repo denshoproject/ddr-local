@@ -1,3 +1,8 @@
+import logging
+logger = logging.getLogger(__name__)
+
+
+
 DEFAULT_PERMISSION_COLLECTION = 1
 
 DATE_FORMAT            = '%Y-%m-%d'
