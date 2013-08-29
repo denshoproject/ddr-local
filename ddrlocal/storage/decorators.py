@@ -1,4 +1,6 @@
 from functools import wraps
+import logging
+logger = logging.getLogger(__name__)
 
 from django.conf import settings
 from django.contrib import messages
@@ -55,7 +57,10 @@ def storage_required(func):
         except:
             readable = False
         if not readable:
+            logger.debug('storage not readable')
             status,msg = commands.storage_status(basepath)
+            logger.debug('storage status: %s' % status)
+            logger.debug('storage msg: %s' % msg)
             remount_uri = request.META.get('PATH_INFO',None)
             request.session[settings.REDIRECT_URL_SESSION_KEY] = remount_uri
             if msg == 'unmounted':
