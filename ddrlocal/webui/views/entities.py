@@ -144,12 +144,16 @@ def new( request, repo, org, cid ):
         entity_uid = '{}-{}-{}-{}'.format(repo,org,cid,eid)
         exit,status = commands.entity_create(git_name, git_mail, collection.path, entity_uid)
         if exit:
+            logger.error(exit)
+            logger.error(status)
             messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
         else:
             return HttpResponseRedirect(reverse('webui-entity-edit', args=[repo,org,cid,eid]))
     else:
+        logger.error('Could not get new ID from workbench!')
         messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_ERR_NO_IDS'])
     # something happened...
+    logger.error('Could not create new entity!')
     messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_ERR_CREATE'])
     return HttpResponseRedirect(reverse('webui-collection', args=[repo,org,cid]))
 

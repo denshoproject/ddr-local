@@ -178,12 +178,16 @@ def new( request, repo, org ):
         collection_uid,collection_path = _uid_path(request, repo, org, cid)
         exit,status = commands.create(git_name, git_mail, collection_path)
         if exit:
+            logger.error(exit)
+            logger.error(status)
             messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
         else:
             return HttpResponseRedirect( reverse('webui-collection-edit', args=[repo,org,cid]) )
     else:
+        logger.error('Could not get new ID from workbench!')
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_ERR_NO_IDS'])
     # something happened...
+    logger.error('Could not create new collecion!')
     messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_ERR_CREATE'])
     return HttpResponseRedirect(reverse('webui-collections'))
 
