@@ -6,6 +6,7 @@ from lxml import etree
 
 
 DEFAULT_PERMISSION_COLLECTION = 1
+DEFAULT_RIGHTS_COLLECTION = 'cc'
 
 DATE_FORMAT            = '%Y-%m-%d'
 TIME_FORMAT            = '%H:%M:%S'
@@ -17,14 +18,25 @@ PRETTY_DATETIME_FORMAT = '%d %B %Y, %I:%M %p'
 STATUS_CHOICES = [['inprocess', 'In Process'],
                   ['completed', 'Completed'],]
 
-PERMISSIONS_CHOICES = [['1','Public'],
-                       ['0','Private'],]
+PERMISSIONS_CHOICES = [['1','public'],
+                       ['0','private'],]
+
+RIGHTS_CHOICES = [['',''],
+                  ['cc','DDR Creative Commons'], 
+                  ['nocc','Copyright restricted'], 
+                  ['pdm','Public domain'],]
 
 LANGUAGE_CHOICES = [['',''],
-                    ['eng','English'],
-                    ['jpn','Japanese'],
-                    ['esp','Spanish'],]
-
+				    ['eng','English'],
+				    ['jpn','Japanese'],
+				    ['chi','Chinese'],
+				    ['fre','French'],
+				    ['ger','German'], 
+				    ['kor','Korean'], 
+				    ['por','Portuguese'],
+				    ['rus','Russian'], 
+				    ['spa','Spanish'], 
+				    ['tgl','Tagalog'],]
 
 
 COLLECTION_FIELDS = [
@@ -103,10 +115,27 @@ COLLECTION_FIELDS = [
         'form_type':  'ChoiceField',
         'form': {
             'label':      'Privacy Level',
-            'help_text':  'Setting applies permission to everything under this object.',
+            'help_text':  'If set to private, the permission will apply to all objects and files under this collection.',
             'widget':     '',
             'choices':    PERMISSIONS_CHOICES,
             'initial':    DEFAULT_PERMISSION_COLLECTION,
+            'required':   True,
+        },
+        'default':    '',
+    },
+    {
+        'name':       'rights',
+        'group':      '',
+        'xpath':      "",
+        'xpath_dup':  [],
+        'model_type': str,
+        'form_type':  'ChoiceField',
+        'form': {
+            'label':      'Rights',
+            'help_text':  'Setting will determine the initial default for objects in this collection.',
+            'widget':     '',
+            'choices':    RIGHTS_CHOICES,
+            'initial':    DEFAULT_RIGHTS_COLLECTION,
             'required':   True,
         },
         'default':    '',
@@ -191,7 +220,7 @@ COLLECTION_FIELDS = [
             'label':      'Physical Description',
             'help_text':  'A statement about the extent of the collection.',
             'max_length': 255,
-            'widget':     '',
+            'widget':     'Textarea',
             'initial':    '',
             'required':   False,
         },
@@ -210,7 +239,7 @@ COLLECTION_FIELDS = [
             'choices':  LANGUAGE_CHOICES,
             'widget':     '',
             'initial':    '',
-            'required':   True,
+            'required':   False,
         },
         'default':    '',
     },
@@ -243,7 +272,7 @@ COLLECTION_FIELDS = [
             'help_text':  'A brief statement about the creator and the scope of the collection.	Brief free text following basic Chicago Manual style guidelines.',
             'widget':     'Textarea',
             'initial':    '',
-            'required':   False,
+            'required':   True,
         },
         'default':    '',
     },
@@ -293,7 +322,7 @@ COLLECTION_FIELDS = [
             'help_text':  'Information about how the collection was acquired.',
             'widget':     'Textarea',
             'initial':    '',
-            'required':   False,
+            'required':   True,
         },
         'default':    '',
     },

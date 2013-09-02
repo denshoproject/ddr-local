@@ -7,7 +7,8 @@ import tematres
 
 
 
-DEFAULT_PERMISSION_COLLECTION = 1
+DEFAULT_PERMISSION_ENTITY = 1
+DEFAULT_RIGHTS_ENTITY = 'cc'
 
 DATE_FORMAT            = '%Y-%m-%d'
 TIME_FORMAT            = '%H:%M:%S'
@@ -21,12 +22,23 @@ STATUS_CHOICES = [['inprocess', 'In Process'],
 
 PERMISSIONS_CHOICES = [['1','Public'],
                        ['0','Private'],]
+					
+RIGHTS_CHOICES = [['','']], 
+				  ['cc','DDR Creative Commons'], 
+				  ['nocc','Copyright restricted'], 
+				  ['pdm','Public domain'],]
 
 LANGUAGE_CHOICES = [['',''],
                     ['eng','English'],
                     ['jpn','Japanese'],
+					['chi','Chinese'],
+					['fre','French'],
+					['ger','German'], 
+					['kor','Korean'], 
                     ['por','Portuguese'],
-                    ['esp','Spanish'],]
+ 					['rus','Russian'], 
+                   	['spa','Spanish'], 
+                    ['tgl','Tagalog'],]
 
 GENRE_CHOICES = [['advertisement','Advertisement'],
                     ['album','Album'],
@@ -74,11 +86,11 @@ GENRE_CHOICES = [['advertisement','Advertisement'],
                     ['timetable','Timetable'],
                     ['transcription','Transcription'],]
 
-FORMAT_CHOICES = [['img','Still Image'],
+FORMAT_CHOICES = [['av','Audio/Visual'],
+                    ['ds','Dataset'],
                     ['doc','Document'],
-                    ['vh','Oral History'],]
-
-
+					['img','Still Image'],                    
+					['vh','Oral History'],]
 
 ENTITY_FIELDS = [
     {
@@ -159,11 +171,29 @@ ENTITY_FIELDS = [
             'help_text':  'Setting applies permission to everything under this object.',
             'widget':     '',
             'choices':    PERMISSIONS_CHOICES,
-            'initial':    DEFAULT_PERMISSION_COLLECTION,
+            'initial':    DEFAULT_PERMISSION_ENTITY,
             'required':   True,
         },
         'default':    '',
     },
+    {
+        'name':       'rights',
+        'group':      '',
+        'xpath':      "",
+        'xpath_dup':  [],
+        'model_type': str,
+        'form_type':  'ChoiceField',
+        'form': {
+            'label':      'Rights',
+            'help_text':  'Setting will determine the initial default for files associated with this object.',
+            'widget':     '',
+            'choices':    RIGHTS_CHOICES,
+            'initial':    DEFAULT_RIGHTS_ENTITY,
+            'required':   True,
+        },
+        'default':    '',
+    },
+
     # Scan ID
     {
         'name':       'title',

@@ -1,4 +1,6 @@
-DEFAULT_PERMISSION_COLLECTION = 1
+DEFAULT_PERMISSION_FILE = 1
+DEFAULT_RIGHTS_FILE = 'cc'
+
 
 DATE_FORMAT            = '%Y-%m-%d'
 TIME_FORMAT            = '%H:%M:%S'
@@ -10,7 +12,10 @@ PRETTY_DATETIME_FORMAT = '%d %B %Y, %I:%M %p'
 PERMISSIONS_CHOICES = [['1','public'],
                        ['0','private'],]
 
-
+RIGHTS_CHOICES = [['','']], 
+			      ['cc','DDR Creative Commons'], 
+				  ['nocc','Copyright restricted'], 
+				  ['pdm','Public domain'],]
 
 FILE_FIELDS = [
     {
@@ -79,11 +84,29 @@ FILE_FIELDS = [
             'help_text':  'Whether this file should be accessible from the public website.',
             'widget':     '',
             'choices':    PERMISSIONS_CHOICES,
-            'initial':    DEFAULT_PERMISSION_COLLECTION,
+            'initial':    DEFAULT_PERMISSION_FILE,
             'required':   True,
         },
         'default':    '',
     },
+    {
+        'name':       'rights',
+        'group':      '',
+        'xpath':      "",
+        'xpath_dup':  [],
+        'model_type': str,
+        'form_type':  'ChoiceField',
+        'form': {
+            'label':      'Rights',
+            'help_text':  'The use license for this file.',
+            'widget':     '',
+            'choices':    RIGHTS_CHOICES,
+            'initial':    DEFAULT_RIGHTS_FILE,
+            'required':   True,
+        },
+        'default':    '',
+    },
+
     {
         'name':       'sort',
         'group':      '',
