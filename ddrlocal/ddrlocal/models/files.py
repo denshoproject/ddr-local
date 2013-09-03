@@ -15,10 +15,10 @@ PRETTY_DATETIME_FORMAT = '%d %B %Y, %I:%M %p'
 PERMISSIONS_CHOICES = [['1','Public'],
                        ['0','Private'],]
 
-RIGHTS_CHOICES = [['','']], 
-			      ['cc','DDR Creative Commons'], 
-				  ['nocc','Copyright restricted'], 
-				  ['pdm','Public domain'],]
+RIGHTS_CHOICES = [['',''],
+                  ['cc','DDR Creative Commons'],
+                  ['nocc','Copyright restricted'],
+                  ['pdm','Public domain'],]
 
 FILE_FIELDS = [
     {

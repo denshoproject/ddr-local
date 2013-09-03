@@ -24,22 +24,21 @@ PERMISSIONS_CHOICES = [['1','Public'],
                        ['0','Private'],]
 
 RIGHTS_CHOICES = [['',''],
-                  ['cc','DDR Creative Commons'], 
-                  ['nocc','Copyright restricted'], 
+                  ['cc','DDR Creative Commons'],
+                  ['nocc','Copyright restricted'],
                   ['pdm','Public domain'],]
 
 LANGUAGE_CHOICES = [['',''],
-				    ['eng','English'],
-				    ['jpn','Japanese'],
-				    ['chi','Chinese'],
-				    ['fre','French'],
-				    ['ger','German'], 
-				    ['kor','Korean'], 
-				    ['por','Portuguese'],
-				    ['rus','Russian'], 
-				    ['spa','Spanish'], 
-				    ['tgl','Tagalog'],]
-
+                    ['eng','English'],
+                    ['jpn','Japanese'],
+                    ['chi','Chinese'],
+                    ['fre','French'],
+                    ['ger','German'],
+                    ['kor','Korean'],
+                    ['por','Portuguese'],
+                    ['rus','Russian'],
+                    ['spa','Spanish'],
+                    ['tgl','Tagalog'],]
 
 COLLECTION_FIELDS = [
     {
