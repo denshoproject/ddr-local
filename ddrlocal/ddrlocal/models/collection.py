@@ -527,6 +527,12 @@ def display_public( data ):
             return c[1]
     return data
 
+def display_rights( data ):
+    for c in RIGHTS_CHOICES:
+        if data == c[0]:
+            return c[1]
+    return data
+
 # title
 
 def display_creators( data ):
@@ -591,6 +597,7 @@ def _render_multiline_dict( template, data ):
 # created
 # lastmod
 # public
+# rights
 # title
 # creators
 # extent
@@ -634,6 +641,7 @@ def _formprep_basic(data):
 # created
 # lastmod
 # public
+# rights
 # title
 # unitdate_inclusive
 # unitdate_bulk
@@ -690,6 +698,7 @@ def ead_lastmod(tree, namespaces, field, value):
     return _set_attr(tree, namespaces, "/ead/eadheader/eadid", "lastmod", value.strftime(DATETIME_FORMAT))
 
 # public
+# rights
 
 def ead_title(tree, namespaces, field, value):
     tree = _set_tag_text(tree, namespaces, "/ead/eadheader/filedesc/titlestmt/titleproper", value)

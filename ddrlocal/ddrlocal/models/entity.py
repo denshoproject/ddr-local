@@ -574,6 +574,12 @@ def display_public( data ):
             return c[1]
     return data
 
+def display_rights( data ):
+    for c in RIGHTS_CHOICES:
+        if data == c[0]:
+            return c[1]
+    return data
+
 # collection
 # title
 # description
@@ -616,7 +622,6 @@ def display_digitize_date( data ):
     return data
 
 # credit
-# rights
 
 def display_topics( data ):
     return _display_multiline_dict('<a href="{url}">{label}</a>', data)
@@ -660,6 +665,7 @@ def _display_multiline_dict( template, data ):
 # created
 # lastmod
 # public
+# rights
 
 def formprep_parent(data):     return _formprep_basic(data)
 
@@ -681,7 +687,6 @@ def formprep_creators(data):
 # digitize_organization
 # digitize_date
 # credit
-# rights
 
 def formprep_topics(data):
     """Present as semicolon-separated list"""
@@ -720,6 +725,7 @@ def _formprep_basic(data):
 # created
 # lastmod
 # public
+# rights
 
 def formpost_parent(data):     return _formpost_basic(data)
 
@@ -744,7 +750,6 @@ def formpost_creators(data):
 # digitize_organization
 # digitize_date
 # credit
-# rights
 
 def formpost_topics(data):
     a = []
@@ -800,6 +805,7 @@ def mets_lastmod(tree, namespaces, field, value):
     return _set_attr(tree, namespaces, '/mets:mets/mets:metsHdr', 'LASTMODDATE', value)
 
 # public
+# rights
 # parent
 # collection
 
@@ -839,7 +845,6 @@ def mets_language(tree, namespaces, field, value):
 # digitize_organization
 # digitize_date
 # credit
-# rights
 
 def mets_topics(tree, namespaces, field, value):
     """

@@ -207,6 +207,12 @@ def display_public( data ):
             return c[1]
     return data
 
+def display_rights( data ):
+    for c in RIGHTS_CHOICES:
+        if data == c[0]:
+            return c[1]
+    return data
+
 def display_sort( data ):
     return ''
 
