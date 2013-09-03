@@ -13,16 +13,6 @@
   <div class="row-fluid">
     <div class="span12">
 
-<div id="admin" style="float:right; margin-left:10px;">
-{% if collection.locked %}
-    <input class="btn muted" name="sync" type="submit" value="Sync [locked]"/>
-{% else %}
-  <form name="collection-sync" action="{% url "webui-collection-sync" repo org cid %}" method="POST">{% csrf_token %}
-    <input class="btn btn-primary" name="sync" type="submit" value="Sync"/>
-  </form>
-{% endif %}
-</div>
-
 <h1>
 {{ collection.id }}
 {% if collection.title %}&mdash; {{ collection.title }}{% endif %}
