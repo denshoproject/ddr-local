@@ -135,6 +135,11 @@ def collections_next( request, repo, org, num_collections=1 ):
             soup = BeautifulSoup(r1.text)
             cids = [c.string for c in soup.find_all('a','collection')]
             collections = cids[-num_collections:]
+        else:
+            logger.error('No CSRF token')
+    else:
+        logger.error('Request did not work! (status code: %s)' % r0.status_code)
+    logger.debug('collections: %s' % collections)
     return collections
 
 def entities_next( request, repo, org, cid, num=1 ):
@@ -176,4 +181,9 @@ def entities_next( request, repo, org, cid, num=1 ):
             soup = BeautifulSoup(r1.text)
             eids = [e.string.strip() for e in soup.find_all('td','eid')]
             entities = eids[-num:]
+        else:
+            logger.error('No CSRF token')
+    else:
+        logger.error('Request did not work! (status code: %s)' % r0.status_code)
+    logger.debug('entities: %s' % entities)
     return entities

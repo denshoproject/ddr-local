@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 from django.conf import settings
 from django.core.urlresolvers import reverse
 
@@ -8,7 +11,8 @@ def sitewide(request):
     """Variables that need to be inserted into all templates.
     """
     # logout redirect - chop off edit/new/batch URLs if present
-    logout_next = request.META['RAW_URI']
+    logout_next = '?'.join([request.META['PATH_INFO'], request.META['QUERY_STRING']])
+    
     if logout_next.find('edit') > -1:    logout_next = logout_next.split('edit')[0]
     elif logout_next.find('new') > -1:   logout_next = logout_next.split('new')[0]
     elif logout_next.find('batch') > -1: logout_next = logout_next.split('batch')[0]

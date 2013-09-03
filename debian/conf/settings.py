@@ -6,6 +6,7 @@ TEMPLATE_DEBUG = DEBUG
 # ----------------------------------------------------------------------
 
 import ConfigParser
+import logging
 import os
 
 os.environ['USER'] = 'ddr'
@@ -42,6 +43,8 @@ THUMBNAIL_OPTIONS    = config.get('local','thumbnail_options')
 DEFAULT_PERMISSION_COLLECTION = config.get('local','default_permission_collection')
 DEFAULT_PERMISSION_ENTITY     = config.get('local','default_permission_entity')
 DEFAULT_PERMISSION_FILE       = config.get('local','default_permission_file')
+LOG_FILE             = config.get('local', 'log_file')
+LOG_LEVEL            = config.get('local', 'log_level')
 
 GITOLITE             = config.get('workbench','gitolite')
 CGIT_URL             = config.get('workbench','cgit_url')
@@ -60,9 +63,6 @@ DDR_USBHDD_BASE_DIR = 'ddr'
 
 MEDIA_BASE = os.path.join(MEDIA_ROOT, 'base')
 
-# logging
-WEBUI_LOG_FILE       = config.get('webui', 'log_file')
-WEBUI_LOG_LEVEL      = config.get('webui', 'log_level')
 
 ENTITY_FILE_ROLES = (
     ('master','master'),
@@ -146,6 +146,7 @@ CACHES = {
 BROKER_URL            = 'redis://%s:%s/%s' % (REDIS_HOST, REDIS_PORT, REDIS_DB_CELERY_BROKER)
 CELERY_RESULT_BACKEND = 'redis://%s:%s/%s' % (REDIS_HOST, REDIS_PORT, REDIS_DB_CELERY_RESULT)
 BROKER_TRANSPORT_OPTIONS = {'visibility_timeout': 60 * 60}  # 1 hour
+CELERYD_HIJACK_ROOT_LOGGER = False
 
 # sorl-thumbnail
 THUMBNAIL_DEBUG = DEBUG
@@ -181,33 +182,64 @@ STATICFILES_DIRS = (
     '/usr/local/src/ddr-local/ddrlocal/webui/static',
 )
 
-# A sample logging configuration. The only tangible logging
-# performed by this configuration is to send an email to
-# the site admins on every HTTP 500 error when DEBUG=False.
-# See http://docs.djangoproject.com/en/dev/topics/logging for
-# more details on how to customize your logging configuration.
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '%(asctime)s %(levelname)-8s [%(module)s.%(funcName)s]  %(message)s'
+        },
+        'simple': {
+            'format': '%(asctime)s %(levelname)-8s %(message)s'
+        },
+    },
     'filters': {
+        # only log when settings.DEBUG == False
         'require_debug_false': {
             '()': 'django.utils.log.RequireDebugFalse'
-        }
+        },
+        'suppress_celery_newconnect': {
+            '()': 'webui.log.SuppressCeleryNewConnections'
+        },
     },
     'handlers': {
+        'null': {
+            'level': 'DEBUG',
+            'class': 'django.utils.log.NullHandler',
+        },
+        'console':{
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+        'file': {
+            'level': LOG_LEVEL,
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': LOG_FILE,
+            'when': 'D',
+            'backupCount': 14,
+            'filters': ['suppress_celery_newconnect'],
+            'formatter': 'verbose',
+        },
         'mail_admins': {
             'level': 'ERROR',
+            'class': 'django.utils.log.AdminEmailHandler',
             'filters': ['require_debug_false'],
-            'class': 'django.utils.log.AdminEmailHandler'
-        }
+            'formatter': 'verbose',
+        },
     },
     'loggers': {
         'django.request': {
-            'handlers': ['mail_admins'],
             'level': 'ERROR',
             'propagate': True,
+            'handlers': ['mail_admins'],
         },
-    }
+    },
+    # This is the only way I found to write log entries from the whole DDR stack.
+    'root': {
+        'level': 'DEBUG',
+        'handlers': ['file'],
+    },
 }
 
 USE_TZ = True

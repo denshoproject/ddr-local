@@ -1,6 +1,9 @@
-DEFAULT_PERMISSION_FILE = 1
-DEFAULT_RIGHTS_FILE = 'cc'
+import logging
+logger = logging.getLogger(__name__)
 
+
+DEFAULT_RIGHTS_FILE = 'cc'
+DEFAULT_PERMISSION_FILE = 1
 
 DATE_FORMAT            = '%Y-%m-%d'
 TIME_FORMAT            = '%H:%M:%S'
@@ -9,8 +12,8 @@ PRETTY_DATE_FORMAT     = '%d %B %Y'
 PRETTY_TIME_FORMAT     = '%I:%M %p'
 PRETTY_DATETIME_FORMAT = '%d %B %Y, %I:%M %p'
 
-PERMISSIONS_CHOICES = [['1','public'],
-                       ['0','private'],]
+PERMISSIONS_CHOICES = [['1','Public'],
+                       ['0','Private'],]
 
 RIGHTS_CHOICES = [['','']], 
 			      ['cc','DDR Creative Commons'], 

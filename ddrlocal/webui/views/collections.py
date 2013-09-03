@@ -1,4 +1,6 @@
 import json
+import logging
+logger = logging.getLogger(__name__)
 import os
 
 from bs4 import BeautifulSoup
@@ -22,6 +24,7 @@ from ddrlocal.forms import DDRForm
 from storage.decorators import storage_required, get_repos_orgs
 from webui import WEBUI_MESSAGES
 from webui import api
+from webui.decorators import ddrview
 from webui.forms.collections import NewCollectionForm, UpdateForm
 from webui.views.decorators import login_required
 from xmlforms.models import XMLModel
@@ -107,6 +110,7 @@ def collection_json( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     return HttpResponse(json.dumps(collection.json().data), mimetype="application/json")
 
+@ddrview
 @storage_required
 def git_status( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
@@ -130,6 +134,7 @@ def ead_xml( request, repo, org, cid ):
     soup = BeautifulSoup(collection.ead().xml, 'xml')
     return HttpResponse(soup.prettify(), mimetype="application/xml")
 
+@ddrview
 @login_required
 @storage_required
 def sync( request, repo, org, cid ):
@@ -151,6 +156,7 @@ def sync( request, repo, org, cid ):
             messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
 
+@ddrview
 @login_required
 @storage_required
 def new( request, repo, org ):
@@ -172,15 +178,20 @@ def new( request, repo, org ):
         collection_uid,collection_path = _uid_path(request, repo, org, cid)
         exit,status = commands.create(git_name, git_mail, collection_path)
         if exit:
+            logger.error(exit)
+            logger.error(status)
             messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
         else:
             return HttpResponseRedirect( reverse('webui-collection-edit', args=[repo,org,cid]) )
     else:
+        logger.error('Could not get new ID from workbench!')
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_ERR_NO_IDS'])
     # something happened...
+    logger.error('Could not create new collecion!')
     messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_ERR_CREATE'])
     return HttpResponseRedirect(reverse('webui-collections'))
 
+@ddrview
 @login_required
 @storage_required
 def edit( request, repo, org, cid ):
@@ -224,6 +235,7 @@ def edit( request, repo, org, cid ):
         context_instance=RequestContext(request, processors=[])
     )
 
+@ddrview
 @login_required
 @storage_required
 def edit_ead( request, repo, org, cid ):

@@ -1,3 +1,5 @@
+import logging
+logger = logging.getLogger(__name__)
 import os
 
 from django.conf import settings
@@ -104,10 +106,13 @@ def rm_media_symlink(base_path):
 def mount( request, devicefile, label ):
     """Mounts requested device, adds /var/www/ddr/media symlink, gives feedback.
     """
+    logger.debug('mount(%s, %s)' % (devicefile, label))
     if not (devicefile and label):
         messages.error(request, STORAGE_MESSAGES['MOUNT_ERR_MISSING_INFO'].format(devicefile, label))
         return None
     stat,mount_path = commands.mount(devicefile, label)
+    logger.debug('stat: %s' % stat)
+    logger.debug('mount_path: %s' % mount_path)
     if mount_path:
         messages.success(request, STORAGE_MESSAGES['MOUNT_SUCCESS'].format(label))
         rm_media_symlink(base_path())
@@ -127,10 +132,13 @@ def mount( request, devicefile, label ):
 def unmount( request, devicefile, label ):
     """Removes /var/www/ddr/media symlink, unmounts requested device, gives feedback.
     """
+    logger.debug('unmount(%s, %s)' % (devicefile, label))
     unmounted = None
     if devicefile:
         rm_media_symlink(base_path())
         stat,unmounted = commands.umount(devicefile)
+        logger.debug('stat: %s' % stat)
+        logger.debug('unmounted: %s' % unmounted)
         # remove label,mount_path from session,
         # regardless of whether unmount worked
         try:

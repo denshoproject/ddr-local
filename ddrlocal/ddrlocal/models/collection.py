@@ -1,5 +1,7 @@
 from datetime import datetime, date
 import json
+import logging
+logger = logging.getLogger(__name__)
 
 from lxml import etree
 
@@ -18,8 +20,8 @@ PRETTY_DATETIME_FORMAT = '%d %B %Y, %I:%M %p'
 STATUS_CHOICES = [['inprocess', 'In Process'],
                   ['completed', 'Completed'],]
 
-PERMISSIONS_CHOICES = [['1','public'],
-                       ['0','private'],]
+PERMISSIONS_CHOICES = [['1','Public'],
+                       ['0','Private'],]
 
 RIGHTS_CHOICES = [['',''],
                   ['cc','DDR Creative Commons'], 

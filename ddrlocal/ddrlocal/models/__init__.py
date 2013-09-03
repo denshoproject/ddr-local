@@ -1,6 +1,8 @@
 from datetime import datetime, date
 import hashlib
 import json
+import logging
+logger = logging.getLogger(__name__)
 import os
 from StringIO import StringIO
 
