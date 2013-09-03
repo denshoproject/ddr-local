@@ -18,17 +18,41 @@
 {% for o in collections %}
 <h3>{{ o.0 }}</h3>
 
+<table class="table-striped table-condensed">
 {% if username %}
-<a href="{% url "webui-collection-new" o.1 o.2 %}" class="btn-primary btn-small"><i class="icon-plus-sign"></i> New Collection</a>
+  <tr>
+    <td>
+    </td>
+    <td>
+      <a href="{% url "webui-collection-new" o.1 o.2 %}" class="btn-primary btn-small"><i class="icon-plus-sign"></i> New Collection</a>
+    </td>
+    <td>
+    </td>
+  </tr>
 {% endif %}
 
-<ul>
 {% for c in o.3 %}
-  <li>
-    <a href="{{ c.url }}">{{ c.id }} {% if c.title %}&mdash; {{ c.title }}{% endif %}</a>
-  </li>
+  <tr>
+    <td>
+      {% if c.locked %}
+        <input class="btn btn-mini muted" name="sync" type="submit" value="Sync"/>
+      {% else %}
+        {% if c.unsynced %}
+        <input class="btn btn-mini btn-warning" name="sync" type="submit" value="Sync" />
+        {% else %}
+        <input class="btn btn-mini btn-success" name="sync" type="submit" value="Synced"/>
+        {% endif %}
+      {% endif %}
+    </td>
+    <td>
+      <a href="{{ c.url }}">{{ c.id }}</a>
+    </td>
+    <td>
+      {% if c.title %}<a href="{{ c.url }}">{{ c.title }}{% endif %}</a>
+    </td>
+  </tr>
 {% endfor %}
-</ul>
+</table>
 {% endfor %}
 
     </div><!-- .span12 -->
