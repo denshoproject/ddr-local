@@ -4,6 +4,7 @@ import json
 import logging
 logger = logging.getLogger(__name__)
 import os
+import re
 from StringIO import StringIO
 
 import envoy
@@ -15,6 +16,7 @@ from django.conf import settings
 from django.core.files import File
 from django.core.urlresolvers import reverse
 
+from DDR import commands
 from DDR.models import DDRCollection, DDREntity
 from ddrlocal import VERSION, git_commit
 from ddrlocal.models import collection as collectionmodule
@@ -85,6 +87,8 @@ class DDRLocalCollection( DDRCollection ):
     repo = None
     org = None
     cid = None
+    status = ''
+    unsynced = 0
 
     def __init__(self, *args, **kwargs):
         super(DDRLocalCollection, self).__init__(*args, **kwargs)
@@ -92,6 +96,13 @@ class DDRLocalCollection( DDRCollection ):
         self.repo = self.id.split('-')[0]
         self.org = self.id.split('-')[1]
         self.cid = self.id.split('-')[2]
+        exit,status = commands.status(self.path, short=True)
+        if status:
+            self.status = status
+        if self.status:
+            m = re.search('\[ahead ([0-9]+)\]', self.status)
+            if m:
+                self.unsynced = int(m.group(1))
     
     def __repr__(self):
         return "<DDRLocalCollection %s>" % (self.id)
