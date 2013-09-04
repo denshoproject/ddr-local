@@ -2,6 +2,8 @@ import logging
 logger = logging.getLogger(__name__)
 import os
 
+import envoy
+
 from django.conf import settings
 from django.contrib import messages
 from django.core.cache import cache
@@ -67,6 +69,28 @@ def media_target_dir(base_path):
 
 def ddr_media_dir():
     return settings.MEDIA_BASE
+
+def disk_space(mount_path):
+    """Returns disk space info for the mounted drive.
+    
+    Uses 'df -h' on the back-end.
+        Filesystem  Size  Used  Avail  Use%  Mounted on
+    TODO Make this work on drives with spaces in their name!
+    """
+    fs = None
+    r = envoy.run('df -h')
+    for line in r.std_out.strip().split('\n'):
+        while line.find('  ') > -1:
+            line = line.replace('  ', ' ')
+        parts = line.split(' ')
+        path = parts[5]
+        if (path in mount_path) and (path != '/'):
+            fs = {'size': parts[1],
+                  'used': parts[2],
+                  'total': parts[3],
+                  'percent': parts[4].replace('%',''),
+                  'mount': parts[5],}
+    return fs
 
 def add_media_symlink(base_path):
     """Creates symlink to base_path in /var/www/media/
