@@ -23,7 +23,7 @@ def sitewide(request):
     if dspace and dspace.get('percent',None):
         if    dspace['percent'] <= 10: dspace['label'] = BOOTSTRAP_COLORS['red']
         elif  dspace['percent'] <= 30: dspace['label'] = BOOTSTRAP_COLORS['yellow']
-        else: dspace['percent']:       dspace['label'] = BOOTSTRAP_COLORS['green']
+        else:                          dspace['label'] = BOOTSTRAP_COLORS['green']
     return {
         'storage_root': storage_mount_path,
         'storage_type': stype,
