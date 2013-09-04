@@ -103,6 +103,12 @@ form td { padding-bottom:20px; }
 </span>
 {% endif %}
 
+{% if storage_space %}
+<span id="storage-space" class="label {{ storage_space.label }}" title="size:{{ storage_space.size }} used:{{ storage_space.used }} available:{{ storage_space.percent }}%">
+  {{ storage_space.percent }}%
+</span>
+{% endif %}
+
 {% if storage_status == 'ok' %}
 <span id="storage-status" class="label label-success" title="storage status: OK">
   OK
@@ -169,6 +175,7 @@ form td { padding-bottom:20px; }
   /* navbar storage tooltips */
   $(function () {
     $('#storage-type').tooltip({'placement':'bottom'});
+    $('#storage-space').tooltip({'placement':'bottom'});
     $('#storage-status').tooltip({'placement':'bottom'});
   })
 </script>
