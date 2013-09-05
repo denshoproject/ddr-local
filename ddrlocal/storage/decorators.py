@@ -58,7 +58,6 @@ def storage_required(func):
         # if we can get list of collections, storage must be readable
         basepath = settings.MEDIA_BASE
         repos_orgs = get_repos_orgs()
-        logger.debug('repos_orgs: %s' % repos_orgs)
         if repos_orgs:
             # propagate error
             if (type(repos_orgs) == type('')) and ('error' in repos_orgs):
@@ -71,7 +70,6 @@ def storage_required(func):
                     readable = True
                 except:
                     logging.error('Problem while getting collection listing.')
-        logger.debug('readable: %s' % readable)
         if not readable:
             logger.debug('storage not readable')
             status,msg = commands.storage_status(basepath)
