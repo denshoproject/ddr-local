@@ -10,6 +10,7 @@ from django.http import HttpResponseRedirect
 from django.utils.decorators import available_attrs
 
 from DDR import commands
+from DDR.dvcs import gitolite_info
 
 from storage import STORAGE_MESSAGES
 from storage import base_path
@@ -25,7 +26,7 @@ def get_repos_orgs():
     repos_orgs = cache.get(key)
     if not repos_orgs:
         repos_orgs = []
-        status,lines = commands.gitolite_info()
+        status,lines = gitolite_info(settings.GITOLITE)
         for line in lines:
             if 'R W C' in line:
                 parts = line.replace('R W C', '').strip().split('-')
