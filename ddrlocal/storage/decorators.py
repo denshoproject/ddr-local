@@ -27,6 +27,10 @@ def get_repos_orgs():
     if not repos_orgs:
         repos_orgs = []
         status,lines = gitolite_info(settings.GITOLITE)
+        if (status != 0):
+            msg = 'error: status %s. Possible bad RSA key?' % status
+            logger.error(msg)
+            return msg
         for line in lines:
             if 'R W C' in line:
                 parts = line.replace('R W C', '').strip().split('-')
@@ -45,18 +49,29 @@ def storage_required(func):
     
     Saves requested URI in session; remount view will try to retrieve and redirect.
     NOTE: We don't remember GET/POST args!!!
+    
+    TODO This function will report unreadable if no collections for repo/org!
     """
     @wraps(func, assigned=available_attrs(func))
     def inner(request, *args, **kwargs):
+        readable = False
         # if we can get list of collections, storage must be readable
         basepath = settings.MEDIA_BASE
         repos_orgs = get_repos_orgs()
-        repo,org = repos_orgs[0].split('-')
-        try:
-            collections = commands.collections_local(basepath, repo, org)
-            readable = True
-        except:
-            readable = False
+        logger.debug('repos_orgs: %s' % repos_orgs)
+        if repos_orgs:
+            # propagate error
+            if (type(repos_orgs) == type('')) and ('error' in repos_orgs):
+                messages.error(request, repos_orgs)
+                return HttpResponseRedirect(reverse('storage-required'))
+            elif (type(repos_orgs) == type([])):
+                repo,org = repos_orgs[0].split('-')
+                try:
+                    collections = commands.collections_local(basepath, repo, org)
+                    readable = True
+                except:
+                    logging.error('Problem while getting collection listing.')
+        logger.debug('readable: %s' % readable)
         if not readable:
             logger.debug('storage not readable')
             status,msg = commands.storage_status(basepath)
