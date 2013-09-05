@@ -16,7 +16,7 @@
 <h1>Storage</h1>
 
 {% if removables_mounted %}
-
+<h3>Mounted Devices</h3>
 <table id="removables" class="mounted">
 <form name="mount" action="" method="post">{% csrf_token %}
   {{ umount_form.as_table }}
@@ -37,9 +37,10 @@ Reload this page.<br/>
 </p>
 {% endif %}
 </form>
+{% endif %}{# removables_mounted #}
 
-{% else %}
-
+{% if unmounted %}
+<h3>Unmounted Devices</h3>
 <table id="removables" class="unmounted">
 <form name="mount" action="" method="post">{% csrf_token %}
   {{ mount_form.as_table }}
@@ -60,8 +61,7 @@ Reload this page.<br/>
 </p>
 {% endif %}
 </form>
-
-{% endif %}
+{% endif %}{# unmounted #}
 
 
 {% if remount_uri %}

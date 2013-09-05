@@ -17,6 +17,17 @@ from storage.forms import MountForm, UmountForm
 
 
 
+# helpers --------------------------------------------------------------
+
+def get_unmounted(removables):
+    unmounted = []
+    for r in removables:
+        ismounted = int(r.get('ismounted', '-1'))
+        if not (ismounted == 1):
+            unmounted.append(r)
+    return unmounted
+
+
 # views ----------------------------------------------------------------
 
 def index( request ):
@@ -27,7 +38,8 @@ def index( request ):
     """
     stat,removables = commands.removables()
     stat,mounted = commands.removables_mounted()
-    rdevices = [(d['devicefile'],d['label']) for d in removables]
+    unmounted = get_unmounted(removables)
+    rdevices = [(d['devicefile'],d['label']) for d in unmounted]
     mdevices = [(d['mountpath'],d['devicefile']) for d in mounted]
     if request.method == 'POST':
         mount_form = MountForm(request.POST, devices=rdevices)
@@ -59,6 +71,7 @@ def index( request ):
     return render_to_response(
         'storage/index.html',
         {'removables': removables,
+         'unmounted': unmounted,
          'removables_mounted': mounted,
          'mount_form': mount_form,
          'umount_form': umount_form,
