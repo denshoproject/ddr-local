@@ -65,6 +65,7 @@ TESTING_CID          = config.get('testing','cid')
 TESTING_EID          = config.get('testing','eid')
 TESTING_ROLE         = config.get('testing','role')
 TESTING_SHA1         = config.get('testing','sha1')
+TESTING_DRIVE_LABEL  = config.get('testing','drive_label')
 
 # Directory in root of USB HDD that marks it as a DDR disk
 # /media/USBHDDNAME/ddr
