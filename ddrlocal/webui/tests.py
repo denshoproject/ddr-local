@@ -16,7 +16,7 @@ SHA1     = settings.TESTING_SHA1
 
 #reverse('webui-collection', args=[repo,org,cid])
 
-class WebuiTest(unittest.TestCase):
+class Webui00Test(unittest.TestCase):
     urls = 'webui.urls'
     
     def setUp(self):
@@ -47,7 +47,7 @@ class WebuiTest(unittest.TestCase):
 
 
 
-class WebuiCollectionTest(unittest.TestCase):
+class Webui01CollectionTest(unittest.TestCase):
     urls = 'webui.urls'
     
     def setUp(self):
@@ -111,7 +111,7 @@ class WebuiCollectionTest(unittest.TestCase):
 #webui-collection-sync
 
 
-class WebuiEntityTest(unittest.TestCase):
+class Webui02EntityTest(unittest.TestCase):
     urls = 'webui.urls'
     
     def setUp(self):
@@ -163,7 +163,7 @@ class WebuiEntityTest(unittest.TestCase):
 #webui-entity-edit
 
 
-class WebuiFileTest(unittest.TestCase):
+class Webui03FileTest(unittest.TestCase):
     urls = 'webui.urls'
     
     def setUp(self):
