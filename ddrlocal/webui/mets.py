@@ -86,7 +86,7 @@ class MetsForm(XMLForm):
             tag.text = i
             return tree
         
-        # created
+        # record_created
         if not getval(tree, namespaces, "/mets:mets/mets:metsHdr/@CREATEDATE"):
             tree = set_attr(tree, namespaces,
                             "/mets:mets/mets:metsHdr", 'CREATEDATE',
@@ -236,7 +236,7 @@ METS_FIELDS = [
         'default':    '',
     },
     {
-        'name':       'created',
+        'name':       'creation',
         'xpath':      "/mets:mets/mets:dmdSec[@ID='DM1']/mets:mdWrap/mets:xmlData/mods:mods/mods:originInfo/mods:dateCreated",
         'xpath_dup':  [],
         'model_type': str,
