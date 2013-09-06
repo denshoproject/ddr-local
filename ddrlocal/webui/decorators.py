@@ -11,7 +11,8 @@ def ddrview(f):
         logging.debug('')
         logging.debug('========================================================================')
         logging.debug('{} {}'.format(r.META['REQUEST_METHOD'], r.META['PATH_INFO'], r.META['QUERY_STRING']))
-        logging.debug('    {}'.format(r.META['HTTP_USER_AGENT']))
+        if r.META.get('HTTP_USER_AGENT', None):
+            logging.debug('    {}'.format(r.META['HTTP_USER_AGENT']))
         logging.debug('{}.{}({}, {})'.format(f.__module__, f.__name__, args[1:], kwargs))
         return f(*args, **kwargs)
     return wrapper
