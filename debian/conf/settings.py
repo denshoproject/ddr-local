@@ -57,6 +57,9 @@ WORKBENCH_USERINFO   = config.get('workbench','workbench_userinfo_url')
 WORKBENCH_NEWCOL_URL = config.get('workbench','workbench_newcol_url')
 WORKBENCH_NEWENT_URL = config.get('workbench','workbench_newent_url')
 
+TESTING_USERNAME     = config.get('testing','username')
+TESTING_PASSWORD     = config.get('testing','password')
+
 # Directory in root of USB HDD that marks it as a DDR disk
 # /media/USBHDDNAME/ddr
 DDR_USBHDD_BASE_DIR = 'ddr'
