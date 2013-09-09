@@ -505,12 +505,12 @@ COLLECTION_FIELDS = [
 
 # id
 
-def display_created( data ):
+def display_record_created( data ):
     if type(data) == type(datetime.now()):
         data = data.strftime(PRETTY_DATETIME_FORMAT)
     return data
 
-def display_lastmod( data ):
+def display_record_lastmod( data ):
     if type(data) == type(datetime.now()):
         data = data.strftime(PRETTY_DATETIME_FORMAT)
     return data
