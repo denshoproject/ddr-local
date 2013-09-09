@@ -115,7 +115,7 @@ ENTITY_FIELDS = [
         'default':    '',
     },
     {
-        'name':       'created',
+        'name':       'record_created',
         'xpath':      "/mets:mets/mets:metsHdr@CREATEDATE",
         'xpath_dup':  [],
         'model_type': datetime,
@@ -130,7 +130,7 @@ ENTITY_FIELDS = [
         'default':    '',
     },
     {
-        'name':       'lastmod',
+        'name':       'record_lastmod',
         'xpath':      "/mets:mets/mets:metsHdr@LASTMODDATE",
         'xpath_dup':  [],
         'model_type': datetime,
@@ -178,25 +178,6 @@ ENTITY_FIELDS = [
         },
         'default':    '',
     },
-    {
-        'name':       'rights',
-        'group':      '',
-        'xpath':      "",
-        'xpath_dup':  [],
-        'model_type': str,
-        'form_type':  'ChoiceField',
-        'form': {
-            'label':      'Rights',
-            'help_text':  'Setting will determine the initial default for files associated with this object.',
-            'widget':     '',
-            'choices':    RIGHTS_CHOICES,
-            'initial':    DEFAULT_RIGHTS_ENTITY,
-            'required':   True,
-        },
-        'default':    '',
-    },
-
-    # Scan ID
     {
         'name':       'title',
         'xpath':      "/mets:mets/@LABEL",
@@ -328,14 +309,14 @@ ENTITY_FIELDS = [
         'default':    '',
     },
     {
-        'name':       'dimensions',
+        'name':       'extent',
         'xpath':      "/mets:mets/mets:dmdSec[@ID='DM1']/mets:mdWrap/mets:xmlData/mods:mods/mods:physicalDescription/mods:extent",
         'xpath_dup':  [],
         'model_type': str,
         'form_type':  'CharField',
         'form': {
-            'label':      'Physical Dimensions',
-            'help_text':  'The size of the original physical object. Width in inches, followed by height in inches, in the following format: "5.25W x 3.5H". For photographs, do not include border, mounts and/or frames.',
+            'label':      'Physical Description',
+            'help_text':  'Description of the extent of the original physical object, including dimensions. Width in inches, followed by height in inches, in the following format: "5.25W x 3.5H". For photographs, do not include border, mounts and/or frames.',
             'max_length': 255,
             'widget':     '',
             'initial':    '',
@@ -344,7 +325,7 @@ ENTITY_FIELDS = [
         'default':    '',
     },
     {
-        'name':       'organization',
+        'name':       'contributor',
         'xpath':      "/mets:mets/mets:dmdSec[@ID='DM1']/mets:mdWrap/mets:xmlData/mods:mods/mods:location/mods:physicalLocation",
         'xpath_dup':  [],
         'model_type': str,
@@ -360,7 +341,7 @@ ENTITY_FIELDS = [
         'default':    '',
     },
     {
-        'name':       'organization_id',
+        'name':       'alternate_id',
         'xpath':      "/mets:mets/mets:dmdSec[@ID='DM1']/mets:mdWrap/mets:xmlData/mods:mods/mods:location/mods:holdingExternal/mods:institutionIdentifier/mods:value",
         'xpath_dup':  [],
         'model_type': str,
@@ -441,6 +422,23 @@ ENTITY_FIELDS = [
     },
     {
         'name':       'rights',
+        'group':      '',
+        'xpath':      "",
+        'xpath_dup':  [],
+        'model_type': str,
+        'form_type':  'ChoiceField',
+        'form': {
+            'label':      'Rights',
+            'help_text':  'Setting will determine the initial default for files associated with this object.',
+            'widget':     '',
+            'choices':    RIGHTS_CHOICES,
+            'initial':    DEFAULT_RIGHTS_ENTITY,
+            'required':   True,
+        },
+        'default':    '',
+    }, 
+    {
+        'name':       'rights_statement',
         'xpath':      '',
         'xpath_dup':  [],
         'model_type': str,
@@ -552,12 +550,12 @@ ENTITY_FIELDS = [
 
 # id
 
-def display_created( data ):
+def display_record_created( data ):
     if type(data) == type(datetime.now()):
         data = data.strftime(PRETTY_DATETIME_FORMAT)
     return data
 
-def display_lastmod( data ):
+def display_record_lastmod( data ):
     if type(data) == type(datetime.now()):
         data = data.strftime(PRETTY_DATETIME_FORMAT)
     return data
@@ -662,8 +660,8 @@ def _display_multiline_dict( template, data ):
 #
                    
 # id
-# created
-# lastmod
+# record_created
+# record_lastmod
 # public
 # rights
 
@@ -722,8 +720,8 @@ def _formprep_basic(data):
 #
 
 # id
-# created
-# lastmod
+# record_created
+# record_lastmod
 # public
 # rights
 
@@ -792,12 +790,12 @@ def mets_id(tree, namespaces, field, value):
     #                     value)
     return tree
 
-def mets_created(tree, namespaces, field, value):
+def mets_record_created(tree, namespaces, field, value):
     if type(value) == type(datetime.now()):
         value = value.strftime(DATETIME_FORMAT)
     return _set_attr(tree, namespaces, '/mets:mets/mets:metsHdr', 'CREATEDATE', value)
 
-def mets_lastmod(tree, namespaces, field, value):
+def mets_record_lastmod(tree, namespaces, field, value):
     try:
         value = value.strftime(DATETIME_FORMAT)
     except:
