@@ -228,7 +228,7 @@ COLLECTION_FIELDS = [
         'default':    '',
     },
     {
-        'name':       'organization',
+        'name':       'contributor',
         'group':      'overview',
         'xpath':      "/ead/archdesc/did/repository",
         'xpath_dup':  [],
