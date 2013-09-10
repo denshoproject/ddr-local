@@ -3,3 +3,5 @@
 *.db
 *.svg
 tmp/
+.coverage
+coverage-*
