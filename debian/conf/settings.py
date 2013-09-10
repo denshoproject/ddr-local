@@ -57,6 +57,17 @@ WORKBENCH_USERINFO   = config.get('workbench','workbench_userinfo_url')
 WORKBENCH_NEWCOL_URL = config.get('workbench','workbench_newcol_url')
 WORKBENCH_NEWENT_URL = config.get('workbench','workbench_newent_url')
 
+TESTING_USERNAME     = config.get('testing','username')
+TESTING_PASSWORD     = config.get('testing','password')
+TESTING_REPO         = config.get('testing','repo')
+TESTING_ORG          = config.get('testing','org')
+TESTING_CID          = config.get('testing','cid')
+TESTING_EID          = config.get('testing','eid')
+TESTING_ROLE         = config.get('testing','role')
+TESTING_SHA1         = config.get('testing','sha1')
+TESTING_DRIVE_LABEL  = config.get('testing','drive_label')
+TESTING_CREATE       = int(config.get('testing','create'))
+
 # Directory in root of USB HDD that marks it as a DDR disk
 # /media/USBHDDNAME/ddr
 DDR_USBHDD_BASE_DIR = 'ddr'

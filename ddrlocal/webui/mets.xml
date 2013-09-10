@@ -66,7 +66,7 @@
           <mods:genre authority="densho"></mods:genre>
           
           
-          <!-- densho:datecreated -->
+          <!-- densho:creation -->
  	      <mods:originInfo>
             <mods:dateCreated></mods:dateCreated>
             <mods:dateCreated encoding="iso8601" point=""></mods:dateCreated>

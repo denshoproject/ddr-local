@@ -254,8 +254,8 @@ class DDRLocalCollection( DDRCollection ):
                                                'formpost_%s' % key,
                                                form.cleaned_data[key])
                 setattr(self, key, cleaned_data)
-        # update lastmod
-        self.lastmod = datetime.now()
+        # update record_lastmod
+        self.record_lastmod = datetime.now()
     
     @staticmethod
     def from_json(collection_abs):
@@ -277,14 +277,14 @@ class DDRLocalCollection( DDRCollection ):
                 if f.keys()[0] == ff['name']:
                     setattr(self, f.keys()[0], f.values()[0])
         # special cases
-        if self.created:
-            self.created = datetime.strptime(self.created, settings.DATETIME_FORMAT)
+        if self.record_created:
+            self.record_created = datetime.strptime(self.record_created, settings.DATETIME_FORMAT)
         else:
-            self.created = datetime.now()
-        if self.lastmod:
-            self.lastmod = datetime.strptime(self.lastmod, settings.DATETIME_FORMAT)
+            self.record_created = datetime.now()
+        if self.record_lastmod:
+            self.record_lastmod = datetime.strptime(self.record_lastmod, settings.DATETIME_FORMAT)
         else:
-            self.lastmod = datetime.now()
+            self.record_lastmod = datetime.now()
         # end special cases
         # Ensure that every field in collectionmodule.COLLECTION_FIELDS is represented
         # even if not present in json_data.
@@ -306,7 +306,7 @@ class DDRLocalCollection( DDRCollection ):
             if hasattr(self, ff['name']):
                 val = getattr(self, ff['name'])
                 # special cases
-                if key in ['created', 'lastmod']:
+                if key in ['record_created', 'record_lastmod']:
                     val = val.strftime(settings.DATETIME_FORMAT)
                 elif key in ['digitize_date']:
                     val = val.strftime(settings.DATE_FORMAT)
@@ -524,10 +524,10 @@ class DDRLocalEntity( DDREntity ):
                                         'formprep_%s' % key,
                                         getattr(self, f['name']))
                 data[key] = value
-        if not data.get('created', None):
-            data['created'] = datetime.now()
-        if not data.get('lastmod', None):
-            data['lastmod'] = datetime.now()
+        if not data.get('record_created', None):
+            data['record_created'] = datetime.now()
+        if not data.get('record_lastmod', None):
+            data['record_lastmod'] = datetime.now()
         return data
     
     def form_post(self, form):
@@ -547,8 +547,8 @@ class DDRLocalEntity( DDREntity ):
                                                'formpost_%s' % key,
                                                form.cleaned_data[key])
                 setattr(self, key, cleaned_data)
-        # update lastmod
-        self.lastmod = datetime.now()
+        # update record_lastmod
+        self.record_lastmod = datetime.now()
 
     @staticmethod
     def from_json(entity_abs):
@@ -584,8 +584,8 @@ class DDRLocalEntity( DDREntity ):
             return d
             
         # special cases
-        if self.created: self.created = parsedt(self.created)
-        if self.lastmod: self.lastmod = parsedt(self.lastmod)
+        if self.record_created: self.record_created = parsedt(self.record_created)
+        if self.record_lastmod: self.record_lastmod = parsedt(self.record_lastmod)
         if self.digitize_date: self.digitize_date = parsedt(self.digitize_date)
         # end special cases
         

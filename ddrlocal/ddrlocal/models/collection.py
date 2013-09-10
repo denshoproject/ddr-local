@@ -59,7 +59,7 @@ COLLECTION_FIELDS = [
         'default':    '',
     },
     {
-        'name':       'created',
+        'name':       'record_created',
         'group':      '',
         'xpath':      "",
         'xpath_dup':  [],
@@ -75,7 +75,7 @@ COLLECTION_FIELDS = [
         'default':    '',
     },
     {
-        'name':       'lastmod',
+        'name':       'record_lastmod',
         'group':      '',
         'xpath':      "",
         'xpath_dup':  [],
@@ -120,23 +120,6 @@ COLLECTION_FIELDS = [
             'widget':     '',
             'choices':    PERMISSIONS_CHOICES,
             'initial':    DEFAULT_PERMISSION_COLLECTION,
-            'required':   True,
-        },
-        'default':    '',
-    },
-    {
-        'name':       'rights',
-        'group':      '',
-        'xpath':      "",
-        'xpath_dup':  [],
-        'model_type': str,
-        'form_type':  'ChoiceField',
-        'form': {
-            'label':      'Rights',
-            'help_text':  'Setting will determine the initial default for objects in this collection.',
-            'widget':     '',
-            'choices':    RIGHTS_CHOICES,
-            'initial':    DEFAULT_RIGHTS_COLLECTION,
             'required':   True,
         },
         'default':    '',
@@ -245,7 +228,7 @@ COLLECTION_FIELDS = [
         'default':    '',
     },
     {
-        'name':       'organization',
+        'name':       'contributor',
         'group':      'overview',
         'xpath':      "/ead/archdesc/did/repository",
         'xpath_dup':  [],
@@ -372,6 +355,23 @@ COLLECTION_FIELDS = [
             'widget':     'Textarea',
             'initial':    '',
             'required':   False,
+        },
+        'default':    '',
+    },
+    {
+        'name':       'rights',
+        'group':      '',
+        'xpath':      "",
+        'xpath_dup':  [],
+        'model_type': str,
+        'form_type':  'ChoiceField',
+        'form': {
+            'label':      'Rights',
+            'help_text':  'Setting will determine the initial default for objects in this collection.',
+            'widget':     '',
+            'choices':    RIGHTS_CHOICES,
+            'initial':    DEFAULT_RIGHTS_COLLECTION,
+            'required':   True,
         },
         'default':    '',
     },
@@ -505,12 +505,12 @@ COLLECTION_FIELDS = [
 
 # id
 
-def display_created( data ):
+def display_record_created( data ):
     if type(data) == type(datetime.now()):
         data = data.strftime(PRETTY_DATETIME_FORMAT)
     return data
 
-def display_lastmod( data ):
+def display_record_lastmod( data ):
     if type(data) == type(datetime.now()):
         data = data.strftime(PRETTY_DATETIME_FORMAT)
     return data
@@ -594,8 +594,8 @@ def _render_multiline_dict( template, data ):
 #
 
 # id
-# created
-# lastmod
+# record_created
+# record_lastmod
 # public
 # rights
 # title
@@ -638,8 +638,8 @@ def _formprep_basic(data):
 #
 
 # id
-# created
-# lastmod
+# record_created
+# record_lastmod
 # public
 # rights
 # title
@@ -691,11 +691,11 @@ def ead_id(tree, namespaces, field, value):
     tree = _set_tag_text(tree, namespaces, "/ead/archdesc/did/unitid", value)
     return tree
 
-def ead_created(tree, namespaces, field, value):
-    return _set_attr(tree, namespaces, "/ead/eadheader/eadid", "created", value.strftime(DATETIME_FORMAT))
+def ead_record_created(tree, namespaces, field, value):
+    return _set_attr(tree, namespaces, "/ead/eadheader/eadid", "record_created", value.strftime(DATETIME_FORMAT))
 
-def ead_lastmod(tree, namespaces, field, value):
-    return _set_attr(tree, namespaces, "/ead/eadheader/eadid", "lastmod", value.strftime(DATETIME_FORMAT))
+def ead_record_lastmod(tree, namespaces, field, value):
+    return _set_attr(tree, namespaces, "/ead/eadheader/eadid", "record_lastmod", value.strftime(DATETIME_FORMAT))
 
 # public
 # rights
