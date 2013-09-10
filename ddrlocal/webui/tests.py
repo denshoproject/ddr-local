@@ -12,6 +12,7 @@ CID      = settings.TESTING_CID
 EID      = settings.TESTING_EID
 ROLE     = settings.TESTING_ROLE
 SHA1     = settings.TESTING_SHA1
+CREATE   = settings.TESTING_CREATE
 
 
 #reverse('webui-collection', args=[repo,org,cid])
