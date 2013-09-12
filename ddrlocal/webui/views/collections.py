@@ -176,7 +176,12 @@ def new( request, repo, org ):
     if cid:
         # create the new collection repo
         collection_uid,collection_path = _uid_path(request, repo, org, cid)
-        exit,status = commands.create(git_name, git_mail, collection_path)
+        # collection.json template
+        Collection(collection_path).dump_json(path=settings.TEMPLATE_CJSON,
+                                              template=True)
+        exit,status = commands.create(git_name, git_mail,
+                                      collection_path,
+                                      [settings.TEMPLATE_CJSON, settings.TEMPLATE_EAD])
         if exit:
             logger.error(exit)
             logger.error(status)
