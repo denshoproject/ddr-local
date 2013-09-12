@@ -96,9 +96,10 @@ class DDRLocalCollection( DDRCollection ):
         self.repo = self.id.split('-')[0]
         self.org = self.id.split('-')[1]
         self.cid = self.id.split('-')[2]
-        exit,status = commands.status(self.path, short=True)
-        if status:
-            self.status = status
+        if os.path.exists(self.path):
+            exit,status = commands.status(self.path, short=True)
+            if status:
+                self.status = status
         if self.status:
             m = re.search('\[ahead ([0-9]+)\]', self.status)
             if m:
