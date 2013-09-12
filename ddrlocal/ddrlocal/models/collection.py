@@ -116,7 +116,7 @@ COLLECTION_FIELDS = [
         'form_type':  'ChoiceField',
         'form': {
             'label':      'Privacy Level',
-            'help_text':  '"Public" = the object is viewable through the DDR public website. (Any files under the object with a status of "Private" will not be viewable regardless of the object’s privacy level. If the entire collection has a status of "Private" no objects or files will be viewable). \"Private\" = the object is restricted and not viewable through the DDR public website. (Any files under the object inherit this privacy level and will not be viewable either. If the entire collection has a status of "Public" the object will remain not viewable).',
+            'help_text':  '"Public" = the object is viewable through the DDR public website. (Any files under the object with a status of "Private" will not be viewable regardless of the object\'s privacy level. If the entire collection has a status of "Private" no objects or files will be viewable). "Private" = the object is restricted and not viewable through the DDR public website. (Any files under the object inherit this privacy level and will not be viewable either. If the entire collection has a status of "Public" the object will remain not viewable).',
             'widget':     '',
             'choices':    PERMISSIONS_CHOICES,
             'initial':    DEFAULT_PERMISSION_COLLECTION,
