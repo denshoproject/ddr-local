@@ -54,6 +54,7 @@ def collections( request ):
                 repo,org,cid = c[0],c[1],c[2]
                 collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
                 colls.append(collection)
+        colls = sorted(colls, key=lambda c: c.id, reverse=True)
         collections.append( (o,repo,org,colls) )
     return render_to_response(
         'webui/collections/index.html',
