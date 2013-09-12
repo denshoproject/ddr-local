@@ -293,18 +293,25 @@ class DDRLocalCollection( DDRCollection ):
             if not hasattr(self, ff['name']):
                 setattr(self, ff['name'], ff.get('default',None))
     
-    def dump_json(self):
+    def dump_json(self, path=None, template=False):
         """Dump Collection data to .json file.
-        @param path: Absolute path to .json file.
+        
+        @param path: [optional] Alternate file path.
+        @param template: [optional] Boolean. If true, write default values for fields.
         """
         collection = [{'application': 'https://github.com/densho/ddr-local.git',
                        'commit': git_commit(),
                        'release': VERSION,}]
+        template_passthru = ['id', 'record_created', 'record_lastmod']
         for ff in collectionmodule.COLLECTION_FIELDS:
             item = {}
             key = ff['name']
             val = ''
-            if hasattr(self, ff['name']):
+            if template and (key not in template_passthru):
+                # write default values
+                val = ff['form']['initial']
+            elif hasattr(self, ff['name']):
+                # write object's values
                 val = getattr(self, ff['name'])
                 # special cases
                 if key in ['record_created', 'record_lastmod']:
@@ -314,7 +321,9 @@ class DDRLocalCollection( DDRCollection ):
                 # end special cases
             item[key] = val
             collection.append(item)
-        write_json(collection, self.json_path)
+        if not path:
+            path = self.json_path
+        write_json(collection, path)
     
     def dump_ead(self):
         """Dump Collection data to ead.xml file.
@@ -603,23 +612,29 @@ class DDRLocalEntity( DDREntity ):
                 _files.append(DDRFile(path_abs))
         self.files = _files
     
-    def dump_json(self):
+    def dump_json(self, path=None, template=False):
         """Dump Entity data to .json file.
-        @param path: Absolute path to .json file.
+        
+        @param path: [optional] Alternate file path.
+        @param template: [optional] Boolean. If true, write default values for fields.
         """
-        # TODO DUMP FILE AND FILEMETA PROPERLY!!!
         entity = [{'application': 'https://github.com/densho/ddr-local.git',
                    'commit': git_commit(),
                    'release': VERSION,}]
         exceptions = ['files', 'filemeta']
-        for f in entitymodule.ENTITY_FIELDS:
+        template_passthru = ['id', 'record_created', 'record_lastmod']
+        for ff in entitymodule.ENTITY_FIELDS:
             item = {}
-            key = f['name']
+            key = ff['name']
             val = ''
             dt = datetime(1970,1,1)
             d = date(1970,1,1)
-            if hasattr(self, f['name']):
-                val = getattr(self, f['name'])
+            if template and (key not in template_passthru) and hasattr(ff,'form'):
+                # write default values
+                val = ff['form']['initial']
+            elif hasattr(self, ff['name']):
+                # write object's values
+                val = getattr(self, ff['name'])
                 # special cases
                 if val:
                     if (type(val) == type(dt)) or (type(val) == type(d)):
@@ -629,14 +644,17 @@ class DDRLocalEntity( DDREntity ):
             if (key not in exceptions):
                 entity.append(item)
         files = []
-        for f in self.files:
-            fd = {}
-            for key in ENTITY_FILE_KEYS:
-                if hasattr(f, key):
-                    fd[key] = getattr(f, key, None)
-            files.append(fd)
+        if not template:
+            for f in self.files:
+                fd = {}
+                for key in ENTITY_FILE_KEYS:
+                    if hasattr(f, key):
+                        fd[key] = getattr(f, key, None)
+                files.append(fd)
         entity.append( {'files':files} )
-        write_json(entity, self.json_path)
+        if not path:
+            path = self.json_path
+        write_json(entity, path)
     
     def dump_mets(self):
         """Dump Entity data to mets.xml file.
