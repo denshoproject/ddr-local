@@ -17,11 +17,13 @@ from django.core.files import File
 from django.core.urlresolvers import reverse
 
 from DDR import commands
-from DDR.models import DDRCollection, DDREntity
+from DDR.models import Collection as DDRCollection, Entity as DDREntity
 from ddrlocal import VERSION, git_commit
 from ddrlocal.models import collection as collectionmodule
 from ddrlocal.models import entity as entitymodule
 from ddrlocal.models import files as filemodule
+from ddrlocal.models.meta import CollectionJSON, EntityJSON
+from ddrlocal.models.xml import EAD, METS
 
 
 
@@ -89,6 +91,10 @@ class DDRLocalCollection( DDRCollection ):
     cid = None
     status = ''
     unsynced = 0
+    ead_path = None
+    json_path = None
+    ead_path_rel = None
+    json_path_rel = None
 
     def __init__(self, *args, **kwargs):
         super(DDRLocalCollection, self).__init__(*args, **kwargs)
@@ -96,6 +102,10 @@ class DDRLocalCollection( DDRCollection ):
         self.repo = self.id.split('-')[0]
         self.org = self.id.split('-')[1]
         self.cid = self.id.split('-')[2]
+        self.ead_path           = self._path_absrel('ead.xml'        )
+        self.json_path          = self._path_absrel('collection.json')
+        self.ead_path_rel       = self._path_absrel('ead.xml',        rel=True)
+        self.json_path_rel      = self._path_absrel('collection.json',rel=True)
         if os.path.exists(self.path):
             exit,status = commands.status(self.path, short=True)
             if status:
@@ -258,6 +268,11 @@ class DDRLocalCollection( DDRCollection ):
         # update record_lastmod
         self.record_lastmod = datetime.now()
     
+    def json( self ):
+        #if not os.path.exists(self.json_path):
+        #    CollectionJSON.create(self.json_path)
+        return CollectionJSON(self)
+    
     @staticmethod
     def from_json(collection_abs):
         collection = DDRLocalCollection(collection_abs)
@@ -325,6 +340,11 @@ class DDRLocalCollection( DDRCollection ):
             path = self.json_path
         write_json(collection, path)
     
+    def ead( self ):
+        #if not os.path.exists(self.ead_path):
+        #    EAD.create(self.ead_path)
+        return EAD(self)
+    
     def dump_ead(self):
         """Dump Collection data to ead.xml file.
         """
@@ -357,6 +377,10 @@ class DDRLocalEntity( DDREntity ):
     cid = None
     eid = None
     _files = []
+    json_path = None
+    mets_path = None
+    json_path_rel = None
+    mets_path_rel = None
     
     def __init__(self, *args, **kwargs):
         super(DDRLocalEntity, self).__init__(*args, **kwargs)
@@ -365,6 +389,10 @@ class DDRLocalEntity( DDREntity ):
         self.org = self.id.split('-')[1]
         self.cid = self.id.split('-')[2]
         self.eid = self.id.split('-')[3]
+        self.json_path          = self._path_absrel('entity.json')
+        self.mets_path          = self._path_absrel('mets.xml'   )
+        self.json_path_rel      = self._path_absrel('entity.json',rel=True)
+        self.mets_path_rel      = self._path_absrel('mets.xml',   rel=True)
         self._files = []
     
     def __repr__(self):
@@ -559,6 +587,11 @@ class DDRLocalEntity( DDREntity ):
                 setattr(self, key, cleaned_data)
         # update record_lastmod
         self.record_lastmod = datetime.now()
+    
+    def json( self ):
+        if not os.path.exists(self.json_path):
+            EntityJSON.create(self.json_path)
+        return EntityJSON(self)
 
     @staticmethod
     def from_json(entity_abs):
@@ -655,6 +688,11 @@ class DDRLocalEntity( DDREntity ):
         if not path:
             path = self.json_path
         write_json(entity, path)
+    
+    def mets( self ):
+        if not os.path.exists(self.mets_path):
+            METS.create(self.mets_path)
+        return METS(self)
     
     def dump_mets(self):
         """Dump Entity data to mets.xml file.

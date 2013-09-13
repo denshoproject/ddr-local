@@ -77,6 +77,7 @@ pip install -r /usr/local/src/ddr-local/ddrlocal/requirements/production.txt
 
 echo "${bldgrn}creating directories${txtrst}"
 mkdir /etc/ddr
+mkdir /etc/ddr/templates
 mkdir /var/log/ddr
 mkdir /var/lib/ddr
 mkdir /var/www
@@ -106,6 +107,10 @@ echo "${bldgrn}configuration files${txtrst}"
 cp /usr/local/src/ddr-local/debian/conf/ddr.cfg /etc/ddr/
 chown root.root /etc/ddr/ddr.cfg
 chmod 644 /etc/ddr/ddr.cfg
+
+cp /usr/local/src/ddr-local/debian/conf/templates/* /etc/ddr/templates/
+chown root.root /etc/ddr/templates/*
+chmod 644 /etc/ddr/templates/*
 
 cp /usr/local/src/ddr-local/debian/conf/settings.py /usr/local/src/ddr-local/ddrlocal/ddrlocal/
 chown root.root /usr/local/src/ddr-local/ddrlocal/ddrlocal/settings.py
