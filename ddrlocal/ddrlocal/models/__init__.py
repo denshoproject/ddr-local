@@ -856,6 +856,8 @@ class DDRFile( object ):
             self.json_path = os.path.join(os.path.splitext(self.path_abs)[0], '.json')
             self.json_path = self.json_path.replace('/.json', '.json')
             self.json_path_rel = self.json_path.replace(self.collection_path, '')
+            if self.json_path_rel[0] == '/':
+                self.json_path_rel = self.json_path_rel[1:]
             self.load_json()
             access_abs = None
             if self.access_rel and self.entity_path:
