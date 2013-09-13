@@ -153,7 +153,7 @@ ENTITY_FIELDS = [
         'form_type':  'ChoiceField',
         'form': {
             'label':      'Production Status',
-            'help_text':  '',
+            'help_text':  '"In Progress" = the object is not ready for release on the DDR public website. (The object will not be published even if the collection has a status of "Complete".) "Complete" = the object is ready for release on the DDR public website. (The object can only be published if the collection has a status of "Complete".)',
             'widget':     '',
             'choices':    STATUS_CHOICES,
             'initial':    '',
@@ -170,7 +170,7 @@ ENTITY_FIELDS = [
         'form_type':  'ChoiceField',
         'form': {
             'label':      'Privacy Level',
-            'help_text':  'Setting applies permission to everything under this object.',
+            'help_text':  '"Public" = the object is viewable through the DDR public website. (Any files under the object with a status of "Private" will not be viewable regardless of the object\'s privacy level. If the entire collection has a status of "Private" no objects or files will be viewable). "Private" = the object is restricted and not viewable through the DDR public website. (Any files under the object inherit this privacy level and will not be viewable either. If the entire collection has a status of "Public" the object will remain not viewable).',
             'widget':     '',
             'choices':    PERMISSIONS_CHOICES,
             'initial':    DEFAULT_PERMISSION_ENTITY,
@@ -188,7 +188,7 @@ ENTITY_FIELDS = [
         'form_type':  'CharField',
         'form': {
             'label':      'Title',
-            'help_text':  'A short title for the object. Use original title if exists.	Capitalize first word and proper nouns. No period at end of title. If subject is completely unidentifiable, then use, "Unknown"',
+            'help_text':  'Use an original or previously designated title if one exists. If an original does not exist one should be derived. For derived titles, capitalize the first word and proper nouns and there is no period at end of the title. If the subject is completely unidentifiable, then use of "Unknown" can be appropriate.',
             'max_length': 255,
             'widget':     '',
             'initial':    '',
@@ -204,7 +204,7 @@ ENTITY_FIELDS = [
         'form_type':  'CharField',
         'form': {
             'label':      'Description',
-            'help_text':  'A caption describing the content and/or subject of the object.	Brief free text following basic Chicago Manual style guidelines.',
+            'help_text':  'Use if the title field is not sufficient for the amount of information you have about the object. The description can also include transcriptions of anything handwritten, stamped, or printed on the material. In such cases, specify that is how the information originated. Follow Chicago Manual of Style guidelines for text.',
             'max_length': 255,
             'widget':     'Textarea',
             'initial':    '',
@@ -220,7 +220,7 @@ ENTITY_FIELDS = [
         'form_type':  'CharField',
         'form': {
             'label':      'Date (Created)',
-            'help_text':  'Date of original creation. Not the digitization date. M/D/YYYY. If exact date is not known, then use circa ("c. 1931") or if applicable, a date range ("1930-1940").',
+            'help_text':  'f the exact date is known use MM/DD/YYY for the format. If the exact date is unknown, then use circa (c.1931) or if applicable, a date range (1930-1940).',
             'max_length': 255,
             'widget':     '',
             'initial':    '',
@@ -236,7 +236,7 @@ ENTITY_FIELDS = [
         'form_type':  'CharField',
         'form': {
             'label':      'Location',
-            'help_text':  'Geographic area of the subject (i.e., where a photograph was taken). Could be place of creation for a document.	City, State (state name spelled out). Include country if outside the US (i.e., City, State, Country).',
+            'help_text':  'When possible use the Getty Thesaurus of Geographic names as an authority. Format the names as follows: City, State (state name spelled out). Include country if outside the United States (i.e., City, State, Country).',
             'max_length': 255,
             'widget':     '',
             'initial':    '',
@@ -252,7 +252,7 @@ ENTITY_FIELDS = [
         'form_type':  'CharField',
         'form': {
             'label':      'Creator',
-            'help_text':  'For photographs, the name of the photographer. For letters, documents and other written materials, the name of the author. For newspapers, magazine and other printed matter, the name of the publisher.	For individuals, "LastName, FirstName: CreatorRole" (e.g., "Adams, Ansel:photographer"). Multiple creators are allowed, but must be separated using a semi-colon.',
+            'help_text':  'When possible use the Library of Congress Name Authority Headings. For individuals use the following format: "Last Name, First Name: Creator Role" (e.g., Adams, Ansel:photographer). For organizations use the following format: "Organization Name: Creator Role" (e.g., Associated Press:publisher). Multiple creators are allowed, but must be separated using a semi-colon.',
             'max_length': 255,
             'widget':     '',
             'initial':    '',
@@ -268,7 +268,7 @@ ENTITY_FIELDS = [
         'form_type':  'MultipleChoiceField',
         'form': {
             'label':      'Language',
-            'help_text':  '',
+            'help_text':  'Only needed for objects containing textual content (i.e. caption on a photograph, text of a letter). To select multiple languages hold the Ctrl key down and click on each language.',
             'choices':  LANGUAGE_CHOICES,
             'widget':     '',
             'initial':    '',
@@ -316,7 +316,7 @@ ENTITY_FIELDS = [
         'form_type':  'CharField',
         'form': {
             'label':      'Physical Description',
-            'help_text':  'Description of the extent of the original physical object, including dimensions. Width in inches, followed by height in inches, in the following format: "5.25W x 3.5H". For photographs, do not include border, mounts and/or frames.',
+            'help_text':  'Optional: extent, media-type, and any additional relevant information about the material. (e.g. 1 scrapbook, 1 photograph). Construct the statement using a standard like AACR2, RDA, DACS or DCRM(G). Required: width in inches, followed by height in inches, in the following format: "5.25W x 3.5H". For photographs, do not include border, mounts and/or frames. Separate the extent/media-type and the dimensions with a colon. (e.g. 1 scrapbook: 8W x 10H).',
             'max_length': 255,
             'widget':     '',
             'initial':    '',
@@ -348,7 +348,7 @@ ENTITY_FIELDS = [
         'form_type':  'CharField',
         'form': {
             'label':      'Contributing Institution ID',
-            'help_text':  'An identifier for the physical object from the originating institution. (How would a user locate the original physical object?)	May be a physical or virtual record identifier. For example, a physical shelf/folder location, a negative number, an accession number, or a URI of an external database record.',
+            'help_text':  'May be a physical or virtual record identifier. For example, a physical shelf/folder location, a negative number, an accession number, or a URI of an external database record.',
             'max_length': 255,
             'widget':     '',
             'initial':    '',
@@ -411,8 +411,8 @@ ENTITY_FIELDS = [
         'model_type': str,
         'form_type':  'CharField',
         'form': {
-            'label':      'Credit Line',
-            'help_text':  'Short courtesy text relating to use of object. Could identify either collection contributor and/or donor depending on deed of gift and/or usage agreement for object. Always begins with: "Courtesy of"',
+            'label':      'Preferred Citation3',
+            'help_text':  'Short courtesy text relating to use of object. Could identify either collection contributor and/or donor depending on deed of gift and/or usage agreement for object. Often begins with: "Courtesy of..."',
             'max_length': 255,
             'widget':     '',
             'initial':    '',
@@ -429,7 +429,7 @@ ENTITY_FIELDS = [
         'form_type':  'ChoiceField',
         'form': {
             'label':      'Rights',
-            'help_text':  'Setting will determine the initial default for files associated with this object.',
+            'help_text':  'Use rights for the object. Setting will determine the initial default for files associated with this object.',
             'widget':     '',
             'choices':    RIGHTS_CHOICES,
             'initial':    DEFAULT_RIGHTS_ENTITY,
@@ -444,8 +444,8 @@ ENTITY_FIELDS = [
         'model_type': str,
         'form_type':  'CharField',
         'form': {
-            'label':      'Rights and Restrictions',
-            'help_text':  'Short statement about usage limitations and intellectual property for the individual object. Only needs to be filled out if the individual object has restrictions different than those of the parent collection.',
+            'label':      'Restrictions on Reproduction and Use',
+            'help_text':  'Short text statement about copyright status, who owns copyright, contact information for requests for use, etc.',
             'widget':     'Textarea',
             'initial':    '',
             'required':   False,
@@ -461,7 +461,7 @@ ENTITY_FIELDS = [
         'form_type':  'CharField',
         'form': {
             'label':      'Topic',
-            'help_text':  'Thematic content of object.	From Densho topics controlled vocabulary. Separate multiple topics with semi-colon.',
+            'help_text':  'Use the Densho Topics Controlled Vocabulary List found in Appendix E: Controlled Vocabularies. Multiple entries allowed; separate with a semi-colon. Include the topic ID in brackets after each topic.',
             'widget':     'Textarea',
             'initial':    '',
             'required':   False,
@@ -476,7 +476,7 @@ ENTITY_FIELDS = [
         'form_type':  'CharField',
         'form': {
             'label':      'Person/Organization',
-            'help_text':  'People and/or organizations that are represented in the object.	For people: LastName, FirstName. Separate multiple entries with semi-colon.',
+            'help_text':  'When possible use the Library of Congress Name Authority Headings. For individuals use the following format: "Last Name, First Name" (e.g., Adams, Ansel). For organizations use the following format: "Organization Name" (e.g., Associated Press). 			Multiple creators are allowed, but must be separated using a semi-colon.',
             'widget':     'Textarea',
             'initial':    '',
             'required':   False,
@@ -491,7 +491,7 @@ ENTITY_FIELDS = [
         'form_type':  'CharField',
         'form': {
             'label':      'Facility',
-            'help_text':  'Confinement site associated with the content of the object. From controlled vocabulary. Separate multiple entries with semi-colon.',
+            'help_text':  'Use the Densho Facilities Controlled Vocabulary List found in Appendix E: Controlled Vocabularies. Multiple entries allowed; separate with a semi-colon.',
             'widget':     'Textarea',
             'initial':    '',
             'required':   False,
@@ -506,7 +506,7 @@ ENTITY_FIELDS = [
         'form_type':  'CharField',
         'form': {
             'label':      'Parent Object',
-            'help_text':  'Identifier of the object that contains this object. (I.e., the scrapbook that the photo belongs to)	Must be an existing ID',
+            'help_text':  'Identifier of the object that contains this object. (I.e., the scrapbook that the photo belongs to)	Must be an existing DDR Object ID',
             'max_length': 255,
             'widget':     '',
             'initial':    '',
@@ -522,7 +522,7 @@ ENTITY_FIELDS = [
         'form_type':  'CharField',
         'form': {
             'label':      'Notes',
-            'help_text':  '',
+            'help_text':  'This is an internal field that is not viewable through the public website.',
             'widget':     'Textarea',
             'initial':    '',
             'required':   False,
