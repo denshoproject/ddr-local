@@ -17,11 +17,13 @@ from django.core.files import File
 from django.core.urlresolvers import reverse
 
 from DDR import commands
-from DDR.models import DDRCollection, DDREntity
+from DDR.models import Collection as DDRCollection, Entity as DDREntity
 from ddrlocal import VERSION, git_commit
 from ddrlocal.models import collection as collectionmodule
 from ddrlocal.models import entity as entitymodule
 from ddrlocal.models import files as filemodule
+from ddrlocal.models.meta import CollectionJSON, EntityJSON
+from ddrlocal.models.xml import EAD, METS
 
 
 
@@ -89,6 +91,10 @@ class DDRLocalCollection( DDRCollection ):
     cid = None
     status = ''
     unsynced = 0
+    ead_path = None
+    json_path = None
+    ead_path_rel = None
+    json_path_rel = None
 
     def __init__(self, *args, **kwargs):
         super(DDRLocalCollection, self).__init__(*args, **kwargs)
@@ -96,9 +102,14 @@ class DDRLocalCollection( DDRCollection ):
         self.repo = self.id.split('-')[0]
         self.org = self.id.split('-')[1]
         self.cid = self.id.split('-')[2]
-        exit,status = commands.status(self.path, short=True)
-        if status:
-            self.status = status
+        self.ead_path           = self._path_absrel('ead.xml'        )
+        self.json_path          = self._path_absrel('collection.json')
+        self.ead_path_rel       = self._path_absrel('ead.xml',        rel=True)
+        self.json_path_rel      = self._path_absrel('collection.json',rel=True)
+        if os.path.exists(self.path):
+            exit,status = commands.status(self.path, short=True)
+            if status:
+                self.status = status
         if self.status:
             m = re.search('\[ahead ([0-9]+)\]', self.status)
             if m:
@@ -257,6 +268,11 @@ class DDRLocalCollection( DDRCollection ):
         # update record_lastmod
         self.record_lastmod = datetime.now()
     
+    def json( self ):
+        #if not os.path.exists(self.json_path):
+        #    CollectionJSON.create(self.json_path)
+        return CollectionJSON(self)
+    
     @staticmethod
     def from_json(collection_abs):
         collection = DDRLocalCollection(collection_abs)
@@ -292,18 +308,25 @@ class DDRLocalCollection( DDRCollection ):
             if not hasattr(self, ff['name']):
                 setattr(self, ff['name'], ff.get('default',None))
     
-    def dump_json(self):
+    def dump_json(self, path=None, template=False):
         """Dump Collection data to .json file.
-        @param path: Absolute path to .json file.
+        
+        @param path: [optional] Alternate file path.
+        @param template: [optional] Boolean. If true, write default values for fields.
         """
         collection = [{'application': 'https://github.com/densho/ddr-local.git',
                        'commit': git_commit(),
                        'release': VERSION,}]
+        template_passthru = ['id', 'record_created', 'record_lastmod']
         for ff in collectionmodule.COLLECTION_FIELDS:
             item = {}
             key = ff['name']
             val = ''
-            if hasattr(self, ff['name']):
+            if template and (key not in template_passthru):
+                # write default values
+                val = ff['form']['initial']
+            elif hasattr(self, ff['name']):
+                # write object's values
                 val = getattr(self, ff['name'])
                 # special cases
                 if key in ['record_created', 'record_lastmod']:
@@ -313,7 +336,14 @@ class DDRLocalCollection( DDRCollection ):
                 # end special cases
             item[key] = val
             collection.append(item)
-        write_json(collection, self.json_path)
+        if not path:
+            path = self.json_path
+        write_json(collection, path)
+    
+    def ead( self ):
+        #if not os.path.exists(self.ead_path):
+        #    EAD.create(self.ead_path)
+        return EAD(self)
     
     def dump_ead(self):
         """Dump Collection data to ead.xml file.
@@ -347,6 +377,10 @@ class DDRLocalEntity( DDREntity ):
     cid = None
     eid = None
     _files = []
+    json_path = None
+    mets_path = None
+    json_path_rel = None
+    mets_path_rel = None
     
     def __init__(self, *args, **kwargs):
         super(DDRLocalEntity, self).__init__(*args, **kwargs)
@@ -355,6 +389,10 @@ class DDRLocalEntity( DDREntity ):
         self.org = self.id.split('-')[1]
         self.cid = self.id.split('-')[2]
         self.eid = self.id.split('-')[3]
+        self.json_path          = self._path_absrel('entity.json')
+        self.mets_path          = self._path_absrel('mets.xml'   )
+        self.json_path_rel      = self._path_absrel('entity.json',rel=True)
+        self.mets_path_rel      = self._path_absrel('mets.xml',   rel=True)
         self._files = []
     
     def __repr__(self):
@@ -549,6 +587,11 @@ class DDRLocalEntity( DDREntity ):
                 setattr(self, key, cleaned_data)
         # update record_lastmod
         self.record_lastmod = datetime.now()
+    
+    def json( self ):
+        if not os.path.exists(self.json_path):
+            EntityJSON.create(self.json_path)
+        return EntityJSON(self)
 
     @staticmethod
     def from_json(entity_abs):
@@ -602,23 +645,29 @@ class DDRLocalEntity( DDREntity ):
                 _files.append(DDRFile(path_abs))
         self.files = _files
     
-    def dump_json(self):
+    def dump_json(self, path=None, template=False):
         """Dump Entity data to .json file.
-        @param path: Absolute path to .json file.
+        
+        @param path: [optional] Alternate file path.
+        @param template: [optional] Boolean. If true, write default values for fields.
         """
-        # TODO DUMP FILE AND FILEMETA PROPERLY!!!
         entity = [{'application': 'https://github.com/densho/ddr-local.git',
                    'commit': git_commit(),
                    'release': VERSION,}]
         exceptions = ['files', 'filemeta']
-        for f in entitymodule.ENTITY_FIELDS:
+        template_passthru = ['id', 'record_created', 'record_lastmod']
+        for ff in entitymodule.ENTITY_FIELDS:
             item = {}
-            key = f['name']
+            key = ff['name']
             val = ''
             dt = datetime(1970,1,1)
             d = date(1970,1,1)
-            if hasattr(self, f['name']):
-                val = getattr(self, f['name'])
+            if template and (key not in template_passthru) and hasattr(ff,'form'):
+                # write default values
+                val = ff['form']['initial']
+            elif hasattr(self, ff['name']):
+                # write object's values
+                val = getattr(self, ff['name'])
                 # special cases
                 if val:
                     if (type(val) == type(dt)) or (type(val) == type(d)):
@@ -628,14 +677,22 @@ class DDRLocalEntity( DDREntity ):
             if (key not in exceptions):
                 entity.append(item)
         files = []
-        for f in self.files:
-            fd = {}
-            for key in ENTITY_FILE_KEYS:
-                if hasattr(f, key):
-                    fd[key] = getattr(f, key, None)
-            files.append(fd)
+        if not template:
+            for f in self.files:
+                fd = {}
+                for key in ENTITY_FILE_KEYS:
+                    if hasattr(f, key):
+                        fd[key] = getattr(f, key, None)
+                files.append(fd)
         entity.append( {'files':files} )
-        write_json(entity, self.json_path)
+        if not path:
+            path = self.json_path
+        write_json(entity, path)
+    
+    def mets( self ):
+        if not os.path.exists(self.mets_path):
+            METS.create(self.mets_path)
+        return METS(self)
     
     def dump_mets(self):
         """Dump Entity data to mets.xml file.
@@ -725,6 +782,7 @@ class DDRFile( object ):
     # (ex: subdir/ddr-testing-71-6-dd9ec4305d.jpg)
     path_rel = None
     json_path = None
+    json_path_rel = None
     basename = None
     basename_orig = ''
     size = None
@@ -797,6 +855,9 @@ class DDRFile( object ):
             # file JSON
             self.json_path = os.path.join(os.path.splitext(self.path_abs)[0], '.json')
             self.json_path = self.json_path.replace('/.json', '.json')
+            self.json_path_rel = self.json_path.replace(self.collection_path, '')
+            if self.json_path_rel[0] == '/':
+                self.json_path_rel = self.json_path_rel[1:]
             self.load_json()
             access_abs = None
             if self.access_rel and self.entity_path:

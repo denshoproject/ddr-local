@@ -21,29 +21,39 @@ def get_repos_orgs():
     """Returns list of repo-orgs that the current SSH key gives access to.
     
     Hits up Gitolite for the info.
+    
+    If no repos/orgs are returned it probably means that the ddr user's
+    SSH keys are missing or invalid.  The repos_orgs value is still cached
+    for 1 minute to prevent flapping.
     """
     key = 'ddrlocal:gitolite_repos_orgs'
     repos_orgs = cache.get(key)
     if not repos_orgs:
         repos_orgs = []
         status,lines = gitolite_info(settings.GITOLITE)
-        if (status != 0):
-            msg = 'error: status %s. Possible bad RSA key?' % status
-            logger.error(msg)
-            return msg
+        if status and not lines:
+            logging.error('commands.gitolite_info() status:%s, lines:%s' % (status,lines))
+            logging.error('| Is ddr missing its SSH keys?')
         for line in lines:
             if 'R W C' in line:
                 parts = line.replace('R W C', '').strip().split('-')
                 repo_org = '-'.join([parts[0], parts[1]])
                 if repo_org not in repos_orgs:
                     repos_orgs.append(repo_org)
-        cache.set(key, repos_orgs, settings.REPOS_ORGS_TIMEOUT)
+        if repos_orgs:
+            cache.set(key, repos_orgs, settings.REPOS_ORGS_TIMEOUT)
+        else:
+            cache.set(key, repos_orgs, 60*1) # 1 minute
     return repos_orgs
 
 def storage_required(func):
     """Checks for storage; if problem redirects to remount page or shows error.
     
-    Looks for list of collection repositories in MEDIA_BASE rather than
+    Our test for the presence of storage is whether or not the DDR subsystem
+    can look for a list of collections in MEDIA_BASE.  It doesn't have to *find*
+    any, but if the function completes it means the directory is readable.
+    
+    Note: Looks for list of collection repositories in MEDIA_BASE rather than
     storage.base_path, because the former is the path that is actually used by
     the higher-level parts of the app and by the www server.
     
@@ -70,6 +80,10 @@ def storage_required(func):
                     readable = True
                 except:
                     logging.error('Problem while getting collection listing.')
+        else:
+            # If there are no repos/orgs, it may mean that the ddr user
+            # is missing its SSH keys.
+            messages.error(request, STORAGE_MESSAGES['NO_REPOS_ORGS'])
         if not readable:
             logger.debug('storage not readable')
             status,msg = commands.storage_status(basepath)

@@ -22,6 +22,7 @@ STORAGE_MESSAGES = {
     'UNMOUNT_FAIL':   'Problem unmounting device [{} {}: {},{}]', # devicefile, label, stat, mounted
     
     # storage.decorators
+    'NO_REPOS_ORGS': 'ERROR: No repos/orgs from gitolite_info function. Missing or invalid SSH keys?',
     'ERROR': 'ERROR: Could not get list of collections. Is USB HDD plugged in?',
     
     # storage.views

@@ -142,7 +142,14 @@ def new( request, repo, org, cid ):
     if eid:
         # create new entity
         entity_uid = '{}-{}-{}-{}'.format(repo,org,cid,eid)
-        exit,status = commands.entity_create(git_name, git_mail, collection.path, entity_uid)
+        entity_path = Entity.entity_path(request, repo, org, cid, eid)
+        # entity.json template
+        Entity(entity_path).dump_json(path=settings.TEMPLATE_EJSON,
+                                      template=True)
+        exit,status = commands.entity_create(git_name, git_mail,
+                                             collection.path, entity_uid,
+                                             [collection.json_path_rel, collection.ead_path_rel],
+                                             [settings.TEMPLATE_EJSON, settings.TEMPLATE_METS])
         if exit:
             logger.error(exit)
             logger.error(status)

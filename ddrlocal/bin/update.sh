@@ -35,6 +35,9 @@ git pull
 echo "/etc/ddr/ddr.cfg"
 cp /usr/local/src/ddr-local/debian/conf/ddr.cfg /etc/ddr/
 
+echo "/etc/ddr/templates/*"
+cp /usr/local/src/ddr-local/debian/conf/templates/* /etc/ddr/templates/
+
 echo "./ddrlocal/ddrlocal/settings.py"
 cp /usr/local/src/ddr-local/debian/conf/settings.py /usr/local/src/ddr-local/ddrlocal/ddrlocal
 

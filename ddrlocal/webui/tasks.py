@@ -156,6 +156,7 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
             cp_successful = True
             entity.files_log(1, 'copied: %s' % dest_path)
     
+    # file object
     if cp_successful:
         f = DDRFile(dest_path)
         entity.files_log(1, 'Created DDRFile: %s' % f)
@@ -194,8 +195,7 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
             # TODO would be nice to know why XMP extract failed
             entity.files_log(0, 'XMP extract FAIL')
     
-    access_file = None
-    apath = None
+    # access file
     if f and cp_successful:
         # task: make access file
         entity.files_log(1, 'Making access file...')
@@ -213,63 +213,27 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
             entity.files_log(1, 'access_rel: %s' % f.access_rel)
             entity.files_log(1, 'access_abs: %s' % f.access_abs)
     
-    
+    # dump metadata, commit
     if f and cp_successful:
         entity.files_log(1, 'Adding %s to entity...' % f)
         entity.files.append(f)
-        entity.files_log(1, 'entity.files: %s' % entity.files)
-        entity.files_log(1, 'Writing %s' % entity.json_path)
         entity.dump_json()
         f.dump_json()
-        entity.files_log(1, 'done')
-        try:
-            # entity.json gets written as part of this
-            entity.files_log(1, 'entity_annex_add(%s, %s, %s, %s, %s)' % (
-                git_name, git_mail,
-                entity.parent_path,
-                entity.id, dest_basename))
-            exit,status = entity_annex_add(
-                git_name, git_mail,
-                entity.parent_path,
-                entity.id, dest_basename)
-            entity.files_log(1, 'entity_annex_add: exit: %s' % exit)
-            entity.files_log(1, 'entity_annex_add: status: %s' % status)
-        except:
-            # TODO would be nice to know why entity_annex_add failed
-            entity.files_log(0, 'entity_annex_add: ERROR')
-        # file JSON
-        try:
-            entity.files_log(1, 'entity_update(%s, %s, %s, %s, %s)' % (
-                git_name, git_mail,
-                entity.parent_path, entity.id,
-                f.json_path))
-            exit,status = entity_update(
-                git_name, git_mail,
-                entity.parent_path, entity.id,
-                [f.json_path,])
-            entity.files_log(1, 'entity_update: exit: %s' % exit)
-            entity.files_log(1, 'entity_update: status: %s' % status)
-        except:
-            # TODO would be nice to know why entity_annex_add failed
-            entity.files_log(0, 'entity_update: ERROR')
-        # access file
+        
+        git_files = [entity.json_path_rel, f.json_path_rel]
+        annex_files = [f.basename]
         if f.access_rel:
-            access_basename = os.path.basename(f.access_rel)
-            entity.files_log(1, 'access file: %s' % access_basename)
-            try:
-                entity.files_log(1, 'entity_annex_add(%s, %s, %s, %s, %s)' % (
-                    git_name, git_mail,
-                    entity.parent_path,
-                    entity.id, access_basename))
-                exit,status = entity_annex_add(
-                    git_name, git_mail,
-                    entity.parent_path,
-                    entity.id, access_basename)
-                entity.files_log(1, 'entity_annex_add: exit: %s' % exit)
-                entity.files_log(1, 'entity_annex_add: status: %s' % status)
-            except:
-                # TODO would be nice to know why entity_annex_add failed
-                entity.files_log(0, 'entity_annex_add: ERROR')
+            annex_files.append(os.path.basename(f.access_rel))
+        
+        entity.files_log(1, 'entity_annex_add(%s, %s, %s, %s, %s, %s)' % (
+            git_name, git_mail,
+            entity.parent_path, entity.id,
+            git_files, annex_files))
+        exit,status = entity_annex_add(git_name, git_mail,
+                                       entity.parent_path, entity.id,
+                                       git_files, annex_files)
+        entity.files_log(1, 'entity_annex_add: exit: %s' % exit)
+        entity.files_log(1, 'entity_annex_add: status: %s' % status)
         
     entity.files_log(1, 'ddrlocal.webui.tasks.add_file: FINISHED')
     return f.__dict__

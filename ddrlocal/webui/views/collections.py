@@ -54,6 +54,7 @@ def collections( request ):
                 repo,org,cid = c[0],c[1],c[2]
                 collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
                 colls.append(collection)
+        colls = sorted(colls, key=lambda c: c.id)
         collections.append( (o,repo,org,colls) )
     return render_to_response(
         'webui/collections/index.html',
@@ -64,13 +65,14 @@ def collections( request ):
 @storage_required
 def detail( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
-    entities = collection.entities()
+    entities = sorted(collection.entities(), key=lambda e: e.id, reverse=True)
     return render_to_response(
         'webui/collections/detail.html',
         {'repo': repo,
          'org': org,
          'cid': cid,
-         'collection': collection,},
+         'collection': collection,
+         'entities': entities,},
         context_instance=RequestContext(request, processors=[])
     )
 
@@ -176,7 +178,12 @@ def new( request, repo, org ):
     if cid:
         # create the new collection repo
         collection_uid,collection_path = _uid_path(request, repo, org, cid)
-        exit,status = commands.create(git_name, git_mail, collection_path)
+        # collection.json template
+        Collection(collection_path).dump_json(path=settings.TEMPLATE_CJSON,
+                                              template=True)
+        exit,status = commands.create(git_name, git_mail,
+                                      collection_path,
+                                      [settings.TEMPLATE_CJSON, settings.TEMPLATE_EAD])
         if exit:
             logger.error(exit)
             logger.error(status)
