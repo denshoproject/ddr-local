@@ -28,10 +28,10 @@
 <link rel="apple-touch-icon-precomposed" href="{{ STATIC_URL }}bootstrap/ico/apple-touch-icon-57-precomposed.png">
 
 <style>
-.breadcrumb { padding:0px; }
+.breadcrumb { padding-left:0; }
 .breadcrumb li { margin:0; margin-right:10px; }
 
-#indicators { float:right; }
+#indicators { padding-top:10px; float:right; }
 
 span.bullsep { margin-left:10px; margin-right:10px; }
 
@@ -55,6 +55,9 @@ form td { padding-bottom:20px; }
 #tasks td { padding-right:20px; }
 
 #footer { margin-top:42px; margin-bottom:42px; }
+
+.navbar .container { padding-left:0; }
+.navbar .brand { padding-left:3px; }
 </style>
 
 {% block pagecss %}{% endblock %}
@@ -64,23 +67,17 @@ form td { padding-bottom:20px; }
 
 
 
-<div class="container-fluid">
-
-
-
-  <div class="row-fluid">
-    <div class="span12">
-
-
-
-      <div class="navbar navbar-inverse">
-        <div class="navbar-inner">
+<div class="navbar navbar-inverse navbar-static-top">
+  <div class="navbar-inner">
+    <div class="container">
 
 <a class="brand" href="{% url "webui-index" %}">DDR Workbench</a>
+
 <ul class="nav">
   <li><a href="{% url "webui-index" %}">Home</a></li>
   <li><a href="{% url "webui-index" %}">Web UI</a></li>
 </ul>
+
 <p id="user-info" class="navbar-text pull-right">
     
 {% if username %}
@@ -121,8 +118,15 @@ form td { padding-bottom:20px; }
    
 </p>
 
-        </div>
-      </div><!-- .navbar -->
+    </div><!-- .container -->
+  </div>
+</div><!-- .navbar -->
+
+
+
+<div class="container-fluid">
+  <div class="row-fluid">
+    <div class="span12">
 
 
 
