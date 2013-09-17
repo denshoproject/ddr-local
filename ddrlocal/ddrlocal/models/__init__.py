@@ -33,7 +33,8 @@ ENTITY_FILES_PREFIX = 'files'
 def module_function(module, function_name, value):
     """
     If function is present in ddrlocal.models.entity and is callable,
-    pass field info to it and return the result
+    pass field info to it and return the result.
+    Used in labels_values(), form_prep(), form_post().
     """
     if (function_name in dir(module)):
         function = getattr(module, function_name)
@@ -43,7 +44,10 @@ def module_function(module, function_name, value):
 def module_xml_function(module, function_name, tree, NAMESPACES, f, value):
     """
     If function is present in ddrlocal.models.entity and is callable,
-    pass field info to it and return the result
+    pass field info to it and return the result.
+    module_function() could have been used except with XML we need to
+    pass namespaces lists to the functions.
+    Used in dump_ead(), dump_mets().
     """
     if (function_name in dir(module)):
         function = getattr(module, function_name)
@@ -51,6 +55,22 @@ def module_xml_function(module, function_name, tree, NAMESPACES, f, value):
     return tree
 
 def write_json(data, path):
+    """Write JSON using consistent formatting and sorting.
+    
+    For versioning and history to be useful we need data fields to be written
+    in a format that is easy to edit by hand and in which values can be compared
+    from one commit to the next.  This function prints JSON with nice spacing
+    and indentation and with sorted keys, so fields will be in the same relative
+    position across commits.
+    
+    >>> data = {'a':1, 'b':2}
+    >>> path = '/tmp/ddrlocal.models.write_json.json'
+    >>> write_json(data, path)
+    >>> with open(path, 'r') as f:
+    ...     print(f.readlines())
+    ...
+    ['{\n', '    "a": 1,\n', '    "b": 2\n', '}']
+    """
     json_pretty = json.dumps(data, indent=4, separators=(',', ': '), sort_keys=True)
     with open(path, 'w') as f:
         f.write(json_pretty)
@@ -82,8 +102,8 @@ MODEL_FIELDS = [
 
 class DDRLocalCollection( DDRCollection ):
     """
-    This subclass of Entity and DDREntity adds functions for reading and writing
-    entity.json, and preparing/processing Django forms.
+    This subclass of Collection and DDRCollection adds functions for reading
+    and writing collection.json and ead.xml, and preparing/processing Django forms.
     """
     id = 'whatever'
     repo = None
@@ -97,6 +117,25 @@ class DDRLocalCollection( DDRCollection ):
     json_path_rel = None
 
     def __init__(self, *args, **kwargs):
+        """
+        >>> c = DDRLocalCollection('/tmp/ddr-testing-123')
+        >>> c.uid
+        'ddr-testing-123'
+        >>> c.repo
+        'ddr'
+        >>> c.org
+        'testing'
+        >>> c.cid
+        '123'
+        >>> c.ead_path_rel
+        'ead.xml'
+        >>> c.ead_path
+        '/tmp/ddr-testing-123/ead.xml'
+        >>> c.json_path_rel
+        'collection.json'
+        >>> c.json_path
+        '/tmp/ddr-testing-123/collection.json'
+        """
         super(DDRLocalCollection, self).__init__(*args, **kwargs)
         self.id = self.uid
         self.repo = self.id.split('-')[0]
@@ -116,21 +155,44 @@ class DDRLocalCollection( DDRCollection ):
                 self.unsynced = int(m.group(1))
     
     def __repr__(self):
+        """
+        >>> c = DDRLocalCollection('/tmp/ddr-testing-123')
+        >>> c
+        <DDRLocalCollection ddr-testing-123>
+        """
         return "<DDRLocalCollection %s>" % (self.id)
     
     def url( self ):
+        """
+        >>> c = DDRLocalCollection('/tmp/ddr-testing-123')
+        >>> c.url()
+        '/ui/ddr-testing-123/'
+        """
         return reverse('webui-collection', args=[self.repo, self.org, self.cid])
     
     def cgit_url( self ):
         """Returns cgit URL for collection.
+        
+        >>> c = DDRLocalCollection('/tmp/ddr-testing-123')
+        >>> c.cgit_url()
+        'http://partner.densho.org/cgit/cgit.cgi/ddr-testing-123/'
         """
         return '{}/cgit.cgi/{}/'.format(settings.CGIT_URL, self.uid)
 
     @staticmethod
     def collection_path(request, repo, org, cid):
+        """
+        >>> DDRLocalCollection.collection_path(None, 'ddr', 'testing', 123)
+        '/var/www/media/base/ddr-testing-123'
+        """
         return os.path.join(settings.MEDIA_BASE, '{}-{}-{}'.format(repo, org, cid))
     
     def _lockfile( self ):
+        """
+        >>> c = DDRLocalCollection('/tmp/ddr-testing-123')
+        >>> c._lockfile()
+        '/tmp/ddr-testing-123/lock'
+        """
         return os.path.join(self.path, 'lock')
      
     def lock( self, task_id ):
@@ -143,7 +205,18 @@ class DDRLocalCollection( DDRCollection ):
         This method should(?) be called immediately after starting the task:
         >> result = collection_sync.apply_async((args...), countdown=2)
         >> lock_status = collection.lock(result.task_id)
-
+        
+        >>> path = '/tmp/ddr-testing-123'
+        >>> os.mkdir(path)
+        >>> c = DDRLocalCollection(path)
+        >>> c.lock('abcdefg')
+        'ok'
+        >>> c.lock('abcdefg')
+        'locked'
+        >>> c.unlock('abcdefg')
+        'ok'
+        >>> os.rmdir(path)
+        
         @param task_id
         @returns 'ok' or 'locked'
         """
@@ -159,6 +232,19 @@ class DDRLocalCollection( DDRCollection ):
         
         This method should be called by celery Task.after_return()
         See "Abstract classes" section of http://celery.readthedocs.org/en/latest/userguide/tasks.html#custom-task-classes
+        
+        >>> path = '/tmp/ddr-testing-123'
+        >>> os.mkdir(path)
+        >>> c = DDRLocalCollection(path)
+        >>> c.lock('abcdefg')
+        'ok'
+        >>> c.unlock('xyz')
+        'task_id miss'
+        >>> c.unlock('abcdefg')
+        'ok'
+        >>> c.unlock('abcdefg')
+        'not locked'
+        >>> os.rmdir(path)
         
         @param task_id
         @returns 'ok', 'not locked', 'task_id miss', 'blocked'
@@ -189,6 +275,8 @@ class DDRLocalCollection( DDRCollection ):
     def create(path):
         """Creates a new collection with the specified collection ID.
         @param path: Absolute path to collection; must end in valid DDR collection id.
+        
+        >>> c = DDRLocalCollection.create('/tmp/ddr-testing-120')
         """
         collection = Collection(path)
         for f in collectionmodule.COLLECTION_FIELDS:
@@ -197,7 +285,8 @@ class DDRLocalCollection( DDRCollection ):
         return collection
     
     def entities( self ):
-        """Returns relative paths to entities."""
+        """Returns relative paths to entities.
+        """
         entities = []
         if os.path.exists(self.files_path):
             for eid in os.listdir(self.files_path):
@@ -275,6 +364,8 @@ class DDRLocalCollection( DDRCollection ):
     
     @staticmethod
     def from_json(collection_abs):
+        """Instantiates a DDRLocalCollection object, loads data from collection.json.
+        """
         collection = DDRLocalCollection(collection_abs)
         collection_uid = collection.id  # save this just in case
         collection.load_json(collection.json_path)
@@ -284,7 +375,11 @@ class DDRLocalCollection( DDRCollection ):
         return collection
     
     def load_json(self, path):
-        """Populate Collection data from .json file.
+        """Populate Collection data from .json file and COLLECTION_FIELDS.
+        
+        Loads the JSON datafile then goes through COLLECTION_FIELDS,
+        turning data in the JSON file into attributes of the object.
+        
         @param path: Absolute path to collection directory
         """
         json_data = self.json().data
@@ -347,6 +442,9 @@ class DDRLocalCollection( DDRCollection ):
     
     def dump_ead(self):
         """Dump Collection data to ead.xml file.
+        
+        TODO This is very unfinished
+        TODO should create/build the XML not just plug values into template.
         """
         NAMESPACES = None
         tree = etree.fromstring(self.ead().xml)
