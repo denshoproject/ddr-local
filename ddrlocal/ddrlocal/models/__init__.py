@@ -145,7 +145,7 @@ class DDRLocalCollection( DDRCollection ):
         self.json_path          = self._path_absrel('collection.json')
         self.ead_path_rel       = self._path_absrel('ead.xml',        rel=True)
         self.json_path_rel      = self._path_absrel('collection.json',rel=True)
-        if os.path.exists(self.path):
+        if os.path.exists(os.path.join(self.path, '.git')):
             exit,status = commands.status(self.path, short=True)
             if status:
                 self.status = status
