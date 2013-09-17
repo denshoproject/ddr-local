@@ -278,7 +278,7 @@ class DDRLocalCollection( DDRCollection ):
         
         >>> c = DDRLocalCollection.create('/tmp/ddr-testing-120')
         """
-        collection = Collection(path)
+        collection = DDRLocalCollection(path)
         for f in collectionmodule.COLLECTION_FIELDS:
             if hasattr(f, 'name') and hasattr(f, 'initial'):
                 setattr(collection, f['name'], f['initial'])
