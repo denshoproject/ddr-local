@@ -63,6 +63,16 @@ def base_path(request=None):
             cache.set(key, path, BASE_PATH_TIMEOUT)
     return path
 
+def media_base_target():
+    """Returns current target of MEDIA_BASE or None if not set.
+    
+    If the path you provide to os.path.realpath is missing realpath will return
+    the path you give it.  If the symlink is missing we need to indicate that.
+    """
+    if os.path.exists(settings.MEDIA_BASE):
+        return os.path.realpath(settings.MEDIA_BASE)
+    return None
+
 def disk_space(mount_path):
     """Returns disk space info for the mounted drive.
     
