@@ -55,8 +55,11 @@ urlpatterns = patterns(
 
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/batch/master/$', 'webui.views.files.batch', kwargs={'role':'master'}, name='webui-file-batch-master'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/batch/mezzanine/$', 'webui.views.files.batch', kwargs={'role':'mezzanine'}, name='webui-file-batch-mezzanine'),
+    url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)-master/browse/$', 'webui.views.files.browse', kwargs={'role':'master'}, name='webui-file-browse-master'),
+    url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)-mezzanine/browse/$', 'webui.views.files.browse', kwargs={'role':'mezzanine'}, name='webui-file-browse-mezzanine'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)-master/new/$', 'webui.views.files.new', kwargs={'role':'master'}, name='webui-file-new-master'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)-mezzanine/new/$', 'webui.views.files.new', kwargs={'role':'mezzanine'}, name='webui-file-new-mezzanine'),
+    url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)-(?P<role>[\w]+)/new/$', 'webui.views.files.new', name='webui-file-new'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/new/$', 'webui.views.files.new', name='webui-file-new'),
 
     #

@@ -87,6 +87,56 @@ def json( request, repo, org, cid, eid, role, sha1 ):
 @ddrview
 @login_required
 @storage_required
+def browse( request, repo, org, cid, eid, role='master' ):
+    """Browse for a file in vbox shared folder.
+    """
+    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+    path = request.GET.get('path')
+    home = None
+    parent = None
+    if path:
+        path_abs = os.path.join(settings.VIRTUALBOX_SHARED_FOLDER, path)
+        parent = os.path.dirname(path)
+        home = settings.VIRTUALBOX_SHARED_FOLDER
+    else:
+        path_abs = settings.VIRTUALBOX_SHARED_FOLDER
+    listdir = []
+    if os.path.exists(path_abs):
+        for x in os.listdir(path_abs):
+            xabs = os.path.join(path_abs, x)
+            rel = xabs.replace(settings.VIRTUALBOX_SHARED_FOLDER, '')
+            if rel and rel[0] == '/':
+                rel = rel[1:]
+            isdir = os.path.isdir(xabs)
+            if isdir:
+                x = '%s/' % x
+            mtime = datetime.fromtimestamp(os.path.getmtime(xabs))
+            size = None
+            if not isdir:
+                size = os.path.getsize(xabs)
+            attribs = {'basename':x, 'rel':rel, 'path':xabs, 'isdir':isdir, 'size':size, 'mtime':mtime}
+            if os.path.exists(xabs):
+                listdir.append(attribs)
+    return render_to_response(
+        'webui/files/browse.html',
+        {'repo': repo,
+         'org': org,
+         'cid': cid,
+         'eid': eid,
+         'collection_uid': collection.id,
+         'collection': collection,
+         'entity': entity,
+         'role': role,
+         'listdir': listdir,
+         'parent': parent,
+         'home': home,},
+        context_instance=RequestContext(request, processors=[])
+    )
+
+@ddrview
+@login_required
+@storage_required
 def new( request, repo, org, cid, eid, role='master' ):
     git_name = request.session.get('git_name')
     git_mail = request.session.get('git_mail')
@@ -101,6 +151,7 @@ def new( request, repo, org, cid, eid, role='master' ):
         messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     #
+    path = request.GET.get('path', None)
     if request.method == 'POST':
         form = NewFileForm(request.POST, path_choices=shared_folder_files())
         if form.is_valid():
@@ -140,7 +191,10 @@ def new( request, repo, org, cid, eid, role='master' ):
             # redirect to entity
             return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     else:
-        data = {'role':role,
+        if not path:
+            messages.error(request, 'specify a path')
+        data = {'path': path,
+                'role':role,
                 'sort': 1,
                 'label': '',}
         form = NewFileForm(data, path_choices=shared_folder_files())
@@ -153,7 +207,8 @@ def new( request, repo, org, cid, eid, role='master' ):
          'collection_uid': collection.id,
          'collection': collection,
          'entity': entity,
-         'form': form,},
+         'form': form,
+         'path': path,},
         context_instance=RequestContext(request, processors=[])
     )
 

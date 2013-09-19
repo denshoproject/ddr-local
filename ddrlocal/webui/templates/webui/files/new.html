@@ -17,6 +17,7 @@
 
 <form name="entity-add" action="" method="POST" enctype="multipart/form-data">{% csrf_token %}
 <table>
+<tr><th><label>Path:</label></th><td>{{ path }}</td></tr>
   {{ form.as_table }}
 </table>
 <input name="submit" type="submit" value="submit" class="btn-primary"/><br/>
