@@ -21,8 +21,9 @@ from ddrlocal.models import DDRLocalCollection as Collection
 from ddrlocal.models.collection import COLLECTION_FIELDS
 from ddrlocal.forms import DDRForm
 
-from storage.decorators import storage_required, get_repos_orgs
+from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
+from webui import get_repos_orgs
 from webui import api
 from webui.decorators import ddrview
 from webui.forms.collections import NewCollectionForm, UpdateForm

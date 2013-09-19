@@ -63,13 +63,15 @@ def base_path(request=None):
             cache.set(key, path, BASE_PATH_TIMEOUT)
     return path
 
-def media_target_dir(base_path):
-    """TODO: Is this the same as settings.MEDIA_BASE?
+def media_base_target():
+    """Returns current target of MEDIA_BASE or None if not set.
+    
+    If the path you provide to os.path.realpath is missing realpath will return
+    the path you give it.  If the symlink is missing we need to indicate that.
     """
-    return os.path.join(base_path, settings.DDR_USBHDD_BASE_DIR)
-
-def ddr_media_dir():
-    return settings.MEDIA_BASE
+    if os.path.exists(settings.MEDIA_BASE):
+        return os.path.realpath(settings.MEDIA_BASE)
+    return None
 
 def disk_space(mount_path):
     """Returns disk space info for the mounted drive.
@@ -101,7 +103,7 @@ def add_media_symlink(base_path):
     from /var/www/media/ to the ddr/ directory of the USB HDD.
     """
     target = base_path
-    link = ddr_media_dir()
+    link = settings.MEDIA_BASE
     link_parent = os.path.split(link)[0]
     s = []
     if os.path.exists(target):          s.append('1')
@@ -117,7 +119,7 @@ def add_media_symlink(base_path):
 def rm_media_symlink(base_path):
     """Remove the media symlink (see add_media_symlink).
     """
-    link = ddr_media_dir()
+    link = settings.MEDIA_BASE
     s = []
     if os.path.exists(link):     s.append('1') 
     else:                        s.append('0')
