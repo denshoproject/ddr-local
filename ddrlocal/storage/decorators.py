@@ -4,13 +4,11 @@ logger = logging.getLogger(__name__)
 
 from django.conf import settings
 from django.contrib import messages
-from django.core.cache import cache
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
 from django.utils.decorators import available_attrs
 
 from DDR import commands
-from DDR.dvcs import gitolite_info
 
 from storage import STORAGE_MESSAGES
 from storage import base_path
