@@ -45,6 +45,7 @@ def index( request ):
     if request.method == 'POST':
         mount_form = MountForm(request.POST, devices=rdevices)
         umount_form = UmountForm(request.POST, devices=mdevices)
+        active_form = ActiveForm(request.POST, devices=mdevices)
         which = request.POST.get('which','neither')
         if which == 'mount':
             if mount_form.is_valid():
@@ -60,6 +61,15 @@ def index( request ):
                 # do it
                 unmount(request, devicefile, mountpoint)
                 return HttpResponseRedirect( reverse('storage-index') )
+        elif which == 'active':
+            if active_form.is_valid():
+                path = active_form.cleaned_data['device']
+                label = os.path.basename(path)
+                new_base_path = os.path.join(path, 'ddr')
+                rm_media_symlink()
+                add_media_symlink(new_base_path)
+                messages.success(request, '<strong>%s</strong> is now the active device' % label)
+                return HttpResponseRedirect( reverse('storage-index') )
     else:
         rinitial = {}
         minitial = {}
@@ -71,9 +81,9 @@ def index( request ):
         umount_form = UmountForm(devices=mdevices, initial=minitial)
         # active device indicator/form
         ainitial = None
-        mbase_target = media_base_target()
-        if media_base_target():
-            ainitial = {'device': os.path.dirname(media_base_target())}
+        for m in mounted:
+            if m['media_base_target']:
+                ainitial = {'device': os.path.dirname(media_base_target())}
         active_form = ActiveForm(devices=mdevices, initial=ainitial)
     return render_to_response(
         'storage/index.html',
