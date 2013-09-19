@@ -95,6 +95,26 @@ def disk_space(mount_path):
                   'mount': parts[5],}
     return fs
 
+def removables():
+    """Wrapper around DDR.commands.removables.
+    """
+    stat,removables = commands.removables()
+    return removables
+
+def removables_mounted():
+    """Wrapper around DDR.commands.removables_mounted that adds symlink info.
+    
+    The removable that is the target of the MEDIA_BASE symlink is marked as
+    m['media_base_target'] = True.
+    """
+    stat,mounted = commands.removables_mounted()
+    mbase = media_base_target()
+    for m in mounted:
+        m['media_base_target'] = False
+        if mbase and (m['mountpath'] in mbase):
+            m['media_base_target'] = True
+    return mounted
+
 def add_media_symlink(base_path):
     """Creates symlink to base_path in /var/www/media/
 

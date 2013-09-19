@@ -12,16 +12,17 @@ from django.template import RequestContext
 from DDR import commands
 
 from storage import STORAGE_MESSAGES
-from storage import base_path, media_base_target, mount, unmount
+from storage import base_path, media_base_target, removables, removables_mounted
+from storage import mount, unmount, add_media_symlink, rm_media_symlink
 from storage.forms import MountForm, UmountForm, ActiveForm
 
 
 
 # helpers --------------------------------------------------------------
 
-def get_unmounted(removables):
+def get_unmounted(removablez):
     unmounted = []
-    for r in removables:
+    for r in removablez:
         ismounted = int(r.get('ismounted', '-1'))
         if not (ismounted == 1):
             unmounted.append(r)
@@ -36,9 +37,9 @@ def index( request ):
     Saves label of most recently mounted drive in session.
     TODO THIS IS HORRIBLY INSECURE YOU ID10T!!!  >:^O
     """
-    stat,removables = commands.removables()
-    stat,mounted = commands.removables_mounted()
-    unmounted = get_unmounted(removables)
+    removablez = removables()
+    mounted = removables_mounted()
+    unmounted = get_unmounted(removablez)
     rdevices = [(d['devicefile'],d['label']) for d in unmounted]
     mdevices = [(d['mountpath'],d['devicefile']) for d in mounted]
     if request.method == 'POST':
@@ -76,7 +77,7 @@ def index( request ):
         active_form = ActiveForm(devices=mdevices, initial=ainitial)
     return render_to_response(
         'storage/index.html',
-        {'removables': removables,
+        {'removables': removablez,
          'unmounted': unmounted,
          'removables_mounted': mounted,
          'mount_form': mount_form,
@@ -120,8 +121,7 @@ def remount1( request ):
     # the actual new devicefile
     devicefile_udisks = None
     if label:
-        stat,removables = commands.removables()
-        for d in removables:
+        for d in removables():
             if d['label'] == label:
                 devicefile_udisks = d['devicefile']
     # unmount, mount
