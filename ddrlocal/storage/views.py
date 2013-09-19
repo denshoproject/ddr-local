@@ -12,8 +12,8 @@ from django.template import RequestContext
 from DDR import commands
 
 from storage import STORAGE_MESSAGES
-from storage import base_path, mount, unmount
-from storage.forms import MountForm, UmountForm
+from storage import base_path, media_base_target, mount, unmount
+from storage.forms import MountForm, UmountForm, ActiveForm
 
 
 
@@ -68,6 +68,12 @@ def index( request ):
             minitial = { 'device': '{} {}'.format(mdevices[0][0], mdevices[0][1]) }
         mount_form = MountForm(devices=rdevices, initial=rinitial)
         umount_form = UmountForm(devices=mdevices, initial=minitial)
+        # active device indicator/form
+        ainitial = None
+        mbase_target = media_base_target()
+        if media_base_target():
+            ainitial = {'device': os.path.dirname(media_base_target())}
+        active_form = ActiveForm(devices=mdevices, initial=ainitial)
     return render_to_response(
         'storage/index.html',
         {'removables': removables,
@@ -75,6 +81,7 @@ def index( request ):
          'removables_mounted': mounted,
          'mount_form': mount_form,
          'umount_form': umount_form,
+         'active_form': active_form,
          'remount_uri': request.session.get(settings.REDIRECT_URL_SESSION_KEY, None),
         },
         context_instance=RequestContext(request, processors=[])

@@ -1,4 +1,7 @@
+import os
+
 from django import forms
+
 
 class MountForm(forms.Form):
     which = forms.CharField(max_length=10, required=True, initial='mount', widget=forms.HiddenInput)
@@ -37,4 +40,25 @@ class UmountForm(forms.Form):
         for mountpoint,devicefile in devices:
             c = '{} {}'.format(mountpoint,devicefile)
             choices.append( (c,c) )
+        self.fields['device'].choices = choices
+
+
+class ActiveForm(forms.Form):
+    """Indicates which device is the target of the MEDIA_BASE symlink.
+    """
+    which = forms.CharField(max_length=10, required=True, initial='active', widget=forms.HiddenInput)
+    device = forms.ChoiceField(label='Active Device', required=True, choices=[], widget=forms.RadioSelect)
+    
+    def __init__(self, *args, **kwargs):
+        """Initializes form object; adds list of devices to form.
+        @param devices
+        """
+        if kwargs.has_key('devices'):
+            devices = kwargs.pop('devices')
+        else:
+            devices = []
+        super(ActiveForm, self).__init__(*args, **kwargs)
+        choices = []
+        for mountpoint,devicefile in devices:
+            choices.append( (mountpoint, os.path.basename(mountpoint)) )
         self.fields['device'].choices = choices
