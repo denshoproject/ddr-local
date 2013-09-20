@@ -4,12 +4,9 @@ import os
 
 from lxml import etree
 
+from django.conf import settings
 
 
-#MODULE_PATH   = os.path.dirname(os.path.abspath(__file__))
-#TEMPLATE_PATH = os.path.join(MODULE_PATH, 'templates')
-#EAD_TEMPLATE  = os.path.join(TEMPLATE_PATH, 'collection_ead.xml.tpl')
-#METS_TEMPLATE = os.path.join(TEMPLATE_PATH, 'entity_mets.xml.tpl' )
 
 NAMESPACES = {
     'mets':  'http://www.loc.gov/standards/mets/mets.xsd',
@@ -29,11 +26,11 @@ NSMAP = {None : NAMESPACES['mets'],}
 
 
 
-#def load_template(filename):
-#    template = ''
-#    with open(filename, 'r') as f:
-#        template = f.read()
-#    return template
+def load_template(filename):
+    template = ''
+    with open(filename, 'r') as f:
+        template = f.read()
+    return template
 
 
 
@@ -54,13 +51,13 @@ class EAD( object ):
         self.read()
         #logger.debug('\n{}'.format(etree.tostring(self.tree, pretty_print=True)))
     
- #   @staticmethod
- #   def create( path ):
- #       logger.debug('    EAD.create({})'.format(path))
- #       t = load_template(EAD_TEMPLATE)
- #       with open(path, 'w') as f:
- #           f.write(t)
-
+    @staticmethod
+    def create( path ):
+        logger.debug('    EAD.create({})'.format(path))
+        t = load_template(settings.TEMPLATE_EAD)
+        with open(path, 'w') as f:
+            f.write(t)
+    
     def read( self ):
         #logger.debug('    EAD.read({})'.format(self.filename))
         with open(self.filename, 'r') as f:
@@ -126,12 +123,12 @@ class METS( object ):
         self.read()
         #logger.debug('\n{}'.format(etree.tostring(self.tree, pretty_print=True)))
     
-#    @staticmethod
-#    def create( path ):
-#        logger.debug('    METS.create({})'.format(path))
-#        t = load_template(METS_TEMPLATE)
-#        with open(path, 'w') as f:
-#            f.write(t)
+    @staticmethod
+    def create( path ):
+        logger.debug('    METS.create({})'.format(path))
+        t = load_template(settings.TEMPLATE_METS)
+        with open(path, 'w') as f:
+            f.write(t)
     
     def read( self ):
         #logger.debug('    METS.read({})'.format(self.filename))
