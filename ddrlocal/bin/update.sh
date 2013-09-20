@@ -39,6 +39,7 @@ mkdir /etc/ddr/templates
 
 echo "/etc/ddr/templates/*"
 cp /usr/local/src/ddr-local/debian/conf/templates/* /etc/ddr/templates/
+chmod 644 /etc/ddr/templates/*
 
 echo "./ddrlocal/ddrlocal/settings.py"
 cp /usr/local/src/ddr-local/debian/conf/settings.py /usr/local/src/ddr-local/ddrlocal/ddrlocal
