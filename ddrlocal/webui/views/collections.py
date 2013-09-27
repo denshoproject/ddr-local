@@ -141,22 +141,20 @@ def ead_xml( request, repo, org, cid ):
 @login_required
 @storage_required
 def sync( request, repo, org, cid ):
+    git_name = request.session.get('git_name')
+    git_mail = request.session.get('git_mail')
+    if not git_name and git_mail:
+        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
     if request.method == 'POST':
-        git_name = request.session.get('git_name')
-        git_mail = request.session.get('git_mail')
-        if git_name and git_mail:
-            exit,status = commands.sync(git_name, git_mail, collection.path)
-            #
-            if exit:
-                messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
-            else:
-                messages.success(request, WEBUI_MESSAGES['VIEWS_COLL_SYNCED'].format(status))
+        exit,status = commands.sync(git_name, git_mail, collection.path)
+        if exit:
+            messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
         else:
-            messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
+            messages.success(request, WEBUI_MESSAGES['VIEWS_COLL_SYNCED'].format(status))
     return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
 
 @ddrview
