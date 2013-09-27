@@ -205,7 +205,7 @@ ENTITY_FIELDS = [
         'form': {
             'label':      'Description',
             'help_text':  'Use if the title field is not sufficient for the amount of information you have about the object. The description can also include transcriptions of anything handwritten, stamped, or printed on the material. In such cases, specify that is how the information originated. Follow Chicago Manual of Style guidelines for text.',
-            'max_length': 255,
+            'max_length': 4000,
             'widget':     'Textarea',
             'initial':    '',
             'required':   False,
