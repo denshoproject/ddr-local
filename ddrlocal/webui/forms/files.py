@@ -20,7 +20,8 @@ def shared_folder_files():
 class NewFileForm(forms.Form):
     public = forms.ChoiceField(choices=PERMISSIONS_CHOICES)
     #path = forms.FilePathField(path=settings.VIRTUALBOX_SHARED_FOLDER)
-    path = forms.ChoiceField(choices=shared_folder_files(), required=False)
+    #path = forms.ChoiceField(choices=shared_folder_files(), required=False)
+    path = forms.CharField(max_length=255, widget=forms.HiddenInput)
     role = forms.ChoiceField(choices=settings.ENTITY_FILE_ROLES)
     label = forms.CharField(max_length=255, required=False)
     sort = forms.IntegerField()

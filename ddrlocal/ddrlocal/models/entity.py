@@ -411,7 +411,7 @@ ENTITY_FIELDS = [
         'model_type': str,
         'form_type':  'CharField',
         'form': {
-            'label':      'Preferred Citation3',
+            'label':      'Preferred Citation',
             'help_text':  'Short courtesy text relating to use of object. Could identify either collection contributor and/or donor depending on deed of gift and/or usage agreement for object. Often begins with: "Courtesy of..."',
             'max_length': 255,
             'widget':     '',
