@@ -436,8 +436,8 @@ class DDRLocalCollection( DDRCollection ):
         write_json(collection, path)
     
     def ead( self ):
-        #if not os.path.exists(self.ead_path):
-        #    EAD.create(self.ead_path)
+        if not os.path.exists(self.ead_path):
+            EAD.create(self.ead_path)
         return EAD(self)
     
     def dump_ead(self):

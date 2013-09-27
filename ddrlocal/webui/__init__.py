@@ -1,3 +1,13 @@
+import logging
+logger = logging.getLogger(__name__)
+
+from django.conf import settings
+from django.core.cache import cache
+
+from DDR import commands
+
+
+
 WEBUI_MESSAGES = {
     
     # webui.api
@@ -35,3 +45,34 @@ WEBUI_MESSAGES = {
     'VIEWS_FILES_NEWACCESS': 'Generating access file for <strong>%s</strong>.' # filename
     
 }
+
+
+
+def get_repos_orgs():
+    """Returns list of repo-orgs that the current SSH key gives access to.
+    
+    Hits up Gitolite for the info.
+    
+    If no repos/orgs are returned it probably means that the ddr user's
+    SSH keys are missing or invalid.  The repos_orgs value is still cached
+    for 1 minute to prevent flapping.
+    """
+    key = 'ddrlocal:gitolite_repos_orgs'
+    repos_orgs = cache.get(key)
+    if not repos_orgs:
+        repos_orgs = []
+        status,lines = commands.gitolite_info()
+        if status and not lines:
+            logging.error('commands.gitolite_info() status:%s, lines:%s' % (status,lines))
+            logging.error('| Is ddr missing its SSH keys?')
+        for line in lines:
+            if 'R W C' in line:
+                parts = line.replace('R W C', '').strip().split('-')
+                repo_org = '-'.join([parts[0], parts[1]])
+                if repo_org not in repos_orgs:
+                    repos_orgs.append(repo_org)
+        if repos_orgs:
+            cache.set(key, repos_orgs, settings.REPOS_ORGS_TIMEOUT)
+        else:
+            cache.set(key, repos_orgs, 60*1) # 1 minute
+    return repos_orgs
