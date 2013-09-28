@@ -421,6 +421,9 @@ def collection_sync( git_name, git_mail, collection_path ):
 def session_tasks( request ):
     """Gets task statuses from Celery API, appends to task dicts from session.
     
+    This function is used to generate the list of pending/successful/failed tasks
+    in the webapp page notification area.
+    
     @param request: A Django request object
     @return tasks: a dict with task_id for key
     """
@@ -434,12 +437,15 @@ def session_tasks( request ):
                 # Add entity_url to task for newly-created file
                 repo,org,cid,eid = task['entity_id'].split('-')
                 task['entity_url'] = reverse('webui-entity', args=[repo,org,cid,eid])
+    # Hit the celery-task_status view for status updates on each task.
     # get status, retval from celery
     # TODO Don't create a new ctask/task dict here!!! >:-O
     traceback = None
     for task_id in tasks.keys():
+        # hit the celery API for each task
         url = 'http://127.0.0.1/%s' % reverse('celery-task_status', args=[task_id])
         r = requests.get(url)
+        # if there's a traceback, save for later (see below)
         try:
             data = r.json()
             if data.get('task', None) and data['task'].get('traceback', None):
@@ -447,6 +453,7 @@ def session_tasks( request ):
             task = data['task']
         except:
             task = None
+        # construct collection/entity/file urls if possible
         if task:
             ctask = tasks[task['id']]
             ctask['status'] = task.get('status', None)
@@ -495,7 +502,7 @@ def session_tasks( request ):
             except:
                 if not task.get('message', None):
                     task['message'] = template
-    # can dismiss or not
+    # indicate if task is dismiss or not
     for task_id in tasks.keys():
         task = tasks[task_id]
         if task.get('status', None):
