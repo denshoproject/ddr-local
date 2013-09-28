@@ -54,7 +54,7 @@ TASK_STATUS_MESSAGES = {
 
 
 
-class DebugTask(Task):
+class FileAddDebugTask(Task):
     abstract = True
         
     def on_failure(self, exc, task_id, args, kwargs, einfo):
@@ -80,7 +80,8 @@ class DebugTask(Task):
         entity.files_log(1, 'END task_id %s\n' % task_id)
 
 
-@task(base=DebugTask, name='entity-add-file')
+
+@task(base=FileAddDebugTask, name='entity-add-file')
 def entity_add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
     """
     @param entity: DDRLocalEntity
@@ -242,7 +243,7 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
 
 
 
-@task(base=DebugTask, name='entity-add-access')
+@task(base=FileAddDebugTask, name='entity-add-access')
 def entity_add_access( git_name, git_mail, entity, ddrfile ):
     """
     @param entity: DDRLocalEntity
