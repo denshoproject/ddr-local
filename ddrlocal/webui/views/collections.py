@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 import logging
 logger = logging.getLogger(__name__)
@@ -27,6 +28,7 @@ from webui import get_repos_orgs
 from webui import api
 from webui.decorators import ddrview
 from webui.forms.collections import NewCollectionForm, UpdateForm
+from webui.tasks import collection_sync
 from webui.views.decorators import login_required
 from xmlforms.models import XMLModel
 
@@ -150,11 +152,19 @@ def sync( request, repo, org, cid ):
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
     if request.method == 'POST':
-        exit,status = commands.sync(git_name, git_mail, collection.path)
-        if exit:
-            messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
-        else:
-            messages.success(request, WEBUI_MESSAGES['VIEWS_COLL_SYNCED'].format(status))
+        result = collection_sync.apply_async( (git_name,git_mail,collection.path), countdown=2)
+        lockstatus = collection.lock(result.task_id)
+        # add celery task_id to session
+        celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
+        # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
+        task = {'task_id': result.task_id,
+                'action': 'webui-collection-sync',
+                'collection_id': collection.id,
+                'collection_url': collection.url(),
+                'start': datetime.now(),}
+        celery_tasks[result.task_id] = task
+        request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
+    
     return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
 
 @ddrview

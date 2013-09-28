@@ -14,8 +14,9 @@ from django.contrib import messages
 from django.core.urlresolvers import reverse
 
 from ddrlocal.models import DDRLocalEntity, DDRFile, hash
+from ddrlocal.models import DDRLocalCollection as Collection
 
-from DDR.commands import entity_annex_add, entity_update
+from DDR.commands import entity_annex_add, entity_update, sync
 
 
 
@@ -47,6 +48,14 @@ TASK_STATUS_MESSAGES = {
         'PENDING': 'Generating new access file for <b>{filename}</b> (<a href="{entity_url}">{entity_id}</a>).',
         'SUCCESS': 'Generated new access file for <a href="{file_url}">{filename}</a> (<a href="{entity_url}">{entity_id}</a>).',
         'FAILURE': 'Could not generate new access file for <a href="{file_url}">{filename}</a> (<a href="{entity_url}">{entity_id}</a>).',
+        #'RETRY': '',
+        #'REVOKED': '',
+        },
+    'webui-collection-sync': {
+        #'STARTED': '',
+        'PENDING': 'Syncing <b><a href="{collection_url}">{collection_id}</a></b> with the workbench server.',
+        'SUCCESS': 'Synced <b><a href="{collection_url}">{collection_id}</a></b> with the workbench server.',
+        'FAILURE': 'Could not sync <b><a href="{collection_url}">{collection_id}</a></b> with the workbench server.',
         #'RETRY': '',
         #'REVOKED': '',
         },
@@ -379,6 +388,36 @@ def add_access( git_name, git_mail, entity, ddrfile ):
 
 
 
+class CollectionSyncDebugTask(Task):
+    abstract = True
+    
+    def on_failure(self, exc, task_id, args, kwargs):
+        pass
+    
+    def on_success(self, retval, task_id, args, kwargs):
+        pass
+    
+    def after_return(self, status, retval, task_id, args, kwargs, cinfo):
+        collection_path = args[2]
+        collection = Collection.from_json(collection_path)
+        # NOTE: collection is locked immediately after collection_sync task
+        #       starts in webui.views.collections.sync
+        collection.unlock(task_id)
+
+@task(base=CollectionSyncDebugTask, name='collection-sync')
+def collection_sync( git_name, git_mail, collection_path ):
+    """Synchronizes collection repo with workbench server.
+    
+    @param src_path: Absolute path to collection repo.
+    @param git_name: Username of git committer.
+    @param git_mail: Email of git committer.
+    @return collection_path: Absolute path to collection.
+    """
+    exit,status = sync(git_name, git_mail, collection_path)
+    return collection_path
+
+
+
 def session_tasks( request ):
     """Gets task statuses from Celery API, appends to task dicts from session.
     
@@ -389,9 +428,12 @@ def session_tasks( request ):
     # add entity URLs
     for task_id in tasks.keys():
         task = tasks.get(task_id, None)
-        if task:
-            repo,org,cid,eid = task['entity_id'].split('-')
-            task['entity_url'] = reverse('webui-entity', args=[repo,org,cid,eid])
+        if task and task['action'] in ['webui-file-new-master',
+                                       'webui-file-new-mezzanine',
+                                       'webui-file-new-access']:
+                # Add entity_url to task for newly-created file
+                repo,org,cid,eid = task['entity_id'].split('-')
+                task['entity_url'] = reverse('webui-entity', args=[repo,org,cid,eid])
     # get status, retval from celery
     # TODO Don't create a new ctask/task dict here!!! >:-O
     traceback = None
