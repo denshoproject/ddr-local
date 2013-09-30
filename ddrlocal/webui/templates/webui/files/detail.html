@@ -19,8 +19,8 @@
 </h1>
 
 <h3>
-{% if entity.locked %}<a class="muted" title="This object is locked" class="btn btn-primary">edit</a>
-{% else %}<a href="{{ file.url }}edit/" class="btn btn-primary">edit</a>
+{% if entity.locked %}<a class="muted" title="This object is locked" class="btn btn-primary"><i class="icon-lock icon-white"></i> edit</a>
+{% else %}<a href="{{ file.url }}edit/" class="btn btn-primary"><i class="icon-edit icon-white"></i> edit</a>
 {% endif %}
 </h3>
 
@@ -52,7 +52,7 @@
     <td>path_rel</td>
     <td>
       {{ file.path_rel }}
-      &nbsp;&bull;&nbsp; <a href="{{ file.media_url }}">download fullsize</a>
+      &nbsp;&bull;&nbsp; <a href="{{ file.media_url }}" class="btn btn-primary"><i class="icon-download-alt icon-white"></i> download fullsize</a>
     </td>
   </tr>
   <tr>
@@ -70,7 +70,7 @@
     <td>access_rel</td>
     <td>
       {{ file.access_rel }}
-      &nbsp;&bull;&nbsp; <a href="{{ file.access_url }}">download access</a>
+      &nbsp;&bull;&nbsp; <a href="{{ file.access_url }}" class="btn btn-primary"><i class="icon-download-alt icon-white"></i> download access</a>
     </td>
   <tr>
   <tr>
@@ -97,7 +97,7 @@
 
 <form name="new-access" action="{% url "webui-file-new-access" file.repo file.org file.cid file.eid file.role file.sha1 %}" method="post">{% csrf_token %}
 {{ new_access_form.as_p }}
-<input class="btn btn-mini" type="submit" value="Generate New Access File">
+<input class="btn btn-primary btn-mini" type="submit" value="Generate New Access File">
 </form>
 
     </div><!-- .span12 -->

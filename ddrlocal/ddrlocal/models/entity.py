@@ -347,7 +347,7 @@ ENTITY_FIELDS = [
         'model_type': str,
         'form_type':  'CharField',
         'form': {
-            'label':      'Contributing Institution ID',
+            'label':      'Alternate ID',
             'help_text':  'May be a physical or virtual record identifier. For example, a physical shelf/folder location, a negative number, an accession number, or a URI of an external database record.',
             'max_length': 255,
             'widget':     '',

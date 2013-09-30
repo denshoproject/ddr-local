@@ -31,9 +31,9 @@
 <div id="overview">
 <p>
 {% if entity.locked %}
-<a class="btn btn-mini muted" title="This object is locked">Edit [locked]</a><br/>
+<a class="btn btn-primary btn-mini muted" title="This object is locked"><i class="icon-lock icon-white"></i> Edit [locked]</a><br/>
 {% else %}
-<a class="btn btn-mini" href="{% url "webui-entity-edit" repo org cid eid %}">Edit</a>
+<a class="btn btn-primary btn-mini" href="{% url "webui-entity-edit" repo org cid eid %}"><i class="icon-edit icon-white"></i> Edit</a>
 {% endif %}
 </p>
 <dl class="dl-horizontal">
@@ -53,7 +53,7 @@
 
 
 <p>
-<a href="{% url "webui-file-browse-master" repo org cid eid %}" class="btn btn-mini">Add a file</a>
+<a href="{% url "webui-file-browse-master" repo org cid eid %}" class="btn btn-primary btn-mini"><i class="icon-plus icon-white"></i> Add a file</a>
 <!--
 or
 <a href="{% url "webui-file-batch-master" repo org cid eid %}" class="btn btn-mini">Add a batch of files</a>
@@ -65,9 +65,9 @@ or
 {% for file in entity.files_master %}
   <tr>
     <td>
-      <a class="btn btn-mini" href="{{ file.url }}edit/">Edit</a>
+      <a class="btn btn-primary btn-mini" href="{{ file.url }}edit/"><i class="icon-edit icon-white"></i> Edit</a>
       &nbsp;
-      <a class="btn btn-mini" href="{{ file.url }}delete/">Delete</a>
+      <a class="btn btn-primary btn-mini" href="{{ file.url }}delete/"><i class="icon-remove icon-white"></i> Delete</a>
     </td>
     <td>
       <a href="{{ file.url }}">{{ file.basename }}</a>
@@ -87,7 +87,7 @@ or
 
 
 <p>
-<a href="{% url "webui-file-browse-mezzanine" repo org cid eid %}" class="btn btn-mini">Add a file</a>
+<a href="{% url "webui-file-browse-mezzanine" repo org cid eid %}" class="btn btn-mini"><i class="icon-plus icon-white"></i> Add a file</a>
 <!--
 or
 <a href="{% url "webui-file-batch-mezzanine" repo org cid eid %}" class="btn btn-mini">Add a batch of files</a>
