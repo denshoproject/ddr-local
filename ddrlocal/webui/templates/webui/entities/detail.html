@@ -62,12 +62,18 @@ or
 
 {% if entity.files_master %}
 <table class="table table-bordered">
+  <thead>
+	<tr>
+		<th></th>
+		<th>Filename</th>
+		<th>Label</th>
+	</tr>
+  </thead>
+  <tbody>	
 {% for file in entity.files_master %}
   <tr>
     <td>
-      <a class="btn btn-primary btn-mini" href="{{ file.url }}edit/"><i class="icon-edit icon-white"></i> Edit</a>
-      &nbsp;
-      <a class="btn btn-primary btn-mini" href="{{ file.url }}delete/"><i class="icon-remove icon-white"></i> Delete</a>
+      <a class="btn btn-primary btn-mini" href="{{ file.url }}edit/"><i class="icon-edit icon-white"></i> Edit</a> <a class="btn btn-primary btn-mini" href="{{ file.url }}delete/"><i class="icon-remove icon-white"></i> Delete</a>
     </td>
     <td>
       <a href="{{ file.url }}">{{ file.basename }}</a>
@@ -78,6 +84,7 @@ or
     </td>
   </tr>
 {% endfor %}
+</tbody>
 </table>
 {% endif %}
 
@@ -87,7 +94,7 @@ or
 
 
 <p>
-<a href="{% url "webui-file-browse-mezzanine" repo org cid eid %}" class="btn btn-mini"><i class="icon-plus icon-white"></i> Add a file</a>
+<a href="{% url "webui-file-browse-mezzanine" repo org cid eid %}" class="btn btn-primary btn-mini"><i class="icon-plus icon-white"></i> Add a file</a>
 <!--
 or
 <a href="{% url "webui-file-batch-mezzanine" repo org cid eid %}" class="btn btn-mini">Add a batch of files</a>
@@ -96,12 +103,18 @@ or
 
 {% if entity.files_mezzanine %}
 <table class="table table-bordered">
+  <thead>
+	<tr>
+		<th></th>
+		<th>Filename</th>
+		<th>Label</th>
+	</tr>
+  </thead>
+ <tbody> 
 {% for file in entity.files_mezzanine %}
   <tr>
     <td>
-      <a class="btn btn-mini" href="{{ file.url }}edit/">Edit</a>
-      &nbsp;
-      <a class="btn btn-mini" href="{{ file.url }}delete/">Delete</a>
+      <a class="btn btn-mini" href="{{ file.url }}edit/">Edit</a> <a class="btn btn-mini" href="{{ file.url }}delete/">Delete</a>
     </td>
     <td>
       <a href="{{ file.url }}">{{ file.basename }}</a>
@@ -112,6 +125,7 @@ or
     </td>
   </tr>
 {% endfor %}
+ </tbody>
 </table>
 {% endif %}
 
