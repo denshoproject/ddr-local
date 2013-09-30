@@ -26,6 +26,11 @@ Files
 {% if entity.files_master %}
 <table class="table table-bordered">
 {% for file in entity.files_master %}
+<tr>
+	<th></th>
+	<th>Filename</th>
+	<th>Label</th>
+</tr>
   <tr>
     <td>
       <a class="btn btn-primary btn-mini" href="{{ file.url }}edit/"><i class="icon-edit icon-white"></i> Edit</a>
@@ -53,6 +58,11 @@ or
 {% if entity.files_mezzanine %}
 <table class="table table-bordered">
 {% for file in entity.files_mezzanine %}
+  <tr>
+	<th></th>
+	<th>Filename</th>
+	<th>Label</th>
+  </tr>
   <tr>
     <td>
       <a class="btn btn-primary btn-mini" href="{{ file.url }}edit/"><i class="icon-edit icon-white"></i> Edit</a>
