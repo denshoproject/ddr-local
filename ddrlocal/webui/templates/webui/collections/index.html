@@ -18,41 +18,25 @@
 {% for o in collections %}
 <h3>{{ o.0 }}</h3>
 
-<table class="table-striped table-condensed">
 {% if username %}
-  <tr>
-    <td>
-    </td>
-    <td>
+<p>
       <a href="{% url "webui-collection-new" o.1 o.2 %}" class="btn-primary btn-small"><i class="icon-plus icon-white"></i> New Collection</a>
-    </td>
-    <td>
-    </td>
-  </tr>
+</p>
 {% endif %}
 
 {% for c in o.3 %}
-  <tr>
-    <td>
       {% if c.locked %}
-        <input class="btn btn-mini muted" name="sync" type="submit" value="Sync"/>
+        <span class="btn btn-mini muted"><i class="icon-lock icon-white"></i> Sync [locked]</span> 
       {% else %}
         {% if c.unsynced %}
-        <input class="btn btn-mini btn-warning" name="sync" type="submit" value="Sync" />
+        <input class="btn btn-mini btn-warning" name="sync" type="submit" value="Sync" /> 
         {% else %}
-        <input class="btn btn-mini btn-success" name="sync" type="submit" value="Synced"/>
+        <input class="btn btn-mini btn-success" name="sync" type="submit" value="Synced"/> 
         {% endif %}
       {% endif %}
-    </td>
-    <td>
-      <a href="{{ c.url }}">{{ c.id }}</a>
-    </td>
-    <td>
-      {% if c.title %}<a href="{{ c.url }}">{{ c.title }}{% endif %}</a>
-    </td>
-  </tr>
+       <a href="{{ c.url }}">{{ c.id }}</a>{% if c.title %}<a href="{{ c.url }}">{{ c.title }}{% endif %}</a>
 {% endfor %}
-</table>
+
 {% endfor %}
 
     </div><!-- .span12 -->
