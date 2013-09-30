@@ -25,6 +25,14 @@ Files
 <h3>Master</h3>
 {% if entity.files_master %}
 <table class="table table-bordered">
+  <thead>
+	<tr>
+		<th></th>
+		<th>Filename</th>
+		<th>Label</th>
+	</tr>
+  </thead>
+  <tbody>
 {% for file in entity.files_master %}
   <tr>
     <td>
@@ -41,6 +49,7 @@ Files
     </td>
   </tr>
 {% endfor %}
+  </tbody>
 </table>
 {% endif %}
 <p>
@@ -53,6 +62,11 @@ or
 {% if entity.files_mezzanine %}
 <table class="table table-bordered">
 {% for file in entity.files_mezzanine %}
+  <tr>
+	<th></th>
+	<th>Filename</th>
+	<th>Label</th>
+  </tr>
   <tr>
     <td>
       <a class="btn btn-primary btn-mini" href="{{ file.url }}edit/"><i class="icon-edit icon-white"></i> Edit</a>
