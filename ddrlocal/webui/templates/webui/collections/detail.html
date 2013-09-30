@@ -45,23 +45,22 @@
 
         </div><!-- .tab-content #metadata -->
         <div class="tab-pane" id="objects">
+<p>
+			{% if collection.locked %}
+			    <a class="muted" title="This collection is locked" class="btn-primary btn-small muted"><i class="icon-plus-sign icon-white"></i> New object [locked]</a>
+			{% else %}
+			    <a href="{% url "webui-entity-new" repo org cid %}" class="btn-primary btn-small"><i class="icon-plus-sign icon-white"></i> New object</a>
+			{% endif %}
+</p>
 
-
-<ul>
 {% for entity in entities %}
+<ul>
   <li>
     <a href="{{ entity.url }}">{{ entity.id }} {% if entity.title %}&mdash; {{ entity.title }}{% endif %}</a>
     </a>
   </li>
-{% endfor %}
-  <li>
-{% if collection.locked %}
-    <a class="muted" title="This collection is locked" class="btn-primary btn-small muted"><i class="icon-plus-sign icon-white""></i> New object [locked]</a>
-{% else %}
-    <a href="{% url "webui-entity-new" repo org cid %}" class="btn-primary btn-small"><i class="icon-plus-sign icon-white""></i> New object</a>
-{% endif %}
-  </li>
 </ul>
+{% endfor %}
 {% if entities %}
 <a class="pull-right" href="{% url "webui-collection-entities" repo org cid %}">more &raquo;</a>
 {% endif %}
