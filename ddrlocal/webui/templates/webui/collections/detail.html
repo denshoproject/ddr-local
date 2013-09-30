@@ -30,9 +30,9 @@
 <div id="overview">
 <p>
 {% if collection.locked %}
-<a class="btn btn-mini muted" title="This collection is locked">Edit [locked]</a><br/>
+<a class="btn btn-primary btn-mini muted" title="This collection is locked"><i class="icon-lock icon-white"></i> Edit [locked]</a><br/>
 {% else %}
-<a class="btn btn-mini" href="{% url "webui-collection-edit" repo org cid %}">Edit</a>
+<a class="btn btn-primary btn-mini" href="{% url "webui-collection-edit" repo org cid %}"><i class="icon-edit icon-white"></i> Edit</a>
 {% endif %}
 </p>
 <dl class="dl-horizontal">
@@ -47,9 +47,9 @@
         <div class="tab-pane" id="objects">
 <p>
 			{% if collection.locked %}
-			    <a class="muted" title="This collection is locked" class="btn-primary btn-small muted"><i class="icon-plus-sign icon-white"></i> New object [locked]</a>
+			    <a class="muted" title="This collection is locked" class="btn-primary btn-small muted"><i class="icon-plus icon-white"></i> New object [locked]</a>
 			{% else %}
-			    <a href="{% url "webui-entity-new" repo org cid %}" class="btn-primary btn-small"><i class="icon-plus-sign icon-white"></i> New object</a>
+			    <a href="{% url "webui-entity-new" repo org cid %}" class="btn-primary btn-small"><i class="icon-plus icon-white"></i> New object</a>
 			{% endif %}
 </p>
 
