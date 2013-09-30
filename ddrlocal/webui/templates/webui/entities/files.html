@@ -24,7 +24,7 @@ Files
 
 <h3>Master</h3>
 {% if entity.files_master %}
-<table class="table table-bordered">
+<table class="table table-condensed">
   <thead>
 	<tr>
 		<th></th>
@@ -36,9 +36,7 @@ Files
 {% for file in entity.files_master %}
   <tr>
     <td>
-      <a class="btn btn-primary btn-mini" href="{{ file.url }}edit/"><i class="icon-edit icon-white"></i> Edit</a>
-      &nbsp;
-      <a class="btn btn-primary btn-mini" href="{{ file.url }}delete/"><i class="icon-remove icon-white"></i> Delete</a>
+      <a class="btn btn-primary btn-mini" href="{{ file.url }}edit/"><i class="icon-edit icon-white"></i> Edit</a> <a class="btn btn-primary btn-mini" href="{{ file.url }}delete/"><i class="icon-remove icon-white"></i> Delete</a>
     </td>
     <td>
       <a href="{{ file.url }}">{{ file.basename }}</a>
@@ -60,7 +58,7 @@ or
 
 <h3>Mezzanine</h3>
 {% if entity.files_mezzanine %}
-<table class="table table-bordered">
+<table class="table table-condensed">
   <thead>
 	<tr>
 		<th></th>
@@ -72,9 +70,7 @@ or
 {% for file in entity.files_mezzanine %}
   <tr>
     <td>
-      <a class="btn btn-primary btn-mini" href="{{ file.url }}edit/"><i class="icon-edit icon-white"></i> Edit</a>
-      &nbsp;
-      <a class="btn btn-primary btn-mini" href="{{ file.url }}delete/"><i class="icon-remove icon-white"></i> Delete</a>
+      <a class="btn btn-primary btn-mini" href="{{ file.url }}edit/"><i class="icon-edit icon-white"></i> Edit</a> <a class="btn btn-primary btn-mini" href="{{ file.url }}delete/"><i class="icon-remove icon-white"></i> Delete</a>
     </td>
     <td>
       <a href="{{ file.url }}">{{ file.basename }}</a>
