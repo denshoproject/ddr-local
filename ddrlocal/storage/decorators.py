@@ -4,7 +4,6 @@ logger = logging.getLogger(__name__)
 
 from django.conf import settings
 from django.contrib import messages
-from django.core.cache import cache
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
 from django.utils.decorators import available_attrs
@@ -30,6 +29,8 @@ def storage_required(func):
     
     Saves requested URI in session; remount view will try to retrieve and redirect.
     NOTE: We don't remember GET/POST args!!!
+    
+    TODO This function will report unreadable if no collections for repo/org!
     """
     @wraps(func, assigned=available_attrs(func))
     def inner(request, *args, **kwargs):
@@ -38,12 +39,17 @@ def storage_required(func):
         basepath = settings.MEDIA_BASE
         repos_orgs = get_repos_orgs()
         if repos_orgs:
-            repo,org = repos_orgs[0].split('-')
-            try:
-                collections = commands.collections_local(basepath, repo, org)
-                readable = True
-            except:
-                pass
+            # propagate error
+            if (type(repos_orgs) == type('')) and ('error' in repos_orgs):
+                messages.error(request, repos_orgs)
+                return HttpResponseRedirect(reverse('storage-required'))
+            elif (type(repos_orgs) == type([])):
+                repo,org = repos_orgs[0].split('-')
+                try:
+                    collections = commands.collections_local(basepath, repo, org)
+                    readable = True
+                except:
+                    logging.error('Problem while getting collection listing.')
         else:
             # If there are no repos/orgs, it may mean that the ddr user
             # is missing its SSH keys.

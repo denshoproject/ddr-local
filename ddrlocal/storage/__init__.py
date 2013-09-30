@@ -95,6 +95,26 @@ def disk_space(mount_path):
                   'mount': parts[5],}
     return fs
 
+def removables():
+    """Wrapper around DDR.commands.removables.
+    """
+    stat,removables = commands.removables()
+    return removables
+
+def removables_mounted():
+    """Wrapper around DDR.commands.removables_mounted that adds symlink info.
+    
+    The removable that is the target of the MEDIA_BASE symlink is marked as
+    m['media_base_target'] = True.
+    """
+    stat,mounted = commands.removables_mounted()
+    mbase = media_base_target()
+    for m in mounted:
+        m['media_base_target'] = False
+        if mbase and (m['mountpath'] in mbase):
+            m['media_base_target'] = True
+    return mounted
+
 def add_media_symlink(base_path):
     """Creates symlink to base_path in /var/www/media/
 
@@ -116,7 +136,7 @@ def add_media_symlink(base_path):
     if s == '111':
         os.symlink(target, link)
 
-def rm_media_symlink(base_path):
+def rm_media_symlink():
     """Remove the media symlink (see add_media_symlink).
     """
     link = settings.MEDIA_BASE
@@ -142,7 +162,7 @@ def mount( request, devicefile, label ):
     logger.debug('mount_path: %s' % mount_path)
     if mount_path:
         messages.success(request, STORAGE_MESSAGES['MOUNT_SUCCESS'].format(label))
-        rm_media_symlink(base_path())
+        rm_media_symlink()
         add_media_symlink(base_path())
         # save label,mount_path in session
         request.session['storage_devicefile'] = devicefile
@@ -162,7 +182,7 @@ def unmount( request, devicefile, label ):
     logger.debug('unmount(%s, %s)' % (devicefile, label))
     unmounted = None
     if devicefile:
-        rm_media_symlink(base_path())
+        rm_media_symlink()
         stat,unmounted = commands.umount(devicefile)
         logger.debug('stat: %s' % stat)
         logger.debug('unmounted: %s' % unmounted)

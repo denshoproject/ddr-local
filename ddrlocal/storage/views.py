@@ -12,60 +12,97 @@ from django.template import RequestContext
 from DDR import commands
 
 from storage import STORAGE_MESSAGES
-from storage import base_path, mount, unmount
-from storage.forms import MountForm, UmountForm
+from storage import base_path, media_base_target, removables, removables_mounted
+from storage import mount, unmount, add_media_symlink, rm_media_symlink
+from storage.forms import MountForm, UmountForm, ActiveForm
 
+
+
+# helpers --------------------------------------------------------------
+
+def get_unmounted(removablez):
+    unmounted = []
+    for r in removablez:
+        ismounted = int(r.get('ismounted', '-1'))
+        if not (ismounted == 1):
+            unmounted.append(r)
+    return unmounted
+
+def unmounted_devices():
+    return [(d['devicefile'],d['label']) for d in get_unmounted(removables())]
+
+def mounted_devices():
+    return [(d['mountpath'],d['devicefile']) for d in removables_mounted()]
 
 
 # views ----------------------------------------------------------------
 
 def index( request ):
-    """Interface for mounting/unmounting drives
-    
-    Saves label of most recently mounted drive in session.
-    TODO THIS IS HORRIBLY INSECURE YOU ID10T!!!  >:^O
+    """Interface for mounting/unmounting drives and setting active device
     """
-    stat,removables = commands.removables()
-    stat,mounted = commands.removables_mounted()
-    rdevices = [(d['devicefile'],d['label']) for d in removables]
-    mdevices = [(d['mountpath'],d['devicefile']) for d in mounted]
-    if request.method == 'POST':
-        mount_form = MountForm(request.POST, devices=rdevices)
-        umount_form = UmountForm(request.POST, devices=mdevices)
-        which = request.POST.get('which','neither')
-        if which == 'mount':
-            if mount_form.is_valid():
-                raw = mount_form.cleaned_data['device']
-                devicefile,label = raw.split(' ',1)
-                # do it
-                mount(request, devicefile, label)
-                return HttpResponseRedirect( reverse('storage-index') )
-        elif which == 'umount':
-            if umount_form.is_valid():
-                raw = umount_form.cleaned_data['device']
-                mountpoint,devicefile = raw.split(' ',1)
-                # do it
-                unmount(request, devicefile, mountpoint)
-                return HttpResponseRedirect( reverse('storage-index') )
-    else:
-        rinitial = {}
-        minitial = {}
-        if len(rdevices) == 1:
-            rinitial = { 'device': '{} {}'.format(rdevices[0][0], rdevices[0][1]) }
-        if len(mdevices) == 1:
-            minitial = { 'device': '{} {}'.format(mdevices[0][0], mdevices[0][1]) }
-        mount_form = MountForm(devices=rdevices, initial=rinitial)
-        umount_form = UmountForm(devices=mdevices, initial=minitial)
+    removablez = removables()
+    mounted = removables_mounted()
+    unmounted = get_unmounted(removablez)
+    udevices = unmounted_devices()
+    mdevices = mounted_devices()
+    #
+    uinitial = {}
+    minitial = {}
+    ainitial = None
+    if len(udevices) == 1:
+        uinitial = { 'device': '{} {}'.format(udevices[0][0], udevices[0][1]) }
+    if len(mdevices) == 1:
+        minitial = { 'device': '{} {}'.format(mdevices[0][0], mdevices[0][1]) }
+    for m in removables_mounted():
+        if m['media_base_target']:
+            ainitial = {'device': os.path.dirname(media_base_target())}
+    mount_form  = MountForm( devices=udevices, initial=uinitial)
+    umount_form = UmountForm(devices=mdevices, initial=minitial)
+    active_form = ActiveForm(devices=mdevices, initial=ainitial)
     return render_to_response(
         'storage/index.html',
-        {'removables': removables,
+        {'removables': removablez,
+         'unmounted': unmounted,
          'removables_mounted': mounted,
          'mount_form': mount_form,
          'umount_form': umount_form,
+         'active_form': active_form,
          'remount_uri': request.session.get(settings.REDIRECT_URL_SESSION_KEY, None),
         },
         context_instance=RequestContext(request, processors=[])
     )
+
+def mount_device( request ):
+    if request.method == 'POST':
+        mount_form = MountForm(request.POST, devices=unmounted_devices())
+        if mount_form.is_valid():
+            raw = mount_form.cleaned_data['device']
+            devicefile,label = raw.split(' ',1)
+            mount(request, devicefile, label)
+    return HttpResponseRedirect( reverse('storage-index') )
+
+def unmount_device( request ):
+    if request.method == 'POST':
+        umount_form = UmountForm(request.POST, devices=mounted_devices())
+        if umount_form.is_valid():
+            raw = umount_form.cleaned_data['device']
+            mountpoint,devicefile = raw.split(' ',1)
+            unmount(request, devicefile, mountpoint)
+    return HttpResponseRedirect( reverse('storage-index') )
+
+def activate_device( request ):
+    if request.method == 'POST':
+        active_form = ActiveForm(request.POST, devices=mounted_devices())
+        if active_form.is_valid():
+            path = active_form.cleaned_data['device']
+            new_base_path = os.path.join(path, settings.DDR_USBHDD_BASE_DIR)
+            rm_media_symlink()
+            add_media_symlink(new_base_path)
+            label = os.path.basename(path)
+            messages.success(request, '<strong>%s</strong> is now the active device' % label)
+    return HttpResponseRedirect( reverse('storage-index') )
+
+
 
 def remount0( request ):
     """Show a spinning beachball while we try to remount the storage.
@@ -100,8 +137,7 @@ def remount1( request ):
     # the actual new devicefile
     devicefile_udisks = None
     if label:
-        stat,removables = commands.removables()
-        for d in removables:
+        for d in removables():
             if d['label'] == label:
                 devicefile_udisks = d['devicefile']
     # unmount, mount

@@ -5,6 +5,7 @@ from django.conf import settings
 from django.core.cache import cache
 
 from DDR import commands
+from DDR.dvcs import gitolite_info
 
 
 
@@ -61,7 +62,7 @@ def get_repos_orgs():
     repos_orgs = cache.get(key)
     if not repos_orgs:
         repos_orgs = []
-        status,lines = commands.gitolite_info()
+        status,lines = gitolite_info(settings.GITOLITE)
         if status and not lines:
             logging.error('commands.gitolite_info() status:%s, lines:%s' % (status,lines))
             logging.error('| Is ddr missing its SSH keys?')
