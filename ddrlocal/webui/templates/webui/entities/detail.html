@@ -114,7 +114,7 @@ or
 {% for file in entity.files_mezzanine %}
   <tr>
     <td>
-      <a class="btn btn-mini" href="{{ file.url }}edit/">Edit</a> <a class="btn btn-mini" href="{{ file.url }}delete/">Delete</a>
+      <a class="btn btn-primary btn-mini" href="{{ file.url }}edit/"><i class="icon-edit icon-white"></i> Edit</a> <a class="btn btn-primary btn-mini" href="{{ file.url }}delete/"><i class="icon-remove icon-white"></i> Delete</a>
     </td>
     <td>
       <a href="{{ file.url }}">{{ file.basename }}</a>
