@@ -30,7 +30,7 @@
 <div id="overview">
 <p>
 {% if collection.locked %}
-<a class="btn btn-primary btn-mini muted" title="This collection is locked"><i class="icon-lock icon-white"></i> Edit [locked]</a><br/>
+<a class="btn btn-primary btn-mini disabled" title="This collection is locked"><i class="icon-lock icon-white"></i> Edit [locked]</a><br/>
 {% else %}
 <a class="btn btn-primary btn-mini" href="{% url "webui-collection-edit" repo org cid %}"><i class="icon-edit icon-white"></i> Edit</a>
 {% endif %}
