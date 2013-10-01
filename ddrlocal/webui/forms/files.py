@@ -19,7 +19,7 @@ def shared_folder_files():
 
 class NewFileForm(forms.Form):
     public = forms.ChoiceField(choices=PERMISSIONS_CHOICES, required=True, label='Privacy Level', help_text='Whether this file should be accessible from the public website.')
-	rights = forms.ChoiceField(choices=RIGHTS_CHOICES, label='Rights', required=True, help_text='The use license for this file.')
+    rights = forms.ChoiceField(choices=RIGHTS_CHOICES, label='Rights', required=True, help_text='The use license for this file.')
     #path = forms.FilePathField(path=settings.VIRTUALBOX_SHARED_FOLDER)
     #path = forms.ChoiceField(choices=shared_folder_files(), required=False)
     path = forms.CharField(max_length=255, widget=forms.HiddenInput)
