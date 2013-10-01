@@ -5,7 +5,7 @@ import os
 from django import forms
 from django.conf import settings
 
-from ddrlocal.models.files import PERMISSIONS_CHOICES
+from ddrlocal.models.files import PERMISSIONS_CHOICES, RIGHTS_CHOICES
 
 def shared_folder_files():
     d = settings.VIRTUALBOX_SHARED_FOLDER
@@ -18,13 +18,14 @@ def shared_folder_files():
             
 
 class NewFileForm(forms.Form):
-    public = forms.ChoiceField(choices=PERMISSIONS_CHOICES)
+    public = forms.ChoiceField(choices=PERMISSIONS_CHOICES, required=True, label='Privacy Level', help_text='Whether this file should be accessible from the public website.')
+	rights = forms.ChoiceField(choices=RIGHTS_CHOICES, label='Rights', required=True, help_text='The use license for this file.')
     #path = forms.FilePathField(path=settings.VIRTUALBOX_SHARED_FOLDER)
     #path = forms.ChoiceField(choices=shared_folder_files(), required=False)
     path = forms.CharField(max_length=255, widget=forms.HiddenInput)
     role = forms.ChoiceField(choices=settings.ENTITY_FILE_ROLES)
     label = forms.CharField(max_length=255, required=False)
-    sort = forms.IntegerField()
+    sort = forms.IntegerField(label='Sort Order', initial=1, help_text='Order of this file in relation to others for this object (ordered low to high). Can be used to arrange images in a multi-page document.')
     
     def __init__(self, *args, **kwargs):
         path_choices = None
