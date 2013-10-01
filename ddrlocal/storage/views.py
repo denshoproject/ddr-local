@@ -14,7 +14,7 @@ from DDR import commands
 from storage import STORAGE_MESSAGES
 from storage import base_path, media_base_target, removables, removables_mounted
 from storage import mount, unmount, add_media_symlink, rm_media_symlink
-from storage.forms import MountForm, UmountForm, ActiveForm
+from storage.forms import MountForm, UmountForm, ActiveForm, ManualSymlinkForm
 
 
 
@@ -34,6 +34,19 @@ def unmounted_devices():
 def mounted_devices():
     return [(d['mountpath'],d['devicefile']) for d in removables_mounted()]
 
+def add_manual_symlink(devices):
+    """Adds manually-set symlink to list of mounted devices if present.
+    See storage.views.manual_symlink.
+    """
+    path = media_base_target()
+    for r in devices:
+        if path and (r[0] in path):
+            path = None
+    if path:
+        devices.append( (path,'') )
+    return devices
+
+
 
 # views ----------------------------------------------------------------
 
@@ -45,6 +58,8 @@ def index( request ):
     unmounted = get_unmounted(removablez)
     udevices = unmounted_devices()
     mdevices = mounted_devices()
+    mdevices_plus_manual = add_manual_symlink(mdevices)
+    media_target = media_base_target()
     #
     uinitial = {}
     minitial = {}
@@ -53,12 +68,13 @@ def index( request ):
         uinitial = { 'device': '{} {}'.format(udevices[0][0], udevices[0][1]) }
     if len(mdevices) == 1:
         minitial = { 'device': '{} {}'.format(mdevices[0][0], mdevices[0][1]) }
-    for m in removables_mounted():
-        if m['media_base_target']:
-            ainitial = {'device': os.path.dirname(media_base_target())}
+    for m in mdevices_plus_manual:
+        if m[0] in media_target:
+            ainitial = {'device': m[0]}
     mount_form  = MountForm( devices=udevices, initial=uinitial)
     umount_form = UmountForm(devices=mdevices, initial=minitial)
-    active_form = ActiveForm(devices=mdevices, initial=ainitial)
+    active_form = ActiveForm(devices=mdevices_plus_manual, initial=ainitial)
+    manlink_form = ManualSymlinkForm()
     return render_to_response(
         'storage/index.html',
         {'removables': removablez,
@@ -67,6 +83,7 @@ def index( request ):
          'mount_form': mount_form,
          'umount_form': umount_form,
          'active_form': active_form,
+         'manlink_form': manlink_form,
          'remount_uri': request.session.get(settings.REDIRECT_URL_SESSION_KEY, None),
         },
         context_instance=RequestContext(request, processors=[])
@@ -100,6 +117,22 @@ def activate_device( request ):
             add_media_symlink(new_base_path)
             label = os.path.basename(path)
             messages.success(request, '<strong>%s</strong> is now the active device' % label)
+    return HttpResponseRedirect( reverse('storage-index') )
+
+def manual_symlink( request ):
+    """Sets the MEDIA_BASE symlink to an arbitrary path; used for browsing non-USB storage.
+    """
+    if request.method == 'POST':
+        manlink_form = ManualSymlinkForm(request.POST)
+        if manlink_form.is_valid():
+            path = manlink_form.cleaned_data['path']
+            rm_media_symlink()
+            add_media_symlink(path)
+            MB = settings.MEDIA_BASE
+            if os.path.exists(MB) and os.path.islink(MB) and os.access(MB,os.W_OK):
+                messages.success(request, '<strong>%s</strong> is now the active device.' % path)
+            else:
+                messages.error(request, 'Could not make <strong>%s</strong> the active device.' % path)
     return HttpResponseRedirect( reverse('storage-index') )
 
 

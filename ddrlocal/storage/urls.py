@@ -9,5 +9,6 @@ urlpatterns = patterns(
     url(r'^activate/$', 'storage.views.activate_device', name='storage-activate'),
     url(r'^unmount/$', 'storage.views.unmount_device', name='storage-unmount'),
     url(r'^mount/$', 'storage.views.mount_device', name='storage-mount'),
+    url(r'^manlink/$', 'storage.views.manual_symlink', name='storage-manlink'),
     url(r'^$', 'storage.views.index', name='storage-index'),
 )

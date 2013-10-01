@@ -209,6 +209,15 @@ Reload this page.<br/>
 </dl>
 </div>
 
+
+<!-- ManualSymlinkForm -->
+<table class="muted">
+<form name="mount" action="{% url "storage-manlink" %}" method="post">{% csrf_token %}
+{{ manlink_form.as_table }}
+</form>
+</table>
+
+
     </div><!-- .span12 -->
   </div><!-- .row-fluid -->
 
