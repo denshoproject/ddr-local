@@ -994,6 +994,20 @@ class DDRFile( object ):
     
     # entities/files/???
     
+    def present( self ):
+        """Indicates whether or not the original file is currently present in the filesystem.
+        """
+        if self.path_abs and os.path.exists(self.path_abs):
+            return True
+        return False
+    
+    def access_present( self ):
+        """Indicates whether or not the access file is currently present in the filesystem.
+        """
+        if self.access_abs and os.path.exists(self.access_abs):
+            return True
+        return False
+    
     def labels_values(self):
         """Generic display
         
