@@ -159,8 +159,8 @@ def new( request, repo, org, cid, eid, role='master' ):
             role = form.cleaned_data['role']
             sort = form.cleaned_data['sort']
             label = form.cleaned_data['label']
-			rights = form.cleaned_data['rights']
-			public = form.cleaned_data['public']
+            rights = form.cleaned_data['rights']
+            public = form.cleaned_data['public']
             # start tasks
             result = entity_add_file.apply_async(
                 (git_name, git_mail, entity, src_path, role, sort, label),
