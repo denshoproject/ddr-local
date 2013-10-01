@@ -52,7 +52,11 @@
     <td>path_rel</td>
     <td>
       {{ file.path_rel }}
+{% if file.present %}
       &nbsp;&bull;&nbsp; <a href="{{ file.media_url }}" class="btn btn-primary"><i class="icon-download-alt icon-white"></i> download fullsize</a>
+{% else %}
+      &nbsp;&bull;&nbsp; <a class="btn muted"><i class="icon-download-alt"></i> download fullsize</a>
+{% endif %}
     </td>
   </tr>
   <tr>
@@ -70,7 +74,11 @@
     <td>access_rel</td>
     <td>
       {{ file.access_rel }}
+{% if file.access_present %}
       &nbsp;&bull;&nbsp; <a href="{{ file.access_url }}" class="btn btn-primary"><i class="icon-download-alt icon-white"></i> download access</a>
+{% else %}
+      &nbsp;&bull;&nbsp; <a class="btn muted"><i class="icon-download-alt"></i> download access</a>
+{% endif %}
     </td>
   <tr>
   <tr>
@@ -95,10 +103,14 @@
   </tr>
 </table>
 
+{% if file.present %}
 <form name="new-access" action="{% url "webui-file-new-access" file.repo file.org file.cid file.eid file.role file.sha1 %}" method="post">{% csrf_token %}
 {{ new_access_form.as_p }}
 <input class="btn btn-primary btn-mini" type="submit" value="Generate New Access File">
 </form>
+{% else %}
+<a title="Generate New Access File" class="btn btn-mini muted ">Generate New Access File</a>
+{% endif %}
 
     </div><!-- .span12 -->
   </div><!-- .row-fluid -->
