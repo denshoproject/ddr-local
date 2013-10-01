@@ -69,7 +69,7 @@ def index( request ):
     if len(mdevices) == 1:
         minitial = { 'device': '{} {}'.format(mdevices[0][0], mdevices[0][1]) }
     for m in mdevices_plus_manual:
-        if m[0] in media_target:
+        if media_target and (m[0] in media_target):
             ainitial = {'device': m[0]}
     mount_form  = MountForm( devices=udevices, initial=uinitial)
     umount_form = UmountForm(devices=mdevices, initial=minitial)
