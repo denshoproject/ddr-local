@@ -736,11 +736,11 @@ class DDRLocalEntity( DDREntity ):
             if not hasattr(self, ff['name']):
                 setattr(self, ff['name'], ff.get('default',None))
         
+        # replace list of file paths with list of DDRFile objects
         _files = []
         for f in self.files:
             path_abs = os.path.join(self.files_path, f['path_rel'])
-            if os.path.exists(path_abs):
-                _files.append(DDRFile(path_abs))
+            _files.append(DDRFile(path_abs))
         self.files = _files
     
     def dump_json(self, path=None, template=False):
