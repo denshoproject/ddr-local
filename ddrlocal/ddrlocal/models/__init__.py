@@ -22,7 +22,7 @@ from ddrlocal import VERSION, git_commit
 from ddrlocal.models import collection as collectionmodule
 from ddrlocal.models import entity as entitymodule
 from ddrlocal.models import files as filemodule
-from ddrlocal.models.meta import CollectionJSON, EntityJSON
+from ddrlocal.models.meta import CollectionJSON, EntityJSON, read_json
 from ddrlocal.models.xml import EAD, METS
 
 
@@ -405,14 +405,14 @@ class DDRLocalCollection( DDRCollection ):
         json_data = self.json().data
         for ff in collectionmodule.COLLECTION_FIELDS:
             for f in json_data:
-                if f.keys()[0] == ff['name']:
+                if hasattr(f, 'keys') and (f.keys()[0] == ff['name']):
                     setattr(self, f.keys()[0], f.values()[0])
         # special cases
-        if self.record_created:
+        if hasattr(self, 'record_created') and self.record_created:
             self.record_created = datetime.strptime(self.record_created, settings.DATETIME_FORMAT)
         else:
             self.record_created = datetime.now()
-        if self.record_lastmod:
+        if hasattr(self, 'record_lastmod') and self.record_lastmod:
             self.record_lastmod = datetime.strptime(self.record_lastmod, settings.DATETIME_FORMAT)
         else:
             self.record_lastmod = datetime.now()
@@ -731,7 +731,7 @@ class DDRLocalEntity( DDREntity ):
         
         for ff in entitymodule.ENTITY_FIELDS:
             for f in json_data:
-                if f.keys()[0] == ff['name']:
+                if hasattr(f, 'keys') and (f.keys()[0] == ff['name']):
                     setattr(self, f.keys()[0], f.values()[0])
         
         def parsedt(txt):
@@ -746,9 +746,9 @@ class DDRLocalEntity( DDREntity ):
             return d
             
         # special cases
-        if self.record_created: self.record_created = parsedt(self.record_created)
-        if self.record_lastmod: self.record_lastmod = parsedt(self.record_lastmod)
-        if self.digitize_date: self.digitize_date = parsedt(self.digitize_date)
+        if hasattr(self, 'record_created') and self.record_created: self.record_created = parsedt(self.record_created)
+        if hasattr(self, 'record_lastmod') and self.record_lastmod: self.record_lastmod = parsedt(self.record_lastmod)
+        if hasattr(self, 'digitize_date')  and self.digitize_date:  self.digitize_date  = parsedt(self.digitize_date)
         # end special cases
         
         # Ensure that every field in entitymodule.ENTITY_FIELDS is represented
@@ -759,9 +759,12 @@ class DDRLocalEntity( DDREntity ):
         
         # replace list of file paths with list of DDRFile objects
         _files = []
-        for f in self.files:
-            path_abs = os.path.join(self.files_path, f['path_rel'])
-            _files.append(DDRFile(path_abs))
+        try:
+            for f in self.files:
+                path_abs = os.path.join(self.files_path, f['path_rel'])
+                _files.append(DDRFile(path_abs))
+        except:
+            pass
         self.files = _files
     
     def dump_json(self, path=None, template=False):
@@ -1092,13 +1095,11 @@ class DDRFile( object ):
         @param path: Absolute path to file
         """
         if os.path.exists(self.json_path):
-            with open(self.json_path, 'r') as f:
-                raw = f.read()
-            data = json.loads(raw)
+            data = read_json(self.json_path)
             # everything else
             for ff in filemodule.FILE_FIELDS:
                 for f in data:
-                    if f.keys()[0] == ff['name']:
+                    if hasattr(f, 'keys') and (f.keys()[0] == ff['name']):
                         setattr(self, f.keys()[0], f.values()[0])
     
     def dump_json(self):

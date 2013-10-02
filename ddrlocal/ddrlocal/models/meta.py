@@ -18,6 +18,39 @@ import os
 #    return template
 
 
+def diagnose_json_read_error(path_abs):
+    """Report several common JSON read errors.
+    """
+    raw = ''
+    if not os.path.exists(path_abs):
+        return "file does not exist %s" % path_abs
+    try:
+        with open(path_abs, 'r') as f:
+            raw = f.read()
+    except:
+        return "error while reading file %s" % path_abs
+    # git merge conflict
+    if ('<<<<<<<' in raw) and ('=======' in raw) and ('>>>>>>>' in raw):
+        return "merge conflict in file %s" % path_abs
+    # JSON parse error
+    try:
+        data = json.loads(raw)
+    except:
+        return "JSON parsing error in file %s" % path_abs
+    return "unknown error in file %s" % path_abs
+
+def read_json(filename):
+    """Makes JSON file read,load safer; returns nice errors rather than crashing.
+    """
+    try:
+        with open(filename, 'r') as f:
+            data = json.loads(f.read())
+    except:
+        data = {"error": diagnose_json_read_error(filename)}
+    return data
+
+
+
 
 class CollectionJSON():
     path = None
@@ -42,8 +75,7 @@ class CollectionJSON():
     
     def read( self ):
         #logger.debug('    CollectionJSON.read({})'.format(self.filename))
-        with open(self.filename, 'r') as f:
-            self.data = json.loads(f.read())
+        self.data = read_json(self.filename)
      
     def write( self ):
         logger.debug('    CollectionJSON.write({})'.format(self.filename))
@@ -108,8 +140,7 @@ class EntityJSON():
     
     def read( self ):
         #logger.debug('    EntityJSON.read({})'.format(self.filename))
-        with open(self.filename, 'r') as f:
-            self.data = json.loads(f.read())
+        self.data = read_json(self.filename)
      
     def write( self ):
         logger.debug('    EntityJSON.write({})'.format(self.filename))
