@@ -30,6 +30,26 @@ from ddrlocal.models.xml import EAD, METS
 COLLECTION_FILES_PREFIX = 'files'
 ENTITY_FILES_PREFIX = 'files'
 
+def git_version(repo_path=None):
+    """Returns version info for Git and git-annex.
+    
+    If repo_path is specified, returns version of local repo's annex.
+    example:
+    'git version 1.7.10.4; git-annex version: 3.20120629; local repository version: 3; ' \
+    'default repository version: 3; supported repository versions: 3; ' \
+    'upgrade supported from repository versions: 0 1 2'
+    
+    @param repo_path: Absolute path to repository (optional).
+    @returns string
+    """
+    # git
+    gitv = envoy.run('git --version').std_out.strip()
+    # git annex
+    if repo_path:
+        os.chdir(repo_path)
+    annex = envoy.run('git annex version').std_out.strip().split('\n')
+    return '; '.join([gitv] + annex)
+
 def module_function(module, function_name, value):
     """
     If function is present in ddrlocal.models.entity and is callable,
@@ -411,7 +431,8 @@ class DDRLocalCollection( DDRCollection ):
         """
         collection = [{'application': 'https://github.com/densho/ddr-local.git',
                        'commit': git_commit(),
-                       'release': VERSION,}]
+                       'release': VERSION,
+                       'git': git_version(self.path),}]
         template_passthru = ['id', 'record_created', 'record_lastmod']
         for ff in collectionmodule.COLLECTION_FIELDS:
             item = {}
@@ -751,7 +772,8 @@ class DDRLocalEntity( DDREntity ):
         """
         entity = [{'application': 'https://github.com/densho/ddr-local.git',
                    'commit': git_commit(),
-                   'release': VERSION,}]
+                   'release': VERSION,
+                   'git': git_version(self.parent_path),}]
         exceptions = ['files', 'filemeta']
         template_passthru = ['id', 'record_created', 'record_lastmod']
         for ff in entitymodule.ENTITY_FIELDS:
@@ -1086,7 +1108,8 @@ class DDRFile( object ):
         # TODO DUMP FILE AND FILEMETA PROPERLY!!!
         file_ = [{'application': 'https://github.com/densho/ddr-local.git',
                   'commit': git_commit(),
-                  'release': VERSION,},
+                  'release': VERSION,
+                  'git': git_version(self.collection_path),},
                  {'path_rel': self.path_rel},]
         for ff in filemodule.FILE_FIELDS:
             item = {}
