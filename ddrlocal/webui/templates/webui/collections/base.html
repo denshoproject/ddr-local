@@ -10,7 +10,7 @@
   {% if collection %}
     <div id="sync">
     {% if collection.locked %}
-        <input class="btn btn-mini muted" name="sync" type="submit" value="Sync [locked]"/>
+        <a href="#" class="btn btn-mini btn-warning muted" title="Sync [locked]"><i class="icon-lock icon-white"></i> Sync [locked]</a>
     {% else %}
       {% if collection.unsynced %}
         <form name="collection-sync" action="{% url "webui-collection-sync" repo org cid %}" method="POST">{% csrf_token %}

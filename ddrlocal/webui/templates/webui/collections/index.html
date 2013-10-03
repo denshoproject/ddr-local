@@ -26,7 +26,7 @@
 
 {% for c in o.3 %}
       {% if c.locked %}
-        <span class="btn btn-mini muted"><i class="icon-lock icon-white"></i> Sync [locked]</span> 
+        <a href="#" class="btn btn-mini btn-warning muted" title="Sync [locked]"><i class="icon-lock icon-white"></i> Sync [locked]</a> 
       {% else %}
         {% if c.unsynced %}
         <input class="btn btn-mini btn-warning" name="sync" type="submit" value="Sync" /> 
