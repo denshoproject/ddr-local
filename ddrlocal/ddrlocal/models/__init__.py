@@ -6,6 +6,7 @@ logger = logging.getLogger(__name__)
 import os
 import re
 from StringIO import StringIO
+import sys
 
 import envoy
 import libxmp
@@ -42,13 +43,17 @@ def git_version(repo_path=None):
     @param repo_path: Absolute path to repository (optional).
     @returns string
     """
-    # git
-    gitv = envoy.run('git --version').std_out.strip()
-    # git annex
-    if repo_path:
-        os.chdir(repo_path)
-    annex = envoy.run('git annex version').std_out.strip().split('\n')
-    return '; '.join([gitv] + annex)
+    try:
+        # git
+        gitv = envoy.run('git --version').std_out.strip()
+        # git annex
+        if repo_path and os.path.exists(repo_path):
+            os.chdir(repo_path)
+        annex = envoy.run('git annex version').std_out.strip().split('\n')
+        gitversion = '; '.join([gitv] + annex)
+    except Exception as err:
+        gitversion = '%s' % err
+    return gitversion
 
 def module_function(module, function_name, value):
     """
