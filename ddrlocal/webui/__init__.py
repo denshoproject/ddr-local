@@ -32,6 +32,7 @@ WEBUI_MESSAGES = {
     'VIEWS_COLL_UPDATED': 'Collection updated',
     'VIEWS_COLL_LOCKED': 'Collection is locked: <strong>{}</strong>', # collection_id
     'VIEWS_COLL_BEHIND': 'Collection <strong>{}</strong> is behind and needs to be synced.', # collection_id
+    'VIEWS_COLL_CONFLICTED': 'Collection <strong>{}</strong> is in a conflicted state.', # collection_id
     
     # webui.views.entities
     'VIEWS_ENT_CREATED': 'New object created: {}', # entity id
