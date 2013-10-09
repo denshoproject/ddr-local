@@ -18,6 +18,7 @@ from django.core.files import File
 from django.core.urlresolvers import reverse
 
 from DDR import commands
+from DDR import dvcs
 from DDR.models import Collection as DDRCollection, Entity as DDREntity
 from ddrlocal import VERSION, git_commit
 from ddrlocal.models import collection as collectionmodule
@@ -134,8 +135,9 @@ class DDRLocalCollection( DDRCollection ):
     repo = None
     org = None
     cid = None
-    status = ''
-    unsynced = 0
+    _status = ''
+    _astatus = ''
+    _unsynced = 0
     ead_path = None
     json_path = None
     ead_path_rel = None
@@ -170,14 +172,14 @@ class DDRLocalCollection( DDRCollection ):
         self.json_path          = self._path_absrel('collection.json')
         self.ead_path_rel       = self._path_absrel('ead.xml',        rel=True)
         self.json_path_rel      = self._path_absrel('collection.json',rel=True)
-        if os.path.exists(os.path.join(self.path, '.git')):
-            exit,status = commands.status(self.path, short=True)
-            if status:
-                self.status = status
-        if self.status:
-            m = re.search('\[ahead ([0-9]+)\]', self.status)
-            if m:
-                self.unsynced = int(m.group(1))
+        #if os.path.exists(os.path.join(self.path, '.git')):
+        #    exit,status = commands.status(self.path, short=True)
+        #    if status:
+        #        self.status = status
+        #if self.status:
+        #    m = re.search('\[ahead ([0-9]+)\]', self.status)
+        #    if m:
+        #        self.unsynced = int(m.group(1))
     
     def __repr__(self):
         """
@@ -211,6 +213,38 @@ class DDRLocalCollection( DDRCollection ):
         '/var/www/media/base/ddr-testing-123'
         """
         return os.path.join(settings.MEDIA_BASE, '{}-{}-{}'.format(repo, org, cid))
+    
+    def repo_fetch( self ):
+        result = '-1'
+        if os.path.exists(os.path.join(self.path, '.git')):
+            result = commands.fetch(self.path)
+        else:
+            result = '%s is not a git repository' % self.path
+        return result
+    
+    def repo_status( self ):
+        """
+        TODO cache?
+        """
+        if not self._status and (os.path.exists(os.path.join(self.path, '.git'))):
+            status = commands.status(self.path, short=True)
+            if status:
+                self._status = status
+        return self._status
+    
+    def repo_annex_status( self ):
+        """
+        TODO cache?
+        """
+        if not self._astatus and (os.path.exists(os.path.join(self.path, '.git'))):
+            astatus = commands.astatus(self.path, short=True)
+            if astatus:
+                self._astatus = astatus
+        return self._astatus
+    
+    def repo_ahead( self ):      return dvcs.ahead(self.repo_status())
+    def repo_behind( self ):     return dvcs.behind(self.repo_status())
+    def repo_conflicted( self ): return dvcs.conflicted(self.repo_status())
     
     def _lockfile( self ):
         """
