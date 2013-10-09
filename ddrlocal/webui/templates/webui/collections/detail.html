@@ -30,10 +30,12 @@
 <div id="overview">
 <p>
 {% if collection.locked or collection.repo_behind %}
-<a class="btn btn-primary btn-mini disabled" title="This collection is locked"><i class="icon-lock icon-white"></i> Edit [locked]</a>
+<a class="btn btn-mini" title="This collection is locked"><i class="icon-lock"></i> Edit</a>
 {% else %}
-<a class="btn btn-primary btn-mini" href="{% url "webui-collection-edit" repo org cid %}"><i class="icon-edit icon-white"></i> Edit</a>
+<a class="btn btn-mini btn-primary" href="{% url "webui-collection-edit" repo org cid %}"><i class="icon-edit icon-white"></i> Edit</a>
 {% endif %}
+{% if collection.repo_behind %}<span id="edit-alert" class="alert alert-error">Editing is disabled until collection is synced.</span>{% endif %}
+{% if collection.repo_conflicted %}<span id="edit-alert" class="alert alert-error">Editing is disabled until merge conflict is resolved.</span>{% endif %}
 </p>
 <dl class="dl-horizontal">
 {% for lv in collection.labels_values %}
