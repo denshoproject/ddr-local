@@ -134,6 +134,10 @@ def new( request, repo, org, cid ):
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+    collection.repo_fetch()
+    if collection.repo_behind():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
+        return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
     # get new entity ID
     eid = None
     eids = api.entities_next(request, repo, org, cid, 1)
@@ -176,6 +180,10 @@ def edit( request, repo, org, cid, eid ):
     entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
+        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+    collection.repo_fetch()
+    if collection.repo_behind():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     if entity.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
@@ -228,6 +236,10 @@ def edit_json( request, repo, org, cid, eid ):
     entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
     #if collection.locked():
     #    messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
+    #    return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+    #collection.repo_fetch()
+    #if collection.repo_behind():
+    #    messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
     #    return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     #if entity.locked():
     #    messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
@@ -289,6 +301,10 @@ def edit_mets_xml( request, repo, org, cid, eid ):
     entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
+        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+    collection.repo_fetch()
+    if collection.repo_behind():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     if entity.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
