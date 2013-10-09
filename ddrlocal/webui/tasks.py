@@ -443,7 +443,7 @@ def session_tasks( request ):
     traceback = None
     for task_id in tasks.keys():
         # hit the celery API for each task
-        url = 'http://127.0.0.1/%s' % reverse('celery-task_status', args=[task_id])
+        url = 'http://127.0.0.1%s' % reverse('celery-task_status', args=[task_id])
         r = requests.get(url)
         # if there's a traceback, save for later (see below)
         try:
