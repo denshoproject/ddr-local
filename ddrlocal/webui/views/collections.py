@@ -40,10 +40,6 @@ def _uid_path(request, repo, org, cid):
     path = os.path.join(settings.MEDIA_BASE, uid)
     return uid,path
 
-def alert_if_behind(request, collection):
-    if collection.repo_behind():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
-
 def alert_if_conflicted(request, collection):
     if collection.repo_conflicted():
         #url = reverse('webui-merge', args=[collection.repo,collection.org,collection.cid])
@@ -78,7 +74,6 @@ def collections( request ):
 def detail( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     alert_if_conflicted(request, collection)
-    alert_if_behind(request, collection)
     entities = sorted(collection.entities(), key=lambda e: e.id, reverse=True)
     return render_to_response(
         'webui/collections/detail.html',
@@ -94,7 +89,6 @@ def detail( request, repo, org, cid ):
 def entities( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     alert_if_conflicted(request, collection)
-    alert_if_behind(request, collection)
     collection_uid,collection_path = _uid_path(request, repo, org, cid)
     ead_path_rel = 'ead.xml'
     ead_path_abs = os.path.join(collection_path, ead_path_rel)
@@ -115,7 +109,6 @@ def entities( request, repo, org, cid ):
 def changelog( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     alert_if_conflicted(request, collection)
-    alert_if_behind(request, collection)
     return render_to_response(
         'webui/collections/changelog.html',
         {'repo': repo,
@@ -129,7 +122,6 @@ def changelog( request, repo, org, cid ):
 def collection_json( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     alert_if_conflicted(request, collection)
-    alert_if_behind(request, collection)
     return HttpResponse(json.dumps(collection.json().data), mimetype="application/json")
 
 @ddrview
@@ -137,7 +129,6 @@ def collection_json( request, repo, org, cid ):
 def git_status( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     alert_if_conflicted(request, collection)
-    alert_if_behind(request, collection)
     status = commands.status(collection.path)
     astatus = commands.annex_status(collection.path)
     return render_to_response(
@@ -156,7 +147,6 @@ def git_status( request, repo, org, cid ):
 def ead_xml( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     alert_if_conflicted(request, collection)
-    alert_if_behind(request, collection)
     soup = BeautifulSoup(collection.ead().xml, 'xml')
     return HttpResponse(soup.prettify(), mimetype="application/xml")
 
@@ -170,7 +160,6 @@ def sync( request, repo, org, cid ):
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     alert_if_conflicted(request, collection)
-    alert_if_behind(request, collection)
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
