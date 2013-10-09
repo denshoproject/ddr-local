@@ -8,13 +8,20 @@
 
 {% block indicators %}
   {% if collection %}
+
     <div id="sync">
     {% if collection.locked %}
-        <a href="#" class="btn btn-mini btn-warning muted" title="Sync [locked]"><i class="icon-lock icon-white"></i> Sync [locked]</a>
+        <a href="#" class="btn btn-mini muted" title="Sync [locked]"><i class="icon-lock icon-white"></i> Sync [locked]</a>
     {% else %}
-      {% if collection.unsynced %}
-        <form name="collection-sync" action="{% url "webui-collection-sync" repo org cid %}" method="POST">{% csrf_token %}
-        <span id="unsynced" title="{{ collection.unsynced }} unsynced change{{ collection.unsynced|pluralize }}"><input class="btn btn-mini btn-warning" name="sync" type="submit" value="Sync" /></span>
+      {% if collection.repo_behind or collection.repo_ahead %}
+        <form name="collection-sync" action="{% url "webui-collection-sync" repo org cid %}" method="POST">
+        {% csrf_token %}
+<span
+  {% if collection.repo_ahead %}id="ahead" title="Your collection is ahead"
+  {% elif collection.repo_behind %}id="behind" title="Your collection is behind"
+  {% endif %}>
+<input class="btn btn-mini btn-warning" name="sync" type="submit" value="Sync" />
+</span>
         </form>
       {% else %}
         <input class="btn btn-mini btn-success" name="sync" type="submit" value="Synced"/>
