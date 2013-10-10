@@ -17,7 +17,7 @@ from django.template import RequestContext
 
 from DDR import commands
 
-from ddrlocal.models import DDRLocalCollection as Collection
+from webui.models import Collection
 from ddrlocal.models import DDRLocalEntity as Entity
 from ddrlocal.models.entity import ENTITY_FIELDS
 from ddrlocal.forms import DDRForm
@@ -154,6 +154,7 @@ def new( request, repo, org, cid ):
                                              collection.path, entity_uid,
                                              [collection.json_path_rel, collection.ead_path_rel],
                                              [settings.TEMPLATE_EJSON, settings.TEMPLATE_METS])
+        collection.cache_delete()
         if exit:
             logger.error(exit)
             logger.error(status)
@@ -201,6 +202,7 @@ def edit( request, repo, org, cid, eid ):
                 exit,status = commands.entity_update(git_name, git_mail,
                                                      entity.parent_path, entity.id,
                                                      [entity.json_path, entity.mets_path,])
+                collection.cache_delete()
                 if exit:
                     messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
                 else:
@@ -261,6 +263,7 @@ def edit_json( request, repo, org, cid, eid ):
                     entity.parent_path, entity.id,
                     [entity.json_path])
                 
+                collection.cache_delete()
                 if exit:
                     messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
                 else:
@@ -326,6 +329,7 @@ def edit_mets_xml( request, repo, org, cid, eid ):
                     entity.parent_path, entity.id,
                     [entity.mets_path])
                 
+                collection.cache_delete()
                 if exit:
                     messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
                 else:

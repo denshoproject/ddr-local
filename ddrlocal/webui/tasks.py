@@ -14,7 +14,7 @@ from django.contrib import messages
 from django.core.urlresolvers import reverse
 
 from ddrlocal.models import DDRLocalEntity, DDRFile, hash
-from ddrlocal.models import DDRLocalCollection as Collection
+from webui.models import Collection
 
 from DDR.commands import entity_annex_add, entity_update, sync
 
@@ -87,6 +87,8 @@ class FileAddDebugTask(Task):
         else:
             entity.files_log(0,lockstatus)
         entity.files_log(1, 'END task_id %s\n' % task_id)
+        collection = Collection.from_json(Collection.collection_path(None,entity.repo,entity.org,entity.cid))
+        collection.cache_delete()
 
 
 
@@ -403,6 +405,7 @@ class CollectionSyncDebugTask(Task):
         # NOTE: collection is locked immediately after collection_sync task
         #       starts in webui.views.collections.sync
         collection.unlock(task_id)
+        collection.cache_delete()
 
 @task(base=CollectionSyncDebugTask, name='collection-sync')
 def collection_sync( git_name, git_mail, collection_path ):

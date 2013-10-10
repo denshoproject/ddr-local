@@ -16,7 +16,7 @@ from django.shortcuts import Http404, get_object_or_404, render_to_response
 from django.template import RequestContext
 
 from DDR import commands
-from ddrlocal.models import DDRLocalCollection as Collection
+from webui.models import Collection
 from ddrlocal.models import DDRLocalEntity as Entity
 from ddrlocal.models import DDRFile
 from ddrlocal.models.files import FILE_FIELDS
@@ -333,6 +333,7 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
             exit,status = commands.entity_update(git_name, git_mail,
                                                  entity.parent_path, entity.id,
                                                  [file_.json_path,])
+            collection.cache_delete()
             if exit:
                 messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
             else:

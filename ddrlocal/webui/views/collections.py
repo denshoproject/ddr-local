@@ -18,7 +18,7 @@ from django.template.loader import get_template
 
 from DDR import commands
 
-from ddrlocal.models import DDRLocalCollection as Collection
+from webui.models import Collection
 from ddrlocal.models.collection import COLLECTION_FIELDS
 from ddrlocal.forms import DDRForm
 
@@ -244,6 +244,7 @@ def edit( request, repo, org, cid ):
                 collection.form_post(form)
                 collection.dump_json()
                 collection.dump_ead()
+                collection.cache_delete()
                 exit,status = commands.update(git_name, git_mail,
                                               collection.path,
                                               [collection.json_path, collection.ead_path,])
