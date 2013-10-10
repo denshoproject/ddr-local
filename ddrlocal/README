@@ -1,0 +1,38 @@
+ddr-local apps
+==============
+
+
+ddrlocal
+--------
+
+This app is a bit of a frankenstein:
+
+Parts of it provide models and behavior for the second layer of the DDR stack: collection/object/file metadata.  Ideally these parts would be available in the context of the command-line app.
+
+Other parts provide low-level forms and code that are inherited by the `webui` app that is responsible for the web UI that the user interacts with.
+
+The `ddrlocal` app also represents the entire project to Django; after v1.5 this app is where Django looks for the `settings.py` file.
+
+Clearly there is a need for some refactoring here.
+
+
+webui
+-----
+
+This app is responsible for the overall web UI that the user interacts with.  It provides display and editing screens for collections, objects (entities), and files, as well as interstitial navigational pages.
+
+
+storage
+-------
+
+This app is responsible for managing storage devices.  DDR is intended to be 
+
+
+tematres
+--------
+
+
+xmlforms
+--------
+
+This is a holdover from when the master data for each collection/entity/file was going to be kept in EAD or METS XML focuments.  `xmlforms` had a nifty ur-form that could generate Django form objects based on a data structure, and read/write data from XML documents using XPath.  All this was dropped in favor of storing object data in JSON, and `xmlforms` is no longer used. 
