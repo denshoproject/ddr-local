@@ -18,11 +18,17 @@
 {{ file.basename }}
 </h1>
 
-<h3>
-{% if entity.locked %}<a class="muted" title="This object is locked" class="btn btn-primary"><i class="icon-lock icon-white"></i> edit</a>
-{% else %}<a href="{{ file.url }}edit/" class="btn btn-primary"><i class="icon-edit icon-white"></i> edit</a>
+{% if entity.locked or collection.locked or collection.repo_behind or collection.repo_conflicted %}
+<p>
+<a class="btn btn-mini" title="This object is locked"><i class="icon-lock"></i> edit</a>
+{% if collection.repo_behind %}<span id="edit-alert" class="alert alert-error">Editing is disabled until collection is synced.</span>{% endif %}
+{% if collection.repo_conflicted %}<span id="edit-alert" class="alert alert-error">Editing is disabled until merge conflict is resolved.</span>{% endif %}
+</p>
+{% else %}
+<p>
+<a class="btn btn-primary btn-mini" href="{{ file.url }}edit/"><i class="icon-edit icon-white"></i> edit</a>
+</p>
 {% endif %}
-</h3>
 
 <dl class="dl-horizontal">
 {% for lv in file.labels_values %}
@@ -53,9 +59,9 @@
     <td>
       {{ file.path_rel }}
 {% if file.present %}
-      &nbsp;&bull;&nbsp; <a href="{{ file.media_url }}" class="btn btn-primary"><i class="icon-download-alt icon-white"></i> download fullsize</a>
+      &nbsp;&bull;&nbsp; <a class="btn btn-mini btn-primary" href="{{ file.media_url }}"><i class="icon-download-alt icon-white"></i> download fullsize</a>
 {% else %}
-      &nbsp;&bull;&nbsp; <a class="btn muted"><i class="icon-download-alt"></i> download fullsize</a>
+      &nbsp;&bull;&nbsp; <a class="btn btn-mini muted"><i class="icon-download-alt"></i> download fullsize</a>
 {% endif %}
     </td>
   </tr>
@@ -75,9 +81,9 @@
     <td>
       {{ file.access_rel }}
 {% if file.access_present %}
-      &nbsp;&bull;&nbsp; <a href="{{ file.access_url }}" class="btn btn-primary"><i class="icon-download-alt icon-white"></i> download access</a>
+      &nbsp;&bull;&nbsp; <a class="btn btn-mini btn-primary" href="{{ file.access_url }}"><i class="icon-download-alt icon-white"></i> download access</a>
 {% else %}
-      &nbsp;&bull;&nbsp; <a class="btn muted"><i class="icon-download-alt"></i> download access</a>
+      &nbsp;&bull;&nbsp; <a class="btn btn-mini muted"><i class="icon-download-alt"></i> download access</a>
 {% endif %}
     </td>
   <tr>
