@@ -81,7 +81,8 @@ def detail( request, repo, org, cid ):
          'org': org,
          'cid': cid,
          'collection': collection,
-         'entities': entities,},
+         'entities': entities,
+         'unlock_task_id': collection.locked(),},
         context_instance=RequestContext(request, processors=[])
     )
 
@@ -394,3 +395,19 @@ def edit_scopecontent( request, repo, org, cid ):
 def edit_adjunctdesc( request, repo, org, cid ):
     return edit_xml(request, repo, org, cid,
                     slug='descgrp', Form=AdjunctDescriptiveForm, FIELDS=ADJUNCT_DESCRIPTIVE_FIELDS)
+
+@ddrview
+@login_required
+@storage_required
+def unlock( request, repo, org, cid, task_id ):
+    """Provides a way to remove collection lockfile through the web UI.
+    """
+    git_name = request.session.get('git_name')
+    git_mail = request.session.get('git_mail')
+    if not git_name and git_mail:
+        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
+    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    if task_id and collection.locked() and (task_id == collection.locked()):
+        collection.unlock(task_id)
+        messages.success(request, 'Collection <b>%s</b> unlocked.' % collection.id)
+    return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )

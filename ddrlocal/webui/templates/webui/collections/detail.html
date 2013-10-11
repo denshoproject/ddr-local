@@ -88,6 +88,22 @@
 
 
 
+{% block footer %}{{ block.super }}
+{% if unlock_task_id %}
+<!-- click to remove collection lock file -->
+<div>
+  <a id="unlock-unlock" class="muted" href="">unlock</a>
+  <span id="unlock-confirm" style="display:none;">
+    are you sure?
+    <a id="unlock-confirm-yes" href="{% url "webui-collection-unlock" repo org cid unlock_task_id %}">yes</a>
+    <a id="unlock-confirm-no" href="">no</a>
+  </span>
+</div>
+{% endif %}
+{% endblock footer %}
+
+
+
 {% block javascript %}{{ block.super }}
 <script>
   $(function () {
@@ -101,6 +117,13 @@
     /* show #metadata by default */
     $('#tabs a[href="#metadata"]').tab('show');
 
+  {% if unlock_task_id %}
+    /* unlock link */
+    $('a#unlock-unlock').click(function() {
+      $('span#unlock-confirm').show(); return false;
+    });
+  {% endif %}
+
   })
 </script>
-{% endblock %}
+{% endblock javascript %}

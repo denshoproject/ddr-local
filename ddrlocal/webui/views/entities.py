@@ -51,7 +51,8 @@ def detail( request, repo, org, cid, eid ):
          'collection_uid': collection.id,
          'collection': collection,
          'entity': entity,
-         'tasks': tasks,},
+         'tasks': tasks,
+         'unlock_task_id': entity.locked(),},
         context_instance=RequestContext(request, processors=[])
     )
 
@@ -415,3 +416,20 @@ def edit_mets( request, repo, org, cid, eid ):
                     slug='mets',
                     Form=MetsForm, FIELDS=METS_FIELDS,
                     namespaces=NAMESPACES,)
+
+@ddrview
+@login_required
+@storage_required
+def unlock( request, repo, org, cid, eid, task_id ):
+    """Provides a way to remove entity lockfile through the web UI.
+    """
+    git_name = request.session.get('git_name')
+    git_mail = request.session.get('git_mail')
+    if not git_name and git_mail:
+        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
+    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+    if task_id and entity.locked() and (task_id == entity.locked()):
+        entity.unlock(task_id)
+        messages.success(request, 'Object <b>%s</b> unlocked.' % entity.id)
+    return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
