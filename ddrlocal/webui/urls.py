@@ -7,7 +7,14 @@ urlpatterns = patterns(
     url(r'^logout/$', 'webui.views.logout', name='webui-logout'),
     url(r'^tasks/$', 'webui.views.tasks', name='webui-tasks'),
     url(r'^task-status/$', 'webui.views.task_status', name='webui-task-status'),
+    
+    # merge
 
+    url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/merge/auto/$', 'webui.views.merge.edit_auto', name='webui-merge-auto'),
+    url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/merge/json/$', 'webui.views.merge.edit_json', name='webui-merge-json'),
+    url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/merge/raw/$', 'webui.views.merge.edit_raw', name='webui-merge-raw'),
+    url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/merge/$', 'webui.views.merge.merge', name='webui-merge'),
+    
     # collections
 
     url(r'^collections/$', 'webui.views.collections.collections', name='webui-collections'),

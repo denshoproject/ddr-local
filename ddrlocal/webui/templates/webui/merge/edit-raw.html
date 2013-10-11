@@ -1,0 +1,29 @@
+{% extends "webui/collections/base.html" %}
+
+
+{% block title %}MERGE | {{ collection.id }}{% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+<li><a href="{{ collection.url }}">{{ collection.id }}</a></li>
+<li class="active">MERGE</li>
+{% endblock breadcrumbs %}
+
+
+{% block content %}
+
+  <div class="row-fluid">
+    <div class="span12">
+
+<h1>
+{{ filename }}
+</h1>
+
+<form name="merge-raw" action="" method="post">{% csrf_token %}
+{{ form.as_p }}
+<input name="submit" type="submit" value="submit" />
+</form>
+
+    </div><!-- .span12 -->
+  </div><!-- .row-fluid -->
+
+{% endblock content %}

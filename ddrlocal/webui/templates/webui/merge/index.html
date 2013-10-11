@@ -1,0 +1,52 @@
+{% extends "webui/collections/base.html" %}
+
+
+{% block title %}MERGE | {{ collection.id }}{% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+<li><a href="{{ collection.url }}">{{ collection.id }}</a></li>
+<li class="active">MERGE</li>
+{% endblock breadcrumbs %}
+
+
+{% block content %}
+
+  <div class="row-fluid">
+    <div class="span12">
+
+<h1>
+{{ collection_path }}
+</h1>
+
+<h2>
+status:
+{% if conflicted %}conflicted{% else %}resolved{% endif %}
+</h2>
+
+{% if unmerged %}
+<h3>
+The following files are conflicted and must be fixed:
+</h3>
+<ul>
+{% for file in unmerged %}
+   <li><a href="{% url "webui-merge-raw" repo org cid %}?filename={{ file }}">{{ file }}</a></li>
+{% endfor %}
+</ul>
+{% endif %}
+
+{% if conflicted and not unmerged %}
+<hr/>
+<form name="merge-commit" action="" method="post">{% csrf_token %}
+{{ form.as_p }}
+<input type="submit" value="commit changes" />
+</form>
+{% endif %}
+
+<hr/>
+<pre>
+{{ status }}
+</pre>
+
+    </div><!-- .span12 -->
+  </div><!-- .row-fluid -->
+{% endblock content %}
