@@ -90,7 +90,20 @@ def merge_commit( path ):
     if unmerged:
         return 'ERROR: unmerged files exist!'
     repo = git.Repo(path)
-    commit = repo.git.commit()
+    commit = repo.git.commit('--message', 'merge conflicts resolved using DDR web UI.')
+    
+def diverge_commit( path ):
+    """Performs the final commit on diverged repo.
+    
+    Assumes files have already been added; will quit if it finds unmerged files.
+    
+    @param path: Absolute path to a Git repository
+    """
+    unmerged = list_unmerged(path)
+    if unmerged:
+        return 'ERROR: unmerged files exist!'
+    repo = git.Repo(path)
+    commit = repo.git.commit('--message', 'divergent commits resolved using DDR web UI.')
 
 
 
