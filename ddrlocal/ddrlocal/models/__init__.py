@@ -242,9 +242,11 @@ class DDRLocalCollection( DDRCollection ):
                 self._astatus = astatus
         return self._astatus
     
-    def repo_ahead( self ):      return dvcs.ahead(self.repo_status())
-    def repo_behind( self ):     return dvcs.behind(self.repo_status())
-    def repo_conflicted( self ): return dvcs.conflicted(self.repo_status())
+    def repo_synced( self ):     return dvcs.synced(dvcs.repository(self.path))
+    def repo_ahead( self ):      return dvcs.ahead(dvcs.repository(self.path))
+    def repo_behind( self ):     return dvcs.behind(dvcs.repository(self.path))
+    def repo_diverged( self ):   return dvcs.diverged(dvcs.repository(self.path))
+    def repo_conflicted( self ): return dvcs.conflicted(dvcs.repository(self.path))
     
     def _lockfile( self ):
         """
