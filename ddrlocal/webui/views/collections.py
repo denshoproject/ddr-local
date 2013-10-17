@@ -42,8 +42,8 @@ def _uid_path(request, repo, org, cid):
 
 def alert_if_conflicted(request, collection):
     if collection.repo_conflicted():
-        #url = reverse('webui-merge', args=[collection.repo,collection.org,collection.cid])
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_CONFLICTED'].format(collection.id))
+        url = reverse('webui-merge', args=[collection.repo,collection.org,collection.cid])
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_CONFLICTED'].format(collection.id, url))
 
 
 
