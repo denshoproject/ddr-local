@@ -11,9 +11,10 @@
     <form name="collection-sync" action="{% url "webui-collection-sync" repo org cid %}" method="POST">
       {% csrf_token %}
       
-      {% if   collection.repo_ahead %}<span class="label label-warning">Ahead</span>
-      {% elif collection.repo_behind %}<span class="label label-warning">Behind</span>
-      {% elif collection.repo_conflicted %}<span class="label label-important">CONFLICTED</span>
+      {% if collection.repo_conflicted %}<span class="label label-important">CONFLICTED</span>{% endif %}
+      {% if   collection.repo_diverged   %}<span class="label label-important">DIVERGED</span>
+      {% elif collection.repo_behind     %}<span class="label label-warning">Behind</span>
+      {% elif collection.repo_ahead      %}<span class="label label-warning">Ahead</span>
       {% endif %}
 
     {% if collection.locked %}
