@@ -6,6 +6,7 @@ from django.utils.datastructures import SortedDict
 
 
 class MergeCommitForm(forms.Form):
+    which = forms.CharField(max_length=255, widget=forms.HiddenInput)
     path = forms.CharField(max_length=255, widget=forms.HiddenInput)
 
 class MergeRawForm(forms.Form):

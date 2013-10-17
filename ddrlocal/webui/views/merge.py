@@ -21,7 +21,7 @@ from webui.decorators import ddrview
 from webui.models import Collection
 from webui.views.decorators import login_required
 from webui.forms.merge import MergeCommitForm, MergeRawForm, MergeJSONForm
-from webui.merge import list_unmerged, merge_add, merge_commit
+from webui.merge import list_unmerged, merge_add, merge_commit, diverge_commit
 
 
 
@@ -60,15 +60,38 @@ def merge( request, repo, org, cid ):
     """
     collection_path = Collection.collection_path(request,repo,org,cid)
     collection = Collection.from_json(collection_path)
+    task_id = collection.locked()
     status = commands.status(collection_path)
+    ahead = collection.repo_ahead()
+    behind = collection.repo_behind()
+    diverged = collection.repo_diverged()
+    conflicted = collection.repo_conflicted()
     unmerged = list_unmerged(collection_path)
+    staged = dvcs.list_staged(dvcs.repository(collection_path))
     if request.method == 'POST':
         form = MergeCommitForm(request.POST)
         if form.is_valid():
-            merge_commit(collection_path)
+            which = form.cleaned_data['which']
+            if which == 'merge':
+                merge_commit(collection_path)
+                committed = 1
+            elif which == 'commit':
+                diverge_commit(collection_path)
+                committed = 1
+            else:
+                committed = 0
+            if committed:
+                if task_id:
+                    collection.unlock(task_id)
+                return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
             return HttpResponseRedirect( reverse('webui-merge', args=[repo,org,cid]) )
     else:
-        form = MergeCommitForm({'path':collection_path,})
+        which = 'unknown'
+        if conflicted and not unmerged:
+            which = 'merge'
+        elif diverged and staged:
+            which = 'commit'
+        form = MergeCommitForm({'path':collection_path, 'which':which,})
     return render_to_response(
         'webui/merge/index.html',
         {'repo': repo,
@@ -77,10 +100,12 @@ def merge( request, repo, org, cid ):
          'collection_path': collection_path,
          'collection': collection,
          'status': status,
-         'conflicted': dvcs.conflicted(status),
-         'ahead': dvcs.ahead(status),
-         'behind': dvcs.behind(status),
+         'conflicted': conflicted,
+         'ahead': ahead,
+         'behind': behind,
          'unmerged': unmerged,
+         'diverged': diverged,
+         'staged': staged,
          'form': form,},
         context_instance=RequestContext(request, processors=[])
     )
