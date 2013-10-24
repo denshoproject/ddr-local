@@ -23,6 +23,7 @@ beautifulsoup4             # MIT          python-beautifulsoup (3.2.1-1)   pytho
 envoy                      # MIT          n/a                              n/a
 lxml                       # BSD          python-lxml (2.3.2-1)            python-lxml (3.2.0-1)
 python-xmp-toolkit         # New BSD      n/a                              (sid) python-libxmp (v?)
+pytz                       # MIT          python-tz (2012c-1)              python-tz (2012c-1)
 requests                   # Apache       python-requests (0.12.1-1)       python-requests (1.2.3-1)
 sorl-thumbnail             # BSD          python-sorl-thumbnail (11.12-4)  python-sorl-thumbnail (11.12-5)
 

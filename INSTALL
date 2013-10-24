@@ -1,1 +1,30 @@
-Watch this space!
+INSTALL
+=======
+
+For more complete instructions, see the "Admins/Workstations" section in `ddr-manual <https://github.com/densho/ddr-manual/>`_.
+
+The `ddr-local` install and update scripts below have been tested on Debian 7.0 running as a VM in VirtualBox.
+They install `ddr-local` and `ddr-cmdln` in `/usr/local/src` rather than in a `virtualenv`, so it is recommended that you install in a virtual machine.
+
+
+Initial Installation
+--------------------
+
+Run the `install.sh` script to do the initial installation.  It usually takes 5-7 minutes.
+
+# Log in.
+# Make sure your user can sudo.
+$ git clone https://github.com/densho/ddr-local.git
+$ cd ddr-local/ddrlocal
+$ sh bin/install.sh
+
+The first thing the script does is add a `ddr` user.  You will be asked for a password.  The install is automatic after that point.
+
+
+Update
+------
+
+Once the application is installed, you can update it using the `update.sh` script.
+
+$ cd /usr/local/src/ddr-local/ddrlocal
+$ sh bin/update.sh
