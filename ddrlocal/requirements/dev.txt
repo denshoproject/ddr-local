@@ -6,9 +6,10 @@
 # include base
 -r _base.txt
 
-bpython                         # MIT
-coverage                        # BSD
-flower   # celery monitoring    # BSD?/MIT?
-nose                            # LGPL
-snakefood                       # GPL
-sphinx                          # BSD
+                # LICENSE    Python3
+
+bpython         # MIT        y
+coverage        # BSD        y
+nose            # LGPL       y
+snakefood       # GPL        ???
+sphinx          # BSD        y
