@@ -57,7 +57,6 @@ def collections( request ):
                 repo,org,cid = c[0],c[1],c[2]
                 collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
                 colls.append(collection)
-        colls = sorted(colls, key=lambda c: c.id)
         collections.append( (o,repo,org,colls) )
     return render_to_response(
         'webui/collections/index.html',
@@ -68,7 +67,8 @@ def collections( request ):
 @storage_required
 def detail( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
-    entities = sorted(collection.entities(), key=lambda e: e.id, reverse=True)
+    entities = collection.entities()
+    entities.reverse()
     return render_to_response(
         'webui/collections/detail.html',
         {'repo': repo,
