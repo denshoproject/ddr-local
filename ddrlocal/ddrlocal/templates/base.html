@@ -76,6 +76,11 @@ form td { padding-bottom:20px; }
 <ul class="nav">
   <li><a href="{% url "webui-index" %}">Home</a></li>
   <li><a href="{% url "webui-index" %}">Web UI</a></li>
+  <li>
+    <form name="search" class="navbar-search pull-right" action="{% url "search-index" %}" method="get">
+    <input name="query" type="text" class="search-query" value="{{ query }}" placeholder="Search">
+    </form>
+  </li>
 </ul>
 
 <p id="user-info" class="navbar-text pull-right">

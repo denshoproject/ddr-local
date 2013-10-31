@@ -48,6 +48,11 @@ echo "${bldgrn}cache server${txtrst}"
 apt-get --assume-yes install redis-server
 
 
+echo "${bldgrn}search engine${txtrst}"
+apt-get --assume-yes install openjdk-6-jre
+wget -nc -P /tmp/downloads http://tank.densho.org/elasticsearch-0.90.5.deb
+gdebi --non-interactive /tmp/downloads/elasticsearch-0.90.5.deb
+
 echo "${bldgrn}ddr-cmdln${txtrst}"
 apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev pmount udisks python-dev python-pip
 cd /usr/local/src

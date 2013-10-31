@@ -130,6 +130,7 @@ INSTALLED_APPS = (
     'sorl.thumbnail',
     #
     'ddrlocal',
+    'search',
     'storage',
     'webui',
 )

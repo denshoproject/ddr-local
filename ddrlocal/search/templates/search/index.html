@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+
+{% block title %}Search{% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+<li class="active">Search</li>
+{% endblock breadcrumbs %}
+
+
+{% block pagecss %}
+<style>
+.hit { margin-bottom:20px; }
+.hit h3 { margin:0px; padding:0px; }
+.hit .type { float:left; }
+.hit .source { }
+.hit .url { }
+</style>
+{% endblock pagecss %}
+
+
+{% block content %}
+
+  <div class="row-fluid">
+    <div class="span12">
+
+<h1>
+Search Results
+</h1>
+
+<p>
+Query: &nbsp; {{ query }}<br/>
+{{ hits|length }} results<br/>
+</p>
+
+{% if hits %}
+{% for hit in hits %}
+<div class="hit">
+  <div class="type">
+    {% if hit.type == "collection" %}<span class="badge badge-info">collection</span>{% endif %}
+    {% if hit.type == "object" %}<span class="badge badge-success">object</span>{% endif %}
+    {% if hit.type == "file" %}<span class="badge badge-inverse">file</span>{% endif %}
+  </div>
+  <h3>
+  <a href="{{ hit.url }}">{{ hit.id }} - {{ hit.title }}</a>
+  </h3>
+  <div class="source muted">
+  {{ hit.source.d }}
+  </div>
+  <div class="url">
+  <a href="{{ hit.url }}">{{ hit.url }}</a>
+  </div>
+
+</div>
+{% endfor %}
+{% endif %}
+
+    </div><!-- .span12 -->
+  </div><!-- .row-fluid -->
+
+{% endblock content %}
