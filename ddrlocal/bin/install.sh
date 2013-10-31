@@ -2,6 +2,9 @@
 # section of the "Creating a Workstation VM" page from the DDR Manual
 # 
 
+BOOTSTRAP=bootstrap-2.3.1.zip
+MODERNIZR=modernizr-2.6.2.js
+JQUERY=jquery-1.10.2.min.js
 
 ELASTICSEARCH=elasticsearch-0.90.5.deb
 
@@ -99,16 +102,14 @@ chown -R ddr /var/www/media
 
 
 echo "${bldgrn}Bootstrap, jQuery, Modernizr${txtrst}"
-rm /var/www/static/bootstrap-2.3.1.zip*
-rm /var/www/static/js/modernizr-2.6.2.js*
-rm /var/www/static/js/jquery-1.10.2.min.js*
-cd /var/www/static
-wget http://tank.densho.org/bootstrap-2.3.1.zip
-7z x bootstrap-2.3.1.zip
-cd /var/www/static/js
-wget http://tank.densho.org/modernizr-2.6.2.js
-wget http://tank.densho.org/jquery-1.10.2.min.js
-ln -s jquery-1.10.2.min.js jquery.js
+rm /var/www/static/$BOOTSTRAP*
+rm /var/www/static/js/$MODERNIZR*
+rm /var/www/static/js/$JQUERY*
+wget -nc -P /var/www/static http://tank.densho.org/$BOOTSTRAP
+7z x -y -o/var/www/static /var/www/static/$BOOTSTRAP
+wget -nc -P /var/www/static/js http://tank.densho.org/$MODERNIZR
+wget -nc -P /var/www/static/js http://tank.densho.org/$JQUERY
+ln -s /var/www/static/js/$JQUERY /var/www/static/js/jquery.js
 
 
 echo "${bldgrn}configuration files${txtrst}"
