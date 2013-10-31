@@ -3,6 +3,9 @@
 # 
 
 
+ELASTICSEARCH=elasticsearch-0.90.5.deb
+
+
 # text color variables
 txtund=$(tput sgr 0 1)   # underline
 txtbld=$(tput bold)      # bold
@@ -50,8 +53,8 @@ apt-get --assume-yes install redis-server
 
 echo "${bldgrn}search engine${txtrst}"
 apt-get --assume-yes install openjdk-6-jre
-wget -nc -P /tmp/downloads http://tank.densho.org/elasticsearch-0.90.5.deb
-gdebi --non-interactive /tmp/downloads/elasticsearch-0.90.5.deb
+wget -nc -P /tmp/downloads http://tank.densho.org/$ELASTICSEARCH
+gdebi --non-interactive /tmp/downloads/$ELASTICSEARCH
 
 echo "${bldgrn}ddr-cmdln${txtrst}"
 apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev pmount udisks python-dev python-pip
