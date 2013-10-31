@@ -137,4 +137,4 @@ cp /usr/local/src/ddr-local/debian/conf/ddrlocal.conf /etc/nginx/sites-available
 ln -s /etc/nginx/sites-available/ddrlocal.conf /etc/nginx/sites-enabled
 /etc/init.d/nginx restart
 
-
+/etc/init.d/elasticsearch restart

@@ -66,4 +66,5 @@ supervisorctl status
 echo "/etc/init.d/nginx restart"
 /etc/init.d/nginx restart
 
-
+echo "/etc/init.d/elasticsearch restart"
+/etc/init.d/elasticsearch restart
