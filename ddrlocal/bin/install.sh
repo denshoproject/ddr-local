@@ -94,13 +94,11 @@ echo "${bldgrn}Bootstrap, jQuery, Modernizr${txtrst}"
 rm /var/www/static/bootstrap-2.3.1.zip*
 rm /var/www/static/js/modernizr-2.6.2.js*
 rm /var/www/static/js/jquery-1.10.2.min.js*
-cd /var/www/static
-wget http://tank.densho.org/bootstrap-2.3.1.zip
-7z x bootstrap-2.3.1.zip
-cd /var/www/static/js
-wget http://tank.densho.org/modernizr-2.6.2.js
-wget http://tank.densho.org/jquery-1.10.2.min.js
-ln -s jquery-1.10.2.min.js jquery.js
+wget -nc -P /var/www/static http://tank.densho.org/bootstrap-2.3.1.zip
+7z x -y -o/var/www/static /var/www/static/bootstrap-2.3.1.zip
+wget -nc -P /var/www/static/js http://tank.densho.org/modernizr-2.6.2.js
+wget -nc -P /var/www/static/js http://tank.densho.org/jquery-1.10.2.min.js
+ln -s /var/www/static/jsjquery-1.10.2.min.js /var/www/static/jsjquery.js
 
 
 echo "${bldgrn}configuration files${txtrst}"
