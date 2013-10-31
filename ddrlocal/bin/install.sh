@@ -2,6 +2,9 @@
 # section of the "Creating a Workstation VM" page from the DDR Manual
 # 
 
+BOOTSTRAP=bootstrap-2.3.1.zip
+MODERNIZR=modernizr-2.6.2.js
+JQUERY=jquery-1.10.2.min.js
 
 # text color variables
 txtund=$(tput sgr 0 1)   # underline
@@ -91,14 +94,14 @@ chown -R ddr /var/www/media
 
 
 echo "${bldgrn}Bootstrap, jQuery, Modernizr${txtrst}"
-rm /var/www/static/bootstrap-2.3.1.zip*
-rm /var/www/static/js/modernizr-2.6.2.js*
-rm /var/www/static/js/jquery-1.10.2.min.js*
-wget -nc -P /var/www/static http://tank.densho.org/bootstrap-2.3.1.zip
-7z x -y -o/var/www/static /var/www/static/bootstrap-2.3.1.zip
-wget -nc -P /var/www/static/js http://tank.densho.org/modernizr-2.6.2.js
-wget -nc -P /var/www/static/js http://tank.densho.org/jquery-1.10.2.min.js
-ln -s /var/www/static/jsjquery-1.10.2.min.js /var/www/static/jsjquery.js
+rm /var/www/static/$BOOTSTRAP*
+rm /var/www/static/js/$MODERNIZR*
+rm /var/www/static/js/$JQUERY*
+wget -nc -P /var/www/static http://tank.densho.org/$BOOTSTRAP
+7z x -y -o/var/www/static /var/www/static/$BOOTSTRAP
+wget -nc -P /var/www/static/js http://tank.densho.org/$MODERNIZR
+wget -nc -P /var/www/static/js http://tank.densho.org/$JQUERY
+ln -s /var/www/static/js/$JQUERY /var/www/static/js/jquery.js
 
 
 echo "${bldgrn}configuration files${txtrst}"
