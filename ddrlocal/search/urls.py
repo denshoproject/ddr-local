@@ -3,5 +3,8 @@ from django.views.generic import TemplateView
 
 urlpatterns = patterns(
     '',
-    url(r'^search/$', 'search.views.index', name='search-index'),
+    url(r'^query/$', 'search.views.query', name='search-query'),
+    url(r'^admin/$', 'search.views.admin', name='search-admin'),
+    url(r'^reindex/$', 'search.views.reindex', name='search-reindex'),
+    url(r'^$', 'search.views.index', name='search-index'),
 )

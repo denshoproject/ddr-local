@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block breadcrumbs %}{{ block.super }}
+<li><a href="{% url "search-index" %}">Search</a></li>
+{% endblock breadcrumbs %}
+
+{% block footer %}
+<div class="muted" id="expert">
+  <span><a class="muted" href="{% url "search-admin" %}">admin</a></span>
+</div>
+{% endblock footer %}
