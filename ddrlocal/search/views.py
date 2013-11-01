@@ -58,7 +58,7 @@ def query( request ):
             if hit['type'] == 'collection':
                 repo,org,cid = hit['id'].split('-')
                 hit['url'] = reverse('webui-collection', args=[repo,org,cid])
-            elif hit['type'] == 'object':
+            elif hit['type'] == 'entity':
                 repo,org,cid,eid = hit['id'].split('-')
                 hit['url'] = reverse('webui-entity', args=[repo,org,cid,eid])
             elif hit['type'] == 'file':

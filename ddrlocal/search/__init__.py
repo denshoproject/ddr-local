@@ -16,6 +16,18 @@ def identifier(path):
     """
     pass
 
+def _clean_payload(data):
+    """Remove null or empty fields; ElasticSearch chokes on them.
+    """
+    # remove info about DDR release, git-annex version, etc
+    data = data[1:]
+    # remove empty fields
+    for field in data:
+        nonempty = 0
+        for key in field.keys():
+            if not field[key]:
+                del(field[key])
+
 def add_update(path, index, model):
     """
     curl -XPUT 'http://localhost:9200/ddr/collection/ddr-testing-141' -d '{ ... }'
@@ -26,9 +38,9 @@ def add_update(path, index, model):
     headers = {'content-type': 'application/json'}
     with open(path, 'r') as f:
         data = json.loads(f.read())
+    _clean_payload(data)
     
-    # collections, entities
-    if model in ['collection', 'entity', 'object']:
+    if model in ['collection', 'entity']:
         if not (data and data[1].get('id', None)):
             return 2
         cid = None
@@ -36,8 +48,6 @@ def add_update(path, index, model):
             if field.get('id',None):
                 cid = field['id']
         url = 'http://localhost:9200/%s/%s/%s' % (index, model, cid)
-    
-    # files are different...
     elif model in ['file']:
         if not (data and data[1].get('path_rel', None)):
             return 2
@@ -62,8 +72,10 @@ def add_update(path, index, model):
     else:
         url = None
     if url:
-        payload = {'d': data}
-        r = requests.post(url, data=json.dumps(payload), headers=headers)
+        payload = json.dumps({'d': data})
+        logger.debug(url)
+        logger.debug(payload)
+        r = requests.put(url, data=payload, headers=headers)
         return r.status_code
     return 3
 
@@ -110,7 +122,7 @@ def index(dirname, paths=None, index='ddr'):
         if 'collection.json' in path:
             model = 'collection'
         elif 'entity.json' in path:
-            model = 'object'
+            model = 'entity'
         elif ('master' in path) or ('mezzanine' in path):
             model = 'file'
         if path and index and model:

@@ -22,6 +22,7 @@ from ddrlocal.models import DDRLocalCollection as Collection
 from ddrlocal.models.collection import COLLECTION_FIELDS
 from ddrlocal.forms import DDRForm
 
+from search import add_update
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
 from webui import get_repos_orgs
@@ -198,6 +199,10 @@ def new( request, repo, org ):
             logger.error(status)
             messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
         else:
+            # update search index
+            json_path = os.path.join(collection_path, 'collection.json')
+            add_update(json_path, index='ddr', model='collection')
+            # positive feedback
             return HttpResponseRedirect( reverse('webui-collection-edit', args=[repo,org,cid]) )
     else:
         logger.error('Could not get new ID from workbench!')
@@ -234,6 +239,9 @@ def edit( request, repo, org, cid ):
                 if exit:
                     messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
                 else:
+                    # update search index
+                    add_update(collection.json_path, index='ddr', model='collection')
+                    # positive feedback
                     messages.success(request, WEBUI_MESSAGES['VIEWS_COLL_UPDATED'])
                     return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
             else:
