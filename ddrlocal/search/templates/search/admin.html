@@ -46,8 +46,18 @@ Re-index
 </h3>
 
 <form name="indexconfirm" action="{% url "search-reindex" %}" method="post">{% csrf_token %}
-{{ form.as_p }}
+{{ indexform.as_p }}
 <input name="submit" type="submit" value="Re-index" />
+</form>
+
+
+<h3>
+Drop Indexes
+</h3>
+
+<form name="dropconfirm" action="{% url "search-drop" %}" method="post">{% csrf_token %}
+{{ dropform.as_p }}
+<input name="submit" type="submit" value="Drop Index" />
 </form>
 
     </div><!-- .span12 -->
