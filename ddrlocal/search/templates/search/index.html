@@ -17,7 +17,9 @@
 Search
 </h1>
 
-Form goes here
+<form name="search" class="" action="{% url "search-query" %}" method="get">
+  <input name="query" type="text" value="{{ query }}" />
+</form>
 
     </div><!-- .span12 -->
   </div><!-- .row-fluid -->
