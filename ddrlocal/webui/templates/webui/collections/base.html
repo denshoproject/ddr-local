@@ -7,6 +7,7 @@
 
 
 {% block indicators %}
+{% if username %}
   {% if collection %}
     <div id="sync">
     {% if collection.locked %}
@@ -22,6 +23,7 @@
     {% endif %}
     </div><!-- #sync -->
   {% endif %}{# collection #}
+{% endif %}{# username #}
 {% endblock indicators %}
 
 {% block javascript %}{{ block.super }}
@@ -40,10 +42,13 @@
   <span class="bullsep">&bull;</span>
   <span>
    <a class="muted" href="{% url "webui-collection-ead-xml" repo org cid %}">ead.xml</a>
+{% if username %}
    <a class="muted" href="{% url "webui-collection-edit-ead" repo org cid %}">(edit)</a>
+{% endif %}
   </span>
   <span class="bullsep">&bull;</span>
   <span><a class="muted" href="{% url "webui-collection-changelog" repo org cid %}">changelog</a></span>
+{% if username %}
   <span class="bullsep">&bull;</span>
   <span><a class="muted" href="{% url "webui-collection-git-status" repo org cid %}">git status</a></span>
   <span class="bullsep">&bull;&bull;</span>
@@ -54,6 +59,7 @@
   <span>
   {{ collection.path }}
   </span>
+{% endif %}
 </div>
 {% endif %}
 

@@ -28,6 +28,8 @@
 
 
 <div id="overview">
+
+{% if username %}
 <p>
 {% if collection.locked %}
 <a class="btn btn-primary btn-mini disabled" title="This collection is locked"><i class="icon-lock icon-white"></i> Edit [locked]</a><br/>
@@ -35,6 +37,8 @@
 <a class="btn btn-primary btn-mini" href="{% url "webui-collection-edit" repo org cid %}"><i class="icon-edit icon-white"></i> Edit</a>
 {% endif %}
 </p>
+{% endif %}{#username #}
+
 <dl class="dl-horizontal">
 {% for lv in collection.labels_values %}
   {% if lv.value %}<dt>{{ lv.label }}</dt><dd>{{ lv.value|safe|linebreaks }}</dd>{% endif %}
@@ -45,13 +49,16 @@
 
         </div><!-- .tab-content #metadata -->
         <div class="tab-pane" id="objects">
+
+{% if username %}
 <p>
-			{% if collection.locked %}
-			    <a class="muted" title="This collection is locked" class="btn-primary btn-small muted"><i class="icon-plus icon-white"></i> New object [locked]</a>
-			{% else %}
-			    <a href="{% url "webui-entity-new" repo org cid %}" class="btn-primary btn-small"><i class="icon-plus icon-white"></i> New object</a>
-			{% endif %}
+{% if collection.locked %}
+<a class="muted" title="This collection is locked" class="btn-primary btn-small muted"><i class="icon-plus icon-white"></i> New object [locked]</a>
+{% else %}
+<a href="{% url "webui-entity-new" repo org cid %}" class="btn-primary btn-small"><i class="icon-plus icon-white"></i> New object</a>
+{% endif %}
 </p>
+{% endif %}{#username #}
 
 {% for entity in entities %}
 <ul>

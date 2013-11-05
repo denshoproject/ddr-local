@@ -18,11 +18,13 @@
 {{ file.basename }}
 </h1>
 
+{% if username %}
 <h3>
 {% if entity.locked %}<a class="muted" title="This object is locked" class="btn btn-primary"><i class="icon-lock icon-white"></i> edit</a>
 {% else %}<a href="{{ file.url }}edit/" class="btn btn-primary"><i class="icon-edit icon-white"></i> edit</a>
 {% endif %}
 </h3>
+{% endif %}{#username #}
 
 <dl class="dl-horizontal">
 {% for lv in file.labels_values %}
@@ -103,6 +105,7 @@
   </tr>
 </table>
 
+{% if username %}
 {% if file.present %}
 <form name="new-access" action="{% url "webui-file-new-access" file.repo file.org file.cid file.eid file.role file.sha1 %}" method="post">{% csrf_token %}
 {{ new_access_form.as_p }}
@@ -111,6 +114,7 @@
 {% else %}
 <a title="Generate New Access File" class="btn btn-mini muted ">Generate New Access File</a>
 {% endif %}
+{% endif %}{#username #}
 
     </div><!-- .span12 -->
   </div><!-- .row-fluid -->
