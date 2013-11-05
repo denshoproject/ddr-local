@@ -48,7 +48,6 @@ def handle_uploaded_file(f, dest_dir):
 
 # views ----------------------------------------------------------------
 
-@login_required
 @storage_required
 def detail( request, repo, org, cid, eid, role, sha1 ):
     """Add file to entity.
