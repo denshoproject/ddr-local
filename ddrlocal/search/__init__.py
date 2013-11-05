@@ -20,13 +20,14 @@ def _clean_payload(data):
     """Remove null or empty fields; ElasticSearch chokes on them.
     """
     # remove info about DDR release, git-annex version, etc
-    data = data[1:]
-    # remove empty fields
-    for field in data:
-        nonempty = 0
-        for key in field.keys():
-            if not field[key]:
-                del(field[key])
+    if data and isinstance(data, list):
+        data = data[1:]
+        # remove empty fields
+        for field in data:
+            nonempty = 0
+            for key in field.keys():
+                if not field[key]:
+                    del(field[key])
 
 def add_update(path, index, model):
     """
