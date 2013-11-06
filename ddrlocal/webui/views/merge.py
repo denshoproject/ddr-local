@@ -7,6 +7,7 @@ import os
 import git
 
 from django.conf import settings
+from django.contrib import messages
 from django.core.context_processors import csrf
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
@@ -83,6 +84,7 @@ def merge( request, repo, org, cid ):
             if committed:
                 if task_id:
                     collection.unlock(task_id)
+                messages.error(request, 'Merge conflict has been resolved. Please sync to make your changes available to other users.')
                 return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
             return HttpResponseRedirect( reverse('webui-merge', args=[repo,org,cid]) )
     else:
