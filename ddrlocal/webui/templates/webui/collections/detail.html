@@ -29,6 +29,7 @@
 
 <div id="overview">
 
+{% if username %}
 {% if collection.locked or collection.repo_behind or collection.repo_conflicted %}
 <p>
 <a class="btn btn-mini" title="This collection is locked"><i class="icon-lock"></i> Edit [locked]</a>
@@ -39,7 +40,8 @@
 <p>
 <a class="btn btn-mini btn-primary" href="{% url "webui-collection-edit" repo org cid %}"><i class="icon-edit icon-white"></i> Edit</a>
 </p>
-{% endif %}
+{% endif %}{# conflicted #}
+{% endif %}{#username #}
 
 <dl class="dl-horizontal">
 {% for lv in collection.labels_values %}
@@ -53,6 +55,7 @@
         </div><!-- .tab-content #metadata -->
         <div class="tab-pane" id="objects">
 
+{% if username %}
 {% if collection.locked or collection.repo_behind or collection.repo_conflicted %}
 <p>
 <a class="btn btn-mini" title="This collection is locked"><i class="icon-lock"></i> New object [locked]</a>
@@ -63,7 +66,8 @@
 <p>
 <a href="{% url "webui-entity-new" repo org cid %}" class="btn-primary btn-small"><i class="icon-plus icon-white"></i> New object</a>
 </p>
-{% endif %}
+{% endif %}{# conflicted #}
+{% endif %}{#username #}
 
 {% for entity in entities %}
 <ul>

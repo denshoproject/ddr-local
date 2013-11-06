@@ -77,7 +77,8 @@ form td { padding-bottom:20px; }
 
 <ul class="nav">
   <li><a href="{% url "webui-index" %}">Home</a></li>
-  <li><a href="{% url "webui-index" %}">Web UI</a></li>
+  <li><a href="{% url "webui-collections" %}">Collections</a></li>
+  <li><a href="{% url "storage-index" %}">Storage</a></li>
 </ul>
 
 <p id="user-info" class="navbar-text pull-right">
@@ -89,8 +90,6 @@ form td { padding-bottom:20px; }
 {% endif %}
         
 &nbsp;&bull;&nbsp;
-
-<a href="{% url "storage-index" %}">Storage</a>
 
 {% if storage_type %}
 <span id="storage-type" class="label {% if storage_type == 'unknown' %}label-warning{% else %}label-info{% endif %}" title="storage type: {{ storage_type }}">

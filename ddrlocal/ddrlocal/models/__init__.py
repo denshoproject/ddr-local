@@ -19,6 +19,7 @@ from django.core.urlresolvers import reverse
 
 from DDR import commands
 from DDR import dvcs
+from DDR import natural_order_string
 from DDR.models import Collection as DDRCollection, Entity as DDREntity
 from ddrlocal import VERSION, git_commit
 from ddrlocal.models import collection as collectionmodule
@@ -357,6 +358,7 @@ class DDRLocalCollection( DDRCollection ):
                     if lv['label'] == 'title':
                         entity.title = lv['value']
                 entities.append(entity)
+        entities = sorted(entities, key=lambda e: natural_order_string(e.uid))
         return entities
     
     def labels_values(self):

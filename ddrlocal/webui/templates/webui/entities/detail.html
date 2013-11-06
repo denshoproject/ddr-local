@@ -30,6 +30,7 @@
 
 <div id="overview">
 
+{% if username %}
 {% if entity.locked or collection.locked or collection.repo_behind or collection.repo_conflicted %}
 <p>
 <a class="btn btn-mini" title="This object is locked"><i class="icon-lock"></i> Edit [locked]</a>
@@ -40,7 +41,8 @@
 <p>
 <a class="btn btn-primary btn-mini" href="{% url "webui-entity-edit" repo org cid eid %}"><i class="icon-edit icon-white"></i> Edit</a>
 </p>
-{% endif %}
+{% endif %}{# conflicted #}
+{% endif %}{#username #}
 
 <dl class="dl-horizontal">
   <dt>Collection</dt>
@@ -58,6 +60,7 @@
         </div><!-- .tab-content #metadata -->
         <div class="tab-pane" id="masters">
 
+{% if username %}
 {% if entity.locked or collection.locked or collection.repo_behind or collection.repo_conflicted %}
 <p>
 <a class="btn btn-mini" href="{% url "webui-file-browse-master" repo org cid eid %}"><i class="icon-plus"></i> Add a file</a>
@@ -74,13 +77,16 @@ or <a class="btn btn-mini" href="{% url "webui-file-batch-master" repo org cid e
 or <a class="btn btn-primary btn-mini" href="{% url "webui-file-batch-master" repo org cid eid %}">Add a batch of files</a>
 -->
 </p>
-{% endif %}
+{% endif %}{# conflicted #}
+{% endif %}{#username #}
 
 {% if entity.files_master %}
 <table class="table table-condensed">
   <thead>
 	<tr>
+{% if username %}
 		<th></th>
+{% endif %}
 		<th>Filename</th>
 		<th>Label</th>
 	</tr>
@@ -88,6 +94,8 @@ or <a class="btn btn-primary btn-mini" href="{% url "webui-file-batch-master" re
   <tbody>	
 {% for file in entity.files_master %}
   <tr>
+
+{% if username %}
     <td>
 {% if entity.locked or collection.locked or collection.repo_behind or collection.repo_conflicted %}
       <a class="btn btn-mini" href="{{ file.url }}edit/"><i class="icon-edit"></i> Edit</a>
@@ -95,8 +103,9 @@ or <a class="btn btn-primary btn-mini" href="{% url "webui-file-batch-master" re
 {% else %}
       <a class="btn btn-primary btn-mini" href="{{ file.url }}edit/"><i class="icon-edit icon-white"></i> Edit</a>
       <a class="btn btn-primary btn-mini disabled" title="Delete function is not currently available."><i class="icon-remove icon-white"></i> Delete</a>
-{% endif %}
+{% endif %}{# conflicted #}
     </td>
+{% endif %}{#username #}
     <td>
       <a href="{{ file.url }}">{{ file.basename }}</a>
       ({{ file.size|filesizeformat }})
@@ -114,6 +123,7 @@ or <a class="btn btn-primary btn-mini" href="{% url "webui-file-batch-master" re
         </div><!-- .tab-content #masters -->
         <div class="tab-pane" id="mezzanines">
 
+{% if username %}
 {% if entity.locked or collection.locked or collection.repo_behind or collection.repo_conflicted %}
 <p>
 <a class="btn btn-mini" href="{% url "webui-file-browse-mezzanine" repo org cid eid %}"><i class="icon-plus"></i> Add a file</a>
@@ -130,13 +140,16 @@ or <a class="btn btn-mini" href="{% url "webui-file-batch-mezzanine" repo org ci
 or <a class="btn btn-primary btn-mini" href="{% url "webui-file-batch-mezzanine" repo org cid eid %}">Add a batch of files</a>
 -->
 </p>
-{% endif %}
+{% endif %}{# conflicted #}
+{% endif %}{#username #}
 
 {% if entity.files_mezzanine %}
 <table class="table table-condensed">
   <thead>
 	<tr>
+{% if username %}
 		<th></th>
+{% endif %}{#username #}
 		<th>Filename</th>
 		<th>Label</th>
 	</tr>
@@ -144,6 +157,7 @@ or <a class="btn btn-primary btn-mini" href="{% url "webui-file-batch-mezzanine"
  <tbody> 
 {% for file in entity.files_mezzanine %}
   <tr>
+{% if username %}
     <td>
 {% if entity.locked or collection.locked or collection.repo_behind or collection.repo_conflicted %}
       <a class="btn btn-mini"><i class="icon-edit"></i> Edit</a>
@@ -151,8 +165,9 @@ or <a class="btn btn-primary btn-mini" href="{% url "webui-file-batch-mezzanine"
 {% else %}
       <a class="btn btn-primary btn-mini" href="{{ file.url }}edit/"><i class="icon-edit icon-white"></i> Edit</a>
       <a class="btn btn-primary btn-mini disabled" title="Delete function is not currently available."><i class="icon-remove icon-white"></i> Delete</a>
-{% endif %}
+{% endif %}{# conflicted #}
     </td>
+{% endif %}{#username #}
     <td>
       <a href="{{ file.url }}">{{ file.basename }}</a>
       ({{ file.size|filesizeformat }})

@@ -3,28 +3,28 @@
 # Non-Python dependencies
 # sudo apt-get install libexempi3, libssl-dev, redis-server, python2.7, supervisor, imagemagick
 
-                           # LICENSE      DEBIAN PKG (WHEEZY)              (JESSIE)
+                         # LICENSE  DEBIAN PKG (WHEEZY)              (JESSIE)                         Python3
 
-django                     # MIT          python-django (1.4.5-1)          python-django (1.5.1-2)
-gunicorn                   # MIT          gunicorn (0.14.5-3+deb7u1)       gunicorn (0.15.0-1)
+django                   # MIT      python-django (1.4.5-1)          python-django (1.5.1-2)          y
+gunicorn                 # MIT      gunicorn (0.14.5-3+deb7u1)       gunicorn (0.15.0-1)              y
 
 # cache, sessions, celery broker
-redis                      # MIT          python-redis (2.4.13-1)          python-redis (2.4.13-2)
-django-redis               # BSD          n/a                              n/a
-django-redis-sessions      # BSD          n/a                              n/a
+redis                    # MIT      python-redis (2.4.13-1)          python-redis (2.4.13-2)          y
+django-redis             # BSD      n/a                              n/a                              y
+django-redis-sessions    # BSD      n/a                              n/a                              y
 
 # process queue
-celery                     # BSD          python-celery (2.5.3-4)          python-celery (2.5.3-4)
-django-celery              # BSD          python-django-celery (2.5.5-2)   python-django-celery (2.5.5-2)
-django-celery-with-redis   # BSD          n/a                              n/a
+celery                   # BSD      python-celery (2.5.3-4)          python-celery (2.5.3-4)          y
+django-celery            # BSD      python-django-celery (2.5.5-2)   python-django-celery (2.5.5-2)   y
+django-celery-with-redis # BSD      n/a                              n/a                              ???
 
 # misc
-beautifulsoup4             # MIT          python-beautifulsoup (3.2.1-1)   python-beautifulsoup (3.2.1-1)
-envoy                      # MIT          n/a                              n/a
-lxml                       # BSD          python-lxml (2.3.2-1)            python-lxml (3.2.0-1)
-python-xmp-toolkit         # New BSD      n/a                              (sid) python-libxmp (v?)
-pytz                       # MIT          python-tz (2012c-1)              python-tz (2012c-1)
-requests                   # Apache       python-requests (0.12.1-1)       python-requests (1.2.3-1)
-sorl-thumbnail             # BSD          python-sorl-thumbnail (11.12-4)  python-sorl-thumbnail (11.12-5)
+beautifulsoup4           # MIT      python-beautifulsoup (3.2.1-1)   python-beautifulsoup (3.2.1-1)   y
+envoy                    # MIT      n/a                              n/a                              ???
+lxml                     # BSD      python-lxml (2.3.2-1)            python-lxml (3.2.0-1)            y
+python-xmp-toolkit       # New BSD  n/a                              (sid) python-libxmp (v?)         ???
+pytz                     # MIT      python-tz (2012c-1)              python-tz (2012c-1)              ???
+requests                 # Apache   python-requests (0.12.1-1)       python-requests (1.2.3-1)        y
+sorl-thumbnail           # BSD      python-sorl-thumbnail (11.12-4)  python-sorl-thumbnail (11.12-5)  NO
 
 #-e git://github.com/densho/ddr-cmdln.git#egg=DDR
