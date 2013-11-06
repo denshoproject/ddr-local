@@ -2,6 +2,8 @@ from datetime import datetime
 import logging
 logger = logging.getLogger(__name__)
 
+from dateutil import parser
+
 from django.conf import settings
 from django.contrib import messages
 from django.core.urlresolvers import reverse
@@ -37,24 +39,36 @@ def index( request ):
 def query( request ):
     """Results of a search query.
     """
+    # prep query for elasticsearch
     model = request.GET.get('model', None)
     q = request.GET.get('query', None)
-    hits = search.query(query=q)
+    filters = {'public': request.GET.get('public', ''),
+               'status': request.GET.get('status', ''),}
+    sort = {'record_created': request.GET.get('record_created', ''),
+            'record_lastmod': request.GET.get('record_lastmod', ''),}
     
+    # do the query
+    hits = search.query(query=q, filters=filters, sort=sort)
+    
+    # massage the results
     def rename(hit, fieldname):
+        # Django templates can't display fields/attribs that start with underscore
         under = '_%s' % fieldname
         hit[fieldname] = hit.pop(under)
-    
     for hit in hits:
         rename(hit, 'index')
         rename(hit, 'type')
         rename(hit, 'id')
         rename(hit, 'score')
         rename(hit, 'source')
+        # extract certain fields for easier display
         for field in hit['source']['d'][1:]:
             if field.keys():
                 if field.keys()[0] == 'id': hit['id'] = field['id']
                 if field.keys()[0] == 'title': hit['title'] = field['title']
+                if field.keys()[0] == 'record_created': hit['record_created'] = parser.parse(field['record_created'])
+                if field.keys()[0] == 'record_lastmod': hit['record_lastmod'] = parser.parse(field['record_lastmod'])
+        # assemble urls for each record type
         if hit.get('id', None):
             if hit['type'] == 'collection':
                 repo,org,cid = hit['id'].split('-')
@@ -68,7 +82,9 @@ def query( request ):
     return render_to_response(
         'search/query.html',
         {'hits': hits,
-         'query': q,},
+         'query': q,
+         'filters': filters,
+         'sort': sort,},
         context_instance=RequestContext(request, processors=[])
     )
 

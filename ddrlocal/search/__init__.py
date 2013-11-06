@@ -16,6 +16,14 @@ def identifier(path):
     """
     pass
 
+def _clean_dict(data):
+    """Remove null or empty fields; ElasticSearch chokes on them.
+    """
+    if data and isinstance(data, dict):
+        for key in data.keys():
+            if not data[key]:
+                del(data[key])
+    
 def _clean_payload(data):
     """Remove null or empty fields; ElasticSearch chokes on them.
     """
@@ -24,10 +32,7 @@ def _clean_payload(data):
         data = data[1:]
         # remove empty fields
         for field in data:
-            nonempty = 0
-            for key in field.keys():
-                if not field[key]:
-                    del(field[key])
+            _clean_dict(field)
 
 def add_update(path, index, model):
     """
@@ -185,17 +190,29 @@ def status():
         data = None
     return data
 
-def query(index='ddr', model=None, query=None):
+def query(index='ddr', model=None, query='', filters={}, sort=[]):
     """
     curl -XGET 'http://localhost:9200/twitter/tweet/_search?q=user:kimchy&pretty=true'
     """
-    hits = []
+    _clean_dict(filters)
+    _clean_dict(sort)
+    
     if model and query:
         url = 'http://localhost:9200/%s/%s/_search?q=%s&pretty=true' % (index, model, query)
-    elif query:
+    else:
         url = 'http://localhost:9200/%s/_search?q=%s&pretty=true' % (index, query)
-    r = requests.get(url)
+    
+    payload = {}
+    if filters:
+        payload['filter'] = {'term':filters}
+    if sort:
+        payload['sort'] = [sort]
+    logger.debug(str(payload))
+    
+    headers = {'content-type': 'application/json'}
+    r = requests.post(url, data=json.dumps(payload), headers=headers)
     data = json.loads(r.text)
+    hits = []
     if data and data.get('hits', None):
         hits = data['hits']['hits']
     return hits
