@@ -33,7 +33,7 @@
 {% for key, value in task.items %}
     <tr>
       <th><small>{{ key }}</small></th>
-      <td><small>{{ value }}</small></td>
+      <td><small>{% if key == "traceback" %}<pre>{{ value }}</pre>{% else %}{{ value }}{% endif %}</small></td>
     </tr>
 {% endfor %}
   </table>

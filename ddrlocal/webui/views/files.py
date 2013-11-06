@@ -16,7 +16,7 @@ from django.shortcuts import Http404, get_object_or_404, render_to_response
 from django.template import RequestContext
 
 from DDR import commands
-from ddrlocal.models import DDRLocalCollection as Collection
+from webui.models import Collection
 from ddrlocal.models import DDRLocalEntity as Entity
 from ddrlocal.models import DDRFile
 from ddrlocal.models.files import FILE_FIELDS
@@ -49,7 +49,6 @@ def handle_uploaded_file(f, dest_dir):
 
 # views ----------------------------------------------------------------
 
-@login_required
 @storage_required
 def detail( request, repo, org, cid, eid, role, sha1 ):
     """Add file to entity.
@@ -148,6 +147,10 @@ def new( request, repo, org, cid, eid, role='master' ):
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+    collection.repo_fetch()
+    if collection.repo_behind():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
+        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     if entity.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
@@ -232,6 +235,10 @@ def new_access( request, repo, org, cid, eid, role, sha1 ):
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+    collection.repo_fetch()
+    if collection.repo_behind():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
+        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     if entity.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
@@ -282,6 +289,10 @@ def batch( request, repo, org, cid, eid, role='master' ):
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+    collection.repo_fetch()
+    if collection.repo_behind():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
+        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     if entity.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
@@ -305,6 +316,10 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+    collection.repo_fetch()
+    if collection.repo_behind():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
+        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     if entity.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
@@ -318,6 +333,7 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
             exit,status = commands.entity_update(git_name, git_mail,
                                                  entity.parent_path, entity.id,
                                                  [file_.json_path,])
+            collection.cache_delete()
             if exit:
                 messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
             else:
@@ -362,6 +378,10 @@ def edit_old( request, repo, org, cid, eid, role, sha1 ):
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect( f.url() )
+    collection.repo_fetch()
+    if collection.repo_behind():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
+        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     if entity.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_FILES_PARENT_LOCKED'])
         return HttpResponseRedirect( f.url() )

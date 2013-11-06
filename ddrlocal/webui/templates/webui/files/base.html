@@ -12,12 +12,14 @@
 <div class="muted" id="expert">
   <span>
     <a class="muted" href="{% url "webui-file-json" repo org cid eid role sha1 %}">json</a>
+{% if username %}
     <a class="muted" href="{# url "webui-file-edit-json" repo org cid eid role sha1 #}">(edit)</a>
   </span>
   <span class="bullsep">&bull;&bull;</span>
   <span>
   {{ file.path_abs }}
   </span>
+{% endif %}
 </div>
 {% endif %}
 

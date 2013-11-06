@@ -1,0 +1,93 @@
+{% extends "webui/collections/base.html" %}
+
+
+{% block title %}MERGE | {{ collection.id }}{% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+<li><a href="{{ collection.url }}">{{ collection.id }}</a></li>
+<li class="active">MERGE</li>
+{% endblock breadcrumbs %}
+
+
+{% block content %}
+
+  <div class="row-fluid">
+    <div class="span12">
+
+<h1>
+{{ collection_path }}
+</h1>
+
+{% if unmerged %}
+<h3>
+The following files are conflicted and must be fixed:
+</h3>
+<ul>
+{% for file in unmerged %}
+   <li><a href="{% url "webui-merge-raw" repo org cid %}?filename={{ file }}">{{ file }}</a></li>
+{% endfor %}
+</ul>
+{% else %}
+
+{% if staged %}
+{% if conflicted or diverged %}
+<hr/>
+<h3>
+File conflicts resolved
+</h3>
+<form name="commit" action="" method="post">{% csrf_token %}
+{{ form.as_p }}
+<input type="submit" value="Save changes" />
+</form>
+{% endif %}{# conflicted or diverged #}
+{% endif %}{# staged #}
+
+{% endif %}{# unmerged #}
+
+
+
+<hr />
+
+<div class="muted">
+
+<h4>
+Help / Troubleshooting
+</h4>
+
+<p>
+Your collection has what is called a "merge conflict".
+This occurs when you and someone else have made conflicting changes to the same part of a collection metadata file.
+When a conflict occurs, it is the responsibility of one of the parties to resolve it.
+In this case, you are that party.
+</p>
+
+<p>
+For each conflicted file,
+<ul>
+<li>click on its link</li>
+<li>edit the text</li>
+</ul>
+When you have edited all the conflicted files, save your changes.
+</p>
+
+
+<h4>
+Diagnostic Information
+</h4>
+
+<pre>
+{{ status }}
+</pre>
+
+conflicted: {{ conflicted }}<br/>
+diverged: {{ diverged }}<br/>
+ahead: {{ ahead }}<br/>
+behind: {{ behind }}<br/>
+unmerged: {{ unmerged }}<br/>
+staged: {{ staged }}<br/>
+
+</div><!-- .muted -->
+
+    </div><!-- .span12 -->
+  </div><!-- .row-fluid -->
+{% endblock content %}

@@ -18,7 +18,7 @@ from django.template.loader import get_template
 
 from DDR import commands
 
-from ddrlocal.models import DDRLocalCollection as Collection
+from webui.models import Collection
 from ddrlocal.models.collection import COLLECTION_FIELDS
 from ddrlocal.forms import DDRForm
 
@@ -40,6 +40,11 @@ def _uid_path(request, repo, org, cid):
     uid = '{}-{}-{}'.format(repo, org, cid)
     path = os.path.join(settings.MEDIA_BASE, uid)
     return uid,path
+
+def alert_if_conflicted(request, collection):
+    if collection.repo_conflicted():
+        url = reverse('webui-merge', args=[collection.repo,collection.org,collection.cid])
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_CONFLICTED'].format(collection.id, url))
 
 
 
@@ -68,21 +73,23 @@ def collections( request ):
 @storage_required
 def detail( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
-    entities = collection.entities()
-    entities.reverse()
+    alert_if_conflicted(request, collection)
+    entities = sorted(collection.entities(), key=lambda e: e.id, reverse=True)
     return render_to_response(
         'webui/collections/detail.html',
         {'repo': repo,
          'org': org,
          'cid': cid,
          'collection': collection,
-         'entities': entities,},
+         'entities': entities,
+         'unlock_task_id': collection.locked(),},
         context_instance=RequestContext(request, processors=[])
     )
 
 @storage_required
 def entities( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    alert_if_conflicted(request, collection)
     collection_uid,collection_path = _uid_path(request, repo, org, cid)
     ead_path_rel = 'ead.xml'
     ead_path_abs = os.path.join(collection_path, ead_path_rel)
@@ -102,6 +109,7 @@ def entities( request, repo, org, cid ):
 @storage_required
 def changelog( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    alert_if_conflicted(request, collection)
     return render_to_response(
         'webui/collections/changelog.html',
         {'repo': repo,
@@ -114,14 +122,16 @@ def changelog( request, repo, org, cid ):
 @storage_required
 def collection_json( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    alert_if_conflicted(request, collection)
     return HttpResponse(json.dumps(collection.json().data), mimetype="application/json")
 
 @ddrview
 @storage_required
 def git_status( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
-    exit,status = commands.status(collection.path)
-    exit,astatus = commands.annex_status(collection.path)
+    alert_if_conflicted(request, collection)
+    status = commands.status(collection.path)
+    astatus = commands.annex_status(collection.path)
     return render_to_response(
         'webui/collections/git-status.html',
         {'repo': repo,
@@ -137,6 +147,7 @@ def git_status( request, repo, org, cid ):
 @storage_required
 def ead_xml( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    alert_if_conflicted(request, collection)
     soup = BeautifulSoup(collection.ead().xml, 'xml')
     return HttpResponse(soup.prettify(), mimetype="application/xml")
 
@@ -149,6 +160,7 @@ def sync( request, repo, org, cid ):
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    alert_if_conflicted(request, collection)
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
@@ -224,6 +236,10 @@ def edit( request, repo, org, cid ):
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+    collection.repo_fetch()
+    if collection.repo_behind():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
+        return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
     if request.method == 'POST':
         form = DDRForm(request.POST, fields=COLLECTION_FIELDS)
         if form.is_valid():
@@ -233,6 +249,7 @@ def edit( request, repo, org, cid ):
                 collection.form_post(form)
                 collection.dump_json()
                 collection.dump_ead()
+                collection.cache_delete()
                 exit,status = commands.update(git_name, git_mail,
                                               collection.path,
                                               [collection.json_path, collection.ead_path,])
@@ -385,3 +402,19 @@ def edit_scopecontent( request, repo, org, cid ):
 def edit_adjunctdesc( request, repo, org, cid ):
     return edit_xml(request, repo, org, cid,
                     slug='descgrp', Form=AdjunctDescriptiveForm, FIELDS=ADJUNCT_DESCRIPTIVE_FIELDS)
+
+@ddrview
+@login_required
+@storage_required
+def unlock( request, repo, org, cid, task_id ):
+    """Provides a way to remove collection lockfile through the web UI.
+    """
+    git_name = request.session.get('git_name')
+    git_mail = request.session.get('git_mail')
+    if not git_name and git_mail:
+        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
+    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    if task_id and collection.locked() and (task_id == collection.locked()):
+        collection.unlock(task_id)
+        messages.success(request, 'Collection <b>%s</b> unlocked.' % collection.id)
+    return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )

@@ -17,7 +17,7 @@ from django.template import RequestContext
 
 from DDR import commands
 
-from ddrlocal.models import DDRLocalCollection as Collection
+from webui.models import Collection
 from ddrlocal.models import DDRLocalEntity as Entity
 from ddrlocal.models.entity import ENTITY_FIELDS
 from ddrlocal.forms import DDRForm
@@ -52,7 +52,8 @@ def detail( request, repo, org, cid, eid ):
          'collection_uid': collection.id,
          'collection': collection,
          'entity': entity,
-         'tasks': tasks,},
+         'tasks': tasks,
+         'unlock_task_id': entity.locked(),},
         context_instance=RequestContext(request, processors=[])
     )
 
@@ -135,6 +136,10 @@ def new( request, repo, org, cid ):
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+    collection.repo_fetch()
+    if collection.repo_behind():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
+        return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
     # get new entity ID
     eid = None
     eids = api.entities_next(request, repo, org, cid, 1)
@@ -151,6 +156,7 @@ def new( request, repo, org, cid ):
                                              collection.path, entity_uid,
                                              [collection.json_path_rel, collection.ead_path_rel],
                                              [settings.TEMPLATE_EJSON, settings.TEMPLATE_METS])
+        collection.cache_delete()
         if exit:
             logger.error(exit)
             logger.error(status)
@@ -182,6 +188,10 @@ def edit( request, repo, org, cid, eid ):
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+    collection.repo_fetch()
+    if collection.repo_behind():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
+        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     if entity.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
@@ -198,6 +208,7 @@ def edit( request, repo, org, cid, eid ):
                 exit,status = commands.entity_update(git_name, git_mail,
                                                      entity.parent_path, entity.id,
                                                      [entity.json_path, entity.mets_path,])
+                collection.cache_delete()
                 if exit:
                     messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
                 else:
@@ -237,6 +248,10 @@ def edit_json( request, repo, org, cid, eid ):
     #if collection.locked():
     #    messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
     #    return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+    #collection.repo_fetch()
+    #if collection.repo_behind():
+    #    messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
+    #    return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     #if entity.locked():
     #    messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
     #    return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
@@ -257,6 +272,7 @@ def edit_json( request, repo, org, cid, eid ):
                     entity.parent_path, entity.id,
                     [entity.json_path])
                 
+                collection.cache_delete()
                 if exit:
                     messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
                 else:
@@ -298,6 +314,10 @@ def edit_mets_xml( request, repo, org, cid, eid ):
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+    collection.repo_fetch()
+    if collection.repo_behind():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
+        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     if entity.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
@@ -318,6 +338,7 @@ def edit_mets_xml( request, repo, org, cid, eid ):
                     entity.parent_path, entity.id,
                     [entity.mets_path])
                 
+                collection.cache_delete()
                 if exit:
                     messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
                 else:
@@ -403,3 +424,20 @@ def edit_mets( request, repo, org, cid, eid ):
                     slug='mets',
                     Form=MetsForm, FIELDS=METS_FIELDS,
                     namespaces=NAMESPACES,)
+
+@ddrview
+@login_required
+@storage_required
+def unlock( request, repo, org, cid, eid, task_id ):
+    """Provides a way to remove entity lockfile through the web UI.
+    """
+    git_name = request.session.get('git_name')
+    git_mail = request.session.get('git_mail')
+    if not git_name and git_mail:
+        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
+    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+    if task_id and entity.locked() and (task_id == entity.locked()):
+        entity.unlock(task_id)
+        messages.success(request, 'Object <b>%s</b> unlocked.' % entity.id)
+    return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )

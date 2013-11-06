@@ -1,0 +1,46 @@
+<html>
+<head>
+</head>
+<body>
+
+
+<h1>{{ filename }}</h1>
+
+<form name="merge-json" action="" method="post">{% csrf_token %}
+<input name="filename" type="text" value="{{ filename }}" />
+<table border="1">
+{% for field in fields %}
+  <tr>
+    <th>
+      <label>
+{{ field.name }}
+      </label>
+    </th>
+    <td>
+
+<textarea id="id_{{ field.name }}_left" name="{{ field.name }}_left">{{ field.left }}"</textarea>
+
+    </td>
+    <td>
+
+<input id="id_{{ field.name }}_choose_0" name="{{ field.name }}_choose" type="radio" value="left" />
+
+    </td>
+    <td>
+
+<input id="id_{{ field.name }}_choose_1" name="{{ field.name }}_choose" type="radio" value="right" />
+
+    </td>
+    <td>
+
+<textarea id="id_{{ field.name }}_right" name="{{ field.name }}_right">{{ field.right }}"</textarea>
+
+    </td>
+  </tr>
+{% endfor %}
+</table>
+<input name="submit" type="submit" value="submit" />
+</form>
+
+</body>
+</html>

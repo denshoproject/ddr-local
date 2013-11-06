@@ -7,26 +7,40 @@
 
 
 {% block indicators %}
+{% if username %}
   {% if collection %}
-    <div id="sync">
-    {% if collection.locked %}
-        <a href="#" class="btn btn-mini btn-warning muted" title="Sync [locked]"><i class="icon-lock icon-white"></i> Sync [locked]</a>
-    {% else %}
-      {% if collection.unsynced %}
-        <form name="collection-sync" action="{% url "webui-collection-sync" repo org cid %}" method="POST">{% csrf_token %}
-        <span id="unsynced" title="{{ collection.unsynced }} unsynced change{{ collection.unsynced|pluralize }}"><input class="btn btn-mini btn-warning" name="sync" type="submit" value="Sync" /></span>
-        </form>
-      {% else %}
-        <input class="btn btn-mini btn-success" name="sync" type="submit" value="Synced"/>
+    <form name="collection-sync" action="{% url "webui-collection-sync" repo org cid %}" method="POST">
+      {% csrf_token %}
+      
+      {% if collection.repo_conflicted %}<span class="label label-important">CONFLICTED</span>{% endif %}
+      {% if   collection.repo_diverged   %}<span class="label label-important">DIVERGED</span>
+      {% elif collection.repo_behind     %}<span class="label label-warning">Behind</span>
+      {% elif collection.repo_ahead      %}<span class="label label-warning">Ahead</span>
       {% endif %}
+
+    {% if collection.locked %}
+      <a href="#" class="btn btn-mini muted" title="Sync"><i class="icon-lock"></i> Sync</a>
+    {% else %}
+      <span id="sync-btn">
+        <input
+          {% if collection.repo_ahead %}class="btn btn-mini btn-warning"
+          {% elif collection.repo_behind %}class="btn btn-mini btn-warning"
+          {% else %}class="btn btn-mini btn-success"
+          {% endif %}
+          name="sync" type="submit" value="Sync" />
+      </span>
     {% endif %}
-    </div><!-- #sync -->
+    </form>
   {% endif %}{# collection #}
+{% endif %}{# username #}
 {% endblock indicators %}
 
 {% block javascript %}{{ block.super }}
 <script>
-  $(function () { $('#unsynced').tooltip({'placement':'bottom'}); })
+  /* collection tooltips */
+  $(function () { 
+    $('#unsynced').tooltip({'placement':'bottom'});
+  })
 </script>
 {% endblock javascript %}
 
@@ -40,10 +54,13 @@
   <span class="bullsep">&bull;</span>
   <span>
    <a class="muted" href="{% url "webui-collection-ead-xml" repo org cid %}">ead.xml</a>
+{% if username %}
    <a class="muted" href="{% url "webui-collection-edit-ead" repo org cid %}">(edit)</a>
+{% endif %}
   </span>
   <span class="bullsep">&bull;</span>
   <span><a class="muted" href="{% url "webui-collection-changelog" repo org cid %}">changelog</a></span>
+{% if username %}
   <span class="bullsep">&bull;</span>
   <span><a class="muted" href="{% url "webui-collection-git-status" repo org cid %}">git status</a></span>
   <span class="bullsep">&bull;&bull;</span>
@@ -54,6 +71,7 @@
   <span>
   {{ collection.path }}
   </span>
+{% endif %}
 </div>
 {% endif %}
 

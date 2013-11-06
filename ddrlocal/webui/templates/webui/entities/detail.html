@@ -29,13 +29,21 @@
 
 
 <div id="overview">
+
+{% if username %}
+{% if entity.locked or collection.locked or collection.repo_behind or collection.repo_conflicted %}
 <p>
-{% if entity.locked %}
-<a class="btn btn-primary btn-mini disabled" title="This object is locked"><i class="icon-lock icon-white"></i> Edit [locked]</a><br/>
-{% else %}
-<a class="btn btn-primary btn-mini" href="{% url "webui-entity-edit" repo org cid eid %}"><i class="icon-edit icon-white"></i> Edit</a>
-{% endif %}
+<a class="btn btn-mini" title="This object is locked"><i class="icon-lock"></i> Edit [locked]</a>
+{% if collection.repo_behind %}<span id="edit-alert" class="alert alert-error">Editing is disabled until collection is synced.</span>{% endif %}
+{% if collection.repo_conflicted %}<span id="edit-alert" class="alert alert-error">Editing is disabled until merge conflict is resolved.</span>{% endif %}
 </p>
+{% else %}
+<p>
+<a class="btn btn-primary btn-mini" href="{% url "webui-entity-edit" repo org cid eid %}"><i class="icon-edit icon-white"></i> Edit</a>
+</p>
+{% endif %}{# conflicted #}
+{% endif %}{#username #}
+
 <dl class="dl-horizontal">
   <dt>Collection</dt>
   <dd><p>
@@ -45,26 +53,40 @@
   {% if lv.value %}<dt>{{ lv.label }}</dt><dd>{{ lv.value|safe|linebreaks }}</dd>{% endif %}
 {% endfor %}
 </dl>
+
 </div><!-- #mets -->
 
 
         </div><!-- .tab-content #metadata -->
         <div class="tab-pane" id="masters">
 
-
+{% if username %}
+{% if entity.locked or collection.locked or collection.repo_behind or collection.repo_conflicted %}
 <p>
-<a href="{% url "webui-file-browse-master" repo org cid eid %}" class="btn btn-primary btn-mini"><i class="icon-plus icon-white"></i> Add a file</a>
+<a class="btn btn-mini" href="{% url "webui-file-browse-master" repo org cid eid %}"><i class="icon-plus"></i> Add a file</a>
 <!--
-or
-<a href="{% url "webui-file-batch-master" repo org cid eid %}" class="btn btn-mini">Add a batch of files</a>
+or <a class="btn btn-mini" href="{% url "webui-file-batch-master" repo org cid eid %}">Add a batch of files</a>
+-->
+{% if collection.repo_behind %}<span id="edit-alert" class="alert alert-error">Editing is disabled until collection is synced.</span>{% endif %}
+{% if collection.repo_conflicted %}<span id="edit-alert" class="alert alert-error">Editing is disabled until merge conflict is resolved.</span>{% endif %}
+</p>
+{% else %}
+<p>
+<a class="btn btn-primary btn-mini" href="{% url "webui-file-browse-master" repo org cid eid %}"><i class="icon-plus icon-white"></i> Add a file</a>
+<!--
+or <a class="btn btn-primary btn-mini" href="{% url "webui-file-batch-master" repo org cid eid %}">Add a batch of files</a>
 -->
 </p>
+{% endif %}{# conflicted #}
+{% endif %}{#username #}
 
 {% if entity.files_master %}
 <table class="table table-condensed">
   <thead>
 	<tr>
+{% if username %}
 		<th></th>
+{% endif %}
 		<th>Filename</th>
 		<th>Label</th>
 	</tr>
@@ -72,9 +94,18 @@ or
   <tbody>	
 {% for file in entity.files_master %}
   <tr>
+
+{% if username %}
     <td>
-      <a class="btn btn-primary btn-mini" href="{{ file.url }}edit/"><i class="icon-edit icon-white"></i> Edit</a> <a class="btn btn-primary btn-mini disabled" title="Delete function is not currently available."><i class="icon-remove icon-white"></i> Delete</a>
+{% if entity.locked or collection.locked or collection.repo_behind or collection.repo_conflicted %}
+      <a class="btn btn-mini" href="{{ file.url }}edit/"><i class="icon-edit"></i> Edit</a>
+      <a class="btn btn-mini disabled" title="Delete function is not currently available."><i class="icon-remove"></i> Delete</a>
+{% else %}
+      <a class="btn btn-primary btn-mini" href="{{ file.url }}edit/"><i class="icon-edit icon-white"></i> Edit</a>
+      <a class="btn btn-primary btn-mini disabled" title="Delete function is not currently available."><i class="icon-remove icon-white"></i> Delete</a>
+{% endif %}{# conflicted #}
     </td>
+{% endif %}{#username #}
     <td>
       <a href="{{ file.url }}">{{ file.basename }}</a>
       ({{ file.size|filesizeformat }})
@@ -92,20 +123,33 @@ or
         </div><!-- .tab-content #masters -->
         <div class="tab-pane" id="mezzanines">
 
-
+{% if username %}
+{% if entity.locked or collection.locked or collection.repo_behind or collection.repo_conflicted %}
 <p>
-<a href="{% url "webui-file-browse-mezzanine" repo org cid eid %}" class="btn btn-primary btn-mini"><i class="icon-plus icon-white"></i> Add a file</a>
+<a class="btn btn-mini" href="{% url "webui-file-browse-mezzanine" repo org cid eid %}"><i class="icon-plus"></i> Add a file</a>
 <!--
-or
-<a href="{% url "webui-file-batch-mezzanine" repo org cid eid %}" class="btn btn-mini">Add a batch of files</a>
+or <a class="btn btn-mini" href="{% url "webui-file-batch-mezzanine" repo org cid eid %}">Add a batch of files</a>
+-->
+{% if collection.repo_behind %}<span id="edit-alert" class="alert alert-error">Editing is disabled until collection is synced.</span>{% endif %}
+{% if collection.repo_conflicted %}<span id="edit-alert" class="alert alert-error">Editing is disabled until merge conflict is resolved.</span>{% endif %}
+</p>
+{% else %}
+<p>
+<a class="btn btn-primary btn-mini" href="{% url "webui-file-browse-mezzanine" repo org cid eid %}"><i class="icon-plus icon-white"></i> Add a file</a>
+<!--
+or <a class="btn btn-primary btn-mini" href="{% url "webui-file-batch-mezzanine" repo org cid eid %}">Add a batch of files</a>
 -->
 </p>
+{% endif %}{# conflicted #}
+{% endif %}{#username #}
 
 {% if entity.files_mezzanine %}
 <table class="table table-condensed">
   <thead>
 	<tr>
+{% if username %}
 		<th></th>
+{% endif %}{#username #}
 		<th>Filename</th>
 		<th>Label</th>
 	</tr>
@@ -113,9 +157,17 @@ or
  <tbody> 
 {% for file in entity.files_mezzanine %}
   <tr>
+{% if username %}
     <td>
-      <a class="btn btn-primary btn-mini" href="{{ file.url }}edit/"><i class="icon-edit icon-white"></i> Edit</a> <a class="btn btn-primary btn-mini disabled" title="Delete function is not currently available."><i class="icon-remove icon-white"></i> Delete</a>
+{% if entity.locked or collection.locked or collection.repo_behind or collection.repo_conflicted %}
+      <a class="btn btn-mini"><i class="icon-edit"></i> Edit</a>
+      <a class="btn btn-mini disabled" title="Delete function is not currently available."><i class="icon-remove"></i> Delete</a>
+{% else %}
+      <a class="btn btn-primary btn-mini" href="{{ file.url }}edit/"><i class="icon-edit icon-white"></i> Edit</a>
+      <a class="btn btn-primary btn-mini disabled" title="Delete function is not currently available."><i class="icon-remove icon-white"></i> Delete</a>
+{% endif %}{# conflicted #}
     </td>
+{% endif %}{#username #}
     <td>
       <a href="{{ file.url }}">{{ file.basename }}</a>
       ({{ file.size|filesizeformat }})
@@ -141,6 +193,23 @@ or
 
 
 
+{% block footer %}{{ block.super }}
+{% if unlock_task_id %}
+<!-- click to remove entity lock file -->
+<div>
+  <a id="unlock-unlock" class="muted" href="">unlock</a>
+  <span id="unlock-confirm" style="display:none;">
+    are you sure?
+    <a id="unlock-confirm-yes" href="{% url "webui-entity-unlock" repo org cid eid unlock_task_id %}">yes</a>
+    <a id="unlock-confirm-no" href="">no</a>
+  </span>
+</div>
+{% endif %}
+{% endblock footer %}
+
+
+
+
 {% block javascript %}{{ block.super }}
 <script>
   $(function () {
@@ -153,6 +222,13 @@ or
 
     /* show #metadata by default */
     $('#tabs a[href="#metadata"]').tab('show');
+
+  {% if unlock_task_id %}
+    /* unlock link */
+    $('a#unlock-unlock').click(function() {
+      $('span#unlock-confirm').show(); return false;
+    });
+  {% endif %}
 
   })
 </script>

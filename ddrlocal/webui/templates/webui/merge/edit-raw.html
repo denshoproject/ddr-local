@@ -1,0 +1,99 @@
+{% extends "webui/collections/base.html" %}
+
+
+{% block title %}MERGE | {{ collection.id }}{% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+<li><a href="{{ collection.url }}">{{ collection.id }}</a></li>
+<li class="active">MERGE</li>
+{% endblock breadcrumbs %}
+
+
+{% block content %}
+
+  <div class="row-fluid">
+    <div class="span12">
+
+<h1>
+{{ filename }}
+</h1>
+
+<form name="merge-raw" action="" method="post">{% csrf_token %}
+{{ form.as_p }}
+<input name="submit" type="submit" value="submit" />
+</form>
+
+
+
+<hr />
+
+<div class="muted">
+
+<h4>
+Help / Troubleshooting
+</h4>
+
+<p>
+Conflicted files contain one or more sections that look something like this:
+</p>
+<pre><code>    ...
+    {
+&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD&#x000A;        "description": "This is one description of the collection."
+    },
+    {
+        "notes": "These notes were written by one person."
+=======
+        "description": "This is an alternate description of the collection."
+    },
+    {
+        "notes": "These notes were written by someone else."
+&gt;&gt;&gt;&gt;&gt;&gt;&gt; iss53
+    },
+    ...
+</code></pre>
+<p>
+The text between <code>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD</code> and <code>=======</code> represents one version, and the text between <code>=======</code> and <code>&gt;&gt;&gt;&gt;&gt;&gt;&gt; iss53</code> represents another (Note: the <code>iss53</code> is an auto-generated marker; you will see other text in its place).
+In order to resolve the conflict, you have to either choose one side or the other or merge the contents yourself.
+</p>
+<p>
+For instance, you might resolve this conflict by choosing the first block like this:
+</p>
+<pre><code>    ...
+    {
+        "description": "This is one description of the collection."
+    },
+    {
+        "notes": "These notes were written by one person."
+    },
+    ...
+</code></pre>
+<p>
+Or you might resolve this conflict by replacing the entire block with a little of each section:
+</p>
+<pre><code>    ...
+    {
+        "description": "This is a combination of two descriptions of the collection."
+    },
+    {
+        "notes": "These notes were collaboratively written by two people."
+    },
+    ...
+</code></pre>
+<p>
+In each case the <code>&lt;&lt;&lt;&lt;&lt;&lt;&lt;</code>, <code>=======</code>, and <code>&gt;&gt;&gt;&gt;&gt;&gt;&gt;</code> lines have been fully removed.
+</p>
+<p>
+After you’ve resolved each of these sections in each conflicted file, click "Submit" to mark it as resolved.
+</p>
+
+<p>
+[Note: these instructions were adapted from Section 3.2 of the <a href="http://www.git-scm.com/book/en/Git-Branching-Basic-Branching-and-Merging">Pro Git book</a> by Scott Chacon.]
+</p>
+
+</div><!-- .muted -->
+
+
+    </div><!-- .span12 -->
+  </div><!-- .row-fluid -->
+
+{% endblock content %}

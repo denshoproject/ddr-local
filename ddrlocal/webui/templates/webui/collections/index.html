@@ -25,16 +25,15 @@
 {% endif %}
 
 {% for c in o.3 %}
-      {% if c.locked %}
-        <a href="#" class="btn btn-mini btn-warning muted" title="Sync [locked]"><i class="icon-lock icon-white"></i> Sync [locked]</a> 
-      {% else %}
-        {% if c.unsynced %}
-        <input class="btn btn-mini btn-warning" name="sync" type="submit" value="Sync" /> 
-        {% else %}
-        <input class="btn btn-mini btn-success" name="sync" type="submit" value="Synced"/> 
-        {% endif %}
-      {% endif %}
-       <a href="{{ c.url }}">{{ c.id }}</a> {% if c.title %}<a href="{{ c.url }}">{{ c.title }}{% endif %}</a><br />
+  {% if   c.unsynced        %}<input class="btn btn-mini btn-warning" name="sync" type="submit" value="Sync" />
+  {% elif c.repo_ahead      %}<input class="btn btn-mini btn-warning" name="sync" type="submit" value="Ahead" />
+  {% elif c.repo_behind     %}<input class="btn btn-mini btn-warning" name="sync" type="submit" value="Behind" />
+  {% elif c.repo_conflicted %}<input class="btn btn-mini btn-danger"  name="sync" type="submit" value="Conflicted" />
+  {% elif c.locked %}
+    <a href="#" class="btn btn-mini btn-warning muted" title="Sync [locked]"><i class="icon-lock icon-white"></i> Sync [locked]</a> 
+  {% else                   %}<input class="btn btn-mini btn-success" name="sync" type="submit" value="Synced"/>
+  {% endif %}
+  <a href="{{ c.url }}">{{ c.id }}</a> {% if c.title %}<a href="{{ c.url }}">{{ c.title }}{% endif %}</a><br />
 {% endfor %}
 
 {% endfor %}
