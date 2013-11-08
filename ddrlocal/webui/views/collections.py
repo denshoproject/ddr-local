@@ -238,23 +238,18 @@ def edit( request, repo, org, cid ):
     if request.method == 'POST':
         form = DDRForm(request.POST, fields=COLLECTION_FIELDS)
         if form.is_valid():
-            git_name = request.session.get('git_name')
-            git_mail = request.session.get('git_mail')
-            if git_name and git_mail:
-                collection.form_post(form)
-                collection.dump_json()
-                collection.dump_ead()
-                collection.cache_delete()
-                exit,status = commands.update(git_name, git_mail,
-                                              collection.path,
-                                              [collection.json_path, collection.ead_path,])
-                if exit:
-                    messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
-                else:
-                    messages.success(request, WEBUI_MESSAGES['VIEWS_COLL_UPDATED'])
-                    return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+            collection.form_post(form)
+            collection.dump_json()
+            collection.dump_ead()
+            collection.cache_delete()
+            exit,status = commands.update(git_name, git_mail,
+                                          collection.path,
+                                          [collection.json_path, collection.ead_path,])
+            if exit:
+                messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
             else:
-                messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
+                messages.success(request, WEBUI_MESSAGES['VIEWS_COLL_UPDATED'])
+                return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
     else:
         form = DDRForm(collection.form_prep(), fields=COLLECTION_FIELDS)
     return render_to_response(

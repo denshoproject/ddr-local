@@ -194,23 +194,18 @@ def edit( request, repo, org, cid, eid ):
     if request.method == 'POST':
         form = DDRForm(request.POST, fields=ENTITY_FIELDS)
         if form.is_valid():
-            git_name = request.session.get('git_name')
-            git_mail = request.session.get('git_mail')
-            if git_name and git_mail:
-                entity.form_post(form)
-                entity.dump_json()
-                entity.dump_mets()
-                exit,status = commands.entity_update(git_name, git_mail,
-                                                     entity.parent_path, entity.id,
-                                                     [entity.json_path, entity.mets_path,])
-                collection.cache_delete()
-                if exit:
-                    messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
-                else:
-                    messages.success(request, WEBUI_MESSAGES['VIEWS_ENT_UPDATED'])
-                    return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+            entity.form_post(form)
+            entity.dump_json()
+            entity.dump_mets()
+            exit,status = commands.entity_update(git_name, git_mail,
+                                                 entity.parent_path, entity.id,
+                                                 [entity.json_path, entity.mets_path,])
+            collection.cache_delete()
+            if exit:
+                messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
             else:
-                messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
+                messages.success(request, WEBUI_MESSAGES['VIEWS_ENT_UPDATED'])
+                return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     else:
         form = DDRForm(entity.form_prep(), fields=ENTITY_FIELDS)
     return render_to_response(
