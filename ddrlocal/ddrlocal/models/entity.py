@@ -149,6 +149,7 @@ ENTITY_FIELDS = [
         'group':      '',
         'xpath':      "",
         'xpath_dup':  [],
+        'inheritable':True,
         'model_type': int,
         'form_type':  'ChoiceField',
         'form': {
@@ -166,6 +167,7 @@ ENTITY_FIELDS = [
         'group':      '',
         'xpath':      "",
         'xpath_dup':  [],
+        'inheritable':True,
         'model_type': int,
         'form_type':  'ChoiceField',
         'form': {
@@ -425,6 +427,7 @@ ENTITY_FIELDS = [
         'group':      '',
         'xpath':      "",
         'xpath_dup':  [],
+        'inheritable':True,
         'model_type': str,
         'form_type':  'ChoiceField',
         'form': {
