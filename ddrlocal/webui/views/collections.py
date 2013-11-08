@@ -20,13 +20,13 @@ from DDR import commands
 
 from webui.models import Collection
 from ddrlocal.models.collection import COLLECTION_FIELDS
-from ddrlocal.forms import DDRForm
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
 from webui import get_repos_orgs
 from webui import api
 from webui.decorators import ddrview
+from webui.forms import DDRForm
 from webui.forms.collections import NewCollectionForm, UpdateForm
 from webui.tasks import collection_sync
 from webui.views.decorators import login_required

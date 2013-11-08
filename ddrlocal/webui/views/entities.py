@@ -20,12 +20,12 @@ from DDR import commands
 from webui.models import Collection
 from ddrlocal.models import DDRLocalEntity as Entity
 from ddrlocal.models.entity import ENTITY_FIELDS
-from ddrlocal.forms import DDRForm
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
 from webui import api
 from webui.decorators import ddrview
+from webui.forms import DDRForm
 from webui.forms.entities import NewEntityForm, JSONForm, UpdateForm
 from webui.mets import NAMESPACES, NAMESPACES_XPATH
 from webui.mets import METS_FIELDS, MetsForm
