@@ -16,9 +16,6 @@ from django.shortcuts import Http404, get_object_or_404, render_to_response
 from django.template import RequestContext
 
 from DDR import commands
-from webui.models import Collection
-from ddrlocal.models import DDRLocalEntity as Entity
-from ddrlocal.models import DDRFile
 from ddrlocal.models.files import FILE_FIELDS
 
 from storage.decorators import storage_required
@@ -26,6 +23,7 @@ from webui import WEBUI_MESSAGES
 from webui.decorators import ddrview
 from webui.forms import DDRForm
 from webui.forms.files import NewFileForm, EditFileForm, NewAccessFileForm, shared_folder_files
+from webui.models import Collection, Entity
 from webui.tasks import entity_add_file, entity_add_access
 from webui.views.decorators import login_required
 

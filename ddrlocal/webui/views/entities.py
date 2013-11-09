@@ -17,8 +17,6 @@ from django.template import RequestContext
 
 from DDR import commands
 
-from webui.models import Collection
-from ddrlocal.models import DDRLocalEntity as Entity
 from ddrlocal.models.entity import ENTITY_FIELDS
 
 from storage.decorators import storage_required
@@ -29,6 +27,7 @@ from webui.forms import DDRForm
 from webui.forms.entities import NewEntityForm, JSONForm, UpdateForm
 from webui.mets import NAMESPACES, NAMESPACES_XPATH
 from webui.mets import METS_FIELDS, MetsForm
+from webui.models import Collection, Entity
 from webui.views.decorators import login_required
 from xmlforms.models import XMLModel
 
@@ -197,14 +196,27 @@ def edit( request, repo, org, cid, eid ):
             entity.form_post(form)
             entity.dump_json()
             entity.dump_mets()
+            updated_files = [entity.json_path, entity.mets_path,]
+            success_msg = WEBUI_MESSAGES['VIEWS_ENT_UPDATED']
+            
+            # if inheritable fields selected, propagate changes to child objects
+            inheritables = Entity.inheritable_fields(form.cleaned_data)
+            modified_ids,modified_files = entity.update_inheritables(inheritables, form.cleaned_data)
+            if modified_files:
+                updated_files = updated_files + modified_files
+            if modified_ids:
+                success_msg = 'Object updated. ' \
+                              'The value(s) for <b>%s</b> were applied to <b>%s</b>' % (
+                                  ', '.join(inheritables), ', '.join(modified_ids))
+            
             exit,status = commands.entity_update(git_name, git_mail,
                                                  entity.parent_path, entity.id,
-                                                 [entity.json_path, entity.mets_path,])
+                                                 updated_files)
             collection.cache_delete()
             if exit:
                 messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
             else:
-                messages.success(request, WEBUI_MESSAGES['VIEWS_ENT_UPDATED'])
+                messages.success(request, success_msg)
                 return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     else:
         form = DDRForm(entity.form_prep(), fields=ENTITY_FIELDS)

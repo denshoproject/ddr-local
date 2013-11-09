@@ -18,7 +18,6 @@ from django.template.loader import get_template
 
 from DDR import commands
 
-from webui.models import Collection
 from ddrlocal.models.collection import COLLECTION_FIELDS
 
 from storage.decorators import storage_required
@@ -28,6 +27,7 @@ from webui import api
 from webui.decorators import ddrview
 from webui.forms import DDRForm
 from webui.forms.collections import NewCollectionForm, UpdateForm
+from webui.models import Collection
 from webui.tasks import collection_sync
 from webui.views.decorators import login_required
 from xmlforms.models import XMLModel
@@ -241,14 +241,25 @@ def edit( request, repo, org, cid ):
             collection.form_post(form)
             collection.dump_json()
             collection.dump_ead()
+            updated_files = [collection.json_path, collection.ead_path,]
+            success_msg = WEBUI_MESSAGES['VIEWS_COLL_UPDATED']
+            
+            # if inheritable fields selected, propagate changes to child objects
+            inheritables = Collection.inheritable_fields(form.cleaned_data)
+            modified_ids,modified_files = collection.update_inheritables(inheritables, form.cleaned_data)
+            if modified_files:
+                updated_files = updated_files + modified_files
+            if modified_ids:
+                success_msg = 'Collection updated. ' \
+                              'The value(s) for <b>%s</b> were applied to <b>%s</b>' % (
+                                  ', '.join(inheritables), ', '.join(modified_ids))
+            
+            exit,status = commands.update(git_name, git_mail, collection.path, updated_files)
             collection.cache_delete()
-            exit,status = commands.update(git_name, git_mail,
-                                          collection.path,
-                                          [collection.json_path, collection.ead_path,])
             if exit:
                 messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
             else:
-                messages.success(request, WEBUI_MESSAGES['VIEWS_COLL_UPDATED'])
+                messages.success(request, success_msg)
                 return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
     else:
         form = DDRForm(collection.form_prep(), fields=COLLECTION_FIELDS)

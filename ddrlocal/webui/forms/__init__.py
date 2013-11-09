@@ -60,6 +60,16 @@ class DDRForm(forms.Form):
                     form_field_object = getattr(forms, field_name)
                     fobject = form_field_object(*[], **fkwargs['form'])
                     fields.append((fkwargs['name'], fobject))
+                
+            # if field is inheritable, add inherit-this checkbox
+            if fkwargs.get('inheritable', None):
+                helptext = "Apply value of %s to this object's children" % fkwargs['form']['label']
+                #CHOICES = ((1, helptext),)
+                #fobject = forms.ChoiceField(label='', choices=CHOICES,
+                #                            widget=forms.CheckboxSelectMultiple,
+                #                            required=False, initial=False)
+                fobject = forms.BooleanField(label='', required=False, help_text=helptext)
+                fields.append(('%s_inherit' % fkwargs['name'], fobject))
         
         # Django Form object takes a SortedDict rather than list
         self.fields = SortedDict(fields)
