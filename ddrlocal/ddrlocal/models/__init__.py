@@ -639,7 +639,7 @@ class DDRLocalEntity( DDREntity ):
         
         @param sha1
         @param newfile (optional) If present, updates existing file or appends new one.
-        @returns 'added', 'updated', DDRFile, or None
+        @returns 'added', 'updated', DDRLocalFile, or None
         """
         # update existing file or append
         if sha1 and newfile:
@@ -800,12 +800,12 @@ class DDRLocalEntity( DDREntity ):
             if not hasattr(self, ff['name']):
                 setattr(self, ff['name'], ff.get('default',None))
         
-        # replace list of file paths with list of DDRFile objects
+        # replace list of file paths with list of DDRLocalFile objects
         _files = []
         try:
             for f in self.files:
                 path_abs = os.path.join(self.files_path, f['path_rel'])
-                _files.append(DDRFile(path_abs))
+                _files.append(DDRLocalFile(path_abs))
         except:
             pass
         self.files = _files
@@ -937,7 +937,7 @@ def hash(path, algo='sha1'):
 
 
 
-class DDRFile( object ):
+class DDRLocalFile( object ):
     # path relative to /
     # (ex: /var/www/media/base/ddr-testing-71/files/ddr-testing-71-6/files/ddr-testing-71-6-dd9ec4305d.jpg)
     # not saved; constructed on instantiation
@@ -1032,7 +1032,7 @@ class DDRFile( object ):
                     self.access_abs = os.path.join(self.entity_files_path, self.access_rel)
     
     def __repr__(self):
-        return "<DDRFile %s (%s)>" % (self.basename, self.basename_orig)
+        return "<DDRLocalFile %s (%s)>" % (self.basename, self.basename_orig)
     
     def url( self ):
         return reverse('webui-file', args=[self.repo, self.org, self.cid, self.eid, self.role, self.sha1[:10]])
