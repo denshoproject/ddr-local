@@ -57,20 +57,6 @@ def _selected_inheritables( inheritables, cleaned_data ):
                 selected.append(fieldnames[key])
     return selected
 
-def _inheritable_fields( MODEL_FIELDS, cleaned_data=None ):
-    """Returns a list of fields that can inherit or grant values.
-    
-    @param MODEL_FIELDS
-    @param cleaned_data
-    """
-    inheritable = []
-    for f in MODEL_FIELDS:
-        if f.get('inheritable', None):
-            inheritable.append(f['name'])
-    if cleaned_data:
-        return _selected_inheritables(inheritable, cleaned_data)
-    return inheritable
-
 def _selected_field_values( parent_object, inheritables ):
     """Gets list of selected inherited fieldnames and their values from the parent object
     
@@ -178,9 +164,8 @@ class Collection( DDRLocalCollection ):
             cache.set(key, data, COLLECTION_ANNEX_STATUS_TIMEOUT)
         return data
     
-    @staticmethod
-    def inheritable_fields( cleaned_data=None ):
-        return _inheritable_fields(collectionmodule.COLLECTION_FIELDS, cleaned_data )
+    def selected_inheritables(self, cleaned_data ):
+        return _selected_inheritables(self.inheritable_fields(), cleaned_data)
     
     def update_inheritables( self, inheritables, cleaned_data ):
         return _update_inheritables(self, 'collection', inheritables, cleaned_data)
@@ -200,9 +185,8 @@ class Entity( DDRLocalEntity ):
                 entity.id = entity_uid  # might get overwritten if entity.json is blank
         return entity
     
-    @staticmethod
-    def inheritable_fields( cleaned_data=None ):
-        return _inheritable_fields(entitymodule.ENTITY_FIELDS, cleaned_data )
+    def selected_inheritables(self, cleaned_data ):
+        return _selected_inheritables(self.inheritable_fields(), cleaned_data)
     
     def update_inheritables( self, inheritables, cleaned_data ):
         return _update_inheritables(self, 'entity', inheritables, cleaned_data)

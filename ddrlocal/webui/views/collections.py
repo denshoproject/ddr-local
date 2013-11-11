@@ -245,7 +245,7 @@ def edit( request, repo, org, cid ):
             success_msg = WEBUI_MESSAGES['VIEWS_COLL_UPDATED']
             
             # if inheritable fields selected, propagate changes to child objects
-            inheritables = Collection.inheritable_fields(form.cleaned_data)
+            inheritables = collection.selected_inheritables(form.cleaned_data)
             modified_ids,modified_files = collection.update_inheritables(inheritables, form.cleaned_data)
             if modified_files:
                 updated_files = updated_files + modified_files

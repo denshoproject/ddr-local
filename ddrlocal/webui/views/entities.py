@@ -200,7 +200,7 @@ def edit( request, repo, org, cid, eid ):
             success_msg = WEBUI_MESSAGES['VIEWS_ENT_UPDATED']
             
             # if inheritable fields selected, propagate changes to child objects
-            inheritables = Entity.inheritable_fields(form.cleaned_data)
+            inheritables = entity.selected_inheritables(form.cleaned_data)
             modified_ids,modified_files = entity.update_inheritables(inheritables, form.cleaned_data)
             if modified_files:
                 updated_files = updated_files + modified_files
