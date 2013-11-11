@@ -13,7 +13,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 
-from ddrlocal.models import DDRLocalEntity, DDRFile, hash
+from ddrlocal.models import DDRLocalEntity, DDRLocalFile, hash
 from webui.models import Collection
 
 from DDR.commands import entity_annex_add, entity_update, sync
@@ -111,14 +111,14 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
     This method breaks out of OOP and manipulates entity.json directly.
     Thus it needs to lock to prevent other edits while it does its thing.
     Writes a log to ${entity}/addfile.log, formatted in pseudo-TAP.
-    This log is returned along with a DDRFile object.
+    This log is returned along with a DDRLocalFile object.
     
     @param entity: DDRLocalEntity
     @param src_path: Absolute path to an uploadable file.
     @param role: Keyword of a file role.
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
-    @return file_ DDRFile object
+    @return file_ DDRLocalFile object
     """
     f = None
                 
@@ -137,7 +137,7 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
     dest_dir          = entity.files_path
     dest_dir_exists   = os.path.exists(dest_dir)
     dest_dir_writable = os.access(dest_dir, os.W_OK)
-    dest_basename     = DDRFile.file_name(entity, src_path, role)
+    dest_basename     = DDRLocalFile.file_name(entity, src_path, role)
     dest_path         = os.path.join(dest_dir, dest_basename)
     dest_path_exists  = os.path.exists(dest_path)
     s = []
@@ -170,8 +170,8 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
     
     # file object
     if cp_successful:
-        f = DDRFile(dest_path)
-        entity.files_log(1, 'Created DDRFile: %s' % f)
+        f = DDRLocalFile(dest_path)
+        entity.files_log(1, 'Created DDRLocalFile: %s' % f)
         f.basename_orig = src_basename
         entity.files_log(1, 'Original filename: %s' % f.basename_orig)
         f.role = role
@@ -198,7 +198,7 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
         # task: extract_xmp
         entity.files_log(1, 'Extracting XMP data...')
         try:
-            f.xmp = DDRFile.extract_xmp(src_path)
+            f.xmp = DDRLocalFile.extract_xmp(src_path)
             if f.xmp:
                 entity.files_log(1, 'got some XMP')
             else:
@@ -212,7 +212,7 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
         # task: make access file
         entity.files_log(1, 'Making access file...')
         # NOTE: do this before entity_annex_add so don't have to lock/unlock
-        status,result = DDRFile.make_access_file(f.path_abs,
+        status,result = DDRLocalFile.make_access_file(f.path_abs,
                                                  settings.ACCESS_FILE_APPEND,
                                                  settings.ACCESS_FILE_GEOMETRY,
                                                  settings.ACCESS_FILE_OPTIONS)
@@ -258,7 +258,7 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
 def entity_add_access( git_name, git_mail, entity, ddrfile ):
     """
     @param entity: DDRLocalEntity
-    @param ddrfile: DDRFile
+    @param ddrfile: DDRLocalFile
     @param src_path: Absolute path to an uploadable file.
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
@@ -273,13 +273,13 @@ def add_access( git_name, git_mail, entity, ddrfile ):
     This method breaks out of OOP and manipulates entity.json directly.
     Thus it needs to lock to prevent other edits while it does its thing.
     Writes a log to ${entity}/addfile.log, formatted in pseudo-TAP.
-    This log is returned along with a DDRFile object.
+    This log is returned along with a DDRLocalFile object.
     
     @param entity: DDRLocalEntity
-    @param ddrfile: DDRFile
+    @param ddrfile: DDRLocalFile
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
-    @return file_ DDRFile object
+    @return file_ DDRLocalFile object
     """
     f = ddrfile
     src_path = f.path_abs
@@ -296,9 +296,9 @@ def add_access( git_name, git_mail, entity, ddrfile ):
     dest_dir          = entity.files_path
     dest_dir_exists   = os.path.exists(dest_dir)
     dest_dir_writable = os.access(dest_dir, os.W_OK)
-    access_filename = DDRFile.access_file_name(os.path.splitext(src_path)[0],
+    access_filename = DDRLocalFile.access_file_name(os.path.splitext(src_path)[0],
                                                settings.ACCESS_FILE_APPEND,
-                                               'jpg') # see DDRFile.make_access_file
+                                               'jpg') # see DDRLocalFile.make_access_file
     dest_basename     = os.path.basename(access_filename)
     dest_path         = os.path.join(dest_dir, dest_basename)
     dest_path_exists  = os.path.exists(dest_path)
@@ -327,7 +327,7 @@ def add_access( git_name, git_mail, entity, ddrfile ):
         # task: make access file
         entity.files_log(1, 'Making access file...')
         # NOTE: do this before entity_annex_add so don't have to lock/unlock
-        status,result = DDRFile.make_access_file(f.path_abs,
+        status,result = DDRLocalFile.make_access_file(f.path_abs,
                                                  settings.ACCESS_FILE_APPEND,
                                                  settings.ACCESS_FILE_GEOMETRY,
                                                  settings.ACCESS_FILE_OPTIONS)

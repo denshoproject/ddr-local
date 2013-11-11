@@ -7,7 +7,7 @@ import envoy
 from django.core.cache import cache
 from django.db import models
 
-from ddrlocal.models import DDRLocalCollection, DDRLocalEntity, DDRFile
+from ddrlocal.models import DDRLocalCollection, DDRLocalEntity, DDRLocalFile
 from ddrlocal.models import collection as collectionmodule
 from ddrlocal.models import entity as entitymodule
 from ddrlocal.models import files as filemodule
