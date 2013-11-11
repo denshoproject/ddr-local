@@ -102,6 +102,27 @@ def write_json(data, path):
     with open(path, 'w') as f:
         f.write(json_pretty)
 
+def _inheritable_fields( MODEL_FIELDS ):
+    """Returns a list of fields that can inherit or grant values.
+    
+    @param MODEL_FIELDS
+    """
+    inheritable = []
+    for f in MODEL_FIELDS:
+        if f.get('inheritable', None):
+            inheritable.append(f['name'])
+    return inheritable
+
+def _inherit( parent, child ):
+    """Set inheritable fields in child object with values from parent.
+    
+    @param parent: A webui.models.Collection or webui.models.Entity
+    @param child: A webui.models.Entity or webui.models.File
+    """
+    for field in parent.inheritable_fields():
+        if hasattr(parent, field) and hasattr(child, field):
+            setattr(child, field, getattr(parent, field))
+
 
 
 MODEL_FIELDS = [
@@ -360,6 +381,9 @@ class DDRLocalCollection( DDRCollection ):
                 entities.append(entity)
         entities = sorted(entities, key=lambda e: natural_order_string(e.uid))
         return entities
+    
+    def inheritable_fields( self ):
+        return _inheritable_fields(collectionmodule.COLLECTION_FIELDS )
     
     def labels_values(self):
         """Generic display
@@ -686,6 +710,12 @@ class DDRLocalEntity( DDREntity ):
             if hasattr(f, 'name') and hasattr(f, 'initial'):
                 setattr(entity, f['name'], f['initial'])
         return entity
+    
+    def inherit( self, parent ):
+        _inherit( parent, self )
+
+    def inheritable_fields( self ):
+        return _inheritable_fields(entitymodule.ENTITY_FIELDS)
     
     def labels_values(self):
         """Generic display
@@ -1075,6 +1105,9 @@ class DDRLocalFile( object ):
         if self.access_abs and os.path.exists(self.access_abs):
             return True
         return False
+    
+    def inherit( self, parent ):
+        _inherit( parent, self )
     
     def labels_values(self):
         """Generic display
