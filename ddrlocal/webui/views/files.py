@@ -159,6 +159,10 @@ def new( request, repo, org, cid, eid, role='master' ):
             data = form.cleaned_data
             src_path = data.pop('path')
             role = data.pop('role')
+            # inheritable fields
+            inherited = []
+            for field in entity.inheritable_fields():
+                inherited.append( (field,getattr(entity,field)) )
             # start tasks
             result = entity_add_file.apply_async(
                 (git_name, git_mail, entity, src_path, role, data),
@@ -196,6 +200,9 @@ def new( request, repo, org, cid, eid, role='master' ):
                 'role':role,
                 'sort': 1,
                 'label': '',}
+        # inheritable fields
+        for field in entity.inheritable_fields():
+            data[field] = getattr(entity, field)
         form = NewFileForm(data, path_choices=shared_folder_files())
     return render_to_response(
         'webui/files/new.html',

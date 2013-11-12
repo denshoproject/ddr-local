@@ -147,13 +147,23 @@ def new( request, repo, org, cid ):
         # create new entity
         entity_uid = '{}-{}-{}-{}'.format(repo,org,cid,eid)
         entity_path = Entity.entity_path(request, repo, org, cid, eid)
-        # entity.json template
-        Entity(entity_path).dump_json(path=settings.TEMPLATE_EJSON,
-                                      template=True)
+        # write entity.json template to entity location
+        Entity(entity_path).dump_json(path=settings.TEMPLATE_EJSON, template=True)
+        # commit files
         exit,status = commands.entity_create(git_name, git_mail,
                                              collection.path, entity_uid,
                                              [collection.json_path_rel, collection.ead_path_rel],
                                              [settings.TEMPLATE_EJSON, settings.TEMPLATE_METS])
+        
+        # load Entity object, inherit values from parent, write back to file
+        entity = Entity.from_json(entity_path)
+        entity.inherit(collection)
+        entity.dump_json()
+        updated_files = [entity.json_path]
+        exit,status = commands.entity_update(git_name, git_mail,
+                                             entity.parent_path, entity.id,
+                                             updated_files)
+        
         collection.cache_delete()
         if exit:
             logger.error(exit)
