@@ -156,15 +156,12 @@ def new( request, repo, org, cid, eid, role='master' ):
     if request.method == 'POST':
         form = NewFileForm(request.POST, path_choices=shared_folder_files())
         if form.is_valid():
-            src_path = form.cleaned_data['path']
-            role = form.cleaned_data['role']
-            sort = form.cleaned_data['sort']
-            label = form.cleaned_data['label']
-            rights = form.cleaned_data['rights']
-            public = form.cleaned_data['public']
+            data = form.cleaned_data
+            src_path = data.pop('path')
+            role = data.pop('role')
             # start tasks
             result = entity_add_file.apply_async(
-                (git_name, git_mail, entity, src_path, role, sort, label),
+                (git_name, git_mail, entity, src_path, role, data),
                 countdown=2)
             entity.files_log(1,'START task_id %s' % result.task_id)
             entity.files_log(1,'ddrlocal.webui.file.new')
@@ -176,7 +173,6 @@ def new( request, repo, org, cid, eid, role='master' ):
             else:
                 entity.files_log(0, lockstatus)
             
-
             # add celery task_id to session
             celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
             # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.

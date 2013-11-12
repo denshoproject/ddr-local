@@ -93,19 +93,20 @@ class FileAddDebugTask(Task):
 
 
 @task(base=FileAddDebugTask, name='entity-add-file')
-def entity_add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
+def entity_add_file( git_name, git_mail, entity, src_path, role, data ):
     """
     @param entity: DDRLocalEntity
     @param src_path: Absolute path to an uploadable file.
     @param role: Keyword of a file role.
+    @param data: Dict containing form data.
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
     """
-    file_ = add_file(git_name, git_mail, entity, src_path, role, sort, label)
+    file_ = add_file(git_name, git_mail, entity, src_path, role, data)
     return file_
 
 
-def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
+def add_file( git_name, git_mail, entity, src_path, role, data ):
     """Add file to entity
     
     This method breaks out of OOP and manipulates entity.json directly.
@@ -124,10 +125,7 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
                 
     entity.files_log(1, 'ddrlocal.webui.tasks.add_file: START')
     entity.files_log(1, 'entity: %s' % entity.id)
-    entity.files_log(1, 'src: %s' % src_path)
-    entity.files_log(1, 'role: %s' % role)
-    entity.files_log(1, 'sort: %s' % sort)
-    entity.files_log(1, 'label: %s' % label)
+    entity.files_log(1, 'data: %s' % data)
     
     src_basename      = os.path.basename(src_path)
     src_exists        = os.path.exists(src_path)
@@ -175,8 +173,9 @@ def add_file( git_name, git_mail, entity, src_path, role, sort, label='' ):
         f.basename_orig = src_basename
         entity.files_log(1, 'Original filename: %s' % f.basename_orig)
         f.role = role
-        f.sort = sort
-        f.label = label
+        # form data
+        for field in data:
+            setattr(f, field, data[field])
         f.size = os.path.getsize(f.path_abs)
         # task: get SHA1 checksum (links entity.filemeta entity.files records
         entity.files_log(1, 'Checksumming...')
