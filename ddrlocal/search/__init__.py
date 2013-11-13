@@ -88,16 +88,24 @@ def add_update(index, model, path):
     return 3
 
 def delete(index, model, id):
-    """
+    """Delete specified document from the index.
+    
     curl -XDELETE 'http://localhost:9200/twitter/tweet/1'
+    
+    @param index: Name of index.
+    @param model: Type of object ('collection', 'entity', 'file')
+    @param id: object ID
     """
     url = 'http://%s/%s/%s/%s' % (HOST_PORT, index, model, id)
     r = requests.delete(url)
     return r.status_code
 
 def metadata_files(dirname):
-    """
-    returns list of absolute paths to .json files in dirname.
+    """Lists absolute paths to .json files in dirname.
+    
+    TODO skip/exclude .git directories
+    
+    @param path: Absolute path
     """
     paths = []
     excludes = ['tmp']
@@ -111,9 +119,11 @@ def metadata_files(dirname):
     return paths
 
 def index(index, dirname, paths=None):
-    """
-    for each JSON file in dir,
-    if stale(), add_update()
+    """(Re)index with data from the specified directory.
+    
+    @param index: Name of the target index.
+    @param dirname: Absolute path.
+    @param paths: (optional) List of absolute paths to JSON files.
     """
     logger.debug('index(%s, index="%s")' % (dirname, index))
     if not paths:
@@ -134,8 +144,12 @@ def index(index, dirname, paths=None):
     logger.debug('INDEXING COMPLETED')
 
 def delete_index(index):
-    """
+    """Delete the specified index.
+    
     curl -XDELETE 'http://localhost:9200/twitter/'
+    
+    @param index: Name of the target index.
+    @return status code
     """
     url = 'http://%s/%s/' % (HOST_PORT, index)
     r = requests.delete(url)
@@ -143,7 +157,11 @@ def delete_index(index):
 
 def index_exists(index):
     """Indicates whether the given ElasticSearch index exists.
+    
     curl -XHEAD 'http://localhost:9200/ddr/collection'
+    
+    @param index: Name of the target index.
+    @return True/False
     """
     url = 'http://%s/%s' % (HOST_PORT, index)
     r = requests.head(url)
@@ -153,7 +171,12 @@ def index_exists(index):
 
 def model_exists(index, model):
     """Indicates whether an ElasticSearch 'type' exists for the given model.
+    
     curl -XHEAD 'http://localhost:9200/ddr/collection'
+    
+    @param index: Name of the target index.
+    @param model: Type of object ('collection', 'entity', 'file')
+    @return True/False
     """
     url = 'http://%s/%s/%s' % (HOST_PORT, index, model)
     r = requests.head(url)
@@ -162,7 +185,8 @@ def model_exists(index, model):
     return False
 
 def settings():
-    """
+    """Get Elasticsearch's current settings.
+    
     curl -XGET 'http://localhost:9200/twitter/_settings'
     """
     url = 'http://%s/_status' % (HOST_PORT)
@@ -174,8 +198,9 @@ def settings():
     return data
 
 def status():
-    """
-    http://localhost:9200/_status
+    """Get Elasticsearch's current settings.
+    
+    curl -XGET 'http://localhost:9200/_status'
     """
     url = 'http://%s/_status' % (HOST_PORT)
     try:
@@ -186,8 +211,16 @@ def status():
     return data
 
 def query(index='ddr', model=None, query='', filters={}, sort=[]):
-    """
+    """Run a query, get a list of zero or more hits.
+    
     curl -XGET 'http://localhost:9200/twitter/tweet/_search?q=user:kimchy&pretty=true'
+    
+    @param index: Name of the target index.
+    @param model: Type of object ('collection', 'entity', 'file')
+    @param query: User's search text
+    @param filters: dict
+    @param sort: dict
+    @returns list of hits (dicts)
     """
     _clean_dict(filters)
     _clean_dict(sort)
