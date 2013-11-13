@@ -10,11 +10,6 @@ from django.conf import settings
 
 
 
-def identifier(path):
-    """
-    figure out the identifier for the given file
-    """
-    pass
 
 def _clean_dict(data):
     """Remove null or empty fields; ElasticSearch chokes on them.
@@ -98,13 +93,6 @@ def delete(index, model, id):
     url = 'http://localhost:9200/%s/%s/%s' % (index, model, id)
     r = requests.delete(url)
     return r.status_code
-
-def stale(path, identifier):
-    """
-    identifier(path)
-    should we add/update?
-    """
-    return True
 
 def metadata_files(dirname):
     """
