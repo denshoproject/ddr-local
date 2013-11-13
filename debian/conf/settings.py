@@ -165,6 +165,10 @@ CELERY_RESULT_BACKEND = 'redis://%s:%s/%s' % (REDIS_HOST, REDIS_PORT, REDIS_DB_C
 BROKER_TRANSPORT_OPTIONS = {'visibility_timeout': 60 * 60}  # 1 hour
 CELERYD_HIJACK_ROOT_LOGGER = False
 
+# ElasticSearch
+ELASTICSEARCH_HOST = 'localhost'
+ELASTICSEARCH_PORT = '9200'
+
 # sorl-thumbnail
 THUMBNAIL_DEBUG = DEBUG
 #THUMBNAIL_DEBUG = False

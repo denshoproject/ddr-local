@@ -8,6 +8,7 @@ import requests
 
 from django.conf import settings
 
+HOST_PORT = '%s:%s' % (settings.ELASTICSEARCH_HOST, settings.ELASTICSEARCH_PORT)
 
 
 
@@ -54,7 +55,7 @@ def add_update(index, model, path):
         for field in data:
             if field.get('id',None):
                 cid = field['id']
-        url = 'http://localhost:9200/%s/%s/%s' % (index, model, cid)
+        url = 'http://%s/%s/%s/%s' % (HOST_PORT, index, model, cid)
     elif model in ['file']:
         if not (data and data[1].get('path_rel', None)):
             return 2
@@ -74,7 +75,7 @@ def add_update(index, model, path):
             label = filename
         data.append({'id': filename})
         data.append({'title': label})
-        url = 'http://localhost:9200/%s/%s/%s' % (index, model, filename)
+        url = 'http://%s/%s/%s/%s' % (HOST_PORT, index, model, filename)
     
     else:
         url = None
@@ -90,7 +91,7 @@ def delete(index, model, id):
     """
     curl -XDELETE 'http://localhost:9200/twitter/tweet/1'
     """
-    url = 'http://localhost:9200/%s/%s/%s' % (index, model, id)
+    url = 'http://%s/%s/%s/%s' % (HOST_PORT, index, model, id)
     r = requests.delete(url)
     return r.status_code
 
@@ -136,7 +137,7 @@ def delete_index(index):
     """
     curl -XDELETE 'http://localhost:9200/twitter/'
     """
-    url = 'http://localhost:9200/%s/' % index
+    url = 'http://%s/%s/' % (HOST_PORT, index)
     r = requests.delete(url)
     return r.status_code
 
@@ -144,7 +145,7 @@ def index_exists(index):
     """Indicates whether the given ElasticSearch index exists.
     curl -XHEAD 'http://localhost:9200/ddr/collection'
     """
-    url = 'http://localhost:9200/%s' % index
+    url = 'http://%s/%s' % (HOST_PORT, index)
     r = requests.head(url)
     if r.status_code == 200:
         return True
@@ -154,7 +155,7 @@ def model_exists(index, model):
     """Indicates whether an ElasticSearch 'type' exists for the given model.
     curl -XHEAD 'http://localhost:9200/ddr/collection'
     """
-    url = 'http://localhost:9200/ddr/collection'
+    url = 'http://%s/%s/%s' % (HOST_PORT, index, model)
     r = requests.head(url)
     if r.status_code == 200:
         return True
@@ -164,7 +165,7 @@ def settings():
     """
     curl -XGET 'http://localhost:9200/twitter/_settings'
     """
-    url = 'http://localhost:9200/_status'
+    url = 'http://%s/_status' % (HOST_PORT)
     try:
         r = requests.get(url)
         data = json.loads(r.text)
@@ -176,7 +177,7 @@ def status():
     """
     http://localhost:9200/_status
     """
-    url = 'http://localhost:9200/_status'
+    url = 'http://%s/_status' % (HOST_PORT)
     try:
         r = requests.get(url)
         data = json.loads(r.text)
@@ -192,9 +193,9 @@ def query(index='ddr', model=None, query='', filters={}, sort=[]):
     _clean_dict(sort)
     
     if model and query:
-        url = 'http://localhost:9200/%s/%s/_search?q=%s&pretty=true' % (index, model, query)
+        url = 'http://%s/%s/%s/_search?q=%s&pretty=true' % (HOST_PORT, index, model, query)
     else:
-        url = 'http://localhost:9200/%s/_search?q=%s&pretty=true' % (index, query)
+        url = 'http://%s/%s/_search?q=%s&pretty=true' % (HOST_PORT, index, query)
     
     payload = {}
     if filters:
