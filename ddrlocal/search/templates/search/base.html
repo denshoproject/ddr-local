@@ -1,0 +1,5 @@
+{% extends "base.html" %}
+
+{% block breadcrumbs %}{{ block.super }}
+<li><a href="{% url "search-index" %}">Search</a></li>
+{% endblock breadcrumbs %}

@@ -59,6 +59,14 @@ TASK_STATUS_MESSAGES = {
         #'RETRY': '',
         #'REVOKED': '',
         },
+    'search-reindex': {
+        #'STARTED': '',
+        'PENDING': 'Recreating search index.',
+        'SUCCESS': 'Reindexing completed.',
+        'FAILURE': 'Reindexing failed!',
+        #'RETRY': '',
+        #'REVOKED': '',
+        },
 }
 
 

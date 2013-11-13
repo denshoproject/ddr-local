@@ -6,6 +6,9 @@ BOOTSTRAP=bootstrap-2.3.1.zip
 MODERNIZR=modernizr-2.6.2.js
 JQUERY=jquery-1.10.2.min.js
 
+ELASTICSEARCH=elasticsearch-0.90.5.deb
+
+
 # text color variables
 txtund=$(tput sgr 0 1)   # underline
 txtbld=$(tput bold)      # bold
@@ -40,7 +43,7 @@ apt-get --assume-yes update
 
 
 echo "${bldgrn}Installing miscellaneous tools${txtrst}"
-apt-get --assume-yes install ack-grep byobu bzip2 curl elinks htop logrotate mg multitail p7zip-full wget
+apt-get --assume-yes install ack-grep byobu bzip2 curl elinks gdebi-core htop logrotate mg multitail p7zip-full wget
 
 
 echo "${bldgrn}www server${txtrst}"
@@ -50,6 +53,11 @@ apt-get --assume-yes install nginx
 echo "${bldgrn}cache server${txtrst}"
 apt-get --assume-yes install redis-server
 
+
+echo "${bldgrn}search engine${txtrst}"
+apt-get --assume-yes install openjdk-6-jre
+wget -nc -P /tmp/downloads http://tank.densho.org/$ELASTICSEARCH
+gdebi --non-interactive /tmp/downloads/$ELASTICSEARCH
 
 echo "${bldgrn}ddr-cmdln${txtrst}"
 apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev pmount udisks python-dev python-pip
@@ -130,4 +138,4 @@ cp /usr/local/src/ddr-local/debian/conf/ddrlocal.conf /etc/nginx/sites-available
 ln -s /etc/nginx/sites-available/ddrlocal.conf /etc/nginx/sites-enabled
 /etc/init.d/nginx restart
 
-
+/etc/init.d/elasticsearch restart

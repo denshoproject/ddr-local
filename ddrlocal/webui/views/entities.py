@@ -19,6 +19,7 @@ from DDR import commands
 
 from ddrlocal.models.entity import ENTITY_FIELDS
 
+from search import add_update
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
 from webui import api
@@ -170,6 +171,10 @@ def new( request, repo, org, cid ):
             logger.error(status)
             messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
         else:
+            # update search index
+            json_path = os.path.join(entity_path, 'entity.json')
+            add_update('ddr', 'entity', json_path)
+            # positive feedback
             return HttpResponseRedirect(reverse('webui-entity-edit', args=[repo,org,cid,eid]))
     else:
         logger.error('Could not get new ID from workbench!')
@@ -226,6 +231,9 @@ def edit( request, repo, org, cid, eid ):
             if exit:
                 messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
             else:
+                # update search index
+                add_update('ddr', 'entity', entity.json_path)
+                # positive feedback
                 messages.success(request, success_msg)
                 return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     else:
