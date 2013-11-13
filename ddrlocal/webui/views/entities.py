@@ -164,7 +164,7 @@ def new( request, repo, org, cid ):
         else:
             # update search index
             json_path = os.path.join(entity_path, 'entity.json')
-            add_update(json_path, index='ddr', model='entity')
+            add_update('ddr', 'entity', json_path)
             # positive feedback
             return HttpResponseRedirect(reverse('webui-entity-edit', args=[repo,org,cid,eid]))
     else:
@@ -213,7 +213,7 @@ def edit( request, repo, org, cid, eid ):
                     messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
                 else:
                     # update search index
-                    add_update(entity.json_path, index='ddr', model='entity')
+                    add_update('ddr', 'entity', entity.json_path)
                     # positive feedback
                     messages.success(request, WEBUI_MESSAGES['VIEWS_ENT_UPDATED'])
                     return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )

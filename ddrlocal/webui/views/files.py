@@ -338,7 +338,7 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
                 messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
             else:
                 # update search index
-                add_update(file_.json_path, index='ddr', model='file')
+                add_update('ddr', 'file', file_.json_path)
                 # positive feedback
                 messages.success(request, WEBUI_MESSAGES['VIEWS_FILES_UPDATED'])
                 return HttpResponseRedirect( reverse('webui-file', args=[repo,org,cid,eid,role,sha1]) )

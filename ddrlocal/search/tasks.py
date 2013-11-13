@@ -13,5 +13,5 @@ class DebugTask(Task):
 def reindex():
     """
     """
-    search.index('/var/www/media/base')
+    search.index('ddr', '/var/www/media/base')
     return 0

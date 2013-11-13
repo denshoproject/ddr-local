@@ -34,11 +34,17 @@ def _clean_payload(data):
         for field in data:
             _clean_dict(field)
 
-def add_update(path, index, model):
-    """
+def add_update(index, model, path):
+    """Add a new document to an index or update an existing one.
+    
     curl -XPUT 'http://localhost:9200/ddr/collection/ddr-testing-141' -d '{ ... }'
+    
+    @param index: Name of the target index.
+    @param model: Type of object ('collection', 'entity', 'file')
+    @param path: Absolute path to the JSON file.
+    @return 0 if successful, status code if not.
     """
-    logger.debug('add_update(%s, %s, %s)' % (path, index, model))
+    logger.debug('add_update(%s, %s, %s)' % (index, model, path))
     if not os.path.exists(path):
         return 1
     headers = {'content-type': 'application/json'}
@@ -115,7 +121,7 @@ def metadata_files(dirname):
                     paths.append(path)
     return paths
 
-def index(dirname, paths=None, index='ddr'):
+def index(index, dirname, paths=None):
     """
     for each JSON file in dir,
     if stale(), add_update()
@@ -132,7 +138,7 @@ def index(dirname, paths=None, index='ddr'):
         elif ('master' in path) or ('mezzanine' in path):
             model = 'file'
         if path and index and model:
-            add_update(path, index=index, model=model)
+            add_update(index, model, path)
             logger.debug('%s: %s' % (model, path))
         else:
             logger.error('missing information!: %s' % path)
@@ -146,7 +152,7 @@ def delete_index(index):
     r = requests.delete(url)
     return r.status_code
 
-def index_exists(index='ddr'):
+def index_exists(index):
     """Indicates whether the given ElasticSearch index exists.
     curl -XHEAD 'http://localhost:9200/ddr/collection'
     """
@@ -156,7 +162,7 @@ def index_exists(index='ddr'):
         return True
     return False
 
-def model_exists(model):
+def model_exists(index, model):
     """Indicates whether an ElasticSearch 'type' exists for the given model.
     curl -XHEAD 'http://localhost:9200/ddr/collection'
     """

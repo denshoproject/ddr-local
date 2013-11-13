@@ -213,7 +213,7 @@ def new( request, repo, org ):
         else:
             # update search index
             json_path = os.path.join(collection_path, 'collection.json')
-            add_update(json_path, index='ddr', model='collection')
+            add_update('ddr', 'collection', json_path)
             # positive feedback
             return HttpResponseRedirect( reverse('webui-collection-edit', args=[repo,org,cid]) )
     else:
@@ -257,7 +257,7 @@ def edit( request, repo, org, cid ):
                     messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
                 else:
                     # update search index
-                    add_update(collection.json_path, index='ddr', model='collection')
+                    add_update('ddr', 'collection', collection.json_path)
                     # positive feedback
                     messages.success(request, WEBUI_MESSAGES['VIEWS_COLL_UPDATED'])
                     return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
