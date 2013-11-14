@@ -110,6 +110,8 @@ def metadata_files(dirname):
     paths = []
     excludes = ['tmp']
     for root, dirs, files in os.walk(dirname):
+        if '.git' in dirs:
+            dirs.remove('.git')
         for f in files:
             if f.endswith('.json'):
                 path = os.path.join(root, f)
