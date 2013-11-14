@@ -19,7 +19,58 @@ def _clean_dict(data):
         for key in data.keys():
             if not data[key]:
                 del(data[key])
+
+
+
+def settings():
+    """Get Elasticsearch's current settings.
     
+    curl -XGET 'http://localhost:9200/twitter/_settings'
+    """
+    url = 'http://%s/_status' % (HOST_PORT)
+    r = requests.get(url)
+    return json.loads(r.text)
+
+def status():
+    """Get Elasticsearch's current settings.
+    
+    curl -XGET 'http://localhost:9200/_status'
+    """
+    url = 'http://%s/_status' % (HOST_PORT)
+    r = requests.get(url)
+    return json.loads(r.text)
+
+def index_exists(index):
+    """Indicates whether the given ElasticSearch index exists.
+    
+    curl -XHEAD 'http://localhost:9200/ddr/collection'
+    
+    @param index: Name of the target index.
+    @return True/False
+    """
+    url = 'http://%s/%s' % (HOST_PORT, index)
+    r = requests.head(url)
+    if r.status_code == 200:
+        return True
+    return False
+
+def model_exists(index, model):
+    """Indicates whether an ElasticSearch 'type' exists for the given model.
+    
+    curl -XHEAD 'http://localhost:9200/ddr/collection'
+    
+    @param index: Name of the target index.
+    @param model: Type of object ('collection', 'entity', 'file')
+    @return True/False
+    """
+    url = 'http://%s/%s/%s' % (HOST_PORT, index, model)
+    r = requests.head(url)
+    if r.status_code == 200:
+        return True
+    return False
+
+
+
 def _clean_payload(data):
     """Remove null or empty fields; ElasticSearch chokes on them.
     """
@@ -100,7 +151,9 @@ def delete(index, model, id):
     r = requests.delete(url)
     return r.status_code
 
-def metadata_files(dirname):
+
+
+def _metadata_files(dirname):
     """Lists absolute paths to .json files in dirname.
     
     TODO skip/exclude .git directories
@@ -129,7 +182,7 @@ def index(index, dirname, paths=None):
     """
     logger.debug('index(%s, index="%s")' % (dirname, index))
     if not paths:
-        paths = metadata_files(dirname)
+        paths = _metadata_files(dirname)
     for path in paths:
         model = None
         if 'collection.json' in path:
@@ -145,6 +198,8 @@ def index(index, dirname, paths=None):
             logger.error('missing information!: %s' % path)
     logger.debug('INDEXING COMPLETED')
 
+
+
 def delete_index(index):
     """Delete the specified index.
     
@@ -156,61 +211,6 @@ def delete_index(index):
     url = 'http://%s/%s/' % (HOST_PORT, index)
     r = requests.delete(url)
     return r.status_code
-
-def index_exists(index):
-    """Indicates whether the given ElasticSearch index exists.
-    
-    curl -XHEAD 'http://localhost:9200/ddr/collection'
-    
-    @param index: Name of the target index.
-    @return True/False
-    """
-    url = 'http://%s/%s' % (HOST_PORT, index)
-    r = requests.head(url)
-    if r.status_code == 200:
-        return True
-    return False
-
-def model_exists(index, model):
-    """Indicates whether an ElasticSearch 'type' exists for the given model.
-    
-    curl -XHEAD 'http://localhost:9200/ddr/collection'
-    
-    @param index: Name of the target index.
-    @param model: Type of object ('collection', 'entity', 'file')
-    @return True/False
-    """
-    url = 'http://%s/%s/%s' % (HOST_PORT, index, model)
-    r = requests.head(url)
-    if r.status_code == 200:
-        return True
-    return False
-
-def settings():
-    """Get Elasticsearch's current settings.
-    
-    curl -XGET 'http://localhost:9200/twitter/_settings'
-    """
-    url = 'http://%s/_status' % (HOST_PORT)
-    try:
-        r = requests.get(url)
-        data = json.loads(r.text)
-    except:
-        data = None
-    return data
-
-def status():
-    """Get Elasticsearch's current settings.
-    
-    curl -XGET 'http://localhost:9200/_status'
-    """
-    url = 'http://%s/_status' % (HOST_PORT)
-    try:
-        r = requests.get(url)
-        data = json.loads(r.text)
-    except:
-        data = None
-    return data
 
 def query(index='ddr', model=None, query='', filters={}, sort=[]):
     """Run a query, get a list of zero or more hits.
