@@ -42,6 +42,11 @@ def _uid_path(request, repo, org, cid):
     path = os.path.join(settings.MEDIA_BASE, uid)
     return uid,path
 
+def _inventory_org_path(repo, org):
+    org_id = '{}-{}'.format(repo, org)
+    path = os.path.join(settings.MEDIA_BASE, org_id)
+    return path
+
 def alert_if_conflicted(request, collection):
     if collection.repo_conflicted():
         url = reverse('webui-merge', args=[collection.repo,collection.org,collection.cid])
@@ -227,6 +232,22 @@ def new( request, repo, org ):
             logger.error(status)
             messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
         else:
+            # add new collection to inventory
+            organization_path = _inventory_org_path(repo, org)
+            organization = Organization.load(organization_path)
+            if not organization:
+                messages.error(request, 'Could not load inventory organization record!')
+            label = inventory.guess_drive_label(collection_path)
+            store = organization.store(label)
+            if not store:
+                messages.error(request, 'Could not load inventory store record!')
+            collection_repo = dvcs.repository(collection_path)
+            collection_uuid = collection_repo.git.config('annex.uuid')
+            level = 'all'
+            collections = [{'uuid':collection_uuid, 'cid':collection_uid, 'level':level,}]
+            istatus = inventory.add_collection(organization_path, label, collections, git_name, git_mail)
+            inventory.sync_organization(organization_path)
+            
             # update search index
             json_path = os.path.join(collection_path, 'collection.json')
             add_update('ddr', 'collection', json_path)
