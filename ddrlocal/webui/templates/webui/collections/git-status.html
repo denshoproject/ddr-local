@@ -22,6 +22,26 @@
 git status
 </h1>
 
+{% if whereis %}
+<br/>
+<table class="table table-condensed table-striped muted">
+  <tr>
+    <th>File</th>
+    <th>Copies</th>
+    <th>Store(s)</th>
+  </tr>
+{% for f in whereis %}
+  <tr>
+    <td>{{ f.basename }}</td>
+    <td>{{ f.copies }}</td>
+    <td>{% for r in f.remotes %}
+      {% if r.label == drive_label %}<b>{{ r.label }} ({{ r.location }})</b>{% else %}{{ r.label }} ({{ r.location }}){% endif %}<br/>{% endfor %}
+    </td>
+  </tr>
+{% endfor %}
+</table>
+{% endif %}{# whereis #}
+
 <h3>git status</h3>
 <pre>
 {{ status }}
@@ -31,6 +51,10 @@ git status
 <pre>
 {{ astatus }}
 </pre>
+
+<p>
+<img src="{{ MEDIA_URL }}base/{{ annex_map }}" /><br/>
+</p>
 
     </div><!-- .span12 -->
   </div><!-- .row-fluid -->

@@ -16,7 +16,8 @@ from django.shortcuts import Http404, get_object_or_404, render_to_response
 from django.template import RequestContext
 from django.template.loader import get_template
 
-from DDR import commands
+from DDR import commands, dvcs, inventory
+from DDR.models import Organization, Store
 
 from ddrlocal.models.collection import COLLECTION_FIELDS
 
@@ -128,10 +129,22 @@ def collection_json( request, repo, org, cid ):
 @ddrview
 @storage_required
 def git_status( request, repo, org, cid ):
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    collection_path = Collection.collection_path(request,repo,org,cid)
+    collection = Collection.from_json(collection_path)
     alert_if_conflicted(request, collection)
     status = commands.status(collection.path)
     astatus = commands.annex_status(collection.path)
+    
+    # show where instances of this file reside in the DDR network
+    org_id = '%s-%s' % (repo, org)
+    org_path = os.path.join(settings.MEDIA_BASE, org_id)
+    orgg = Organization.load(org_path)
+    repository = dvcs.repository(collection_path)
+    annex_map = dvcs.annex_map(repository).replace(settings.MEDIA_BASE, '')[1:]
+    drive_label = inventory.guess_drive_label(collection_path)
+    collection_uuid = repository.git.config('annex.uuid')
+    whereis = orgg.collection_whereis(drive_label, uuid=collection_uuid)
+    
     return render_to_response(
         'webui/collections/git-status.html',
         {'repo': repo,
@@ -140,6 +153,9 @@ def git_status( request, repo, org, cid ):
          'collection': collection,
          'status': status,
          'astatus': astatus,
+         'annex_map': annex_map,
+         'drive_label': drive_label,
+         'whereis': whereis,
          },
         context_instance=RequestContext(request, processors=[])
     )
