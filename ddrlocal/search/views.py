@@ -115,14 +115,7 @@ def reindex( request ):
     if request.method == 'POST':
         form = IndexConfirmForm(request.POST)
         if form.is_valid():
-            result = tasks.reindex.apply_async( (), countdown=2)
-            celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
-            # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
-            task = {'task_id': result.task_id,
-                    'action': 'search-reindex',
-                    'start': datetime.now(),}
-            celery_tasks[result.task_id] = task
-            request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
+            tasks.reindex_and_notify(request)
     return HttpResponseRedirect( reverse('search-admin') )
 
 def drop_index( request ):
