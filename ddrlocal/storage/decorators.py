@@ -1,6 +1,7 @@
 from functools import wraps
 import logging
 logger = logging.getLogger(__name__)
+import os
 
 from django.conf import settings
 from django.contrib import messages
@@ -37,6 +38,9 @@ def storage_required(func):
         readable = False
         # if we can get list of collections, storage must be readable
         basepath = settings.MEDIA_BASE
+        if not (os.path.exists(basepath) and os.listdir(basepath)):
+            messages.error(request, 'ERROR: Base path does not exist or is not listable.')
+            return HttpResponseRedirect(reverse('storage-required'))
         repos_orgs = get_repos_orgs()
         if repos_orgs:
             # propagate error
@@ -49,7 +53,7 @@ def storage_required(func):
                     collections = commands.collections_local(basepath, repo, org)
                     readable = True
                 except:
-                    logging.error('Problem while getting collection listing.')
+                    messages.error(request, 'ERROR: Could not get collections list.')
         else:
             # If there are no repos/orgs, it may mean that the ddr user
             # is missing its SSH keys.
