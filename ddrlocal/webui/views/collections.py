@@ -174,7 +174,7 @@ def sync( request, repo, org, cid ):
                 'action': 'webui-collection-sync',
                 'collection_id': collection.id,
                 'collection_url': collection.url(),
-                'start': datetime.now(),}
+                'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
         celery_tasks[result.task_id] = task
         request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
     

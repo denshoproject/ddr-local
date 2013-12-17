@@ -529,12 +529,15 @@ def session_tasks( request ):
 def session_tasks_list( request ):
     """session_tasks as a list, sorted in reverse chronological order.
     
+    NOTE: This function adds task['startd'], a datetime based on the str task['start'].
+    
     @param request: A Django request object
     @return tasks: A list of task dicts.
     """
-    return sorted(session_tasks(request).values(),
-                  key=lambda t: t['start'],
-                  reverse=True)
+    tasks = session_tasks(request)
+    for task in tasks.values():
+        task['startd'] = datetime.strptime(task['start'], settings.TIMESTAMP_FORMAT)
+    return sorted(tasks.values(), key=lambda t: t['startd'], reverse=True)
 
 def dismiss_session_task( request, task_id ):
     """Dismiss a task from session_tasks.

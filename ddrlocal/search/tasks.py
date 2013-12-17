@@ -29,6 +29,6 @@ def reindex_and_notify( request ):
     # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
     task = {'task_id': result.task_id,
             'action': 'search-reindex',
-            'start': datetime.now(),}
+            'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
     celery_tasks[result.task_id] = task
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks

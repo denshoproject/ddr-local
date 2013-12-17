@@ -89,6 +89,7 @@ ENTITY_FILE_ROLES = (
 DATE_FORMAT = '%Y-%m-%d'
 TIME_FORMAT = '%H:%M:%S'
 DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
+TIMESTAMP_FORMAT = '%Y-%m-%dT%H:%M:%S:%f'
 # Django uses a slightly different datetime format
 DATETIME_FORMAT_FORM = '%Y-%m-%d %H:%M:%S'
 
