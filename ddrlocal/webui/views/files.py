@@ -185,7 +185,7 @@ def new( request, repo, org, cid, eid, role='master' ):
                     'action': 'webui-file-new-%s' % role,
                     'filename': os.path.basename(src_path),
                     'entity_id': entity.id,
-                    'start': datetime.now(),}
+                    'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
             celery_tasks[result.task_id] = task
             #del request.session[settings.CELERY_TASKS_SESSION_KEY]
             request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
@@ -270,7 +270,7 @@ def new_access( request, repo, org, cid, eid, role, sha1 ):
                     'action': 'webui-file-new-access',
                     'filename': os.path.basename(src_path),
                     'entity_id': entity.id,
-                    'start': datetime.now(),}
+                    'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
             celery_tasks[result.task_id] = task
             #del request.session[settings.CELERY_TASKS_SESSION_KEY]
             request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks

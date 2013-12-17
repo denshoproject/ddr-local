@@ -19,7 +19,7 @@ PRETTY_DATE_FORMAT     = '%d %B %Y'
 PRETTY_TIME_FORMAT     = '%I:%M %p'
 PRETTY_DATETIME_FORMAT = '%d %B %Y, %I:%M %p'
 
-STATUS_CHOICES = [['inprocess', 'In Process'],
+STATUS_CHOICES = [['inprocess', 'In Progress'],
                   ['completed', 'Completed'],]
 
 PERMISSIONS_CHOICES = [['1','Public'],

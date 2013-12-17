@@ -14,6 +14,7 @@ from django.contrib import messages
 from django.core.urlresolvers import reverse
 
 from ddrlocal.models import DDRLocalEntity, DDRLocalFile, hash
+from search import add_update
 from webui.models import Collection
 
 from DDR.commands import entity_annex_add, entity_update, sync
@@ -424,6 +425,8 @@ def collection_sync( git_name, git_mail, collection_path ):
     @return collection_path: Absolute path to collection.
     """
     exit,status = sync(git_name, git_mail, collection_path)
+    # update search index
+    add_update('ddr', 'collection', os.path.join(collection_path, 'collection.json'))
     return collection_path
 
 
@@ -526,12 +529,15 @@ def session_tasks( request ):
 def session_tasks_list( request ):
     """session_tasks as a list, sorted in reverse chronological order.
     
+    NOTE: This function adds task['startd'], a datetime based on the str task['start'].
+    
     @param request: A Django request object
     @return tasks: A list of task dicts.
     """
-    return sorted(session_tasks(request).values(),
-                  key=lambda t: t['start'],
-                  reverse=True)
+    tasks = session_tasks(request)
+    for task in tasks.values():
+        task['startd'] = datetime.strptime(task['start'], settings.TIMESTAMP_FORMAT)
+    return sorted(tasks.values(), key=lambda t: t['startd'], reverse=True)
 
 def dismiss_session_task( request, task_id ):
     """Dismiss a task from session_tasks.
