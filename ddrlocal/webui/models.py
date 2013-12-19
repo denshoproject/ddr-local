@@ -4,8 +4,13 @@ import os
 
 import envoy
 
+from django.conf import settings
 from django.core.cache import cache
 from django.db import models
+
+from DDR import dvcs
+from DDR import inventory
+from DDR.models import Organization
 
 from ddrlocal.models import DDRLocalCollection, DDRLocalEntity, DDRLocalFile
 from ddrlocal.models import collection as collectionmodule
@@ -15,10 +20,14 @@ from ddrlocal.models import files as filemodule
 COLLECTION_FETCH_CACHE_KEY = 'webui:collection:%s:fetch'
 COLLECTION_STATUS_CACHE_KEY = 'webui:collection:%s:status'
 COLLECTION_ANNEX_STATUS_CACHE_KEY = 'webui:collection:%s:annex_status'
+COLLECTION_ANNEX_WHEREIS_CACHE_KEY = 'webui:collection:%s:annex_whereis'
+COLLECTION_ANNEX_MAP_CACHE_KEY = 'webui:collection:%s:annex_map'
 
 COLLECTION_FETCH_TIMEOUT = 0
 COLLECTION_STATUS_TIMEOUT = 60 * 10
 COLLECTION_ANNEX_STATUS_TIMEOUT = 60 * 10
+COLLECTION_ANNEX_WHEREIS_TIMEOUT = 60 * 10
+COLLECTION_ANNEX_MAP_TIMEOUT = 60 * 10
 
 
 
@@ -127,6 +136,8 @@ class Collection( DDRLocalCollection ):
         cache.delete(COLLECTION_FETCH_CACHE_KEY % self.id)
         cache.delete(COLLECTION_STATUS_CACHE_KEY % self.id)
         cache.delete(COLLECTION_ANNEX_STATUS_CACHE_KEY % self.id)
+        cache.delete(COLLECTION_ANNEX_WHEREIS_CACHE_KEY % self.id)
+        cache.delete(COLLECTION_ANNEX_MAP_CACHE_KEY % self.id)
     
     @staticmethod
     def from_json(collection_abs):
@@ -162,6 +173,27 @@ class Collection( DDRLocalCollection ):
         if not data:
             data = super(Collection, self).repo_annex_status()
             cache.set(key, data, COLLECTION_ANNEX_STATUS_TIMEOUT)
+        return data
+    
+    def repo_annex_whereis( self ):
+        key = COLLECTION_ANNEX_WHEREIS_CACHE_KEY % self.id
+        data = cache.get(key)
+        if not data:
+            org_path = os.path.join(settings.MEDIA_BASE, '%s-%s' % (self.repo, self.org))
+            org = Organization.load(org_path)
+            drive_label = inventory.guess_drive_label(self.path)
+            repo = dvcs.repository(self.path)
+            data = org.collection_whereis(drive_label, repo=repo)
+            cache.set(key, data, COLLECTION_ANNEX_WHEREIS_TIMEOUT)
+        return data
+    
+    def repo_annex_map( self ):
+        key = COLLECTION_ANNEX_MAP_CACHE_KEY % self.id
+        data = cache.get(key)
+        if not data:
+            repo = dvcs.repository(self.path)
+            data = dvcs.annex_map(repo).replace(settings.MEDIA_BASE, '')[1:]
+            cache.set(key, data, COLLECTION_ANNEX_MAP_TIMEOUT)
         return data
     
     def selected_inheritables(self, cleaned_data ):
