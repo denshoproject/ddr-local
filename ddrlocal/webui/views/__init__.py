@@ -1,3 +1,4 @@
+from datetime import datetime
 import logging
 logger = logging.getLogger(__name__)
 
@@ -15,7 +16,7 @@ from webui import WEBUI_MESSAGES
 from webui import api
 from webui.decorators import ddrview
 from webui.forms import LoginForm, TaskDismissForm
-from webui.tasks import dismiss_session_task
+from webui.tasks import dismiss_session_task, session_tasks_list
 
 # helpers --------------------------------------------------------------
 
@@ -107,9 +108,14 @@ def tasks( request ):
             return HttpResponseRedirect(redirect_uri)
     else:
         form = TaskDismissForm(initial={'next':request.GET.get('next',''),})
+    # add start datetime to tasks list
+    celery_tasks = session_tasks_list(request)
+    for task in celery_tasks:
+        task['startd'] = datetime.strptime(task['start'], settings.TIMESTAMP_FORMAT)
     return render_to_response(
         'webui/tasks.html',
         {'form': form,
+         'celery_tasks': celery_tasks,
          'hide_celery_tasks': True,},
         context_instance=RequestContext(request, processors=[])
     )
