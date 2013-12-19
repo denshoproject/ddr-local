@@ -534,10 +534,9 @@ def session_tasks_list( request ):
     @param request: A Django request object
     @return tasks: A list of task dicts.
     """
-    tasks = session_tasks(request)
-    for task in tasks.values():
-        task['startd'] = datetime.strptime(task['start'], settings.TIMESTAMP_FORMAT)
-    return sorted(tasks.values(), key=lambda t: t['startd'], reverse=True)
+    return sorted(session_tasks(request).values(),
+                  key=lambda t: t['start'],
+                  reverse=True)
 
 def dismiss_session_task( request, task_id ):
     """Dismiss a task from session_tasks.
