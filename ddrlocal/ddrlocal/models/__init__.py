@@ -259,7 +259,7 @@ class DDRLocalCollection( DDRCollection ):
         TODO cache?
         """
         if not self._astatus and (os.path.exists(os.path.join(self.path, '.git'))):
-            astatus = commands.astatus(self.path, short=True)
+            astatus = commands.annex_status(self.path)
             if astatus:
                 self._astatus = astatus
         return self._astatus
