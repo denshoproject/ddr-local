@@ -30,7 +30,7 @@ from webui.decorators import ddrview
 from webui.forms import DDRForm
 from webui.forms.collections import NewCollectionForm, UpdateForm
 from webui.models import Collection
-from webui.tasks import collection_sync
+from webui.tasks import collection_sync, collection_refresh
 from webui.views.decorators import login_required
 from xmlforms.models import XMLModel
 
@@ -52,6 +52,17 @@ def alert_if_conflicted(request, collection):
         url = reverse('webui-merge', args=[collection.repo,collection.org,collection.cid])
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_CONFLICTED'].format(collection.id, url))
 
+def refresh_collection( request, collection_path ):
+    """refresh cached metadata (git annex status, whereis, etc) in the background.
+    """
+    result = collection_refresh.apply_async( [collection_path], countdown=2)
+    celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
+    # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
+    task = {'task_id': result.task_id,
+            'action': 'webui-collection-refresh',
+            'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
+    celery_tasks[result.task_id] = task
+    request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
 
 
 # views ----------------------------------------------------------------
@@ -234,10 +245,7 @@ def new( request, repo, org ):
             collections = [{'uuid':collection_uuid, 'cid':collection_uid, 'level':level,}]
             istatus = inventory.add_collection(organization_path, label, collections, git_name, git_mail)
             inventory.sync_organization(organization_path)
-            
-            # update search index
-            json_path = os.path.join(collection_path, 'collection.json')
-            add_update('ddr', 'collection', json_path)
+            refresh_collection(request, collection_path)
             # positive feedback
             return HttpResponseRedirect( reverse('webui-collection-edit', args=[repo,org,cid]) )
     else:
@@ -288,8 +296,7 @@ def edit( request, repo, org, cid ):
             if exit:
                 messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
             else:
-                # update search index
-                add_update('ddr', 'collection', collection.json_path)
+                refresh_collection(request, collection.path)
                 # positive feedback
                 messages.success(request, success_msg)
                 return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )

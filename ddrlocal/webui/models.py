@@ -139,6 +139,18 @@ class Collection( DDRLocalCollection ):
         cache.delete(COLLECTION_ANNEX_WHEREIS_CACHE_KEY % self.id)
         cache.delete(COLLECTION_ANNEX_MAP_CACHE_KEY % self.id)
     
+    def cache_refresh( self ):
+        cache.delete(COLLECTION_FETCH_CACHE_KEY % self.id)
+        self.repo_fetch()
+        cache.delete(COLLECTION_STATUS_CACHE_KEY % self.id)
+        self.repo_status()
+        cache.delete(COLLECTION_ANNEX_STATUS_CACHE_KEY % self.id)
+        self.repo_annex_status()
+        cache.delete(COLLECTION_ANNEX_WHEREIS_CACHE_KEY % self.id)
+        self.repo_annex_whereis()
+        cache.delete(COLLECTION_ANNEX_MAP_CACHE_KEY % self.id)
+        self.repo_annex_map()
+    
     @staticmethod
     def from_json(collection_abs):
         """Instantiates a Collection object, loads data from collection.json.

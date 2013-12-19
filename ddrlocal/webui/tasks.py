@@ -60,6 +60,14 @@ TASK_STATUS_MESSAGES = {
         #'RETRY': '',
         #'REVOKED': '',
         },
+    'webui-collection-refresh': {
+        #'STARTED': '',
+        'PENDING': 'Refreshing cached info for <b><a href="{collection_url}">{collection_id}</a></b>.',
+        'SUCCESS': 'Refreshed cached info for <b><a href="{collection_url}">{collection_id}</a></b>.',
+        'FAILURE': 'Could not refresh cached info for <b><a href="{collection_url}">{collection_id}</a></b>.',
+        #'RETRY': '',
+        #'REVOKED': '',
+        },
     'search-reindex': {
         #'STARTED': '',
         'PENDING': 'Recreating search index.',
@@ -413,7 +421,7 @@ class CollectionSyncDebugTask(Task):
         # NOTE: collection is locked immediately after collection_sync task
         #       starts in webui.views.collections.sync
         collection.unlock(task_id)
-        collection.cache_delete()
+        collection.cache_refresh()
 
 @task(base=CollectionSyncDebugTask, name='collection-sync')
 def collection_sync( git_name, git_mail, collection_path ):
@@ -427,6 +435,22 @@ def collection_sync( git_name, git_mail, collection_path ):
     exit,status = sync(git_name, git_mail, collection_path)
     # update search index
     add_update('ddr', 'collection', os.path.join(collection_path, 'collection.json'))
+    return collection_path
+
+
+
+@task(base=CollectionSyncDebugTask, name='webui-collection-refresh')
+def collection_refresh( collection_path ):
+    """Regenerate inventory and annex data.
+    
+    @param collection_path: Absolute path to collection repo.
+    @return collection_path: Absolute path to collection.
+    """
+    # update search index
+    add_update('ddr', 'collection', os.path.join(collection_path, 'collection.json'))
+    # refresh redis caches
+    collection = Collection.from_json(collection_path)
+    collection.cache_refresh()
     return collection_path
 
 
