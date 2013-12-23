@@ -1,0 +1,27 @@
+{% extends "webui/collections/base.html" %}
+
+
+{% block title %}Confirm{% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+<li class="active">Confirm</li>
+{% endblock breadcrumbs %}
+
+
+{% block content %}
+
+  <div class="row-fluid">
+    <div class="span12">
+
+<h1>Confirm</h1>
+
+<h2>
+You are about to
+X.
+Are you SURE you want to do this?
+</h2>
+
+    </div><!-- .span12 -->
+  </div><!-- .row-fluid -->
+
+{% endblock content %}

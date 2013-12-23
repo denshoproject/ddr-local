@@ -1,0 +1,52 @@
+{% extends "webui/collections/base.html" %}
+
+
+{% block title %}Inventory {{ oid }}{% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+<li class="active">Inventory {{ oid }}</li>
+{% endblock breadcrumbs %}
+
+
+{% block content %}
+
+  <div class="row-fluid">
+    <div class="span12">
+
+<h1>Inventory {{ oid }}</h1>
+
+<p>
+{{ drive_label }}
+</p>
+<p>
+{{ organization }}
+</p>
+<p>
+{{ store }}
+</p>
+
+ddr-testing-1    ABSENT    get
+ddr-testing-2    ABSENT    get
+ddr-testing-3    PRESENT   drop
+
+
+<p>
+{% for collection in collections %}
+<b style="color:{{ collection.color }};">{{ collection.cid }}</b>:
+{% if collection.present %}
+<a href="{% url "webui-inventory-apply" repo org "rm" %}?cid={{ collection.cid }}">Remove</a>
+{% else %}
+<a href="{% url "webui-inventory-apply" repo org "add" %}?cid={{ collection.cid }}">Add</a>
+{% endif %}
+<br/>
+<span class="muted">{{ collection.whereis }}</span>
+<br/>
+
+{% endfor %}
+</p>
+
+
+    </div><!-- .span12 -->
+  </div><!-- .row-fluid -->
+
+{% endblock content %}
