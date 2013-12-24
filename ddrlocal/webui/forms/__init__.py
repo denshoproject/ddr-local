@@ -16,6 +16,9 @@ class LoginForm(forms.Form):
 class TaskDismissForm(forms.Form):
     next = forms.CharField(max_length=255, required=False, widget=forms.HiddenInput)
 
+class InventoryOpForm(forms.Form):
+    op = forms.CharField(max_length=8, required=True, widget=forms.HiddenInput)
+
 class DDRForm(forms.Form):
     def __init__(self, *args, **kwargs):
         """Build a form from a *_FIELDS data structure.

@@ -18,7 +18,7 @@ urlpatterns = patterns(
     # collections
     url(r'^collections/$', 'webui.views.collections.collections', name='webui-collections'),
     url(r'^inventory/(?P<repo>[\w]+)-(?P<org>[\w]+)/$', 'webui.views.inventory.detail', name='webui-inventory-detail'),
-    url(r'^inventory/(?P<repo>[\w]+)-(?P<org>[\w]+)/(?P<op>[\w]+)/$', 'webui.views.inventory.apply', name='webui-inventory-apply'),
+    url(r'^inventory/(?P<repo>[\w]+)-(?P<org>[\w]+)/(?P<cid>[\d]+)/(?P<op>[\w]+)/$', 'webui.views.inventory.apply', name='webui-inventory-apply'),
 
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/edit/ead/$', 'webui.views.collections.edit_ead', name='webui-collection-edit-ead'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/edit/overview/$', 'webui.views.collections.edit_overview', name='webui-collection-edit-overview'),

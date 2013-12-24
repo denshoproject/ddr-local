@@ -1,4 +1,4 @@
-{% extends "webui/collections/base.html" %}
+{% extends "webui/inventory/base.html" %}
 
 
 {% block title %}Confirm{% endblock %}
@@ -13,13 +13,17 @@
   <div class="row-fluid">
     <div class="span12">
 
-<h1>Confirm</h1>
-
-<h2>
+<form name="inventory-apply" action="" method="POST">{% csrf_token %}
+{{ form.as_p }}
+<p>
 You are about to
-X.
-Are you SURE you want to do this?
-</h2>
+{% if op == "clone" %}<strong>clone</strong> {{ collection_id }} to drive {{ drive_label }}.{% endif %}
+{% if op == "drop" %}<strong>remove</strong> {{ collection_id }} from drive {{ drive_label }}.{% endif %}
+<br/>
+Are you <strong>sure</strong> you want to do this?
+</p>
+<input name="submit" type="submit" value="Yes, I'm sure" />
+</form>
 
     </div><!-- .span12 -->
   </div><!-- .row-fluid -->
