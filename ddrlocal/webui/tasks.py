@@ -17,7 +17,9 @@ from ddrlocal.models import DDRLocalEntity, DDRLocalFile, hash
 from search import add_update
 from webui.models import Collection
 
-from DDR.commands import entity_annex_add, entity_update, sync
+from DDR import dvcs
+from DDR import inventory
+from DDR.commands import clone, entity_annex_add, entity_update, sync
 
 
 
@@ -65,6 +67,22 @@ TASK_STATUS_MESSAGES = {
         'PENDING': 'Refreshing cached info for <b><a href="{collection_url}">{collection_id}</a></b>.',
         'SUCCESS': 'Refreshed cached info for <b><a href="{collection_url}">{collection_id}</a></b>.',
         'FAILURE': 'Could not refresh cached info for <b><a href="{collection_url}">{collection_id}</a></b>.',
+        #'RETRY': '',
+        #'REVOKED': '',
+        },
+    'webui-inventory-clone': {
+        #'STARTED': '',
+        'PENDING': 'clone PENDING',
+        'SUCCESS': 'clone SUCCESS',
+        'FAILURE': 'clone FAILURE',
+        #'RETRY': '',
+        #'REVOKED': '',
+        },
+    'webui-inventory-drop': {
+        #'STARTED': '',
+        'PENDING': 'drop PENDING',
+        'SUCCESS': 'drop SUCCESS',
+        'FAILURE': 'drop FAILURE',
         #'RETRY': '',
         #'REVOKED': '',
         },
@@ -452,6 +470,77 @@ def collection_refresh( collection_path ):
     collection = Collection.from_json(collection_path)
     collection.cache_refresh()
     return collection_path
+
+
+
+class InventoryOpDebugTask(Task):
+    abstract = True
+    
+    def on_failure(self, exc, task_id, args, kwargs):
+        pass
+    
+    def on_success(self, retval, task_id, args, kwargs):
+        pass
+    
+    def after_return(self, status, retval, task_id, args, kwargs, cinfo):
+        pass
+
+@task(base=InventoryOpDebugTask, name='webui-inventory-clone')
+def inventory_clone( path, label, repo, org, cid, level, git_name, git_mail ):
+    """Clones a collection to the local store.
+    
+    Clone the collection.
+    Add collection to local Store.
+    Update Inventory.
+    Sync Inventory.
+    
+    @param path: Absolute path to dir that contains the Organization and collection repos.
+    @param label: Drive label for drive on which the Store resides.
+    @param repo
+    @param org
+    @param cid
+    @param git_name: Username for use in changelog, git log
+    @param git_mail: User email address for use in changelog, git log
+    """
+    logger.debug('inventory_clone(%s, %s, %s, %s, %s, %s, %s, %s)' % (path, label, repo, org, cid, level, git_name, git_mail))
+    collection_id = '-'.join([repo, org, cid])
+    organization_id = '-'.join([repo, org])
+    collection_path = os.path.join(path, collection_id)
+    organization_path = os.path.join(path, organization_id)
+    logger.debug('collection_id: %s' % collection_id)
+    logger.debug('organization_id: %s' % organization_id)
+    logger.debug('collection_path: %s' % collection_path)
+    logger.debug('organization_path: %s' % organization_path)
+    # clone
+    logger.debug('clone(%s, %s, %s, %s)' % (git_name, git_mail, collection_id, collection_path))
+    status,message = clone(git_name, git_mail, collection_id, collection_path)
+    logger.debug('status: %s' % status)
+    logger.debug('message: %s' % message)
+    # update inventory
+    if not status:
+        logger.debug('0')
+        repository = dvcs.repository(collection_path)
+        logger.debug('1')
+        uuid = repository.git.config('annex.uuid')
+        logger.debug('2')
+        collection = {'uuid':uuid, 'cid':collection_id, 'level':level}
+        logger.debug('3')
+        inventory.add_collection(organization_path, label, [collection], git_name, git_mail)
+        logger.debug('4')
+        inventory.sync_organization(organization_path)
+        logger.debug('5')
+    return collection_path
+
+@task(base=InventoryOpDebugTask, name='webui-inventory-drop')
+def inventory_drop( git_name, git_mail ):
+    """Drops a collection from the local store.
+    
+    Removes collection repo from the disk.
+    Removes collection from local Store.
+    Update Inventory.
+    Sync Inventory.
+    """
+    return 'NOT IMPLEMENTED YET'
 
 
 
