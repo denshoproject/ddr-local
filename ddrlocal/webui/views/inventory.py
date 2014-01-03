@@ -101,7 +101,9 @@ def detail( request, repo, org ):
                 if repos['store'] == drive_label:
                     present = True
                     op = 'drop'
-            collections.append( {'id':key, 'cid':cid, 'whereis':whereis[key], 'present':present, 'op':op,} )
+            collections.append({'id':key, 'cid':cid, 'present':present, 'op':op,
+                                'url': reverse('webui-collection', args=[repo, org, cid]),
+                                'whereis':whereis[key],})
     return render_to_response(
         'webui/inventory/detail.html',
         {'repo': repo,

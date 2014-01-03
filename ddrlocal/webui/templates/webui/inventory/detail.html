@@ -25,7 +25,7 @@ Drive label: {{ drive_label }}
 {% for collection in collections %}
   <tr class="{% if not collection.present %}muted{% endif %}">
     <td>
-<b>{{ collection.id }}</b>:
+{% if collection.present %}<b><a href="{{ collection.url }}">{{ collection.id }}</a></b>:{% else %}<b>{{ collection.id }}</b>:{% endif %}
 <!-- {{ collection.whereis|safe }} -->
     </td>
     <td>
