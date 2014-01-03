@@ -14,6 +14,7 @@ urlpatterns = patterns(
     #url(r'^admin/', include(admin.site.urls)),
     url(r'^404/', TemplateView.as_view(template_name="ddrlocal/404.html")),
     url(r'^500/', TemplateView.as_view(template_name="ddrlocal/500.html")),
+    url(r'^502/', TemplateView.as_view(template_name="ddrlocal/502.html")),
     url(r'^celery/', include(djcelery_urls)),
     url(r'^search/', include(search_urls)),
     url(r'^storage/', include(storage_urls)),
