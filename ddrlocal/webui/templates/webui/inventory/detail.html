@@ -21,19 +21,32 @@ Inventory {{ oid }}
 Drive label: {{ drive_label }}
 </h3>
 
+<table class="table">
 {% for collection in collections %}
-<div class="{% if not collection.present %}muted{% endif %}">
+  <tr class="{% if not collection.present %}muted{% endif %}">
+    <td>
 <b>{{ collection.id }}</b>:
+<!-- {{ collection.whereis|safe }} -->
+    </td>
+    <td>
 {% if collection.present %}
 <a href="{% url "webui-inventory-apply" repo org collection.cid collection.op %}">Remove</a>
 {% else %}
 <a href="{% url "webui-inventory-apply" repo org collection.cid collection.op %}">Add</a>
 {% endif %}
-<br/>
-{{ collection.whereis }}
-</div>
+    </td>
+    <td>
+{% for remote in collection.whereis %}
+  {% if remote.store == drive_label %}
+HERE<br/>
+  {% else %}
+{{ remote.store }} ({{ remote.location }})<br/>
+  {% endif %}
 {% endfor %}
-
+    </td>
+  </tr>
+{% endfor %}
+</table>
 
     </div><!-- .span12 -->
   </div><!-- .row-fluid -->

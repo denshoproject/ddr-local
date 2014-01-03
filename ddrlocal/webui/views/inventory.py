@@ -73,14 +73,16 @@ def index( request ):
 @ddrview
 @storage_required
 def detail( request, repo, org ):
+    """List collection repos for this Organization, with add/remove links.
+    
+    Also added to list of collections: cid, status (present/not), and operation (clone/drop).
+    """
     oid = '-'.join([repo, org])
     organization_path = _inventory_org_path(repo, org)
+    if not os.path.exists(organization_path):
+        raise Http404
     drive_label = inventory.guess_drive_label(settings.MEDIA_BASE)
     organization = Organization.load(organization_path)
-    if not organization:
-        messages.error(request, 'Could not load inventory organization record!')
-#    store = organization.store(drive_label)
-#    collections = organization.collections(server_url=settings.GITOLITE, server_location='digitalforest')
     collections = []
     whereis = organization.whereis(server_url=settings.GITOLITE, server_location='digitalforest')
     whereis_keys = natural_sort(whereis.keys())
@@ -101,10 +103,7 @@ def detail( request, repo, org ):
          'oid': oid,
          'drive_label': drive_label,
          'organization': organization,
-#         'store': store,
          'collections': collections,
-#         'whereis': whereis,
-#         'whereis_keys': whereis_keys,
          },
         context_instance=RequestContext(request, processors=[])
     )
