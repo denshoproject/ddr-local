@@ -1,6 +1,5 @@
 {% extends "base.html" %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="">Inventory</a></li>
-<li><a href="{% url "webui-inventory-detail" repo org %}">{{ repo }}-{{ org }}</a></li>
+<li><a href="{% url "webui-inventory-index" %}">Inventory</a></li>
 {% endblock breadcrumbs %}

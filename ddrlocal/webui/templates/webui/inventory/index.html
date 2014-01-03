@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+
+{% block title %}Inventory{% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+<li class="active">Inventory</li>
+{% endblock breadcrumbs %}
+
+
+{% block content %}
+
+  <div class="row-fluid">
+    <div class="span12">
+
+<h1>
+Inventory
+</h1>
+
+<h3>
+Drive label: {{ drive_label }}
+</h3>
+
+<table class="table">
+{% for organization in organizations %}
+  <tr>
+    <td><a href="{% url "webui-inventory-detail" organization.repo organization.org %}">{{ organization.id }}</a></td>
+  </tr>
+{% endfor %}
+</table>
+
+    </div><!-- .span12 -->
+  </div><!-- .row-fluid -->
+
+{% endblock content %}

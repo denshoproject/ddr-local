@@ -58,6 +58,20 @@ INVENTORY_OPERATIONS = ['clone', 'drop']
 
 @ddrview
 @storage_required
+def index( request ):
+    """List Organizations present in this Store (e.g. in settings.MEDIA_BASE).
+    """
+    drive_label = inventory.guess_drive_label(settings.MEDIA_BASE)
+    organizations = Organization.organizations(settings.MEDIA_BASE)
+    return render_to_response(
+        'webui/inventory/index.html',
+        {'drive_label': drive_label,
+         'organizations': organizations,},
+        context_instance=RequestContext(request, processors=[])
+    )
+
+@ddrview
+@storage_required
 def detail( request, repo, org ):
     oid = '-'.join([repo, org])
     organization_path = _inventory_org_path(repo, org)

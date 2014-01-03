@@ -15,11 +15,13 @@ urlpatterns = patterns(
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/merge/raw/$', 'webui.views.merge.edit_raw', name='webui-merge-raw'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/merge/$', 'webui.views.merge.merge', name='webui-merge'),
     
+    # inventory
+    url(r'^inventory/(?P<repo>[\w]+)-(?P<org>[\w]+)/(?P<cid>[\d]+)/(?P<op>[\w]+)/$', 'webui.views.inventory.apply', name='webui-inventory-apply'),
+    url(r'^inventory/(?P<repo>[\w]+)-(?P<org>[\w]+)/$', 'webui.views.inventory.detail', name='webui-inventory-detail'),
+    url(r'^inventory/$', 'webui.views.inventory.index', name='webui-inventory-index'),
+
     # collections
     url(r'^collections/$', 'webui.views.collections.collections', name='webui-collections'),
-    url(r'^inventory/(?P<repo>[\w]+)-(?P<org>[\w]+)/$', 'webui.views.inventory.detail', name='webui-inventory-detail'),
-    url(r'^inventory/(?P<repo>[\w]+)-(?P<org>[\w]+)/(?P<cid>[\d]+)/(?P<op>[\w]+)/$', 'webui.views.inventory.apply', name='webui-inventory-apply'),
-
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/edit/ead/$', 'webui.views.collections.edit_ead', name='webui-collection-edit-ead'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/edit/overview/$', 'webui.views.collections.edit_overview', name='webui-collection-edit-overview'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/edit/admininfo/$', 'webui.views.collections.edit_admininfo', name='webui-collection-edit-admininfo'),
