@@ -476,7 +476,7 @@ def collection_refresh( collection_path ):
 class InventoryOpDebugTask(Task):
     abstract = True
     
-    def on_failure(self, exc, task_id, args, kwargs):
+    def on_failure(self, exc, task_id, args, kwargs, whatsthis):
         pass
     
     def on_success(self, retval, task_id, args, kwargs):
