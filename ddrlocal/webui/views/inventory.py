@@ -30,6 +30,11 @@ def _inventory_org_path(repo, org):
     path = os.path.join(settings.MEDIA_BASE, org_id)
     return path
 
+def _collection_path(repo, org, cid):
+    c_id = '{}-{}-{}'.format(repo, org, cid)
+    path = os.path.join(settings.MEDIA_BASE, c_id)
+    return path
+
 def inventory_op( request, op, path, label, repo, org, cid, level, git_name, git_mail ):
     """clone collection into local store, update inventory.
     """
@@ -112,19 +117,25 @@ def detail( request, repo, org ):
 @login_required
 @storage_required
 def apply( request, repo, org, cid, op ):
+    """
+    """
+    organization_path = _inventory_org_path(repo, org)
+    if not os.path.exists(organization_path):
+        raise Http404
+    collection_path = _collection_path(repo, org, cid)
+    if not os.path.exists(organization_path):
+        messages.error(request, "Collection does not exist: %s" % collection_path)
     git_name = request.session.get('git_name')
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    oid = '-'.join([repo, org])
-    collection_id = '-'.join([repo, org, cid])
-    organization_path = _inventory_org_path(repo, org)
-    drive_label = inventory.guess_drive_label(settings.MEDIA_BASE)
-    organization = Organization.load(organization_path)
-    if not organization:
-        messages.error(request, 'Could not load inventory organization record!')
     if op not in INVENTORY_OPERATIONS:
         messages.error(request, "I'm sorry Dave, I'm afraid I can't do that")
+    oid = '-'.join([repo, org])
+    collection_id = '-'.join([repo, org, cid])
+    drive_label = inventory.guess_drive_label(settings.MEDIA_BASE)
+    organization = Organization.load(organization_path)
+    remotes = []
     if request.method == 'POST':
         form = InventoryOpForm(request.POST)
         if form.is_valid():
@@ -135,11 +146,11 @@ def apply( request, repo, org, cid, op ):
                 messages.success(request, 'Cloning collection <b>%s</b>. Please wait a bit.' % collection_id)
             elif form_op == 'drop':
                 messages.success(request, 'Dropping collection <b>%s</b>. Please wait a bit.' % collection_id)
-            else:
-                messages.success(request, 'Not sure what I\'m supposed to do here.')
             return HttpResponseRedirect( reverse('webui-inventory-detail', args=[repo,org]) )
     else:
         form = InventoryOpForm(data={'op':op})
+        whereis = organization.whereis(server_url=settings.GITOLITE, server_location='digitalforest')
+        remotes = [remote for remote in whereis.get(collection_id, []) if remote['store'] != drive_label]
     return render_to_response(
         'webui/inventory/apply.html',
         {'repo': repo,
@@ -149,6 +160,7 @@ def apply( request, repo, org, cid, op ):
          'drive_label': drive_label,
          'organization': organization,
          'op': op,
+         'remotes': remotes,
          'form': form,},
         context_instance=RequestContext(request, processors=[])
     )

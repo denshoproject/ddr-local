@@ -15,13 +15,39 @@
 
 <form name="inventory-apply" action="" method="POST">{% csrf_token %}
 {{ form.as_p }}
+
 <p>
 You are about to
 {% if op == "clone" %}<strong>clone</strong> {{ collection_id }} to drive {{ drive_label }}.{% endif %}
 {% if op == "drop" %}<strong>remove</strong> {{ collection_id }} from drive {{ drive_label }}.{% endif %}
-<br/>
+</p>
+
+<p>
+{% if remotes %}
+
+  This collection is also present on these remotes:
+  <ul>
+  {% for remote in remotes %}
+    <li>{{ remote.store }} ({{ remote.location }})</li>
+  {% endfor %}
+  </ul>
+  {% if op == "drop" %}
+    Do you have any unsynced changes in this collection?
+    If so please <a href="">sync</a> before dropping this copy.
+  {% endif %}
+
+{% else %}
+
+   This collection is only present <b>HERE</b>!
+   If you delete this copy it really is gone for good!
+
+{% endif %}{# remotes #}
+</p>
+
+<p>
 Are you <strong>sure</strong> you want to do this?
 </p>
+
 <input name="submit" type="submit" value="Yes, I'm sure" />
 </form>
 
