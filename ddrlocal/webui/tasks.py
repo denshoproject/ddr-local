@@ -507,6 +507,8 @@ def inventory_clone( path, label, repo, org, cid, level, git_name, git_mail ):
     organization_id = '-'.join([repo, org])
     collection_path = os.path.join(path, collection_id)
     organization_path = os.path.join(path, organization_id)
+    logger.debug('git_name: %s' % git_name)
+    logger.debug('git_mail: %s' % git_mail)
     logger.debug('collection_id: %s' % collection_id)
     logger.debug('organization_id: %s' % organization_id)
     logger.debug('collection_path: %s' % collection_path)
@@ -518,17 +520,15 @@ def inventory_clone( path, label, repo, org, cid, level, git_name, git_mail ):
     logger.debug('message: %s' % message)
     # update inventory
     if not status:
-        logger.debug('0')
+        logger.debug('Updating inventory')
         repository = dvcs.repository(collection_path)
-        logger.debug('1')
         uuid = repository.git.config('annex.uuid')
-        logger.debug('2')
         collection = {'uuid':uuid, 'cid':collection_id, 'level':level}
-        logger.debug('3')
+        logger.debug('Adding collection: %s' % collection)
         inventory.add_collection(organization_path, label, [collection], git_name, git_mail)
-        logger.debug('4')
+        logger.debug('Syncing inventory')
         inventory.sync_organization(organization_path)
-        logger.debug('5')
+        logger.debug('Updating inventory DONE')
     return collection_path
 
 @task(base=InventoryOpDebugTask, name='webui-inventory-drop')

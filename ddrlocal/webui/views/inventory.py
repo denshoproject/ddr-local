@@ -41,6 +41,7 @@ def inventory_op( request, op, path, label, repo, org, cid, level, git_name, git
     if op in ['clone', 'drop']:
         collection_id = '-'.join([repo, org, cid])
         if op == 'clone':
+            logger.debug('inventory_clone(%s)' % [path, label, repo, org, cid, level, git_name, git_mail])
             result = inventory_clone.apply_async( [path, label, repo, org, cid, level, git_name, git_mail], countdown=2)
             action = 'webui-inventory-clone'
         elif op == 'drop':
