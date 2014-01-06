@@ -35,24 +35,28 @@ def _collection_path(repo, org, cid):
     path = os.path.join(settings.MEDIA_BASE, c_id)
     return path
 
-def inventory_op( request, op, path, label, repo, org, cid, level, git_name, git_mail ):
+def inventory_op( request, op, git_name, git_mail, path, label, repo, org, cid, level='meta' ):
     """clone collection into local store, update inventory.
     """
     if op in ['clone', 'drop']:
         collection_id = '-'.join([repo, org, cid])
+        collection_url = ''
+        action = 'webui-inventory-%s' % op
+        logger.debug('inventory_op: %s' % action)
         if op == 'clone':
-            logger.debug('inventory_clone(%s)' % [path, label, repo, org, cid, level, git_name, git_mail])
+            args = [path, label, repo, org, cid, level, git_name, git_mail]
+            logger.debug('inventory_clone(%s)' % args)
             result = inventory_clone.apply_async( [path, label, repo, org, cid, level, git_name, git_mail], countdown=2)
-            action = 'webui-inventory-clone'
         elif op == 'drop':
-            result = inventory_drop.apply_async( [git_name, git_mail], countdown=2)
-            action = 'webui-inventory-drop'
+            args = [path, label, repo, org, cid, git_name, git_mail]
+            logger.debug('inventory_drop(%s)' % args)
+            result = inventory_drop.apply_async(args, countdown=2)
         celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
         # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
         task = {'task_id': result.task_id,
                 'action': action,
                 'collection_id': collection_id,
-                'collection_url': '',
+                'collection_url': collection_url,
                 'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
         celery_tasks[result.task_id] = task
         request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
@@ -144,10 +148,14 @@ def apply( request, repo, org, cid, op ):
         if form.is_valid():
             form_op = form.cleaned_data['op']
             if form_op == 'clone':
-                inventory_op(request, 'clone', settings.MEDIA_BASE, drive_label,
-                             repo, org, cid, 'meta', git_name, git_mail)
+                inventory_op(request, 'clone', git_name, git_mail,
+                             settings.MEDIA_BASE, drive_label,
+                             repo, org, cid, 'meta')
                 messages.success(request, 'Cloning collection <b>%s</b>. Please wait a bit.' % collection_id)
             elif form_op == 'drop':
+                inventory_op(request, 'drop', git_name, git_mail,
+                             settings.MEDIA_BASE, drive_label,
+                             repo, org, cid)
                 messages.success(request, 'Dropping collection <b>%s</b>. Please wait a bit.' % collection_id)
             return HttpResponseRedirect( reverse('webui-inventory-detail', args=[repo,org]) )
     else:
