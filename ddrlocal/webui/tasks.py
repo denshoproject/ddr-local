@@ -532,14 +532,37 @@ def inventory_clone( path, label, repo, org, cid, level, git_name, git_mail ):
     return collection_path
 
 @task(base=InventoryOpDebugTask, name='webui-inventory-drop')
-def inventory_drop( git_name, git_mail ):
+def inventory_drop( path, label, repo, org, cid, git_name, git_mail ):
     """Drops a collection from the local store.
     
-    Removes collection repo from the disk.
-    Removes collection from local Store.
-    Update Inventory.
-    Sync Inventory.
+    @param path: Absolute path to dir that contains the Organization and collection repos.
+    @param label: Drive label for drive on which the Store resides.
+    @param repo
+    @param org
+    @param cid
+    @param git_name: Username for use in changelog, git log
+    @param git_mail: User email address for use in changelog, git log
     """
+    #logger.debug('inventory_drop(%s, %s, %s, %s, %s, %s, %s)' % (path, label, repo, org, cid, git_name, git_mail))
+    #collection_id = '-'.join([repo, org, cid])
+    #collection_path = os.path.join(path, collection_id)
+    #organization_id = '-'.join([repo, org])
+    #organization_path = os.path.join(path, organization_id)
+    #logger.debug('collection_id: %s' % collection_id)
+    #logger.debug('collection_path: %s' % collection_path)
+    #logger.debug('organization_id: %s' % organization_id)
+    #logger.debug('organization_path: %s' % organization_path)
+    #collection_uuid = dvcs.repository(collection_path).git.config('annex.uuid')
+    #logger.debug('collection_uuid: %s' % collection_uuid)
+    ## remove collection repo from store
+    #logger.debug('Removing collection from inventory store: %s' % collection)
+    #remove_collection(organization_path, label, collection_uuid, git_name, git_mail)
+    ## remove collection from local Store
+    ## commit Inventory
+    ## sync Inventory
+    #logger.debug('Syncing inventory')
+    #inventory.sync_organization(organization_path)
+    #logger.debug('Updating inventory DONE')
     return 'NOT IMPLEMENTED YET'
 
 
