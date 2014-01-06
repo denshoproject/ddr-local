@@ -499,6 +499,7 @@ def inventory_clone( path, label, repo, org, cid, level, git_name, git_mail ):
     @param repo
     @param org
     @param cid
+    @param level: What level of git-annex files to get.
     @param git_name: Username for use in changelog, git log
     @param git_mail: User email address for use in changelog, git log
     """
@@ -507,8 +508,6 @@ def inventory_clone( path, label, repo, org, cid, level, git_name, git_mail ):
     organization_id = '-'.join([repo, org])
     collection_path = os.path.join(path, collection_id)
     organization_path = os.path.join(path, organization_id)
-    logger.debug('git_name: %s' % git_name)
-    logger.debug('git_mail: %s' % git_mail)
     logger.debug('collection_id: %s' % collection_id)
     logger.debug('organization_id: %s' % organization_id)
     logger.debug('collection_path: %s' % collection_path)
@@ -529,6 +528,7 @@ def inventory_clone( path, label, repo, org, cid, level, git_name, git_mail ):
         logger.debug('Syncing inventory')
         inventory.sync_organization(organization_path)
         logger.debug('Updating inventory DONE')
+    logger.debug('inventory_clone(%s, %s, %s, %s, %s, %s, %s, %s)' % (path, label, repo, org, cid, level, git_name, git_mail))
     return collection_path
 
 @task(base=InventoryOpDebugTask, name='webui-inventory-drop')
