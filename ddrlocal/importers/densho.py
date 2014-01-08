@@ -61,12 +61,14 @@ $ ./manage.py shell
 
 """
 
+from __future__ import division
 import csv
 from datetime import datetime
 import logging
 logger = logging.getLogger(__name__)
 import os
 import sys
+import doctest
 
 from django.conf import settings
 
@@ -213,6 +215,45 @@ def all_rows_valid( object_class, headers, required_fields, rows ):
             print('')
     return rows_bad
 
+def humanize_bytes(bytes, precision=1):
+    """Return a humanized string representation of a number of bytes.
+
+    Assumes `from __future__ import division`.
+
+    >>> humanize_bytes(1)
+    '1 byte'
+    >>> humanize_bytes(1024)
+    '1.0 kB'
+    >>> humanize_bytes(1024*123)
+    '123.0 kB'
+    >>> humanize_bytes(1024*12342)
+    '12.1 MB'
+    >>> humanize_bytes(1024*12342,2)
+    '12.05 MB'
+    >>> humanize_bytes(1024*1234,2)
+    '1.21 MB'
+    >>> humanize_bytes(1024*1234*1111,2)
+    '1.31 GB'
+    >>> humanize_bytes(1024*1234*1111,1)
+    '1.3 GB'
+    
+    source: http://code.activestate.com/recipes/577081-humanized-representation-of-a-number-of-bytes/
+    """
+    abbrevs = (
+        (1<<50L, 'PB'),
+        (1<<40L, 'TB'),
+        (1<<30L, 'GB'),
+        (1<<20L, 'MB'),
+        (1<<10L, 'kB'),
+        (1, 'bytes')
+    )
+    if bytes == 1:
+        return '1 byte'
+    for factor, suffix in abbrevs:
+        if bytes >= factor:
+            break
+    return '%.*f %s' % (precision, bytes / factor, suffix)
+
 
 # import collections ---------------------------------------------------
 
@@ -335,15 +376,23 @@ def import_files( csv_path, collection_path, git_name, git_mail ):
                 print('    %s' % f)
         # files are all accounted for, let's import
         else:
+            print('Data file looks ok and files are present')
+            print('')
             for row in rows:
                 rowd = make_row_dict(headers, row)
                 entity_id = rowd.pop('entity_id')
                 repo,org,cid,eid = entity_id.split('-')
                 entity_path = Entity.entity_path(None, repo, org, cid, eid)
                 entity = Entity.from_json(entity_path)
-                print('entity.id: %s' % entity.id)
                 src_path = os.path.join(csv_dir, rowd.pop('file'))
+                print(entity.id)
+                print('%s (%s)' % (src_path, humanize_bytes(os.path.getsize(src_path))))
                 role = rowd.pop('role')
-                print('add_file(%s, %s, %s, %s, %s, %s)' % (git_name, git_mail, entity, src_path, role, rowd))
+                started = datetime.now()
+                print('%s importing' % started)
+                #print('add_file(%s, %s, %s, %s, %s, %s)' % (git_name, git_mail, entity, src_path, role, rowd))
                 add_file( git_name, git_mail, entity, src_path, role, rowd )
+                finished = datetime.now()
+                elapsed = finished - started
+                print('%s done' % (finished))
                 print('')
