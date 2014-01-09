@@ -2,62 +2,82 @@
 import/densho
 =============
 
-This script will
+These functions will
 - read a properly-formatted CSV document,
 - create Entities from the data,
 - add the Entities to the specified Collection.
 The Collection must exist on disk for this to work.
 
 
+The Densho import module is part of the master branch, so switch both ddr-local and ddr-cmdln to the master branch and run the update script.::
+
+    $ cd /usr/local/src/ddr-local/
+    $ git fetch; git checkout master; git pull
+    $ cd /usr/local/src/ddr-cmdln/
+    $ git fetch; git checkout master; git pull
+    $ cd /usr/local/src/ddr-local/ddrlocal
+    $ sh bin/update.sh
+
+Requirements:
+
+- Properly formatted separate CSV files entities and files.  The import functions do some validation, mainly to check that file paths exist and that controlled vocabulary fields contain correct data.  The import functions will fail if files are invalid.
+- The CSV files must be located in a place where they can be read from the DDR VM.  This means either in the VM itself, on a mounted USB drive, or in the VM's shared folder.
+- Files to be imported must be present in the root of the folder that contains the files data CSV. 
+
+
 Walkthrough - import entities
 -----------------------------
 
-Log in to VM
-$ cd /usr/local/src/ddr-local/ddrlocal
+Become the ddr user if you are not already.::
 
-# Remove existing collection if something didn't work just right
-$ sudo rm -Rf /var/www/media/base/ddr-densho-242
+    $ su ddr
+    [password]
 
-# Become ddr
-$ su ddr
-[password]
+Clone the collection.::
 
-# If you don't already have the collection, clone it
-# You may want to do this each 
-#     -u USER, --user USER  User name
-#     -m MAIL, --mail MAIL  User e-mail address
-#     -i CID, --cid CID     A valid DDR collection UID
-#     --dest DEST           Absolute path to which repo will be cloned (includes collection UID)
-$ ddr clone -u gjost -m gjost@densho.org -i ddr-densho-242 --dest /var/www/media/base/ddr-densho-242
+    # Excerpt from the ddr manpage:
+    #     -u USER, --user USER  User name
+    #     -m MAIL, --mail MAIL  User e-mail address
+    #     -i CID, --cid CID     A valid DDR collection UID
+    #     --dest DEST           Absolute path to which repo will be cloned (includes collection UID)
+     
+    $ ddr clone -u gjost -m gjost@densho.org -i ddr-densho-242 --dest /var/www/media/base/ddr-densho-242
 
-# Run the import
-$ ./manage.py shell
->>> from importers import densho
->>> csv_path = '/tmp/ddr-densho-242-entities.csv'
->>> collection_path = '/var/www/media/base/ddr-densho-242'
->>> git_name = 'gjost'
->>> git_mail = 'gjost@densho.org'
->>> densho.import_entities(csv_path, collection_path, git_name, git_mail)
+Run the import.::
 
-# Check everything.
+    $ ./manage.py shell
+    >>> from importers import densho
+    >>> csv_path = '/tmp/ddr-densho-242-entities.csv'
+    >>> collection_path = '/var/www/media/base/ddr-densho-242'
+    >>> git_name = 'gjost'
+    >>> git_mail = 'gjost@densho.org'
+    >>> densho.import_entities(csv_path, collection_path, git_name, git_mail)
 
-# Sync with mits
+Check everything.
+
+If something didn't work quite right, remove the collection and go back to the beginning of the walkthrough to try again.::
+
+    $ sudo rm -Rf /var/www/media/base/ddr-densho-242
+
+Sync with mits.  NOT IMPLEMENTED YET.
 
 
 Walkthrough - import files
 --------------------------
 
-$ ./manage.py shell
->>> from importers import densho
->>> csv_path = '/tmp/ddr-densho-242-files.csv'
->>> collection_path = '/var/www/media/base/ddr-densho-242'
->>> git_name = 'gjost'
->>> git_mail = 'gjost@densho.org'
->>> densho.import_files(csv_path, collection_path, git_name, git_mail)
+The process for importing files is basically the same as above, except that it takes longer.::
+
+    $ ./manage.py shell
+    >>> from importers import densho
+    >>> csv_path = '/tmp/ddr-densho-242-files.csv'
+    >>> collection_path = '/var/www/media/base/ddr-densho-242'
+    >>> git_name = 'gjost'
+    >>> git_mail = 'gjost@densho.org'
+    >>> densho.import_files(csv_path, collection_path, git_name, git_mail)
 
 # Check everything.
 
-# Sync with mits
+Sync with mits.  NOT IMPLEMENTED YET.
 
 """
 
