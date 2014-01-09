@@ -82,6 +82,7 @@ Sync with mits.  NOT IMPLEMENTED YET.
 """
 
 from __future__ import division
+from copy import deepcopy
 import csv
 from datetime import datetime
 import logging
@@ -105,12 +106,21 @@ from webui.tasks import add_file
 
 
 COLLECTION_FILES_PREFIX = 'files'
-ENTITY_REQUIRED_FIELDS_EXCEPTIONS = ['record_created', 'record_lastmod',]
-FILE_REQUIRED_FIELDS_EXCEPTIONS = ['thumb',]
 
+REQUIRED_FIELDS_EXCEPTIONS = {
+    'entity': ['record_created', 'record_lastmod', 'files',],
+    'file': ['thumb', 'sha1', 'sha256', 'md5', 'size', 'access_rel', 'xmp', 'links'],
+}
+
+FIELD_NAMES = {
+    'entity': [field['name'] for field in ENTITY_FIELDS],
+    'file': [field['name'] for field in FILE_FIELDS],
+}
 
 
 # helper functions -----------------------------------------------------
+
+def dtfmt(dt): return dt.strftime('%Y-%m-%dT%H:%M:%S.%f')
 
 def read_csv( path ):
     """
@@ -129,8 +139,7 @@ def get_required_fields( object_class, fields ):
     @param fields: COLLECTION_FIELDS, ENTITY_FIELDS, FILE_FIELDS
     @return list of field names
     """
-    if object_class == 'entity': exceptions = ENTITY_REQUIRED_FIELDS_EXCEPTIONS
-    elif object_class == 'file': exceptions = FILE_REQUIRED_FIELDS_EXCEPTIONS
+    exceptions = REQUIRED_FIELDS_EXCEPTIONS[object_class]
     required_fields = []
     for field in fields:
         if field.get('form', None) and field['form']['required'] and (field['name'] not in exceptions):
@@ -191,6 +200,37 @@ def choice_is_valid( valid_choices, choice ):
         return True
     return False
 
+def invalid_headers( object_class, headers ):
+    """
+    @param object_class: 'entity' or 'file'
+    @param headers: List of field names
+    @returns True if everything's OK, False if not; prints errors to console
+    """
+    headers = deepcopy(headers)
+    the_official_fields = FIELD_NAMES[object_class]
+    exceptions = REQUIRED_FIELDS_EXCEPTIONS[object_class]
+    if object_class == 'file':
+        headers.remove('entity_id')
+        headers.remove('role')
+        the_official_fields.remove('basename_orig')
+        the_official_fields.append('file')
+    # validate
+    missing_headers = []
+    for field in the_official_fields:
+        if (field not in exceptions) and (field not in headers):
+            missing_headers.append(field)
+    bad_headers = []
+    for header in headers:
+        if header not in the_official_fields:
+            bad_headers.append(header)
+    if missing_headers:
+        print('MISSING HEADER(S): %s' % missing_headers)
+    if bad_headers:
+        print('BAD HEADER(S): %s' % bad_headers)
+    if missing_headers or bad_headers:
+        return 1
+    return 0
+
 def invalid_values( object_class, headers, rowd ):
     """
     @param headers: List of field names
@@ -202,7 +242,9 @@ def invalid_values( object_class, headers, rowd ):
         if not choice_is_valid(STATUS_CHOICES_VALUES, rowd['status']): invalid.append('status')
         if not choice_is_valid(PUBLIC_CHOICES_VALUES, rowd['public']): invalid.append('public')
         if not choice_is_valid(RIGHTS_CHOICES_VALUES, rowd['rights']): invalid.append('rights')
-        if not choice_is_valid(LANGUAGE_CHOICES_VALUES, rowd['language']): invalid.append('language')
+        for x in rowd['language'].strip().split(';'):
+            if not choice_is_valid(LANGUAGE_CHOICES_VALUES, x) and 'language' not in invalid:
+                invalid.append('language')
         if not choice_is_valid(GENRE_CHOICES_VALUES, rowd['genre']): invalid.append('genre')
         if not choice_is_valid(FORMAT_CHOICES_VALUES, rowd['format']): invalid.append('format')
     elif object_class == 'file':
@@ -298,23 +340,28 @@ def import_entities( csv_path, collection_path, git_name, git_mail ):
     required_fields = get_required_fields('entity', ENTITY_FIELDS)
     # validate metadata before attempting import
     invalid_rows = all_rows_valid('entity', headers, required_fields, rows)
-    if invalid_rows:
+    if invalid_headers('entity', headers):
+        print('FILE CONTAINS INVALID HEADERS - IMPORT CANCELLED')
+    elif invalid_rows:
         print('FILE CONTAINS INVALID ROWS - IMPORT CANCELLED')
     else:
         collection = Collection.from_json(collection_path)
         print(collection)
         
+        # --------------------------------------------------
         def prep_creators( data ): return [x.strip() for x in data.strip().split(';') if x]
-        def prep_language( data ):
-            if ':' in data:
-                lang = data.strip().split(':')[0]
-            else:
-                lang = data
-            return lang
+        def prep_language( data ): return [x.strip() for x in data.strip().split(';') if x]
         def prep_topics( data ): return [x.strip() for x in data.strip().split(';') if x]
         def prep_persons( data ): return [x.strip() for x in data.strip().split(';') if x]
+        def prep_facility( data ): return [x.strip() for x in data.strip().split(';') if x]
+        # --------------------------------------------------
         
-        for row in rows:
+        print('Data file looks ok')
+        started = datetime.now()
+        print('%s starting import' % dtfmt(started))
+        print('')
+        for n,row in enumerate(rows):
+            rowstarted = datetime.now()
             rowd = make_row_dict(headers, row)
             
             # create new entity
@@ -332,14 +379,16 @@ def import_entities( csv_path, collection_path, git_name, git_mail ):
             # reload newly-created Entity object
             entity = Entity.from_json(entity_path)
             
+            # preppers
+            rowd['creators'] = prep_creators(rowd['creators'])
+            rowd['language'] = prep_language(rowd['language'])
+            rowd['topics'] = prep_topics(rowd['topics'])
+            rowd['persons'] = prep_persons(rowd['persons'])
+            rowd['facility'] = prep_facility(rowd['facility'])
+            
             # insert values from CSV
             for key in rowd.keys():
-                data = rowd[key]
-                if key == 'creators': data = prep_creators(data)
-                if key == 'language': data = prep_language(data)
-                if key == 'topics': data = prep_topics(data)
-                if key == 'persons': data = prep_persons(data)
-                setattr(entity, key, data)
+                setattr(entity, key, rowd[key])
             entity.record_created = datetime.now()
             entity.record_lastmod = datetime.now()
             
@@ -350,8 +399,15 @@ def import_entities( csv_path, collection_path, git_name, git_mail ):
                                                  entity.parent_path, entity.id,
                                                  updated_files)
             
-            print(entity)
-
+            rowfinished = datetime.now()
+            rowelapsed = rowfinished - rowstarted
+            print('%s %s/%s %s (%s)' % (dtfmt(rowfinished), n+1, len(rows), entity.id, rowelapsed))
+        finished = datetime.now()
+        elapsed = finished - started
+        print('')
+        print('%s done (%s rows)' % (dtfmt(finished), len(rows)))
+        print('%s elapsed' % elapsed)
+        print('')
 
 
 # import files ---------------------------------------------------------
@@ -370,7 +426,9 @@ def import_files( csv_path, collection_path, git_name, git_mail ):
     required_fields = get_required_fields('file', FILE_FIELDS)
     # validate metadata before attempting import
     invalid_rows = all_rows_valid('file', headers, required_fields, rows)
-    if invalid_rows:
+    if invalid_headers('file', headers):
+        print('FILE CONTAINS INVALID HEADERS - IMPORT CANCELLED')
+    elif invalid_rows:
         print('FILE CONTAINS INVALID ROWS - IMPORT CANCELLED')
     else:
         collection = Collection.from_json(collection_path)
@@ -394,25 +452,32 @@ def import_files( csv_path, collection_path, git_name, git_mail ):
             print('ONE OR MORE SOURCE FILES ARE MISSING! - IMPORT CANCELLED!')
             for f in missing_files:
                 print('    %s' % f)
+        
         # files are all accounted for, let's import
         else:
             print('Data file looks ok and files are present')
+            print('"$ tail -f /var/log/ddr/local.log" in a separate console for more details')
+            started = datetime.now()
+            print('%s starting import' % started)
             print('')
-            for row in rows:
+            for n,row in enumerate(rows):
                 rowd = make_row_dict(headers, row)
                 entity_id = rowd.pop('entity_id')
                 repo,org,cid,eid = entity_id.split('-')
                 entity_path = Entity.entity_path(None, repo, org, cid, eid)
                 entity = Entity.from_json(entity_path)
                 src_path = os.path.join(csv_dir, rowd.pop('file'))
-                print(entity.id)
-                print('%s (%s)' % (src_path, humanize_bytes(os.path.getsize(src_path))))
                 role = rowd.pop('role')
-                started = datetime.now()
-                print('%s importing' % started)
+                rowstarted = datetime.now()
+                print('%s %s/%s %s %s (%s)' % (dtfmt(rowstarted), n+1, len(rows), entity.id, src_path, humanize_bytes(os.path.getsize(src_path))))
                 #print('add_file(%s, %s, %s, %s, %s, %s)' % (git_name, git_mail, entity, src_path, role, rowd))
                 add_file( git_name, git_mail, entity, src_path, role, rowd )
-                finished = datetime.now()
-                elapsed = finished - started
-                print('%s done' % (finished))
-                print('')
+                rowfinished = datetime.now()
+                rowelapsed = rowfinished - rowstarted
+                print('%s done (%s)' % (dtfmt(rowfinished), rowelapsed))
+            finished = datetime.now()
+            elapsed = finished - started
+            print('')
+            print('%s done (%s rows)' % (dtfmt(finished), len(rows)))
+            print('%s elapsed' % elapsed)
+            print('')
