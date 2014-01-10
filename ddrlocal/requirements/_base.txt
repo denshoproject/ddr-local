@@ -20,11 +20,11 @@ django-celery-with-redis # BSD      n/a                              n/a        
 
 # misc
 beautifulsoup4           # MIT      python-beautifulsoup (3.2.1-1)   python-beautifulsoup (3.2.1-1)   y
-envoy                    # MIT      n/a                              n/a                              ???
+envoy                    # MIT      n/a                              n/a                              y(?)
 lxml                     # BSD      python-lxml (2.3.2-1)            python-lxml (3.2.0-1)            y
 python-xmp-toolkit       # New BSD  n/a                              (sid) python-libxmp (v?)         ???
-pytz                     # MIT      python-tz (2012c-1)              python-tz (2012c-1)              ???
+pytz                     # MIT      python-tz (2012c-1)              python-tz (2012c-1)              y
 requests                 # Apache   python-requests (0.12.1-1)       python-requests (1.2.3-1)        y
-sorl-thumbnail           # BSD      python-sorl-thumbnail (11.12-4)  python-sorl-thumbnail (11.12-5)  NO
+sorl-thumbnail           # BSD      python-sorl-thumbnail (11.12-4)  python-sorl-thumbnail (11.12-5)  y(?)
 
 #-e git://github.com/densho/ddr-cmdln.git#egg=DDR
