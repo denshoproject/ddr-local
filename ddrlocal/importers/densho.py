@@ -377,6 +377,48 @@ def all_rows_valid( object_class, headers, required_fields, rows ):
             print('')
     return rows_bad
 
+def test_entities( headers, rows ):
+    """Test-loads Entities mentioned in rows; will crash if any are missing.
+    """
+    bad_entities = []
+    for row in rows:
+        rowd = make_row_dict(headers, row)
+        entity_id = rowd.pop('entity_id')
+        repo,org,cid,eid = entity_id.split('-')
+        entity_path = Entity.entity_path(None, repo, org, cid, eid)
+        try:
+            entity = Entity.from_json(entity_path)
+        except:
+            entity = None
+        if not entity:
+            bad_entities.append(entity_id)
+    return bad_entities
+
+def find_missing_files( csv_dir, headers, rows ):
+    """checks for missing files
+    """
+    missing_files = []
+    for row in rows:
+        rowd = make_row_dict(headers, row)
+        src_path = os.path.join(csv_dir, rowd.pop('basename_orig'))
+        if not os.path.exists(src_path):
+            missing_files.append(src_path)
+    return missing_files
+
+def find_unreadable_files( csv_dir, headers, rows ):
+    """checks for missing files
+    """
+    unreadable_files = []
+    for row in rows:
+        rowd = make_row_dict(headers, row)
+        src_path = os.path.join(csv_dir, rowd.pop('basename_orig'))
+        try:
+            f = open(src_path, 'r')
+            f.close()
+        except:
+            unreadable_files.append(src_path)
+    return unreadable_files
+
 def humanize_bytes(bytes, precision=1):
     """Return a humanized string representation of a number of bytes.
 
@@ -576,25 +618,32 @@ def import_files( csv_path, collection_path, git_name, git_mail ):
         
         #def prep_creators( data ): return [x.strip() for x in data.strip().split(';') if x]
         
+        # load entities - if any Entities are missing this will error out
+        bad_entities = test_entities(headers, rows)
+        if bad_entities:
+            print('ONE OR MORE OBJECTS ARE COULD NOT BE LOADED! - IMPORT CANCELLED!')
+            for f in bad_entities:
+                print('    %s' % f)
         # check for missing files
-        # if any Entities are missing this will error out
-        missing_files = []
-        for row in rows:
-            rowd = make_row_dict(headers, row)
-            entity_id = rowd.pop('entity_id')
-            repo,org,cid,eid = entity_id.split('-')
-            entity_path = Entity.entity_path(None, repo, org, cid, eid)
-            entity = Entity.from_json(entity_path)
-            src_path = os.path.join(csv_dir, rowd.pop('file'))
-            if not os.path.exists(src_path):
-                missing_files.append(src_path)
+        missing_files = find_missing_files(csv_dir, headers, rows)
         if missing_files:
             print('ONE OR MORE SOURCE FILES ARE MISSING! - IMPORT CANCELLED!')
             for f in missing_files:
                 print('    %s' % f)
+        else:
+            print('Source files present')
+        # check for unreadable files
+        unreadable_files = find_unreadable_files(csv_dir, headers, rows)
+        if unreadable_files:
+            print('ONE OR MORE SOURCE FILES COULD NOT BE OPENED! - IMPORT CANCELLED!')
+            for f in unreadable_files:
+                print('    %s' % f)
+            print('Files must be readable to the user running this script (probably ddr).')
+        else:
+            print('Source files readable')
         
         # files are all accounted for, let's import
-        else:
+        if not (bad_entities or missing_files or unreadable_files):
             print('Data file looks ok and files are present')
             print('"$ tail -f /var/log/ddr/local.log" in a separate console for more details')
             started = datetime.now()
