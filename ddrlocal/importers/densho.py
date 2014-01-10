@@ -105,6 +105,108 @@ from webui.tasks import add_file
 #    print('add_file(%s, %s, %s, %s, %s, %s)' % (git_name, git_mail, entity, src_path, role, data))
 
 
+
+
+# These are lists of alternative forms of controlled-vocabulary terms.
+# From these indexes are build that will be used to replace variant terms with the official term.
+ENTITY_HEADER_FIELDS_ALT = {
+    'facility': ['facilities',],
+}
+FILE_HEADER_FIELDS_ALT = {
+    'basename_orig': ['file',],
+}
+STATUS_CHOICES_ALT = {
+    'inprocess': ['In Process', 'In Progress', 'inprogress',],
+    'completed': ['Completed', 'complete', 'Complete',],
+}
+PERMISSIONS_CHOICES_ALT = {
+    '1': ['public', 'Public',],
+    '0': ['private', 'Private',],
+}
+LANGUAGE_CHOICES_ALT = {
+    'eng': ['english', 'English', 'eng:English',],
+    'jpn': ['japanese', 'Japanese', 'jpn:Japanese',],
+    'chi': ['chinese', 'Chinese', 'chi:Chinese',],
+    'fre': ['french', 'French', 'fre:French',],
+    'ger': ['german', 'German', 'ger:German',],
+    'kor': ['korean', 'Korean', 'kor:Korean',],
+    'por': ['portuguese', 'Portuguese', 'por:Portuguese',],
+    'rus': ['russian', 'Russian', 'rus:Russian',],
+    'spa': ['spanish', 'Spanish', 'spa:Spanish',],
+    'tgl': ['tagalog', 'Tagalog', 'tgl:Tagalog',],
+}
+GENRE_CHOICES_ALT = {
+    'advertisement': ['Advertisements', 'Advertisement',],
+    'album': ['Albums', 'Album',],
+    'architecture': ['Architecture',],
+    'baseball_card': ['Baseball Cards', 'Baseball Card',],
+    'blank_form': ['Blank Forms', 'Blank Form',],
+    'book': ['Books', 'Book',],
+    'broadside': ['Broadsides', 'Broadside',],
+    'cartoon': ['Cartoons (Commentary)', 'Cartoon (Commentary)',],
+    'catalog': ['Catalogs', 'Catalog',],
+    'cityscape': ['Cityscapes', 'Cityscape',],
+    'clipping': ['Clippings', 'Clipping',],
+    'correspondence': ['Correspondence',],
+    'diary': ['Diaries', 'Diary',],
+    'drawing': ['Drawings', 'Drawing',],
+    'ephemera': ['Ephemera',],
+    'essay': ['Essays', 'Essay',],
+    'ethnography': ['Ethnographies', 'Ethnography',],
+    'fieldnotes': ['Fieldnotes', 'Fieldnote',],
+    'illustration': ['Illustrations', 'Illustration',],
+    'interview': ['Interviews', 'Interview',],
+    'landscape': ['Landscapes', 'Landscape',],
+    'leaflet': ['Leaflets', 'Leaflet',],
+    'manuscript': ['Manuscripts', 'Manuscript',],
+    'map': ['Maps', 'Map',],
+    'misc_document': ['Miscellaneous Documents', 'Miscellaneous Document',],
+    'motion_picture': ['Motion Pictures', 'Motion Picture',],
+    'music': ['Music',],
+    'narrative': ['Narratives', 'Narrative',],
+    'painting': ['Paintings', 'Painting',],
+    'pamphlet': ['Pamphlets', 'Pamphlet',],
+    'periodical': ['Periodicals', 'Periodical',],
+    'petition': ['Petitions', 'Petition',],
+    'photograph': ['Photographs', 'Photograph',],
+    'physical_object': ['Physical Objects', 'Physical Object',],
+    'poetry': ['Poetry',],
+    'portrait': ['Portraits', 'Portrait',],
+    'postcard': ['Postcards', 'Postcard',],
+    'poster': ['Posters', 'Poster',],
+    'print': ['Prints', 'Print',],
+    'program': ['Programs', 'Program',],
+    'rec_log': ['Recording Logs', 'Recording Log',],
+    'score': ['Scores', 'Score',],
+    'sheet_music': ['Sheet Music',],
+    'timetable': ['Timetables', 'Timetable',],
+    'transcription': ['Transcriptions', 'Transcription',],
+}
+FORMAT_CHOICES_ALT = {
+    'av': ['Audio/Visual',],
+    'ds': ['Datasets', 'Dataset',],
+    'doc': ['Documents', 'Document',],
+    'img': ['Still Images', 'Still Image',],
+    'vh': ['Oral Histories', 'Oral History',],
+}
+
+def make_choices_alt_index(choices_alt):
+    """Make index from *_CHOICES_ALT dict
+    """
+    index = {}
+    for key,value in choices_alt.iteritems():
+        for v in value:
+            index[v] = key
+    return index
+ENTITY_HEADER_FIELDS_ALT_INDEX = make_choices_alt_index(ENTITY_HEADER_FIELDS_ALT)
+FILE_HEADER_FIELDS_ALT_INDEX = make_choices_alt_index(FILE_HEADER_FIELDS_ALT)
+STATUS_CHOICES_ALT_INDEX = make_choices_alt_index(STATUS_CHOICES_ALT)
+PERMISSIONS_CHOICES_ALT_INDEX = make_choices_alt_index(PERMISSIONS_CHOICES_ALT)
+LANGUAGE_CHOICES_ALT_INDEX = make_choices_alt_index(LANGUAGE_CHOICES_ALT)
+GENRE_CHOICES_ALT_INDEX = make_choices_alt_index(GENRE_CHOICES_ALT)
+FORMAT_CHOICES_ALT_INDEX = make_choices_alt_index(FORMAT_CHOICES_ALT)
+
+
 COLLECTION_FILES_PREFIX = 'files'
 
 REQUIRED_FIELDS_EXCEPTIONS = {
@@ -212,8 +314,6 @@ def invalid_headers( object_class, headers ):
     if object_class == 'file':
         headers.remove('entity_id')
         headers.remove('role')
-        the_official_fields.remove('basename_orig')
-        the_official_fields.append('file')
     # validate
     missing_headers = []
     for field in the_official_fields:
@@ -316,6 +416,38 @@ def humanize_bytes(bytes, precision=1):
             break
     return '%.*f %s' % (precision, bytes / factor, suffix)
 
+def replace_variant_headers( object_class, headers ):
+    """Tries to replace variant headers with official values
+    """
+    if   object_class == 'entity': index = ENTITY_HEADER_FIELDS_ALT_INDEX
+    elif object_class == 'file': index = FILE_HEADER_FIELDS_ALT_INDEX
+    for header in headers:
+        # if value appears in index, it is a variant
+        if index.get(header, None):
+            headers[headers.index(header)] = index[header]
+    return headers
+
+def replace_variant_cv_field_values( object_class, headers, rows ):
+    """Tries to replace variants of controlled-vocab with official values
+    """
+    def replace(fieldname, row, headers, rowd, index):
+        """This does the actual work.
+        """
+        value = rowd.get(fieldname, None)
+        # if value appears in index, it is a variant
+        if value and index.get(value, None):
+            row[headers.index(fieldname)] = index[value]
+        return row
+    
+    for row in rows:
+        rowd = make_row_dict(headers, row)
+        row = replace('status', row, headers, rowd, STATUS_CHOICES_ALT_INDEX)
+        row = replace('permissions', row, headers, rowd, PERMISSIONS_CHOICES_ALT_INDEX)
+        row = replace('language', row, headers, rowd, LANGUAGE_CHOICES_ALT_INDEX)
+        row = replace('genre', row, headers, rowd, GENRE_CHOICES_ALT_INDEX)
+        row = replace('format', row, headers, rowd, FORMAT_CHOICES_ALT_INDEX)
+    return rows
+
 
 # import collections ---------------------------------------------------
 
@@ -337,6 +469,10 @@ def import_entities( csv_path, collection_path, git_name, git_mail ):
     rows = read_csv(csv_path)
     headers = rows[0]
     rows = rows[1:]
+    
+    headers = replace_variant_headers('entity', headers)
+    rows = replace_variant_cv_field_values('entity', headers, rows)
+    
     required_fields = get_required_fields('entity', ENTITY_FIELDS)
     # validate metadata before attempting import
     invalid_rows = all_rows_valid('entity', headers, required_fields, rows)
@@ -423,6 +559,10 @@ def import_files( csv_path, collection_path, git_name, git_mail ):
     rows = read_csv(csv_path)
     headers = rows[0]
     rows = rows[1:]
+    
+    headers = replace_variant_headers('file', headers)
+    rows = replace_variant_cv_field_values('file', headers, rows)
+    
     required_fields = get_required_fields('file', FILE_FIELDS)
     # validate metadata before attempting import
     invalid_rows = all_rows_valid('file', headers, required_fields, rows)
@@ -466,7 +606,7 @@ def import_files( csv_path, collection_path, git_name, git_mail ):
                 repo,org,cid,eid = entity_id.split('-')
                 entity_path = Entity.entity_path(None, repo, org, cid, eid)
                 entity = Entity.from_json(entity_path)
-                src_path = os.path.join(csv_dir, rowd.pop('file'))
+                src_path = os.path.join(csv_dir, rowd.pop('basename_orig'))
                 role = rowd.pop('role')
                 rowstarted = datetime.now()
                 print('%s %s/%s %s %s (%s)' % (dtfmt(rowstarted), n+1, len(rows), entity.id, src_path, humanize_bytes(os.path.getsize(src_path))))
