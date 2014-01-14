@@ -154,7 +154,8 @@ def new( request, repo, org, cid ):
         exit,status = commands.entity_create(git_name, git_mail,
                                              collection.path, entity_uid,
                                              [collection.json_path_rel, collection.ead_path_rel],
-                                             [settings.TEMPLATE_EJSON, settings.TEMPLATE_METS])
+                                             [settings.TEMPLATE_EJSON, settings.TEMPLATE_METS],
+                                             agent=settings.AGENT)
         
         # load Entity object, inherit values from parent, write back to file
         entity = Entity.from_json(entity_path)
@@ -163,7 +164,8 @@ def new( request, repo, org, cid ):
         updated_files = [entity.json_path]
         exit,status = commands.entity_update(git_name, git_mail,
                                              entity.parent_path, entity.id,
-                                             updated_files)
+                                             updated_files,
+                                             agent=settings.AGENT)
         
         collection.cache_delete()
         if exit:
@@ -226,7 +228,8 @@ def edit( request, repo, org, cid, eid ):
             
             exit,status = commands.entity_update(git_name, git_mail,
                                                  entity.parent_path, entity.id,
-                                                 updated_files)
+                                                 updated_files,
+                                                 agent=settings.AGENT)
             collection.cache_delete()
             if exit:
                 messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
@@ -284,10 +287,10 @@ def edit_json( request, repo, org, cid, eid ):
                 with open(entity.json_path, 'w') as f:
                     f.write(json)
                 
-                exit,status = commands.entity_update(
-                    git_name, git_mail,
-                    entity.parent_path, entity.id,
-                    [entity.json_path])
+                exit,status = commands.entity_update(git_name, git_mail,
+                                                     entity.parent_path, entity.id,
+                                                     [entity.json_path],
+                                                     agent=settings.AGENT)
                 
                 collection.cache_delete()
                 if exit:
@@ -350,10 +353,10 @@ def edit_mets_xml( request, repo, org, cid, eid ):
                 with open(entity.mets_path, 'w') as f:
                     f.write(xml)
                 
-                exit,status = commands.entity_update(
-                    git_name, git_mail,
-                    entity.parent_path, entity.id,
-                    [entity.mets_path])
+                exit,status = commands.entity_update(git_name, git_mail,
+                                                     entity.parent_path, entity.id,
+                                                     [entity.mets_path],
+                                                     agent=settings.AGENT)
                 
                 collection.cache_delete()
                 if exit:
@@ -408,7 +411,9 @@ def edit_xml( request, repo, org, cid, eid, slug, Form, FIELDS, namespaces=None 
             with open(xml_path_abs, 'w') as fnew:
                 fnew.write(xml_new)
             # TODO validate XML
-            exit,status = commands.entity_update(git_name, git_mail, collection_abs, entity_uid, [xml_path_rel])
+            exit,status = commands.entity_update(git_name, git_mail,
+                                                 collection_abs, entity_uid, [xml_path_rel],
+                                                 agent=settings.AGENT)
             if exit:
                 messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
             else:

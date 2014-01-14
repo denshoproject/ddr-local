@@ -104,6 +104,7 @@ from webui.tasks import add_file
 #def add_file( git_name, git_mail, entity, src_path, role, data ):
 #    print('add_file(%s, %s, %s, %s, %s, %s)' % (git_name, git_mail, entity, src_path, role, data))
 
+AGENT = 'importers.densho'
 
 
 
@@ -552,7 +553,8 @@ def import_entities( csv_path, collection_path, git_name, git_mail ):
             exit,status = commands.entity_create(git_name, git_mail,
                                                  collection.path, entity_uid,
                                                  [collection.json_path_rel, collection.ead_path_rel],
-                                                 [settings.TEMPLATE_EJSON, settings.TEMPLATE_METS])
+                                                 [settings.TEMPLATE_EJSON, settings.TEMPLATE_METS],
+                                                 agent=AGENT)
             
             # reload newly-created Entity object
             entity = Entity.from_json(entity_path)
@@ -575,7 +577,8 @@ def import_entities( csv_path, collection_path, git_name, git_mail ):
             updated_files = [entity.json_path]
             exit,status = commands.entity_update(git_name, git_mail,
                                                  entity.parent_path, entity.id,
-                                                 updated_files)
+                                                 updated_files,
+                                                 agent=AGENT)
             
             rowfinished = datetime.now()
             rowelapsed = rowfinished - rowstarted
@@ -660,7 +663,7 @@ def import_files( csv_path, collection_path, git_name, git_mail ):
                 rowstarted = datetime.now()
                 print('%s %s/%s %s %s (%s)' % (dtfmt(rowstarted), n+1, len(rows), entity.id, src_path, humanize_bytes(os.path.getsize(src_path))))
                 #print('add_file(%s, %s, %s, %s, %s, %s)' % (git_name, git_mail, entity, src_path, role, rowd))
-                add_file( git_name, git_mail, entity, src_path, role, rowd )
+                add_file( git_name, git_mail, entity, src_path, role, rowd, agent=AGENT )
                 rowfinished = datetime.now()
                 rowelapsed = rowfinished - rowstarted
                 print('%s done (%s)' % (dtfmt(rowfinished), rowelapsed))

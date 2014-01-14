@@ -115,7 +115,7 @@ def entity_add_file( git_name, git_mail, entity, src_path, role, data ):
     return file_
 
 
-def add_file( git_name, git_mail, entity, src_path, role, data ):
+def add_file( git_name, git_mail, entity, src_path, role, data, agent='' ):
     """Add file to entity
     
     This method breaks out of OOP and manipulates entity.json directly.
@@ -251,7 +251,8 @@ def add_file( git_name, git_mail, entity, src_path, role, data ):
             git_files, annex_files))
         exit,status = entity_annex_add(git_name, git_mail,
                                        entity.parent_path, entity.id,
-                                       git_files, annex_files)
+                                       git_files, annex_files,
+                                       agent=agent)
         entity.files_log(1, 'entity_annex_add: exit: %s' % exit)
         entity.files_log(1, 'entity_annex_add: status: %s' % status)
         
@@ -275,7 +276,7 @@ def entity_add_access( git_name, git_mail, entity, ddrfile ):
     return file_
 
 
-def add_access( git_name, git_mail, entity, ddrfile ):
+def add_access( git_name, git_mail, entity, ddrfile, agent='' ):
     """Generate new access file for entity
     
     This method breaks out of OOP and manipulates entity.json directly.
@@ -368,7 +369,8 @@ def add_access( git_name, git_mail, entity, ddrfile ):
             exit,status = entity_update(
                 git_name, git_mail,
                 entity.parent_path, entity.id,
-                [f.json_path,])
+                [f.json_path,],
+                agent=agent)
             entity.files_log(1, 'entity_update: exit: %s' % exit)
             entity.files_log(1, 'entity_update: status: %s' % status)
         except:
@@ -386,7 +388,8 @@ def add_access( git_name, git_mail, entity, ddrfile ):
                 exit,status = entity_annex_add(
                     git_name, git_mail,
                     entity.parent_path,
-                    entity.id, access_basename)
+                    entity.id, access_basename,
+                    agent=agent)
                 entity.files_log(1, 'entity_annex_add: exit: %s' % exit)
                 entity.files_log(1, 'entity_annex_add: status: %s' % status)
             except:

@@ -205,7 +205,8 @@ def new( request, repo, org ):
                                               template=True)
         exit,status = commands.create(git_name, git_mail,
                                       collection_path,
-                                      [settings.TEMPLATE_CJSON, settings.TEMPLATE_EAD])
+                                      [settings.TEMPLATE_CJSON, settings.TEMPLATE_EAD],
+                                      agent=settings.AGENT)
         if exit:
             logger.error(exit)
             logger.error(status)
@@ -259,7 +260,9 @@ def edit( request, repo, org, cid ):
                               'The value(s) for <b>%s</b> were applied to <b>%s</b>' % (
                                   ', '.join(inheritables), ', '.join(modified_ids))
             
-            exit,status = commands.update(git_name, git_mail, collection.path, updated_files)
+            exit,status = commands.update(git_name, git_mail,
+                                          collection.path, updated_files,
+                                          agent=settings.AGENT)
             collection.cache_delete()
             if exit:
                 messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
@@ -313,7 +316,9 @@ def edit_ead( request, repo, org, cid ):
                 with open(ead_path_abs, 'w') as f:
                     f.write(xml)
                 
-                exit,status = commands.update(git_name, git_mail, collection.path, [ead_path_rel])
+                exit,status = commands.update(git_name, git_mail,
+                                              collection.path, [ead_path_rel],
+                                              agent=settings.AGENT)
                 
                 if exit:
                     messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
@@ -363,7 +368,9 @@ def edit_xml( request, repo, org, cid, slug, Form, FIELDS ):
             with open(ead_path_abs, 'w') as fnew:
                 fnew.write(xml_new)
             # TODO validate XML
-            exit,status = commands.update(git_name, git_mail, collection_path, [ead_path_rel])
+            exit,status = commands.update(git_name, git_mail,
+                                          collection_path, [ead_path_rel],
+                                          agent=settings.AGENT)
             if exit:
                 messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
             else:

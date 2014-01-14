@@ -23,6 +23,8 @@ if not os.path.exists(CONFIG_FILE):
 config = ConfigParser.ConfigParser()
 config.read(CONFIG_FILE)
 
+AGENT = 'ddr-local'
+
 SECRET_KEY           = config.get('local','secret_key')
 LANGUAGE_CODE        = config.get('local','language_code')
 TIME_ZONE            = config.get('local','time_zone')

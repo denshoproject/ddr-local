@@ -333,7 +333,8 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
             file_.dump_json()
             exit,status = commands.entity_update(git_name, git_mail,
                                                  entity.parent_path, entity.id,
-                                                 [file_.json_path,])
+                                                 [file_.json_path,],
+                                                 agent=settings.AGENT)
             collection.cache_delete()
             if exit:
                 messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
@@ -400,7 +401,8 @@ def edit_old( request, repo, org, cid, eid, role, sha1 ):
                 entity.dump_mets()
                 exit,status = commands.entity_update(git_name, git_mail,
                                                      entity.parent_path, entity.id,
-                                                     [entity.json_path, entity.mets_path,])
+                                                     [entity.json_path, entity.mets_path,],
+                                                     agent=settings.AGENT)
                 if exit:
                     messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
                 else:
