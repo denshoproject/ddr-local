@@ -52,3 +52,10 @@ HERE<br/>
   </div><!-- .row-fluid -->
 
 {% endblock content %}
+
+
+{% block footer %}{{ block.super }}
+<div class="muted" id="expert">
+  <span><a href="{% url "webui-inventory-store-json" repo org %}">json</a></span>
+</div>
+{% endblock footer %}

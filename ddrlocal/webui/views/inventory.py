@@ -1,4 +1,5 @@
 from datetime import datetime
+import json
 import logging
 logger = logging.getLogger(__name__)
 import os
@@ -119,6 +120,17 @@ def detail( request, repo, org ):
          },
         context_instance=RequestContext(request, processors=[])
     )
+
+@storage_required
+def store_json( request, repo, org ):
+    organization_path = _inventory_org_path(repo, org)
+    drive_label = inventory.guess_drive_label(settings.MEDIA_BASE)
+    store_path = os.path.join(organization_path, '%s.json' % drive_label)
+    if not (os.path.exists(organization_path) and os.path.exists(store_path)):
+        raise Http404
+    with open(store_path, 'r') as f:
+        data = json.loads(f.read())
+    return HttpResponse(json.dumps(data), mimetype="application/json")
 
 @ddrview
 @login_required

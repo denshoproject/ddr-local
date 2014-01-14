@@ -17,6 +17,7 @@ urlpatterns = patterns(
     
     # inventory
     url(r'^inventory/(?P<repo>[\w]+)-(?P<org>[\w]+)/(?P<cid>[\d]+)/(?P<op>[\w]+)/$', 'webui.views.inventory.apply', name='webui-inventory-apply'),
+    url(r'^inventory/(?P<repo>[\w]+)-(?P<org>[\w]+)/json/$', 'webui.views.inventory.store_json', name='webui-inventory-store-json'),
     url(r'^inventory/(?P<repo>[\w]+)-(?P<org>[\w]+)/$', 'webui.views.inventory.detail', name='webui-inventory-detail'),
     url(r'^inventory/$', 'webui.views.inventory.index', name='webui-inventory-index'),
 
