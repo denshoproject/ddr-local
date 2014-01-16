@@ -166,7 +166,7 @@ def new( request, repo, org, cid, eid, role='master' ):
                 inherited.append( (field,getattr(entity,field)) )
             # start tasks
             result = entity_add_file.apply_async(
-                (git_name, git_mail, entity, src_path, role, data),
+                (git_name, git_mail, entity, src_path, role, data, settings.AGENT),
                 countdown=2)
             entity.files_log(1,'START task_id %s' % result.task_id)
             entity.files_log(1,'ddrlocal.webui.file.new')

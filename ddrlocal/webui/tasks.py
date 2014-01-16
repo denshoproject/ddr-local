@@ -102,7 +102,7 @@ class FileAddDebugTask(Task):
 
 
 @task(base=FileAddDebugTask, name='entity-add-file')
-def entity_add_file( git_name, git_mail, entity, src_path, role, data ):
+def entity_add_file( git_name, git_mail, entity, src_path, role, data, agent='' ):
     """
     @param entity: DDRLocalEntity
     @param src_path: Absolute path to an uploadable file.
@@ -110,8 +110,9 @@ def entity_add_file( git_name, git_mail, entity, src_path, role, data ):
     @param data: Dict containing form data.
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
+    @param agent: (optional) Name of software making the change.
     """
-    file_ = add_file(git_name, git_mail, entity, src_path, role, data)
+    file_ = add_file(git_name, git_mail, entity, src_path, role, data, agent)
     return file_
 
 
@@ -128,6 +129,7 @@ def add_file( git_name, git_mail, entity, src_path, role, data, agent='' ):
     @param role: Keyword of a file role.
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
+    @param agent: (optional) Name of software making the change.
     @return file_ DDRLocalFile object
     """
     f = None
@@ -245,10 +247,11 @@ def add_file( git_name, git_mail, entity, src_path, role, data, agent='' ):
         if f.access_rel:
             annex_files.append(os.path.basename(f.access_rel))
         
-        entity.files_log(1, 'entity_annex_add(%s, %s, %s, %s, %s, %s)' % (
+        entity.files_log(1, 'entity_annex_add(%s, %s, %s, %s, %s, %s, %s)' % (
             git_name, git_mail,
             entity.parent_path, entity.id,
-            git_files, annex_files))
+            git_files, annex_files,
+            agent))
         exit,status = entity_annex_add(git_name, git_mail,
                                        entity.parent_path, entity.id,
                                        git_files, annex_files,
@@ -264,15 +267,16 @@ def add_file( git_name, git_mail, entity, src_path, role, data, agent='' ):
 
 
 @task(base=FileAddDebugTask, name='entity-add-access')
-def entity_add_access( git_name, git_mail, entity, ddrfile ):
+def entity_add_access( git_name, git_mail, entity, ddrfile, agent='' ):
     """
     @param entity: DDRLocalEntity
     @param ddrfile: DDRLocalFile
     @param src_path: Absolute path to an uploadable file.
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
+    @param agent: (optional) Name of software making the change.
     """
-    file_ = add_access(git_name, git_mail, entity, ddrfile)
+    file_ = add_access(git_name, git_mail, entity, ddrfile, agent)
     return file_
 
 
@@ -289,6 +293,7 @@ def add_access( git_name, git_mail, entity, ddrfile, agent='' ):
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
     @return file_ DDRLocalFile object
+    @param agent: (optional) Name of software making the change.
     """
     f = ddrfile
     src_path = f.path_abs
