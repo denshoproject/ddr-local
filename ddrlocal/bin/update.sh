@@ -9,6 +9,21 @@
 #
 # NOTE: Does not flush caches.
 
+
+echo "ddr-lint"
+cd /usr/local/src/ddr-lint
+
+echo "git fetch"
+git fetch
+
+echo "git pull"
+git pull
+
+echo "python setup.py install"
+cd /usr/local/src/ddr-lint/ddrlint
+python setup.py install
+
+
 echo "ddr-cmdln"
 cd /usr/local/src/ddr-cmdln
 
