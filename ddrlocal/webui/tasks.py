@@ -14,9 +14,9 @@ from django.contrib import messages
 from django.core.urlresolvers import reverse
 
 from ddrlocal.models import DDRLocalEntity, DDRLocalFile, hash
-from search import add_update
 from webui.models import Collection
 
+from DDR import elasticsearch
 from DDR.commands import entity_annex_add, entity_update, sync
 
 
@@ -434,7 +434,7 @@ def collection_sync( git_name, git_mail, collection_path ):
     """
     exit,status = sync(git_name, git_mail, collection_path)
     # update search index
-    add_update('ddr', 'collection', os.path.join(collection_path, 'collection.json'))
+    elasticsearch.add_document('ddr', 'collection', os.path.join(collection_path, 'collection.json'))
     return collection_path
 
 

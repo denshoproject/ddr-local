@@ -7,7 +7,7 @@ logger = get_task_logger(__name__)
 
 from django.conf import settings
 
-import search
+from DDR import elasticsearch
 
 
 class DebugTask(Task):
@@ -17,7 +17,7 @@ class DebugTask(Task):
 def reindex():
     """
     """
-    search.index('ddr', '/var/www/media/base')
+    elasticsearch.index(settings.MEDIA_BASE, settings.ELASTICSEARCH_HOST_PORT, 'ddr')
     return 0
 
 def reindex_and_notify( request ):

@@ -16,10 +16,10 @@ from django.shortcuts import Http404, get_object_or_404, render_to_response
 from django.template import RequestContext
 
 from DDR import commands
+from DDR import elasticsearch
 
 from ddrlocal.models.entity import ENTITY_FIELDS
 
-from search import add_update
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
 from webui import api
@@ -175,7 +175,7 @@ def new( request, repo, org, cid ):
         else:
             # update search index
             json_path = os.path.join(entity_path, 'entity.json')
-            add_update('ddr', 'entity', json_path)
+            elasticsearch.add_document(settings.ELASTICSEARCH_HOST_PORT, 'ddr', 'entity', json_path)
             # positive feedback
             return HttpResponseRedirect(reverse('webui-entity-edit', args=[repo,org,cid,eid]))
     else:
@@ -235,7 +235,7 @@ def edit( request, repo, org, cid, eid ):
                 messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
             else:
                 # update search index
-                add_update('ddr', 'entity', entity.json_path)
+                elasticsearch.add_document(settings.ELASTICSEARCH_HOST_PORT, 'ddr', 'entity', entity.json_path)
                 # positive feedback
                 messages.success(request, success_msg)
                 return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
