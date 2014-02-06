@@ -36,6 +36,7 @@ LANGUAGE_CHOICES = [['',''],
                     ['chi','Chinese'],
                     ['fre','French'],
                     ['ger','German'],
+					['ita', 'Italian']
                     ['kor','Korean'],
                     ['por','Portuguese'],
                     ['rus','Russian'],
