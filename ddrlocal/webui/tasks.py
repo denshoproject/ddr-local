@@ -434,7 +434,7 @@ def collection_sync( git_name, git_mail, collection_path ):
     """
     exit,status = sync(git_name, git_mail, collection_path)
     # update search index
-    elasticsearch.add_document('ddr', 'collection', os.path.join(collection_path, 'collection.json'))
+    elasticsearch.add_document(settings.ELASTICSEARCH_HOST_PORT, 'ddr', 'collection', os.path.join(collection_path, 'collection.json'))
     return collection_path
 
 
