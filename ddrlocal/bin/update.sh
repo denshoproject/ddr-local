@@ -60,7 +60,11 @@ echo "./ddrlocal/ddrlocal/settings.py"
 cp /usr/local/src/ddr-local/debian/conf/settings.py /usr/local/src/ddr-local/ddrlocal/ddrlocal
 
 echo "/etc/nginx/sites-available/ddrlocal.conf"
-cp /usr/local/src/ddr-local/debian/conf/ddrlocal.conf /etc/nginx/sites-available/
+cp /usr/local/src/ddr-local/debian/conf/ddrlocal.conf /etc/nginx/sites-available
+rm /etc/nginx/sites-enabled/ddrlocal.conf
+ln -s /etc/nginx/sites-available/ddrlocal.conf /etc/nginx/sites-enabled
+rm /etc/nginx/sites-enabled/default
+/etc/init.d/nginx restart
 
 echo "/etc/supervisor/supervisord.conf"
 cp /usr/local/src/ddr-local/debian/conf/supervisord.conf /etc/supervisor/
