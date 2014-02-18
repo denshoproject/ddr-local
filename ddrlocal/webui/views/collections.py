@@ -74,14 +74,13 @@ def collections( request ):
 def detail( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     alert_if_conflicted(request, collection)
-    entities = sorted(collection.entities(), key=lambda e: e.id, reverse=True)
     return render_to_response(
         'webui/collections/detail.html',
         {'repo': repo,
          'org': org,
          'cid': cid,
          'collection': collection,
-         'entities': entities,
+         'entities': collection.entities(),
          'unlock_task_id': collection.locked(),},
         context_instance=RequestContext(request, processors=[])
     )
