@@ -166,8 +166,9 @@ def add_file( git_name, git_mail, entity, src_path, role, data, agent='' ):
     cp_successful = False
     if preparations == 'ok,ok,ok,ok':  # ,ok
         entity.files_log(1, 'Source file exists; is readable.  Destination dir exists, is writable.')
+        entity.files_log(1, 'src file size: %s' % os.path.getsize(src_path))
         # task: copy
-        entity.files_log(1, 'Copying...')
+        entity.files_log(1, 'cp %s %s' % (src_path, dest_path))
         try:
             shutil.copy(src_path, dest_path)
         except:
@@ -175,7 +176,7 @@ def add_file( git_name, git_mail, entity, src_path, role, data, agent='' ):
             entity.files_log(0, 'copy FAIL')
         if os.path.exists(dest_path):
             cp_successful = True
-            entity.files_log(1, 'copied: %s' % dest_path)
+            entity.files_log(1, 'copy ok')
     
     # file object
     if cp_successful:
@@ -188,6 +189,7 @@ def add_file( git_name, git_mail, entity, src_path, role, data, agent='' ):
         for field in data:
             setattr(f, field, data[field])
         f.size = os.path.getsize(f.path_abs)
+        entity.files_log(1, 'dest file size: %s' % f.size)
         # task: get SHA1 checksum (links entity.filemeta entity.files records
         entity.files_log(1, 'Checksumming...')
         try:
