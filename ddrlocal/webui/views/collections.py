@@ -129,8 +129,8 @@ def collection_json( request, repo, org, cid ):
 def git_status( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     alert_if_conflicted(request, collection)
-    status = commands.status(collection.path)
-    astatus = commands.annex_status(collection.path)
+    status = collection.repo_status()
+    astatus = collection.repo_annex_status()
     return render_to_response(
         'webui/collections/git-status.html',
         {'repo': repo,
