@@ -33,6 +33,7 @@ urlpatterns = patterns(
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/collection.json$', 'webui.views.collections.collection_json', name='webui-collection-json'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/ead.xml$', 'webui.views.collections.ead_xml', name='webui-collection-ead-xml'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/changelog/$', 'webui.views.collections.changelog', name='webui-collection-changelog'),
+    url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/sync-status.json$', 'webui.views.collections.sync_status_ajax', name='webui-collection-sync-status-ajax'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/git-status/$', 'webui.views.collections.git_status', name='webui-collection-git-status'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/$', 'webui.views.collections.detail', name='webui-collection'),
 

@@ -24,17 +24,18 @@
 </p>
 {% endif %}
 
+<table class="table table-condensed">
 {% for c in o.3 %}
-  {% if   c.unsynced        %}<input class="btn btn-mini btn-warning" name="sync" type="submit" value="Sync" />
-  {% elif c.repo_ahead      %}<input class="btn btn-mini btn-warning" name="sync" type="submit" value="Ahead" />
-  {% elif c.repo_behind     %}<input class="btn btn-mini btn-warning" name="sync" type="submit" value="Behind" />
-  {% elif c.repo_conflicted %}<input class="btn btn-mini btn-danger"  name="sync" type="submit" value="Conflicted" />
-  {% elif c.locked %}
-    <a href="#" class="btn btn-mini btn-warning muted" title="Sync [locked]"><i class="icon-lock icon-white"></i> Sync [locked]</a> 
-  {% else                   %}<input class="btn btn-mini btn-success" name="sync" type="submit" value="Synced"/>
-  {% endif %}
-  <a href="{{ c.url }}">{{ c.id }}</a> {% if c.title %}<a href="{{ c.url }}">{{ c.title }}{% endif %}</a><br />
+  <tr id="{{ c.id }}">
+    <td class="id-title">
+      <a href="{{ c.url }}">{{ c.id }}</a> {% if c.title %}&mdash; <a href="{{ c.url }}">{{ c.title }}{% endif %}</a>
+    </td>
+    <td class="status muted">
+      ...
+    </td>
+  </tr>
 {% endfor %}
+</table>
 
 {% endfor %}
 
@@ -42,3 +43,23 @@
   </div><!-- .row-fluid -->
 
 {% endblock content %}
+
+
+{% block javascript %}
+<script>
+  /*
+  Update collection git statuses
+  TODO Fix this awful Javascript!
+  */
+  $(function () {
+{% for c in collection_ids %}
+    jQuery.getJSON("{% url "webui-collection-sync-status-ajax" c.repo c.org c.cid %}", function(data) {
+      $(data["row"]).addClass(data["color"]);
+      $(data["cell"]).text(data["status"]);
+    });
+{% endfor %}
+  })
+</script>
+
+
+{% endblock %}

@@ -3,6 +3,7 @@ import json
 import logging
 logger = logging.getLogger(__name__)
 import os
+import random
 
 from bs4 import BeautifulSoup
 
@@ -53,6 +54,7 @@ def alert_if_conflicted(request, collection):
 @storage_required
 def collections( request ):
     collections = []
+    collection_ids = []
     for o in get_repos_orgs():
         repo,org = o.split('-')
         colls = []
@@ -63,10 +65,13 @@ def collections( request ):
                 repo,org,cid = c[0],c[1],c[2]
                 collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
                 colls.append(collection)
+                collection_ids.append( {'repo':collection.repo, 'org':collection.org, 'cid':collection.cid} )
         collections.append( (o,repo,org,colls) )
+    random.shuffle(collection_ids)
     return render_to_response(
         'webui/collections/index.html',
-        {'collections': collections,},
+        {'collections': collections,
+         'collection_ids': collection_ids,},
         context_instance=RequestContext(request, processors=[])
     )
 
@@ -123,6 +128,25 @@ def collection_json( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     alert_if_conflicted(request, collection)
     return HttpResponse(json.dumps(collection.json().data), mimetype="application/json")
+
+@ddrview
+@storage_required
+def sync_status_ajax( request, repo, org, cid ):
+    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    status = 'unknown'
+    btn = 'muted'
+    if   collection.repo_ahead(): status = 'ahead'; btn = 'warning'
+    elif collection.repo_behind(): status = 'behind'; btn = 'warning'
+    elif collection.repo_conflicted(): status = 'conflicted'; btn = 'danger'
+    elif collection.locked(): status = 'locked'; btn = 'warning'
+    elif collection.repo_synced(): status = 'synced'; btn = 'success'
+    data = {
+        'row': '#%s' % collection.id,
+        'color': btn,
+        'cell': '#%s td.status' % collection.id,
+        'status': status,
+    }
+    return HttpResponse(json.dumps(data), mimetype="application/json")
 
 @ddrview
 @storage_required
