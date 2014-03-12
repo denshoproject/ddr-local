@@ -1,0 +1,70 @@
+# twill-sh tests/webui.twill -n --url http://192.168.56.101/
+
+echo "\n\n\nwebui.twill ===========================================================\n"
+
+
+getinput "Device label (ex: '/dev/sdb1 WD5000BMV-2'): "
+setlocal device_label __input__
+
+getinput "Collection (ex: 'ddr-testing-157'): "
+setlocal collection_id __input__
+
+getinput "Username: "
+setlocal username __input__
+getpassword "Password: "
+setlocal password __password__
+
+setlocal upload_image "/home/gjost/Pictures/cavestory_bg.gif"
+
+
+echo "START =================================================================="
+
+go /
+notfind "Error"
+code 200
+
+go /ui/
+notfind "Error"
+code 200
+
+
+echo "STORAGE ================================================================"
+
+
+echo "LOGIN/LOGOUT ==========================================================="
+
+go /ui/login/
+formvalue 1 username $username
+formvalue 1 password-password $password
+submit
+code 200
+find "Logged in as"
+
+follow "Log Out"
+code 200
+find "Logged out"
+
+go /ui/login/
+formvalue 1 username $username
+formvalue 1 password-password $password
+submit
+code 200
+find "Logged in as"
+
+
+echo "\n------------------------------------------------------------------------"
+
+go /ui/collections/
+notfind "Error"
+code 200
+
+
+echo "\nCOLLECTIONS ------------------------------------------------------------"
+
+go /ui/$collection_id/
+notfind "Error"
+code 200
+
+echo "\nENTITIES ---------------------------------------------------------------"
+echo "\nFILES ------------------------------------------------------------------"
+
