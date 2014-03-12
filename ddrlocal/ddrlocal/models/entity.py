@@ -396,7 +396,7 @@ ENTITY_FIELDS = [
         'xpath':      '',
         'xpath_dup':  [],
         'model_type': str,
-        'form_type':  'DateField',
+        'form_type':  'CharField',
         'form': {
             'label':      'Digitize Date',
             'help_text':  'Date of scan. M/D/YYYY.',
@@ -617,12 +617,7 @@ def display_format( data ):
 # organization_id
 # digitize_person
 # digitize_organization
-
-def display_digitize_date( data ):
-    if type(data) == type(datetime.now()):
-        data = data.strftime(PRETTY_DATE_FORMAT)
-    return data
-
+# digitize_date
 # credit
 
 def display_topics( data ):

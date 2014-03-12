@@ -514,8 +514,6 @@ class DDRLocalCollection( DDRCollection ):
                 # special cases
                 if key in ['record_created', 'record_lastmod']:
                     val = val.strftime(settings.DATETIME_FORMAT)
-                elif key in ['digitize_date']:
-                    val = val.strftime(settings.DATE_FORMAT)
                 # end special cases
             item[key] = val
             collection.append(item)
@@ -821,7 +819,6 @@ class DDRLocalEntity( DDREntity ):
         # special cases
         if hasattr(self, 'record_created') and self.record_created: self.record_created = parsedt(self.record_created)
         if hasattr(self, 'record_lastmod') and self.record_lastmod: self.record_lastmod = parsedt(self.record_lastmod)
-        if hasattr(self, 'digitize_date')  and self.digitize_date:  self.digitize_date  = parsedt(self.digitize_date)
         # end special cases
         
         # Ensure that every field in entitymodule.ENTITY_FIELDS is represented
