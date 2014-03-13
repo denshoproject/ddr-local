@@ -2,6 +2,8 @@
 # section of the "Creating a Workstation VM" page from the DDR Manual
 # 
 
+PIP_CACHE_DIR=/usr/local/src/pip-cache
+
 BOOTSTRAP=bootstrap-2.3.1.zip
 MODERNIZR=modernizr-2.6.2.js
 JQUERY=jquery-1.10.2.min.js
@@ -65,7 +67,7 @@ cd /usr/local/src
 git clone https://github.com/densho/ddr-cmdln.git
 cd /usr/local/src/ddr-cmdln/ddr
 python setup.py install
-pip install -r /usr/local/src/ddr-cmdln/ddr/requirements/production.txt
+pip install --download-cache=$PIP_CACHE_DIR -r /usr/local/src/ddr-cmdln/ddr/requirements/production.txt
 adduser ddr plugdev
 
 
@@ -75,7 +77,7 @@ cd /usr/local/src
 git clone https://github.com/densho/ddr-lint.git
 cd /usr/local/src/ddr-lint/ddrlint
 python setup.py install
-pip install -r /usr/local/src/ddr-cmdln/ddr/requirements/production.txt
+pip install --download-cache=$PIP_CACHE_DIR -r /usr/local/src/ddr-cmdln/ddr/requirements/production.txt
 
 
 echo "${bldgrn}ddr-local${txtrst}"
@@ -83,7 +85,7 @@ apt-get --assume-yes install imagemagick libexempi3 libssl-dev python-dev libxml
 cd /usr/local/src
 git clone https://github.com/densho/ddr-local.git
 cd /usr/local/src/ddr-local/ddrlocal
-pip install -r /usr/local/src/ddr-local/ddrlocal/requirements/production.txt
+pip install --download-cache=$PIP_CACHE_DIR -r /usr/local/src/ddr-local/ddrlocal/requirements/production.txt
 
 
 echo "${bldgrn}creating directories${txtrst}"
