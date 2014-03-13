@@ -11,9 +11,9 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import Http404, get_object_or_404, render_to_response
 from django.template import RequestContext
 
-import search
-from search import tasks
-from search.forms import IndexConfirmForm, DropConfirmForm
+from DDR import elasticsearch
+
+from search import forms, tasks
 
 
 # helpers --------------------------------------------------------------
@@ -48,7 +48,7 @@ def query( request ):
             'record_lastmod': request.GET.get('record_lastmod', ''),}
     
     # do the query
-    hits = search.query(query=q, filters=filters, sort=sort)
+    hits = elasticsearch.query(settings.ELASTICSEARCH_HOST_PORT, query=q, filters=filters, sort=sort)
     
     # massage the results
     def rename(hit, fieldname):
@@ -91,7 +91,7 @@ def query( request ):
 def admin( request ):
     """Administrative stuff like re-indexing.
     """
-    status = search.status()
+    status = elasticsearch.status(settings.ELASTICSEARCH_HOST_PORT)
     if status:
         status['shards'] = status.pop('_shards')
     
@@ -101,8 +101,8 @@ def admin( request ):
         # start index task
         # message
         # redirect
-    indexform = IndexConfirmForm()
-    dropform = DropConfirmForm()
+    indexform = forms.IndexConfirmForm()
+    dropform = forms.DropConfirmForm()
     return render_to_response(
         'search/admin.html',
         {'status': status,
@@ -113,15 +113,15 @@ def admin( request ):
 
 def reindex( request ):
     if request.method == 'POST':
-        form = IndexConfirmForm(request.POST)
+        form = forms.IndexConfirmForm(request.POST)
         if form.is_valid():
             tasks.reindex_and_notify(request)
     return HttpResponseRedirect( reverse('search-admin') )
 
 def drop_index( request ):
     if request.method == 'POST':
-        form = DropConfirmForm(request.POST)
+        form = forms.DropConfirmForm(request.POST)
         if form.is_valid():
-            search.delete_index('ddr')
+            elasticsearch.delete_index(settings.ELASTICSEARCH_HOST_PORT, 'ddr')
             messages.error(request, 'Search indexes dropped. Click "Re-index" to reindex your collections.')
     return HttpResponseRedirect( reverse('search-admin') )

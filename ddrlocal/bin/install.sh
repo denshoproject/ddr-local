@@ -137,7 +137,9 @@ chmod 644 /etc/supervisor/conf.d/gunicorn_ddrlocal.conf
 /etc/init.d/supervisor restart
 
 cp /usr/local/src/ddr-local/debian/conf/ddrlocal.conf /etc/nginx/sites-available
+rm /etc/nginx/sites-enabled/ddrlocal.conf
 ln -s /etc/nginx/sites-available/ddrlocal.conf /etc/nginx/sites-enabled
+rm /etc/nginx/sites-enabled/default
 /etc/init.d/nginx restart
 
 /etc/init.d/elasticsearch restart

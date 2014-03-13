@@ -9,7 +9,22 @@
 #
 # NOTE: Does not flush caches.
 
-echo "ddr-cmdln"
+
+echo "<([ ddr-lint ])>-------------------------------------------------------"
+cd /usr/local/src/ddr-lint
+
+echo "git fetch"
+git fetch
+
+echo "git pull"
+git pull
+
+echo "python setup.py install"
+cd /usr/local/src/ddr-lint/ddrlint
+python setup.py install
+
+
+echo "<([ ddr-cmdln ])>-------------------------------------------------------"
 cd /usr/local/src/ddr-cmdln
 
 echo "git fetch"
@@ -23,7 +38,7 @@ cd /usr/local/src/ddr-cmdln/ddr
 python setup.py install
 
 
-echo "ddr-local"
+echo "<([ ddr-local ])>-------------------------------------------------------"
 cd /usr/local/src/ddr-local
 
 echo "git fetch"
@@ -45,17 +60,23 @@ echo "./ddrlocal/ddrlocal/settings.py"
 cp /usr/local/src/ddr-local/debian/conf/settings.py /usr/local/src/ddr-local/ddrlocal/ddrlocal
 
 echo "/etc/nginx/sites-available/ddrlocal.conf"
-cp /usr/local/src/ddr-local/debian/conf/ddrlocal.conf /etc/nginx/sites-available/
+cp /usr/local/src/ddr-local/debian/conf/ddrlocal.conf /etc/nginx/sites-available
+rm /etc/nginx/sites-enabled/ddrlocal.conf
+ln -s /etc/nginx/sites-available/ddrlocal.conf /etc/nginx/sites-enabled
+rm /etc/nginx/sites-enabled/default
+/etc/init.d/nginx restart
 
 echo "/etc/supervisor/supervisord.conf"
 cp /usr/local/src/ddr-local/debian/conf/supervisord.conf /etc/supervisor/
-
 
 echo "/etc/supervisor/conf.d/celeryd.conf"
 cp /usr/local/src/ddr-local/debian/conf/celeryd.conf /etc/supervisor/conf.d/
 
 echo "/etc/supervisor/conf.d/gunicorn_ddrlocal.conf"
 cp /usr/local/src/ddr-local/debian/conf/gunicorn_ddrlocal.conf /etc/supervisor/conf.d/
+
+
+echo "<([ restarting services ])>---------------------------------------------"
 
 echo "supervisord restart"
 /etc/init.d/supervisor restart
@@ -68,3 +89,6 @@ echo "/etc/init.d/nginx restart"
 
 echo "/etc/init.d/elasticsearch restart"
 /etc/init.d/elasticsearch restart
+
+
+echo "<([ DONE ])>"

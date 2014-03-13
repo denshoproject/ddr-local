@@ -3,6 +3,7 @@ import json
 import logging
 logger = logging.getLogger(__name__)
 import os
+import random
 
 from bs4 import BeautifulSoup
 
@@ -17,10 +18,10 @@ from django.template import RequestContext
 from django.template.loader import get_template
 
 from DDR import commands
+from DDR import elasticsearch
 
 from ddrlocal.models.collection import COLLECTION_FIELDS
 
-from search import add_update
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
 from webui import get_repos_orgs
@@ -53,6 +54,7 @@ def alert_if_conflicted(request, collection):
 @storage_required
 def collections( request ):
     collections = []
+    collection_ids = []
     for o in get_repos_orgs():
         repo,org = o.split('-')
         colls = []
@@ -63,10 +65,13 @@ def collections( request ):
                 repo,org,cid = c[0],c[1],c[2]
                 collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
                 colls.append(collection)
+                collection_ids.append( {'repo':collection.repo, 'org':collection.org, 'cid':collection.cid} )
         collections.append( (o,repo,org,colls) )
+    random.shuffle(collection_ids)
     return render_to_response(
         'webui/collections/index.html',
-        {'collections': collections,},
+        {'collections': collections,
+         'collection_ids': collection_ids,},
         context_instance=RequestContext(request, processors=[])
     )
 
@@ -74,14 +79,13 @@ def collections( request ):
 def detail( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     alert_if_conflicted(request, collection)
-    entities = sorted(collection.entities(), key=lambda e: e.id, reverse=True)
     return render_to_response(
         'webui/collections/detail.html',
         {'repo': repo,
          'org': org,
          'cid': cid,
          'collection': collection,
-         'entities': entities,
+         'entities': collection.entities(),
          'unlock_task_id': collection.locked(),},
         context_instance=RequestContext(request, processors=[])
     )
@@ -127,11 +131,30 @@ def collection_json( request, repo, org, cid ):
 
 @ddrview
 @storage_required
+def sync_status_ajax( request, repo, org, cid ):
+    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    status = 'unknown'
+    btn = 'muted'
+    if   collection.repo_ahead(): status = 'ahead'; btn = 'warning'
+    elif collection.repo_behind(): status = 'behind'; btn = 'warning'
+    elif collection.repo_conflicted(): status = 'conflicted'; btn = 'danger'
+    elif collection.locked(): status = 'locked'; btn = 'warning'
+    elif collection.repo_synced(): status = 'synced'; btn = 'success'
+    data = {
+        'row': '#%s' % collection.id,
+        'color': btn,
+        'cell': '#%s td.status' % collection.id,
+        'status': status,
+    }
+    return HttpResponse(json.dumps(data), mimetype="application/json")
+
+@ddrview
+@storage_required
 def git_status( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     alert_if_conflicted(request, collection)
-    status = commands.status(collection.path)
-    astatus = commands.annex_status(collection.path)
+    status = collection.repo_status()
+    astatus = collection.repo_annex_status()
     return render_to_response(
         'webui/collections/git-status.html',
         {'repo': repo,
@@ -214,7 +237,7 @@ def new( request, repo, org ):
         else:
             # update search index
             json_path = os.path.join(collection_path, 'collection.json')
-            add_update('ddr', 'collection', json_path)
+            elasticsearch.add_document(settings.ELASTICSEARCH_HOST_PORT, 'ddr', 'collection', json_path)
             # positive feedback
             return HttpResponseRedirect( reverse('webui-collection-edit', args=[repo,org,cid]) )
     else:
@@ -268,7 +291,7 @@ def edit( request, repo, org, cid ):
                 messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
             else:
                 # update search index
-                add_update('ddr', 'collection', collection.json_path)
+                elasticsearch.add_document(settings.ELASTICSEARCH_HOST_PORT, 'ddr', 'collection', collection.json_path)
                 # positive feedback
                 messages.success(request, success_msg)
                 return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )

@@ -16,9 +16,9 @@ from django.shortcuts import Http404, get_object_or_404, render_to_response
 from django.template import RequestContext
 
 from DDR import commands
+from DDR import elasticsearch
 from ddrlocal.models.files import FILE_FIELDS
 
-from search import add_update
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
 from webui.decorators import ddrview
@@ -340,7 +340,7 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
                 messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
             else:
                 # update search index
-                add_update('ddr', 'file', file_.json_path)
+                elasticsearch.add_document(settings.ELASTICSEARCH_HOST_PORT, 'ddr', 'file', file_.json_path)
                 # positive feedback
                 messages.success(request, WEBUI_MESSAGES['VIEWS_FILES_UPDATED'])
                 return HttpResponseRedirect( reverse('webui-file', args=[repo,org,cid,eid,role,sha1]) )
