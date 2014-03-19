@@ -1,5 +1,5 @@
 {% extends "search/base.html" %}
-{% load webui_tags %}
+{% load bootstrap_pagination webui_tags %}
 
 
 {% block title %}Query{% endblock %}
@@ -90,11 +90,19 @@ Search Results
 
 {% if page.object_list %}
 
+{% if paginator.num_pages > 1 %}
+{% bootstrap_paginate page range=10 show_first_last="true" %}
+{% endif %}
+
 {% for hit in page.object_list %}
   {% if hit.model == "collection" %}{% collection hit %}{% endif %}
   {% if hit.model == "entity" %}{% entity hit %}{% endif %}
   {% if hit.model == "file" %}{% file hit %}{% endif %}
 {% endfor %}
+
+{% if paginator.num_pages > 1 %}
+{% bootstrap_paginate page range=10 show_first_last="true" %}
+{% endif %}
 
 {% endif %}
 
