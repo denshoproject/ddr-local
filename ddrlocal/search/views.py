@@ -6,12 +6,13 @@ from dateutil import parser
 
 from django.conf import settings
 from django.contrib import messages
+from django.core.paginator import Paginator
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import Http404, get_object_or_404, render_to_response
 from django.template import RequestContext
 
-from DDR import elasticsearch
+from DDR import docstore
 
 from search import forms, tasks
 
@@ -48,40 +49,30 @@ def query( request ):
             'record_lastmod': request.GET.get('record_lastmod', ''),}
     
     # do the query
-    hits = elasticsearch.query(settings.ELASTICSEARCH_HOST_PORT, query=q, filters=filters, sort=sort)
-    
-    # massage the results
-    def rename(hit, fieldname):
-        # Django templates can't display fields/attribs that start with underscore
-        under = '_%s' % fieldname
-        hit[fieldname] = hit.pop(under)
-    for hit in hits:
-        rename(hit, 'index')
-        rename(hit, 'type')
-        rename(hit, 'id')
-        rename(hit, 'score')
-        rename(hit, 'source')
-        # extract certain fields for easier display
-        for field in hit['source']['d'][1:]:
-            if field.keys():
-                if field.keys()[0] == 'id': hit['id'] = field['id']
-                if field.keys()[0] == 'title': hit['title'] = field['title']
-                if field.keys()[0] == 'record_created': hit['record_created'] = parser.parse(field['record_created'])
-                if field.keys()[0] == 'record_lastmod': hit['record_lastmod'] = parser.parse(field['record_lastmod'])
-        # assemble urls for each record type
-        if hit.get('id', None):
-            if hit['type'] == 'collection':
-                repo,org,cid = hit['id'].split('-')
-                hit['url'] = reverse('webui-collection', args=[repo,org,cid])
-            elif hit['type'] == 'entity':
-                repo,org,cid,eid = hit['id'].split('-')
-                hit['url'] = reverse('webui-entity', args=[repo,org,cid,eid])
-            elif hit['type'] == 'file':
-                repo,org,cid,eid,role,sha1 = hit['id'].split('-')
-                hit['url'] = reverse('webui-file', args=[repo,org,cid,eid,role,sha1])
+    thispage = request.GET.get('page', 1)
+    results = docstore.search(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX,
+                              query=q, filters=filters,
+                              fields=docstore.all_list_fields(), sort=sort)
+    objects = docstore.massage_query_results(results, thispage, settings.RESULTS_PER_PAGE)
+    results = None
+    # urls for each record type
+    for o in objects:
+        if o.get('id', None) and o.get('type', None):
+            if o['type'] == 'collection':
+                repo,org,cid = o['id'].split('-')
+                o['url'] = reverse('webui-collection', args=[repo,org,cid])
+            elif o['type'] == 'entity':
+                repo,org,cid,eid = o['id'].split('-')
+                o['url'] = reverse('webui-entity', args=[repo,org,cid,eid])
+            elif o['type'] == 'file':
+                repo,org,cid,eid,role,sha1 = o['id'].split('-')
+                o['url'] = reverse('webui-file', args=[repo,org,cid,eid,role,sha1])
+    paginator = Paginator(objects, settings.RESULTS_PER_PAGE)
+    page = paginator.page(thispage)
     return render_to_response(
         'search/query.html',
-        {'hits': hits,
+        {'paginator': paginator,
+         'page': page,
          'query': q,
          'filters': filters,
          'sort': sort,},
@@ -91,7 +82,7 @@ def query( request ):
 def admin( request ):
     """Administrative stuff like re-indexing.
     """
-    status = elasticsearch.status(settings.ELASTICSEARCH_HOST_PORT)
+    status = docstore.status(settings.DOCSTORE_HOSTS)
     if status:
         status['shards'] = status.pop('_shards')
     
@@ -122,6 +113,6 @@ def drop_index( request ):
     if request.method == 'POST':
         form = forms.DropConfirmForm(request.POST)
         if form.is_valid():
-            elasticsearch.delete_index(settings.ELASTICSEARCH_HOST_PORT, 'ddr')
+            docstore.delete_index(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
             messages.error(request, 'Search indexes dropped. Click "Re-index" to reindex your collections.')
     return HttpResponseRedirect( reverse('search-admin') )

@@ -18,7 +18,7 @@ from django.template import RequestContext
 from django.template.loader import get_template
 
 from DDR import commands
-from DDR import elasticsearch
+from DDR import docstore
 
 from ddrlocal.models.collection import COLLECTION_FIELDS
 
@@ -237,7 +237,9 @@ def new( request, repo, org ):
         else:
             # update search index
             json_path = os.path.join(collection_path, 'collection.json')
-            elasticsearch.add_document(settings.ELASTICSEARCH_HOST_PORT, 'ddr', 'collection', json_path)
+            with open(json_path, 'r') as f:
+                document = json.loads(f.read())
+            docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, 'collection', document)
             # positive feedback
             return HttpResponseRedirect( reverse('webui-collection-edit', args=[repo,org,cid]) )
     else:
@@ -291,7 +293,9 @@ def edit( request, repo, org, cid ):
                 messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
             else:
                 # update search index
-                elasticsearch.add_document(settings.ELASTICSEARCH_HOST_PORT, 'ddr', 'collection', collection.json_path)
+                with open(collection.json_path, 'r') as f:
+                    document = json.loads(f.read())
+                docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, 'collection', document)
                 # positive feedback
                 messages.success(request, success_msg)
                 return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )

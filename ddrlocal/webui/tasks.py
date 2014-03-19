@@ -16,7 +16,7 @@ from django.core.urlresolvers import reverse
 from ddrlocal.models import DDRLocalEntity, DDRLocalFile, hash
 from webui.models import Collection
 
-from DDR import elasticsearch
+from DDR import docstore
 from DDR.commands import entity_annex_add, entity_update, sync
 
 
@@ -436,7 +436,10 @@ def collection_sync( git_name, git_mail, collection_path ):
     """
     exit,status = sync(git_name, git_mail, collection_path)
     # update search index
-    elasticsearch.add_document(settings.ELASTICSEARCH_HOST_PORT, 'ddr', 'collection', os.path.join(collection_path, 'collection.json'))
+    path = os.path.join(collection_path, 'collection.json')
+    with open(path, 'r') as f:
+        document = json.loads(f.read())
+    docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, 'collection', document)
     return collection_path
 
 

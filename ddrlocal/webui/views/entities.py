@@ -16,7 +16,7 @@ from django.shortcuts import Http404, get_object_or_404, render_to_response
 from django.template import RequestContext
 
 from DDR import commands
-from DDR import elasticsearch
+from DDR import docstore
 
 from ddrlocal.models.entity import ENTITY_FIELDS
 
@@ -175,7 +175,9 @@ def new( request, repo, org, cid ):
         else:
             # update search index
             json_path = os.path.join(entity_path, 'entity.json')
-            elasticsearch.add_document(settings.ELASTICSEARCH_HOST_PORT, 'ddr', 'entity', json_path)
+            with open(json_path, 'r') as f:
+                document = json.loads(f.read())
+            docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, 'entity', document)
             # positive feedback
             return HttpResponseRedirect(reverse('webui-entity-edit', args=[repo,org,cid,eid]))
     else:
@@ -235,7 +237,9 @@ def edit( request, repo, org, cid, eid ):
                 messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
             else:
                 # update search index
-                elasticsearch.add_document(settings.ELASTICSEARCH_HOST_PORT, 'ddr', 'entity', entity.json_path)
+                with open(entity.json_path, 'r') as f:
+                    document = json.loads(f.read())
+                docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, 'entity', document)
                 # positive feedback
                 messages.success(request, success_msg)
                 return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
