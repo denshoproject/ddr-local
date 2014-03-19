@@ -19,6 +19,10 @@
 .hit .sort { float:right; margin-left:10px; }
 .hit .source { }
 .hit .url { }
+.paginationcontainer { margin-bottom:20px; }
+.pagination { list-style-type:none; margin:0px; }
+.pagination li { float:left; margin-right:20px; }
+.pagination li.active { font-weight:bold; }
 </style>
 {% endblock pagecss %}
 
@@ -91,7 +95,9 @@ Search Results
 {% if page.object_list %}
 
 {% if paginator.num_pages > 1 %}
+<div class="paginationcontainer clearfix">
 {% bootstrap_paginate page range=10 show_first_last="true" %}
+</div>
 {% endif %}
 
 {% for hit in page.object_list %}
@@ -101,7 +107,9 @@ Search Results
 {% endfor %}
 
 {% if paginator.num_pages > 1 %}
+<div class="paginationcontainer clearfix">
 {% bootstrap_paginate page range=10 show_first_last="true" %}
+</div>
 {% endif %}
 
 {% endif %}
