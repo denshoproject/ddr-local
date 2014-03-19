@@ -1,4 +1,5 @@
 {% extends "search/base.html" %}
+{% load webui_tags %}
 
 
 {% block title %}Query{% endblock %}
@@ -79,40 +80,22 @@ Search Results
 
   </div>
 
+{% if page.object_list %}
   <div>
-    {{ hits|length }} results<br/>
+    {{ paginator.count }} items<br/>
   </div>
+{% endif %}
 
 </div><!-- .querymeta -->
 
-{% if hits %}
-{% for hit in hits %}
-<div class="hit">
-  <div class="type">
-    {% if hit.type == "collection" %}<span class="badge badge-info">collection</span>{% endif %}
-    {% if hit.type == "entity" %}<span class="badge badge-success">object</span>{% endif %}
-    {% if hit.type == "file" %}<span class="badge badge-inverse">file</span>{% endif %}
-  </div>
+{% if page.object_list %}
 
-  <div class="sort muted">
-    {% if sort.record_created or sort.record_lastmod %}
-    {% if sort.record_created %}created: {{ hit.record_created|date:"Y-m-d H:i:s" }}{% endif %}
-    {% if sort.record_lastmod %}modified: {{ hit.record_lastmod|date:"Y-m-d H:i:s" }}{% endif %}
-    {% endif %}{# sort.record_created or sort.record_lastmod #}
-  </div>
-
-  <h3>
-  <a href="{{ hit.url }}">{{ hit.id }} - {{ hit.title }}</a>
-  </h3>
-  <div class="source muted">
-  {{ hit.source.d|truncatewords_html:56 }}
-  </div>
-  <div class="url">
-  <a href="{{ hit.url }}">{{ hit.url }}</a>
-  </div>
-
-</div>
+{% for hit in page.object_list %}
+  {% if hit.model == "collection" %}{% collection hit %}{% endif %}
+  {% if hit.model == "entity" %}{% entity hit %}{% endif %}
+  {% if hit.model == "file" %}{% file hit %}{% endif %}
 {% endfor %}
+
 {% endif %}
 
     </div><!-- .span12 -->
