@@ -10,6 +10,9 @@ urlpatterns = patterns(
 
     # search
 
+    url(r'^search/admin/$', 'webui.views.search.admin', name='webui-search-admin'),
+    url(r'^search/reindex/$', 'webui.views.search.reindex', name='webui-search-reindex'),
+    url(r'^search/drop/$', 'webui.views.search.drop_index', name='webui-search-drop'),
     #url(r'^search/(?P<field>[\w]+):(?P<term>[\w ,]+)/$', 'webui.views.search.term_query', name='webui-search-term-query'),
     url(r'^search/results/$', 'webui.views.search.results', name='webui-search-results'),
     url(r'^search/$', 'webui.views.search.index', name='webui-search-index'),

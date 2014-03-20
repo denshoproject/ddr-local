@@ -1,4 +1,4 @@
-{% extends "search/base.html" %}
+{% extends "webui/search/base.html" %}
 
 
 {% block title %}Admin{% endblock %}
@@ -45,7 +45,7 @@ No response from Elasticsearch server!
 Re-index
 </h3>
 
-<form name="indexconfirm" action="{% url "search-reindex" %}" method="post">{% csrf_token %}
+<form name="indexconfirm" action="{% url "webui-search-reindex" %}" method="post">{% csrf_token %}
 {{ indexform.as_p }}
 <input name="submit" type="submit" value="Re-index" />
 </form>
@@ -55,7 +55,7 @@ Re-index
 Drop Indexes
 </h3>
 
-<form name="dropconfirm" action="{% url "search-drop" %}" method="post">{% csrf_token %}
+<form name="dropconfirm" action="{% url "webui-search-drop" %}" method="post">{% csrf_token %}
 {{ dropform.as_p }}
 <input name="submit" type="submit" value="Drop Index" />
 </form>

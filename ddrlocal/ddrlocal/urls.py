@@ -5,7 +5,6 @@ from django.views.generic import TemplateView
 
 from djcelery import urls as djcelery_urls
 
-from search import urls as search_urls
 from storage import urls as storage_urls
 from webui import urls as webui_urls
 

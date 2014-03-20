@@ -11,7 +11,7 @@ from django.template import RequestContext
 
 from DDR import commands
 
-from search.tasks import reindex_and_notify
+from webui.tasks import reindex_and_notify
 from storage import STORAGE_MESSAGES
 from storage import base_path, media_base_target, removables, removables_mounted
 from storage import mount, unmount, add_media_symlink, rm_media_symlink

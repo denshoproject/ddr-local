@@ -15,7 +15,8 @@ from django.template import RequestContext
 from django.utils.http import urlquote  as django_urlquote
 
 from DDR import docstore, models
-from webui.forms.search import SearchForm
+from webui import tasks
+from webui.forms.search import SearchForm, IndexConfirmForm, DropConfirmForm
 
 BAD_CHARS = ('{', '}', '[', ']')
 
@@ -93,3 +94,41 @@ def results( request ):
     return render_to_response(
         template, context, context_instance=RequestContext(request, processors=[])
     )
+
+def admin( request ):
+    """Administrative stuff like re-indexing.
+    """
+    status = docstore.status(settings.DOCSTORE_HOSTS)
+    if status:
+        status['shards'] = status.pop('_shards')
+    
+    confirm = request.GET.get('confirm', None)
+    if confirm:
+        pass
+        # start index task
+        # message
+        # redirect
+    indexform = IndexConfirmForm()
+    dropform = DropConfirmForm()
+    return render_to_response(
+        'webui/search/admin.html',
+        {'status': status,
+         'indexform': indexform,
+         'dropform': dropform,},
+        context_instance=RequestContext(request, processors=[])
+    )
+
+def reindex( request ):
+    if request.method == 'POST':
+        form = IndexConfirmForm(request.POST)
+        if form.is_valid():
+            tasks.reindex_and_notify(request)
+    return HttpResponseRedirect( reverse('webui-search-admin') )
+
+def drop_index( request ):
+    if request.method == 'POST':
+        form = DropConfirmForm(request.POST)
+        if form.is_valid():
+            docstore.delete_index(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+            messages.error(request, 'Search indexes dropped. Click "Re-index" to reindex your collections.')
+    return HttpResponseRedirect( reverse('webui-search-admin') )
