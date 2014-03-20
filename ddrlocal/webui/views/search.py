@@ -29,6 +29,24 @@ def kosher( query ):
             return False
     return True
 
+def make_object_url( parts ):
+    """Takes a list of object ID parts and returns URL for that object.
+    """
+    if len(parts) == 6: return reverse('webui-file', args=parts)
+    elif len(parts) == 4: return reverse('webui-entity', args=parts)
+    elif len(parts) == 3: return reverse('webui-collection', args=parts)
+    return None
+
+
+def massage_query_results( results, thispage, size ):
+    objects = docstore.massage_query_results(results, thispage, size)
+    for o in objects:
+        # add URL
+        parts = models.split_object_id(o['id'])
+        parts = parts[1:]
+        o['absolute_url'] = make_object_url(parts)
+    return objects
+
 
 # views ----------------------------------------------------------------
 
@@ -79,7 +97,7 @@ def results( request ):
             # OK -- prep results for display
             thispage = request.GET.get('page', 1)
             #assert False
-            objects = docstore.massage_query_results(results, thispage, settings.RESULTS_PER_PAGE)
+            objects = massage_query_results(results, thispage, settings.RESULTS_PER_PAGE)
             paginator = Paginator(objects, settings.RESULTS_PER_PAGE)
             page = paginator.page(thispage)
             context['paginator'] = paginator
