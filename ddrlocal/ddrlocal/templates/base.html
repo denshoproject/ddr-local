@@ -80,7 +80,7 @@ form td { padding-bottom:20px; }
   <li><a href="{% url "webui-collections" %}">Collections</a></li>
   <li><a href="{% url "storage-index" %}">Storage</a></li>
   <li>
-    <form name="search" class="navbar-search pull-right" action="{% url "search-query" %}" method="get">
+    <form name="search" class="navbar-search pull-right" action="{% url "webui-search-results" %}" method="get">
     <input name="query" type="text" class="search-query" value="{{ query }}" placeholder="Search">
     </form>
   </li>

@@ -1,0 +1,107 @@
+{% extends "webui/search/base.html" %}
+{% load bootstrap_pagination webui_tags %}
+
+{% block title %}Search Results{% endblock %}
+
+{% block content %}
+<section id="shop" class="container">
+  <div class="row">
+    <div class="col-sm-12 col-md-12">
+
+{% if error_message %}
+<p class="error">
+{{ error_message }}
+</p>
+{% endif %}
+
+<p></p>
+
+<form action="{% url "webui-search-results" %}" method="get" class="input-group nomargin-bottom">
+  <input class="form-control" id="id_query" name="query" type="text" value="{{ query }}" placeholder="Search..." />
+  <span class="input-group-btn">
+    <button class="btn btn-primary"><i class="fa fa-search"></i></button>
+  </span>
+</form>
+
+<div id="querymeta">
+
+{% if terms %}
+  <div class="terms">
+    <b>Terms</b>
+
+    <strong><a href="{# url "webui-browse-facet" terms.field #}">{{ terms.field }}</a>:</strong>
+    {{ terms.term }}
+
+  </div>
+{% endif %}
+
+<!--
+  <div class="filters">
+    <b>Filters</b>
+    &mdash;
+
+    <span class="public">
+      <b>public:</b>
+{% if filters.public == "1" %}yes{% else %}<a href="?query={{ query }}&record_created={{ record_created }}&record_lastmod={{ sort.record_lastmod }}&public=1&workflow={{ filters.workflow }}">yes</a>{% endif %}
+/ {% if filters.public == "0" %}<b>no</b>{% else %}<a href="?query={{ query }}&record_created={{ record_created }}&record_lastmod={{ sort.record_lastmod }}&public=0&workflow={{ filters.workflow }}">no</a>{% endif %}
+{% if filters.public %}(<a href="?query={{ query }}&record_created={{ record_created }}&record_lastmod={{ sort.record_lastmod }}&public=&workflow={{ filters.workflow }}">clear</a>){% endif %}
+    </span>
+    &bull;
+    <span class="status">
+      <b>status:</b>
+{% if filters.status == "completed" %}completed{% else %}<a href="?query={{ query }}&record_created={{ record_created }}&record_lastmod={{ sort.record_lastmod }}&public={{ filters.public }}&status=completed">completed</a>{% endif %}
+/ {% if filters.status == "inprocess" %}inprocess{% else %}<a href="?query={{ query }}&record_created={{ record_created }}&record_lastmod={{ sort.record_lastmod }}&public={{ filters.public }}&status=inprocess">inprocess</a>{% endif %}
+{% if filters.status %}(<a href="?query={{ query }}&record_created={{ record_created }}&record_lastmod={{ sort.record_lastmod }}&public={{ filters.public }}&status=">clear</a>){% endif %}
+    </span>
+  </div>
+-->
+
+<!--
+  <div class="sort">
+    <b>Sort</b>
+    &mdash;
+    <span class="record_created">
+      <b>record_created:</b>
+{% if sort.record_created == "asc" %}ascending{% else %}<a href="?query={{ query }}&record_created=asc&record_lastmod={{ sort.record_lastmod }}&public={{ filters.public }}&workflow={{ filters.workflow }}">ascending</a>{% endif %}
+/ {% if record_created.date == "desc" %}descending{% else %}<a href="?query={{ query }}&record_created=desc&record_lastmod={{ sort.record_lastmod }}&public={{ filters.public }}&workflow={{ filters.workflow }}">descending</a>{% endif %}
+{% if sort.record_created %}(<a href="?query={{ query }}&record_created=&record_lastmod={{ sort.record_lastmod }}&public={{ filters.public }}&workflow={{ filters.workflow }}">clear</a>){% endif %}
+    </span>
+    <span class="record_lastmod">
+      <b>record_lastmod:</b>
+{% if sort.record_lastmod == "asc" %}ascending{% else %}<a href="?query={{ query }}&record_created={{ record_created }}&record_lastmod=asc&public={{ filters.public }}&workflow={{ filters.workflow }}">ascending</a>{% endif %}
+/ {% if record_lastmod.date == "desc" %}descending{% else %}<a href="?query={{ query }}&record_created={{ record_created }}&record_lastmod=desc&public={{ filters.public }}&workflow={{ filters.workflow }}">descending</a>{% endif %}
+{% if sort.record_lastmod %}(<a href="?query={{ query }}&record_created={{ record_created }}&record_lastmod=&public={{ filters.public }}&workflow={{ filters.workflow }}">clear</a>){% endif %}
+    </span>
+  </div>
+-->
+
+{% if page.object_list %}
+  <div>
+    {{ paginator.count }} items<br/>
+  </div>
+{% endif %}
+
+</div><!-- .querymeta -->
+
+{% if page.object_list %}
+
+{% if paginator.num_pages > 1 %}
+{% bootstrap_paginate page range=10 show_first_last="true" %}
+{% endif %}
+
+{% for hit in page.object_list %}
+  {% if hit.model == "collection" %}{% collection hit %}{% endif %}
+  {% if hit.model == "entity" %}{% entity hit %}{% endif %}
+  {% if hit.model == "file" %}{% file hit %}{% endif %}
+{% endfor %}
+
+{% if paginator.num_pages > 1 %}
+{% bootstrap_paginate page range=10 show_first_last="true" %}
+{% endif %}
+
+{% endif %}
+
+    </div><!-- .col-sm-12 col-md-12 -->
+  </div><!-- .row -->
+</section><!-- .container-fluid -->
+{% endblock content %}
