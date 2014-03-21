@@ -16,7 +16,7 @@ from django.core.urlresolvers import reverse
 from ddrlocal.models import DDRLocalEntity, DDRLocalFile, hash
 from webui.models import Collection
 
-from DDR import docstore
+from DDR import docstore, models
 from DDR.commands import entity_annex_add, entity_update, sync
 
 
@@ -79,7 +79,13 @@ class DebugTask(Task):
 def reindex():
     """
     """
-    docstore.index(hosts=settings.DOCSTORE_HOSTS, index=settings.DOCSTORE_INDEX,
+    if not os.path.exists(settings.MEDIA_BASE):
+        raise NameError('MEDIA_BASE does not exist - you need to remount!')
+    docstore.delete_index(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+    docstore.create_index(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+    docstore.put_mappings(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, docstore.HARD_CODED_MAPPINGS_PATH, models.MODELS_DIR)
+    docstore.put_facets(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+    docstore.index(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX,
                    path=settings.MEDIA_BASE,
                    recursive=True, public=False)
     return 0
