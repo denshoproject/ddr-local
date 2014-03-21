@@ -43,11 +43,13 @@ def make_object_url( parts ):
 
 def massage_query_results( results, thispage, size ):
     objects = docstore.massage_query_results(results, thispage, size)
+    results = None
     for o in objects:
-        # add URL
-        parts = models.split_object_id(o['id'])
-        parts = parts[1:]
-        o['absolute_url'] = make_object_url(parts)
+        if not o.get('placeholder',False):
+            # add URL
+            parts = models.split_object_id(o['id'])
+            parts = parts[1:]
+            o['absolute_url'] = make_object_url(parts)
     return objects
 
 
