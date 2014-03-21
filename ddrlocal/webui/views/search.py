@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 import logging
 logger = logging.getLogger(__name__)
 
@@ -13,6 +14,8 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import Http404, get_object_or_404, render_to_response
 from django.template import RequestContext
 from django.utils.http import urlquote  as django_urlquote
+
+from elasticsearch import Elasticsearch
 
 from DDR import docstore, models
 from webui import tasks
@@ -116,21 +119,50 @@ def results( request ):
 def admin( request ):
     """Administrative stuff like re-indexing.
     """
-    status = docstore.status(settings.DOCSTORE_HOSTS)
-    if status:
-        status['shards'] = status.pop('_shards')
-    
-    confirm = request.GET.get('confirm', None)
-    if confirm:
-        pass
-        # start index task
-        # message
-        # redirect
+    server_info = []
+    es = Elasticsearch(hosts=settings.DOCSTORE_HOSTS)
+    ping = es.ping()
+    no_indices = True
+    if ping:
+        info = es.info()
+        status = es.indices.status()
+        
+        info_status = info['status']
+        if info_status == 200:
+            info_status_class = 'success'
+        else:
+            info_status_class = 'error'
+        server_info.append( {'label':'status', 'data':info_status, 'class':info_status_class} )
+        
+        shards_success = status['_shards']['successful']
+        shards_failed = status['_shards']['failed']
+        if shards_failed == 0:
+            shards_success_class = 'success'
+            shards_failed_class = 'success'
+        else:
+            shards_success_class = 'error'
+            shards_failed_class = 'error'
+        server_info.append( {'label':'shards(successful)', 'data':shards_success, 'class':shards_success_class} )
+        server_info.append( {'label':'shards(failed)', 'data':shards_failed, 'class':shards_failed_class} )
+        
+        for name in status['indices'].keys():
+            no_indices = False
+            server_info.append( {'label':name, 'data':'', 'class':''} )
+            size = status['indices'][name]['index']['size_in_bytes']
+            ONEPLACE = Decimal(10) ** -1
+            size_nice = Decimal(size/1024/1024.0).quantize(ONEPLACE)
+            size_formatted = '%sMB (%s bytes)' % (size_nice, size)
+            num_docs = status['indices'][name]['docs']['num_docs']
+            server_info.append( {'label':'size', 'data':size_formatted, 'class':'info'} )
+            server_info.append( {'label':'documents', 'data':num_docs, 'class':'info'} )
+            
     indexform = IndexConfirmForm()
     dropform = DropConfirmForm()
     return render_to_response(
         'webui/search/admin.html',
-        {'status': status,
+        {'ping': ping,
+         'no_indices': no_indices,
+         'server_info': server_info,
          'indexform': indexform,
          'dropform': dropform,},
         context_instance=RequestContext(request, processors=[])
