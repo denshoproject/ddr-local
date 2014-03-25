@@ -25,10 +25,10 @@ STATUS_CHOICES = [['inprocess', 'In Progress'],
 PERMISSIONS_CHOICES = [['1','Public'],
                        ['0','Private'],]
 					
-RIGHTS_CHOICES = [['',''],
-                  ['cc','DDR Creative Commons'],
-                  ['nocc','Copyright restricted'],
-                  ['pdm','Public domain'],]
+RIGHTS_CHOICES = [["cc", "DDR Creative Commons"],
+                  ["pcc", "Copyright, with special 3rd-party grant permitted"],
+                  ["nocc", "Copyright restricted"],
+                  ["pdm", "Public domain" ],]
 
 LANGUAGE_CHOICES = [['',''],
                     ['eng','English'],
