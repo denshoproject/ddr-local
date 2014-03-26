@@ -19,6 +19,7 @@ from elasticsearch import Elasticsearch
 
 from DDR import docstore, models
 from webui import tasks
+from webui.decorators import search_index
 from webui.forms.search import SearchForm, IndexConfirmForm, DropConfirmForm
 
 BAD_CHARS = ('{', '}', '[', ']')
@@ -55,17 +56,22 @@ def massage_query_results( results, thispage, size ):
 
 # views ----------------------------------------------------------------
 
+@search_index
 def index( request ):
+    docstore_index = request.session.get('docstore_index', None)
     return render_to_response(
         'webui/search/index.html',
         {'hide_header_search': True,
-         'search_form': SearchForm,},
+         'search_form': SearchForm,
+         'docstore_index': docstore_index,},
         context_instance=RequestContext(request, processors=[])
     )
 
+@search_index
 def results( request ):
     """Results of a search query or a DDR ID query.
     """
+    docstore_index = request.session.get('docstore_index', None)
     template = 'webui/search/results.html'
     context = {
         'hide_header_search': True,
@@ -76,6 +82,7 @@ def results( request ):
         'page': None,
         'filters': None,
         'sort': None,
+        'docstore_index': docstore_index,
     }
     context['query'] = request.GET.get('query', '')
     # silently strip out bad chars
@@ -83,7 +90,7 @@ def results( request ):
     for char in BAD_CHARS:
         query = query.replace(char, '')
         
-    if query:
+    if docstore_index and query:
         context['search_form'] = SearchForm({'query': query})
         
         # prep query for elasticsearch
@@ -94,7 +101,7 @@ def results( request ):
                 'record_lastmod': request.GET.get('record_lastmod', ''),}
         
         # do query and cache the results
-        results = docstore.search(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX,
+        results = docstore.search(settings.DOCSTORE_HOSTS, docstore_index,
                                   query=query, filters=filters,
                                   model='collection,entity,file', fields=fields, sort=sort)
         if results.get('hits',None) and not results.get('status',None):
@@ -117,17 +124,19 @@ def results( request ):
         template, context, context_instance=RequestContext(request, processors=[])
     )
 
+@search_index
 def admin( request ):
     """Administrative stuff like re-indexing.
     """
+    docstore_index = request.session.get('docstore_index', None)
     server_info = []
+    index_names = []
+    indices = []
     es = Elasticsearch(hosts=settings.DOCSTORE_HOSTS)
     ping = es.ping()
     no_indices = True
     if ping:
         info = es.info()
-        status = es.indices.status()
-        
         info_status = info['status']
         if info_status == 200:
             info_status_class = 'success'
@@ -135,6 +144,7 @@ def admin( request ):
             info_status_class = 'error'
         server_info.append( {'label':'status', 'data':info_status, 'class':info_status_class} )
         
+        status = es.indices.status()
         shards_success = status['_shards']['successful']
         shards_failed = status['_shards']['failed']
         if shards_failed == 0:
@@ -145,7 +155,7 @@ def admin( request ):
             shards_failed_class = 'error'
         server_info.append( {'label':'shards(successful)', 'data':shards_success, 'class':shards_success_class} )
         server_info.append( {'label':'shards(failed)', 'data':shards_failed, 'class':shards_failed_class} )
-        
+        # indices
         for name in status['indices'].keys():
             no_indices = False
             server_info.append( {'label':name, 'data':'', 'class':''} )
@@ -157,29 +167,50 @@ def admin( request ):
             server_info.append( {'label':'size', 'data':size_formatted, 'class':'info'} )
             server_info.append( {'label':'documents', 'data':num_docs, 'class':'info'} )
             
-    indexform = IndexConfirmForm()
-    dropform = DropConfirmForm()
+            index_names.append(name)
+            index = {'name':name, 'exists':True}
+            indices.append(index)
+    indexform = IndexConfirmForm(request=request)
+    dropform = None
+    if indices:
+        dropform = DropConfirmForm(request=request)
     return render_to_response(
         'webui/search/admin.html',
         {'ping': ping,
          'no_indices': no_indices,
          'server_info': server_info,
+         'indices': indices,
          'indexform': indexform,
-         'dropform': dropform,},
+         'dropform': dropform,
+         'docstore_index': docstore_index,},
         context_instance=RequestContext(request, processors=[])
     )
 
 def reindex( request ):
     if request.method == 'POST':
-        form = IndexConfirmForm(request.POST)
+        form = IndexConfirmForm(request.POST, request=request)
         if form.is_valid():
-            tasks.reindex_and_notify(request)
+            index = form.cleaned_data['index']
+            if index:
+                result = tasks.reindex.apply_async( [index], countdown=2)
+                # add celery task_id to session
+                celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
+                # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
+                task = {'task_id': result.task_id,
+                        'action': 'webui-search-reindex',
+                        'index': index,
+                        'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
+                celery_tasks[result.task_id] = task
+                request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
     return HttpResponseRedirect( reverse('webui-search-admin') )
 
 def drop_index( request ):
     if request.method == 'POST':
-        form = DropConfirmForm(request.POST)
+        form = DropConfirmForm(request.POST, request=request)
         if form.is_valid():
-            docstore.delete_index(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
-            messages.error(request, 'Search indexes dropped. Click "Re-index" to reindex your collections.')
+            index = form.cleaned_data['index']
+            docstore.delete_index(settings.DOCSTORE_HOSTS, index)
+            messages.error(request,
+                           'Search index "%s" dropped. ' \
+                           'Click "Re-index" to reindex your collections.' % index)
     return HttpResponseRedirect( reverse('webui-search-admin') )

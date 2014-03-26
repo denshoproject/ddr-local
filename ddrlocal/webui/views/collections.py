@@ -26,7 +26,7 @@ from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
 from webui import get_repos_orgs
 from webui import api
-from webui.decorators import ddrview
+from webui.decorators import ddrview, search_index
 from webui.forms import DDRForm
 from webui.forms.collections import NewCollectionForm, UpdateForm
 from webui.models import Collection
@@ -51,6 +51,7 @@ def alert_if_conflicted(request, collection):
 
 # views ----------------------------------------------------------------
 
+@search_index
 @storage_required
 def collections( request ):
     collections = []

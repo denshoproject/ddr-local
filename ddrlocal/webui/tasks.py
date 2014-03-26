@@ -60,11 +60,11 @@ TASK_STATUS_MESSAGES = {
         #'RETRY': '',
         #'REVOKED': '',
         },
-    'search-reindex': {
+    'webui-search-reindex': {
         #'STARTED': '',
-        'PENDING': 'Recreating search index.',
-        'SUCCESS': 'Reindexing completed.',
-        'FAILURE': 'Reindexing failed!',
+        'PENDING': 'Recreating search index <b>{index}</b>.',
+        'SUCCESS': 'Reindexing <b>{index}</b> completed.',
+        'FAILURE': 'Reindexing <b>{index}</b> failed!',
         #'RETRY': '',
         #'REVOKED': '',
         },
@@ -75,30 +75,65 @@ TASK_STATUS_MESSAGES = {
 class DebugTask(Task):
     abstract = True
 
-@task(base=DebugTask, name='search-reindex')
-def reindex():
+
+class ElasticsearchTask(Task):
+    abstract = True
+        
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
+        logger.debug('ElasticsearchTask.on_failure(%s, %s, %s, %s)' % (exc, task_id, args, kwargs))
+    
+    def on_success(self, retval, task_id, args, kwargs):
+        logger.debug('ElasticsearchTask.on_success(%s, %s, %s, %s)' % (retval, task_id, args, kwargs))
+    
+    def after_return(self, status, retval, task_id, args, kwargs, einfo):
+        logger.debug('ElasticsearchTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
+
+@task(base=ElasticsearchTask, name='webui-search-reindex')
+def reindex( index ):
     """
+    @param index: Name of index to create or update
     """
+    logger.debug('------------------------------------------------------------------------')
+    logger.debug('webui.tasks.reindex(%s)' % index)
+    statuses = []
     if not os.path.exists(settings.MEDIA_BASE):
         raise NameError('MEDIA_BASE does not exist - you need to remount!')
-    docstore.delete_index(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
-    docstore.create_index(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
-    docstore.put_mappings(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, docstore.HARD_CODED_MAPPINGS_PATH, models.MODELS_DIR)
-    docstore.put_facets(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
-    docstore.index(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX,
-                   path=settings.MEDIA_BASE,
-                   recursive=True, public=False)
-    return 0
+    logger.debug('webui.tasks.reindex(%s)' % index)
+    logger.debug('DOCSTORE_HOSTS: %s' % settings.DOCSTORE_HOSTS)
+    logger.debug('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ')
+    logger.debug('deleting existing index: %s' % index)
+    delete_status = docstore.delete_index(settings.DOCSTORE_HOSTS, index)
+    logger.debug(delete_status)
+    logger.debug('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ')
+    logger.debug('creating new index: %s' % index)
+    create_status = docstore.create_index(settings.DOCSTORE_HOSTS, index)
+    logger.debug(create_status)
+    logger.debug('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ')
+    logger.debug('mappings: %s, %s' % (docstore.HARD_CODED_MAPPINGS_PATH, models.MODELS_DIR))
+    mappings_status = docstore.put_mappings(settings.DOCSTORE_HOSTS, index,
+                                            docstore.HARD_CODED_MAPPINGS_PATH, models.MODELS_DIR)
+    logger.debug(mappings_status)
+    logger.debug('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ')
+    logger.debug('facets')
+    facets_status = docstore.put_facets(settings.DOCSTORE_HOSTS, index)
+    logger.debug(facets_status)
+    logger.debug('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ')
+    logger.debug('indexing')
+    index_status = docstore.index(settings.DOCSTORE_HOSTS, index, path=settings.MEDIA_BASE,
+                                  recursive=True, public=False)
+    logger.debug(index_status)
+    return statuses
 
-def reindex_and_notify( request ):
+def reindex_and_notify( index ):
     """Drop existing index and build another from scratch; hand off to Celery.
     This function is intended for use in a view.
     """
-    result = reindex.apply_async( (), countdown=2)
+    result = reindex(index).apply_async(countdown=2)
     celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
     # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
     task = {'task_id': result.task_id,
-            'action': 'search-reindex',
+            'action': 'webui-search-reindex',
+            'index': index,
             'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
     celery_tasks[result.task_id] = task
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks

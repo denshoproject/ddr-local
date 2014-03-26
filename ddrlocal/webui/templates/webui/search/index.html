@@ -4,7 +4,6 @@
 
 {% block content %}
 
-<section class="container">
 
 <p></p>
 
@@ -15,5 +14,8 @@
   </span>
 </form>
 
-</div><!-- .container-fluid -->
 {% endblock content %}
+
+{% block footer %}
+<span class="muted">index: {{ docstore_index }}</span>
+{% endblock footer %}

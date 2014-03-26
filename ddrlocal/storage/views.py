@@ -98,8 +98,6 @@ def mount_device( request ):
             devicefile,label = raw.split(' ',1)
             mount(request, devicefile, label)
             # TODO regenerate redis caches
-            # regenerate local ElasticSearch index
-            reindex_and_notify(request)
     return HttpResponseRedirect( reverse('storage-index') )
 
 def unmount_device( request ):
@@ -122,8 +120,6 @@ def activate_device( request ):
             label = os.path.basename(path)
             messages.success(request, '<strong>%s</strong> is now the active device' % label)
             # TODO regenerate redis caches
-            # regenerate local ElasticSearch index
-            reindex_and_notify(request)
     return HttpResponseRedirect( reverse('storage-index') )
 
 def manual_symlink( request ):

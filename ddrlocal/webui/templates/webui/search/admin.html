@@ -28,36 +28,55 @@ No response from Elasticsearch server!
 </div>
 {% endif %}
 
-{% if no_indices %}
-<div class="alert alert-danger">
-You have no indices &mdash; you need to re-index!
-</div>
-{% endif %}
-
 <table class="table table-striped table-condensed">
 {% for line in server_info %}
   <tr class="{{ line.class }}"><th>{{ line.label }}</th><td>{{ line.data }}</td></tr>
 {% endfor %}
 </table>
 
+{% if no_indices %}
+<div class="alert alert-danger">
+You have no indices &mdash; you need to re-index!
+</div>
+{% endif %}
+
 <h3>
 Re-index
 </h3>
 
-<form name="indexconfirm" action="{% url "webui-search-reindex" %}" method="post">{% csrf_token %}
-{{ indexform.as_p }}
-<input name="submit" type="submit" value="Re-index" />
+<table>
+<form class="form-inline" role="form" name="indexconfirm" action="{% url "webui-search-reindex" %}" method="post">{% csrf_token %}
+  <tr>
+    <td>
+{{ indexform.index }}
+    </td>
+    <td>
+<button type="submit" class="btn btn-default">Re-index</button>
+    </td>
+  </tr>
 </form>
+</table>
 
-
+{% if dropform %}
 <h3>
 Drop Indexes
 </h3>
-
-<form name="dropconfirm" action="{% url "webui-search-drop" %}" method="post">{% csrf_token %}
-{{ dropform.as_p }}
-<input name="submit" type="submit" value="Drop Index" />
+<table>
+<form class="form-inline" role="form" name="dropconfirm" action="{% url "webui-search-drop" %}" method="post">{% csrf_token %}
+  <tr>
+    <td>
+{{ dropform.index }}
+    </td>
+    <td>
+{{ dropform.confirm }} Yes, I want to do this.
+    </td>
+    <td>
+<button type="submit" class="btn btn-default">Drop Index</button>
+    </td>
+  </tr>
 </form>
+</table>
+{% endif %}
 
     </div><!-- .span12 -->
   </div><!-- .row-fluid -->
