@@ -96,8 +96,7 @@ def results( request ):
         # do query and cache the results
         results = docstore.search(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX,
                                   query=query, filters=filters,
-                                  fields=fields, sort=sort)
-        
+                                  model='collection,entity,file', fields=fields, sort=sort)
         if results.get('hits',None) and not results.get('status',None):
             # OK -- prep results for display
             thispage = request.GET.get('page', 1)
