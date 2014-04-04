@@ -12,6 +12,30 @@ from webui import WEBUI_MESSAGES
 
 
 
+def _session( request ):
+    s = requests.Session()
+    if request.session.get('workbench_sessionid',None) \
+           and request.session.get('workbench_csrftoken',None):
+        s.cookies.set('sessionid', request.session['workbench_sessionid'])
+        s.cookies.set('csrftoken', request.session['workbench_csrftoken'])
+    return s
+
+def _get_csrf_token( request, url ):
+    """Load page on ID service site, get CSRF token.
+    
+    @param request: 
+    @param url: 
+    @returns: string csrf_token
+    """
+    s = _session(request)
+    r = s.get(url)
+    if not (r.status_code == 200):
+        raise IOError('Could not get CSRF token (%s:%s on %s)' % (r.status_code, r.reason, url))
+    for c in r.cookies:
+        if c.name == 'csrftoken':
+            return c.value
+    raise IOError('No CSRF token in response (%s)' % (url))
+
 def logout():
     """Logs out of the workbench server.
     @returns string: 'ok' or error message
@@ -77,14 +101,6 @@ def login( request, username, password ):
             return 'error: bad username or password'
     return 'error: unspecified'
 
-def session( request ):
-    s = requests.Session()
-    if request.session.get('workbench_sessionid',None) \
-           and request.session.get('workbench_csrftoken',None):
-        s.cookies.set('sessionid', request.session['workbench_sessionid'])
-        s.cookies.set('csrftoken', request.session['workbench_csrftoken'])
-    return s
-
 def collections_latest( request, repo, org, num_collections=1 ):
     """Get the most recent N collection IDs for the logged-in user.
     
@@ -96,7 +112,7 @@ def collections_latest( request, repo, org, num_collections=1 ):
     We're screenscraping when we should be using the API.
     """
     collections = []
-    s = session(request)
+    s = _session(request)
     url = '{}/kiroku/{}-{}/'.format(settings.WORKBENCH_URL, repo, org)
     r = s.get(url)
     soup = BeautifulSoup(r.text)
@@ -115,34 +131,32 @@ def collections_next( request, repo, org, num_collections=1 ):
     ...
     
     TODO We're screenscraping when we should be using the API.
+    @param request: Django request object
+    @param repo: string The repository ID
+    @param org: string The organization ID
+    @param num_collections: int The number of new collection IDs requested.
+    @returns: dict containing 'collection_ids' or debugging info.
     """
-    collections = []
-    s = session(request)
-    # get CSRF token
-    r0 = s.get('{}/kiroku/{}-{}/'.format(settings.WORKBENCH_URL, repo, org))
-    if r0.status_code == 200:
-        # get CSRF token from cookie
-        csrf_token = None
-        for c in r0.cookies:
-            if c.name == 'csrftoken':
-                csrf_token = c.value
-        if csrf_token:
-            # request new CID
-            r1 = s.post(settings.WORKBENCH_NEWCOL_URL.replace('REPO',repo).replace('ORG',org),
-                        headers={'X-CSRFToken': csrf_token},
-                        cookies={'csrftoken': csrf_token},
-                        data={'csrftoken': csrf_token},)
-            soup = BeautifulSoup(r1.text)
-            cids = [c.string for c in soup.find_all('a','collection')]
-            collections = cids[-num_collections:]
-        else:
-            logger.error('No CSRF token')
-    else:
-        logger.error('Request did not work! (status code: %s)' % r0.status_code)
-    logger.debug('collections: %s' % collections)
-    return collections
+    logger.debug('collections_next( %s, %s, %s, %s ):' % (request, repo, org, num_collections))
+    csrf_token_url = '{}/kiroku/{}-{}/'.format(settings.WORKBENCH_URL, repo, org)
+    csrf_token = _get_csrf_token(request, csrf_token_url)
+    # request new CID
+    new_cid_url = settings.WORKBENCH_NEWCOL_URL.replace('REPO',repo).replace('ORG',org)
+    r = _session(request).post(new_cid_url,
+                               headers={'X-CSRFToken': csrf_token},
+                               cookies={'csrftoken': csrf_token},
+                               data={'csrftoken': csrf_token},)
+    if not (r.status_code == 200):
+        raise IOError('Could not get new collection ID(s) (%s:%s on %s)' % (
+            r.status_code, r.reason, new_cid_url))
+    soup = BeautifulSoup(r.text)
+    cids = [c.string for c in soup.find_all('a','collection')]
+    if not cids:
+        raise Exception('Could not get collection IDs (not found in page %s)' % new_cid_url)
+    collection_ids = cids[-num_collections:]
+    return collection_ids
 
-def entities_next( request, repo, org, cid, num=1 ):
+def entities_next( request, repo, org, cid, num_entities=1 ):
     """Generate the next N entity IDs for the logged-in user.
     
     <table id="entities" class="table table-striped table-bordered table-condensed">
@@ -160,30 +174,20 @@ def entities_next( request, repo, org, cid, num=1 ):
     TODO We're screenscraping when we should be using the API.
     """
     entities = []
-    s = session(request)
-    # get CSRF token
-    url_get = '{}/kiroku/{}-{}-{}/'.format(settings.WORKBENCH_URL, repo, org, cid)
-    r0 = s.get(url_get)
-    if r0.status_code == 200:
-        # get CSRF token from cookie
-        csrf_token = None
-        for c in r0.cookies:
-            if c.name == 'csrftoken':
-                csrf_token = c.value
-        if csrf_token:
-            # request new CID
-            newent_url = settings.WORKBENCH_NEWENT_URL
-            url_post = newent_url.replace('REPO',repo).replace('ORG',org).replace('CID',cid)
-            r1 = s.post(url_post,
-                        headers={'X-CSRFToken': csrf_token},
-                        cookies={'csrftoken': csrf_token},
-                        data={'csrftoken': csrf_token, 'num': num,},)
-            soup = BeautifulSoup(r1.text)
-            eids = [e.string.strip() for e in soup.find_all('td','eid')]
-            entities = eids[-num:]
-        else:
-            logger.error('No CSRF token')
-    else:
-        logger.error('Request did not work! (status code: %s)' % r0.status_code)
-    logger.debug('entities: %s' % entities)
-    return entities
+    csrf_token_url = '{}/kiroku/{}-{}-{}/'.format(settings.WORKBENCH_URL, repo, org, cid)
+    csrf_token = _get_csrf_token(request, csrf_token_url)
+    # request new EID
+    new_eid_url = settings.WORKBENCH_NEWENT_URL.replace('REPO',repo).replace('ORG',org).replace('CID',cid)
+    r = _session(request).post(new_eid_url,
+                               headers={'X-CSRFToken': csrf_token},
+                               cookies={'csrftoken': csrf_token},
+                               data={'csrftoken': csrf_token, 'num': num_entities,},)
+    if not (r.status_code == 200):
+        raise IOError('Could not get new object ID(s) (%s:%s on %s)' % (
+            r.status_code, r.reason, new_eid_url))
+    soup = BeautifulSoup(r.text)
+    eids = [e.string.strip() for e in soup.find_all('td','eid')]
+    if not eids:
+        raise Exception('Could not get object IDs (not found in page %s)' % new_eid_url)
+    entity_ids = eids[-num_entities:]
+    return entity_ids

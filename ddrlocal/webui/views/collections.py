@@ -217,35 +217,35 @@ def new( request, repo, org ):
     if not (git_name and git_mail):
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     # get new collection ID
-    cid = None
-    cids = api.collections_next(request, repo, org, 1)
-    if cids:
-        cid = int(cids[-1].split('-')[2])
-    if cid:
-        # create the new collection repo
-        collection_uid,collection_path = _uid_path(request, repo, org, cid)
-        # collection.json template
-        Collection(collection_path).dump_json(path=settings.TEMPLATE_CJSON,
-                                              template=True)
-        exit,status = commands.create(git_name, git_mail,
-                                      collection_path,
-                                      [settings.TEMPLATE_CJSON, settings.TEMPLATE_EAD],
-                                      agent=settings.AGENT)
-        if exit:
-            logger.error(exit)
-            logger.error(status)
-            messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
-        else:
-            # update search index
-            json_path = os.path.join(collection_path, 'collection.json')
-            with open(json_path, 'r') as f:
-                document = json.loads(f.read())
-            docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, 'collection', document)
-            # positive feedback
-            return HttpResponseRedirect( reverse('webui-collection-edit', args=[repo,org,cid]) )
-    else:
-        logger.error('Could not get new ID from workbench!')
+    try:
+        collection_ids = api.collections_next(request, repo, org, 1)
+    except Exception as e:
+        logger.error('Could not get new collecion ID!')
+        logger.error(str(e.args))
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_ERR_NO_IDS'])
+        messages.error(request, e)
+        return HttpResponseRedirect(reverse('webui-collections'))
+    cid = int(collection_ids[-1].split('-')[2])
+    # create the new collection repo
+    collection_uid,collection_path = _uid_path(request, repo, org, cid)
+    # collection.json template
+    Collection(collection_path).dump_json(path=settings.TEMPLATE_CJSON, template=True)
+    exit,status = commands.create(git_name, git_mail,
+                                  collection_path,
+                                  [settings.TEMPLATE_CJSON, settings.TEMPLATE_EAD],
+                                  agent=settings.AGENT)
+    if exit:
+        logger.error(exit)
+        logger.error(status)
+        messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
+    else:
+        # update search index
+        json_path = os.path.join(collection_path, 'collection.json')
+        with open(json_path, 'r') as f:
+            document = json.loads(f.read())
+        docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+        # positive feedback
+        return HttpResponseRedirect( reverse('webui-collection-edit', args=[repo,org,cid]) )
     # something happened...
     logger.error('Could not create new collecion!')
     messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_ERR_CREATE'])
