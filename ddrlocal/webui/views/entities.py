@@ -240,7 +240,7 @@ def edit( request, repo, org, cid, eid ):
                 # update search index
                 with open(entity.json_path, 'r') as f:
                     document = json.loads(f.read())
-                docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, 'entity', document)
+                docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
                 # positive feedback
                 messages.success(request, success_msg)
                 return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )

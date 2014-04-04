@@ -296,7 +296,7 @@ def edit( request, repo, org, cid ):
                 # update search index
                 with open(collection.json_path, 'r') as f:
                     document = json.loads(f.read())
-                docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, 'collection', document)
+                docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
                 # positive feedback
                 messages.success(request, success_msg)
                 return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )

@@ -507,7 +507,7 @@ def collection_sync( git_name, git_mail, collection_path ):
     path = os.path.join(collection_path, 'collection.json')
     with open(path, 'r') as f:
         document = json.loads(f.read())
-    docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, 'collection', document)
+    docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
     return collection_path
 
 

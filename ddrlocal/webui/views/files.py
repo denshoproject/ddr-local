@@ -342,7 +342,7 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
                 # update search index
                 with open(file_.json_path, 'r') as f:
                     document = json.loads(f.read())
-                docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, 'file', document)
+                docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
                 # positive feedback
                 messages.success(request, WEBUI_MESSAGES['VIEWS_FILES_UPDATED'])
                 return HttpResponseRedirect( reverse('webui-file', args=[repo,org,cid,eid,role,sha1]) )
