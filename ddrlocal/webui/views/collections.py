@@ -9,6 +9,7 @@ from bs4 import BeautifulSoup
 
 from django.conf import settings
 from django.contrib import messages
+from django.core.cache import cache
 from django.core.context_processors import csrf
 from django.core.files import File
 from django.core.urlresolvers import reverse
@@ -29,7 +30,7 @@ from webui import api
 from webui.decorators import ddrview, search_index
 from webui.forms import DDRForm
 from webui.forms.collections import NewCollectionForm, UpdateForm
-from webui.models import Collection
+from webui.models import Collection, COLLECTION_STATUS_CACHE_KEY, COLLECTION_STATUS_TIMEOUT
 from webui.tasks import collection_sync
 from webui.views.decorators import login_required
 from xmlforms.models import XMLModel
@@ -47,6 +48,33 @@ def alert_if_conflicted(request, collection):
         url = reverse('webui-merge', args=[collection.repo,collection.org,collection.cid])
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_CONFLICTED'].format(collection.id, url))
 
+COLLECTION_SYNC_STATUS_CACHE_KEY = 'webui:collection:%s:sync-status'
+
+def _sync_status( request, repo, org, cid, collection=None, cache_set=False ):
+    """Cache collection repo sync status info for collections list page.
+    Used in both .collections() and .sync_status_ajax().
+    """
+    collection_id = '-'.join([repo, org, cid])
+    key = COLLECTION_SYNC_STATUS_CACHE_KEY % collection_id
+    data = cache.get(key)
+    if not data and cache_set:
+        if not collection:
+            collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+        status = 'unknown'
+        btn = 'muted'
+        if   collection.repo_ahead(): status = 'ahead'; btn = 'warning'
+        elif collection.repo_behind(): status = 'behind'; btn = 'warning'
+        elif collection.repo_conflicted(): status = 'conflicted'; btn = 'danger'
+        elif collection.locked(): status = 'locked'; btn = 'warning'
+        elif collection.repo_synced(): status = 'synced'; btn = 'success'
+        data = {
+            'row': '#%s' % collection.id,
+            'color': btn,
+            'cell': '#%s td.status' % collection.id,
+            'status': status,
+        }
+        cache.set(key, data, COLLECTION_STATUS_TIMEOUT)
+    return data
 
 
 # views ----------------------------------------------------------------
@@ -54,6 +82,11 @@ def alert_if_conflicted(request, collection):
 @search_index
 @storage_required
 def collections( request ):
+    """
+    We are displaying collection status vis-a-vis the project Gitolite server.
+    It takes too long to run git-status on every repo so, if repo statuses are not
+    cached they will be updated by jQuery after page load has finished.
+    """
     collections = []
     collection_ids = []
     for o in get_repos_orgs():
@@ -66,13 +99,19 @@ def collections( request ):
                 repo,org,cid = c[0],c[1],c[2]
                 collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
                 colls.append(collection)
-                collection_ids.append( {'repo':collection.repo, 'org':collection.org, 'cid':collection.cid} )
+                # get status if cached, farm out to jquery if not
+                collection.sync_status = _sync_status(request, repo, org, cid)
+                if not collection.sync_status:
+                    collection_ids.append( [repo,org,cid] )
         collections.append( (o,repo,org,colls) )
+    # list of URLs for status updater
     random.shuffle(collection_ids)
+    urls = ['"%s"' % reverse('webui-collection-sync-status-ajax',args=cid) for cid in collection_ids]
+    collection_status_urls = ', '.join(urls)
     return render_to_response(
         'webui/collections/index.html',
         {'collections': collections,
-         'collection_ids': collection_ids,},
+         'collection_status_urls': collection_status_urls,},
         context_instance=RequestContext(request, processors=[])
     )
 
@@ -133,20 +172,7 @@ def collection_json( request, repo, org, cid ):
 @ddrview
 @storage_required
 def sync_status_ajax( request, repo, org, cid ):
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
-    status = 'unknown'
-    btn = 'muted'
-    if   collection.repo_ahead(): status = 'ahead'; btn = 'warning'
-    elif collection.repo_behind(): status = 'behind'; btn = 'warning'
-    elif collection.repo_conflicted(): status = 'conflicted'; btn = 'danger'
-    elif collection.locked(): status = 'locked'; btn = 'warning'
-    elif collection.repo_synced(): status = 'synced'; btn = 'success'
-    data = {
-        'row': '#%s' % collection.id,
-        'color': btn,
-        'cell': '#%s td.status' % collection.id,
-        'status': status,
-    }
+    data = _sync_status(request, repo, org, cid, cache_set=True)
     return HttpResponse(json.dumps(data), mimetype="application/json")
 
 @ddrview
