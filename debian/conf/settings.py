@@ -46,6 +46,7 @@ ACCESS_FILE_EXTENSION = config.get('local','access_file_extension')
 ACCESS_FILE_GEOMETRY = config.get('local','access_file_geometry')
 ACCESS_FILE_OPTIONS  = config.get('local','access_file_options')
 THUMBNAIL_GEOMETRY   = config.get('local','thumbnail_geometry')
+THUMBNAIL_COLORSPACE = 'sRGB'
 THUMBNAIL_OPTIONS    = config.get('local','thumbnail_options')
 DEFAULT_PERMISSION_COLLECTION = config.get('local','default_permission_collection')
 DEFAULT_PERMISSION_ENTITY     = config.get('local','default_permission_entity')
