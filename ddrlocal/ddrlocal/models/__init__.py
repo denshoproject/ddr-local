@@ -923,6 +923,7 @@ class DDRLocalEntity( DDREntity ):
 
 
 ENTITY_FILE_KEYS = ['path_rel',
+                    'role',
                     'sha1',
                     'sha256',
                     'md5',
@@ -1030,6 +1031,7 @@ class DDRLocalFile( object ):
             self.org = parts[1]
             self.cid = parts[2]
             self.eid = parts[3]
+            # NOTE: we get role from filename and also from JSON data, if available
             self.role = parts[4]
             self.sha1 = parts[5]
             self.collection_path = DDRLocalCollection.collection_path(None, self.repo, self.org, self.cid)
