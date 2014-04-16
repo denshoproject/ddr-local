@@ -58,10 +58,16 @@ def git_version(repo_path=None):
     return gitversion
 
 def module_function(module, function_name, value):
-    """
-    If function is present in ddrlocal.models.entity and is callable,
-    pass field info to it and return the result.
-    Used in labels_values(), form_prep(), form_post().
+    """If named function is present in module and callable, pass value to it and return result.
+    
+    Among other things this may be used to prep data for display, prepare it
+    for editing in a form, or convert cleaned form data into Python data for
+    storage in objects.
+    
+    @param module: A Python module
+    @param function_name: Name of the function to be executed.
+    @param value: A single value to be passed to the function, or None.
+    @returns: Whatever the specified function returns.
     """
     if (function_name in dir(module)):
         function = getattr(module, function_name)
@@ -69,12 +75,19 @@ def module_function(module, function_name, value):
     return value
 
 def module_xml_function(module, function_name, tree, NAMESPACES, f, value):
-    """
-    If function is present in ddrlocal.models.entity and is callable,
-    pass field info to it and return the result.
-    module_function() could have been used except with XML we need to
-    pass namespaces lists to the functions.
+    """If module function is present and callable, pass value to it and return result.
+    
+    Same as module_function() but with XML we need to pass namespaces lists to
+    the functions.
     Used in dump_ead(), dump_mets().
+    
+    @param module: A Python module
+    @param function_name: Name of the function to be executed.
+    @param tree: An lxml tree object.
+    @param NAMESPACES: Dict of namespaces used in the XML document.
+    @param f: Field dict (from MODEL_FIELDS).
+    @param value: A single value to be passed to the function, or None.
+    @returns: Whatever the specified function returns.
     """
     if (function_name in dir(module)):
         function = getattr(module, function_name)
@@ -105,7 +118,10 @@ def write_json(data, path):
 def _inheritable_fields( MODEL_FIELDS ):
     """Returns a list of fields that can inherit or grant values.
     
+    Inheritable fields are marked 'inheritable':True in MODEL_FIELDS.
+    
     @param MODEL_FIELDS
+    @returns: list
     """
     inheritable = []
     for f in MODEL_FIELDS:
@@ -130,6 +146,7 @@ MODEL_FIELDS = [
         'name':       '',       # The field name.
         'model_type': str,      # Python data type for the field.
         'default':    '',       # Default value.
+        'inheritable': '',      # Whether or not the field is inheritable.
         
         'form_type':  '',       # Name of Django forms.Field object.
         'form': {               # Kwargs to be passed to the forms.Field object.
@@ -150,8 +167,9 @@ MODEL_FIELDS = [
 
 class DDRLocalCollection( DDRCollection ):
     """
-    This subclass of Collection and DDRCollection adds functions for reading
-    and writing collection.json and ead.xml, and preparing/processing Django forms.
+    Subclass of DDR.models.Collection (renamed).
+    Adds functions for reading/writing collection.json and ead.xml,
+    preparing/processing Django forms, and displaying data in Django.
     """
     id = 'whatever'
     repo = None
@@ -194,17 +212,10 @@ class DDRLocalCollection( DDRCollection ):
         self.json_path          = self._path_absrel('collection.json')
         self.ead_path_rel       = self._path_absrel('ead.xml',        rel=True)
         self.json_path_rel      = self._path_absrel('collection.json',rel=True)
-        #if os.path.exists(os.path.join(self.path, '.git')):
-        #    exit,status = commands.status(self.path, short=True)
-        #    if status:
-        #        self.status = status
-        #if self.status:
-        #    m = re.search('\[ahead ([0-9]+)\]', self.status)
-        #    if m:
-        #        self.unsynced = int(m.group(1))
     
     def __repr__(self):
-        """
+        """Returns string representation of object.
+        
         >>> c = DDRLocalCollection('/tmp/ddr-testing-123')
         >>> c
         <DDRLocalCollection ddr-testing-123>
@@ -212,7 +223,10 @@ class DDRLocalCollection( DDRCollection ):
         return "<DDRLocalCollection %s>" % (self.id)
     
     def url( self ):
-        """
+        """Returns relative URL in context of webui app.
+        
+        TODO Move to webui.models
+        
         >>> c = DDRLocalCollection('/tmp/ddr-testing-123')
         >>> c.url()
         '/ui/ddr-testing-123/'
@@ -222,6 +236,8 @@ class DDRLocalCollection( DDRCollection ):
     def cgit_url( self ):
         """Returns cgit URL for collection.
         
+        TODO Move to webui.models
+        
         >>> c = DDRLocalCollection('/tmp/ddr-testing-123')
         >>> c.cgit_url()
         'http://partner.densho.org/cgit/cgit.cgi/ddr-testing-123/'
@@ -230,13 +246,18 @@ class DDRLocalCollection( DDRCollection ):
 
     @staticmethod
     def collection_path(request, repo, org, cid):
-        """
+        """Returns absolute path to collection repo directory.
+        
+        TODO Move to webui.models
+        
         >>> DDRLocalCollection.collection_path(None, 'ddr', 'testing', 123)
         '/var/www/media/base/ddr-testing-123'
         """
         return os.path.join(settings.MEDIA_BASE, '{}-{}-{}'.format(repo, org, cid))
     
     def repo_fetch( self ):
+        """Fetch latest changes to collection repo from origin/master.
+        """
         result = '-1'
         if os.path.exists(os.path.join(self.path, '.git')):
             result = commands.fetch(self.path)
@@ -245,8 +266,10 @@ class DDRLocalCollection( DDRCollection ):
         return result
     
     def repo_status( self ):
-        """
-        TODO cache?
+        """Get status of collection repo vis-a-vis origin/master.
+        
+        The repo_(synced,ahead,behind,diverged,conflicted) functions all use
+        the result of this function so that git-status is only called once.
         """
         if not self._status and (os.path.exists(os.path.join(self.path, '.git'))):
             status = dvcs.repo_status(self.path, short=True)
@@ -254,9 +277,14 @@ class DDRLocalCollection( DDRCollection ):
                 self._status = status
         return self._status
     
+    def repo_synced( self ):     return dvcs.synced(self.repo_status())
+    def repo_ahead( self ):      return dvcs.ahead(self.repo_status())
+    def repo_behind( self ):     return dvcs.behind(self.repo_status())
+    def repo_diverged( self ):   return dvcs.diverged(self.repo_status())
+    def repo_conflicted( self ): return dvcs.conflicted(self.repo_status())
+    
     def repo_annex_status( self ):
-        """
-        TODO cache?
+        """Get annex status of collection repo.
         """
         if not self._astatus and (os.path.exists(os.path.join(self.path, '.git'))):
             astatus = commands.annex_status(self.path)
@@ -264,14 +292,11 @@ class DDRLocalCollection( DDRCollection ):
                 self._astatus = astatus
         return self._astatus
     
-    def repo_synced( self ):     return dvcs.synced(self.repo_status())
-    def repo_ahead( self ):      return dvcs.ahead(self.repo_status())
-    def repo_behind( self ):     return dvcs.behind(self.repo_status())
-    def repo_diverged( self ):   return dvcs.diverged(self.repo_status())
-    def repo_conflicted( self ): return dvcs.conflicted(self.repo_status())
-    
     def _lockfile( self ):
-        """
+        """Returns absolute path to collection repo lockfile.
+        
+        Note that the actual file may or may not be present.
+        
         >>> c = DDRLocalCollection('/tmp/ddr-testing-123')
         >>> c._lockfile()
         '/tmp/ddr-testing-123/lock'
@@ -299,6 +324,8 @@ class DDRLocalCollection( DDRCollection ):
         >>> c.unlock('abcdefg')
         'ok'
         >>> os.rmdir(path)
+        
+        TODO return 0 if successful
         
         @param task_id
         @returns 'ok' or 'locked'
@@ -329,6 +356,8 @@ class DDRLocalCollection( DDRCollection ):
         'not locked'
         >>> os.rmdir(path)
         
+        TODO return 0 if successful
+        
         @param task_id
         @returns 'ok', 'not locked', 'task_id miss', 'blocked'
         """
@@ -345,7 +374,19 @@ class DDRLocalCollection( DDRCollection ):
         return 'ok'
     
     def locked( self ):
-        """Indicates whether collection is locked; if locked returns celery task_id.
+        """Returns celery task_id if collection repo is locked, False if not
+        
+        >>> c = DDRLocalCollection('/tmp/ddr-testing-123')
+        >>> c.locked()
+        False
+        >>> c.lock('abcdefg')
+        'ok'
+        >>> c.locked()
+        'abcdefg'
+        >>> c.unlock('abcdefg')
+        'ok'
+        >>> c.locked()
+        False
         """
         path = self._lockfile()
         if os.path.exists(path):
@@ -357,9 +398,13 @@ class DDRLocalCollection( DDRCollection ):
     @staticmethod
     def create(path):
         """Creates a new collection with the specified collection ID.
-        @param path: Absolute path to collection; must end in valid DDR collection id.
+        
+        Also sets initial field values if present.
         
         >>> c = DDRLocalCollection.create('/tmp/ddr-testing-120')
+        
+        @param path: Absolute path to collection; must end in valid DDR collection id.
+        @returns: Collection object
         """
         collection = DDRLocalCollection(path)
         for f in collectionmodule.COLLECTION_FIELDS:
@@ -368,7 +413,11 @@ class DDRLocalCollection( DDRCollection ):
         return collection
     
     def entities( self ):
-        """Returns relative paths to entities.
+        """Returns list of the Collection's Entity objects.
+        
+        >>> c = Collection.from_json('/tmp/ddr-testing-123')
+        >>> c.entities()
+        [<DDRLocalEntity ddr-testing-123-1>, <DDRLocalEntity ddr-testing-123-2>, ...]
         """
         entities = []
         if os.path.exists(self.files_path):
@@ -383,14 +432,23 @@ class DDRLocalCollection( DDRCollection ):
         return entities
     
     def inheritable_fields( self ):
+        """Returns list of Collection object's field names marked as inheritable.
+        
+        >>> c = Collection.from_json('/tmp/ddr-testing-123')
+        >>> c.inheritable_fields()
+        ['status', 'public', 'rights']
+        """
         return _inheritable_fields(collectionmodule.COLLECTION_FIELDS )
     
     def labels_values(self):
-        """Generic display
+        """Apply display_{field} functions to prep object data for the UI.
         
-        Certain fields require special processing.
+        TODO Move to webui.models
+        
+        Certain fields require special processing.  For example, structured data
+        may be rendered in a template to generate an HTML <ul> list.
         If a "display_{field}" function is present in the ddrlocal.models.collection
-        module it will be executed.
+        module the contents of the field will be passed to it
         """
         lv = []
         for f in collectionmodule.COLLECTION_FIELDS:
@@ -405,9 +463,12 @@ class DDRLocalCollection( DDRCollection ):
         return lv
     
     def form_prep(self):
-        """Prep data dict to pass into CollectionForm object.
+        """Apply formprep_{field} functions to prep data dict to pass into CollectionForm object.
         
-        Certain fields require special processing.
+        TODO Move to webui.models
+        
+        Certain fields require special processing.  Data may need to be massaged
+        and prepared for insertion into particular Django form objects.
         If a "formprep_{field}" function is present in the ddrlocal.models.collection
         module it will be executed.
         
@@ -425,7 +486,9 @@ class DDRLocalCollection( DDRCollection ):
         return data
     
     def form_post(self, form):
-        """Process cleaned_data coming from CollectionForm
+        """Apply formpost_{field} functions to process cleaned_data from CollectionForm
+        
+        TODO Move to webui.models
         
         Certain fields require special processing.
         If a "formpost_{field}" function is present in the ddrlocal.models.entity
@@ -445,6 +508,10 @@ class DDRLocalCollection( DDRCollection ):
         self.record_lastmod = datetime.now()
     
     def json( self ):
+        """Returns a ddrlocal.models.meta.CollectionJSON object
+        
+        TODO Do we really need this?
+        """
         #if not os.path.exists(self.json_path):
         #    CollectionJSON.create(self.json_path)
         return CollectionJSON(self)
@@ -452,6 +519,8 @@ class DDRLocalCollection( DDRCollection ):
     @staticmethod
     def from_json(collection_abs):
         """Instantiates a DDRLocalCollection object, loads data from collection.json.
+        
+        >>> c = DDRLocalCollection.from_json('/tmp/ddr-testing-123')
         """
         collection = DDRLocalCollection(collection_abs)
         collection_uid = collection.id  # save this just in case
@@ -513,6 +582,7 @@ class DDRLocalCollection( DDRCollection ):
                 val = getattr(self, ff['name'])
                 # special cases
                 if key in ['record_created', 'record_lastmod']:
+                    # JSON requires dates to be represented as strings
                     val = val.strftime(settings.DATETIME_FORMAT)
                 # end special cases
             item[key] = val
@@ -522,6 +592,10 @@ class DDRLocalCollection( DDRCollection ):
         write_json(collection, path)
     
     def ead( self ):
+        """Returns a ddrlocal.models.xml.EAD object for the collection.
+        
+        TODO Do we really need this?
+        """
         if not os.path.exists(self.ead_path):
             EAD.create(self.ead_path)
         return EAD(self)
@@ -529,8 +603,7 @@ class DDRLocalCollection( DDRCollection ):
     def dump_ead(self):
         """Dump Collection data to ead.xml file.
         
-        TODO This is very unfinished
-        TODO should create/build the XML not just plug values into template.
+        TODO render a Django/Jinja template instead of using lxml
         """
         NAMESPACES = None
         tree = etree.fromstring(self.ead().xml)
@@ -1287,11 +1360,11 @@ class DDRLocalFile( object ):
         if xmp:
             xml  = xmp.serialize_to_unicode()
             tree = etree.fromstring(xml)
-            str = etree.tostring(tree, pretty_print=False).strip()
-            while str.find('\n ') > -1:
-                str = str.replace('\n ', '\n')
-            str = str.replace('\n','')
-            return str
+            s = etree.tostring(tree, pretty_print=False).strip()
+            while s.find('\n ') > -1:
+                s = s.replace('\n ', '\n')
+            s = s.replace('\n','')
+            return s
         return None
         
     @staticmethod
