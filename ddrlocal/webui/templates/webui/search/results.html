@@ -1,45 +1,41 @@
-{% extends "search/base.html" %}
+{% extends "webui/search/base.html" %}
+{% load bootstrap_pagination webui_tags %}
 
-
-{% block title %}Query{% endblock %}
-
-{% block breadcrumbs %}{{ block.super }}
-<li class="active">Query</li>
-{% endblock breadcrumbs %}
-
-
-{% block pagecss %}
-<style>
-#querymeta { margin:0px; margin-bottom:20px; line-height:1.0; }
-#querymeta .query, #querymeta .filters { margin:0px; padding:0px; }
-.hit { margin-bottom:20px; }
-.hit h3 { margin:0px; padding:0px; line-height:1.0;}
-.hit .type { float:left; margin-right:10px; }
-.hit .sort { float:right; margin-left:10px; }
-.hit .source { }
-.hit .url { }
-</style>
-{% endblock pagecss %}
-
+{% block title %}Search Results{% endblock %}
 
 {% block content %}
+<section id="shop" class="container">
+  <div class="row">
+    <div class="col-sm-12 col-md-12">
 
-  <div class="row-fluid">
-    <div class="span12">
+{% if error_message %}
+<p class="error">
+{{ error_message }}
+</p>
+{% endif %}
 
-<h1>
-Search Results
-</h1>
+<p></p>
 
+
+<form class="input-group nomargin-bottom form-inline" role="form">
+  <input class="form-control" id="id_query" name="query" type="text" value="{{ query }}" placeholder="Search..." />
+  <span class="glyphicon glyphicon-search"></span>
+  <button class="btn btn-primary">Search</button>
+</form>
 
 <div id="querymeta">
 
-  <div class="query">
-    <b>Query</b>
-    &mdash;
-    {{ query }}
-  </div>
+{% if terms %}
+  <div class="terms">
+    <b>Terms</b>
 
+    <strong><a href="{# url "webui-browse-facet" terms.field #}">{{ terms.field }}</a>:</strong>
+    {{ terms.term }}
+
+  </div>
+{% endif %}
+
+<!--
   <div class="filters">
     <b>Filters</b>
     &mdash;
@@ -58,64 +54,54 @@ Search Results
 {% if filters.status %}(<a href="?query={{ query }}&record_created={{ record_created }}&record_lastmod={{ sort.record_lastmod }}&public={{ filters.public }}&status=">clear</a>){% endif %}
     </span>
   </div>
+-->
 
+<!--
   <div class="sort">
     <b>Sort</b>
     &mdash;
-
     <span class="record_created">
       <b>record_created:</b>
 {% if sort.record_created == "asc" %}ascending{% else %}<a href="?query={{ query }}&record_created=asc&record_lastmod={{ sort.record_lastmod }}&public={{ filters.public }}&workflow={{ filters.workflow }}">ascending</a>{% endif %}
 / {% if record_created.date == "desc" %}descending{% else %}<a href="?query={{ query }}&record_created=desc&record_lastmod={{ sort.record_lastmod }}&public={{ filters.public }}&workflow={{ filters.workflow }}">descending</a>{% endif %}
 {% if sort.record_created %}(<a href="?query={{ query }}&record_created=&record_lastmod={{ sort.record_lastmod }}&public={{ filters.public }}&workflow={{ filters.workflow }}">clear</a>){% endif %}
     </span>
-
     <span class="record_lastmod">
       <b>record_lastmod:</b>
 {% if sort.record_lastmod == "asc" %}ascending{% else %}<a href="?query={{ query }}&record_created={{ record_created }}&record_lastmod=asc&public={{ filters.public }}&workflow={{ filters.workflow }}">ascending</a>{% endif %}
 / {% if record_lastmod.date == "desc" %}descending{% else %}<a href="?query={{ query }}&record_created={{ record_created }}&record_lastmod=desc&public={{ filters.public }}&workflow={{ filters.workflow }}">descending</a>{% endif %}
 {% if sort.record_lastmod %}(<a href="?query={{ query }}&record_created={{ record_created }}&record_lastmod=&public={{ filters.public }}&workflow={{ filters.workflow }}">clear</a>){% endif %}
     </span>
-
   </div>
+-->
 
+{% if page.object_list %}
   <div>
-    {{ hits|length }} results<br/>
+    {{ paginator.count }} items<br/>
   </div>
+{% endif %}
 
 </div><!-- .querymeta -->
 
-{% if hits %}
-{% for hit in hits %}
-<div class="hit">
-  <div class="type">
-    {% if hit.type == "collection" %}<span class="badge badge-info">collection</span>{% endif %}
-    {% if hit.type == "entity" %}<span class="badge badge-success">object</span>{% endif %}
-    {% if hit.type == "file" %}<span class="badge badge-inverse">file</span>{% endif %}
-  </div>
+{% if page.object_list %}
 
-  <div class="sort muted">
-    {% if sort.record_created or sort.record_lastmod %}
-    {% if sort.record_created %}created: {{ hit.record_created|date:"Y-m-d H:i:s" }}{% endif %}
-    {% if sort.record_lastmod %}modified: {{ hit.record_lastmod|date:"Y-m-d H:i:s" }}{% endif %}
-    {% endif %}{# sort.record_created or sort.record_lastmod #}
-  </div>
-
-  <h3>
-  <a href="{{ hit.url }}">{{ hit.id }} - {{ hit.title }}</a>
-  </h3>
-  <div class="source muted">
-  {{ hit.source.d|truncatewords_html:56 }}
-  </div>
-  <div class="url">
-  <a href="{{ hit.url }}">{{ hit.url }}</a>
-  </div>
-
-</div>
-{% endfor %}
+{% if paginator.num_pages > 1 %}
+{% bootstrap_paginate page range=10 show_first_last="true" %}
 {% endif %}
 
-    </div><!-- .span12 -->
-  </div><!-- .row-fluid -->
+{% for hit in page.object_list %}
+  {% if hit.model == "collection" %}{% collection hit %}{% endif %}
+  {% if hit.model == "entity" %}{% entity hit %}{% endif %}
+  {% if hit.model == "file" %}{% file hit %}{% endif %}
+{% endfor %}
 
+{% if paginator.num_pages > 1 %}
+{% bootstrap_paginate page range=10 show_first_last="true" %}
+{% endif %}
+
+{% endif %}
+
+    </div><!-- .col-sm-12 col-md-12 -->
+  </div><!-- .row -->
+</section><!-- .container-fluid -->
 {% endblock content %}

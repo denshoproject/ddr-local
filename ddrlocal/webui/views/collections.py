@@ -9,6 +9,7 @@ from bs4 import BeautifulSoup
 
 from django.conf import settings
 from django.contrib import messages
+from django.core.cache import cache
 from django.core.context_processors import csrf
 from django.core.files import File
 from django.core.urlresolvers import reverse
@@ -18,7 +19,7 @@ from django.template import RequestContext
 from django.template.loader import get_template
 
 from DDR import commands
-from DDR import elasticsearch
+from DDR import docstore
 
 from ddrlocal.models.collection import COLLECTION_FIELDS
 
@@ -26,10 +27,10 @@ from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
 from webui import get_repos_orgs
 from webui import api
-from webui.decorators import ddrview
+from webui.decorators import ddrview, search_index
 from webui.forms import DDRForm
 from webui.forms.collections import NewCollectionForm, UpdateForm
-from webui.models import Collection
+from webui.models import Collection, COLLECTION_STATUS_CACHE_KEY, COLLECTION_STATUS_TIMEOUT
 from webui.tasks import collection_sync
 from webui.views.decorators import login_required
 from xmlforms.models import XMLModel
@@ -47,12 +48,45 @@ def alert_if_conflicted(request, collection):
         url = reverse('webui-merge', args=[collection.repo,collection.org,collection.cid])
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_CONFLICTED'].format(collection.id, url))
 
+COLLECTION_SYNC_STATUS_CACHE_KEY = 'webui:collection:%s:sync-status'
+
+def _sync_status( request, repo, org, cid, collection=None, cache_set=False ):
+    """Cache collection repo sync status info for collections list page.
+    Used in both .collections() and .sync_status_ajax().
+    """
+    collection_id = '-'.join([repo, org, cid])
+    key = COLLECTION_SYNC_STATUS_CACHE_KEY % collection_id
+    data = cache.get(key)
+    if not data and cache_set:
+        if not collection:
+            collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+        status = 'unknown'
+        btn = 'muted'
+        if   collection.repo_ahead(): status = 'ahead'; btn = 'warning'
+        elif collection.repo_behind(): status = 'behind'; btn = 'warning'
+        elif collection.repo_conflicted(): status = 'conflicted'; btn = 'danger'
+        elif collection.locked(): status = 'locked'; btn = 'warning'
+        elif collection.repo_synced(): status = 'synced'; btn = 'success'
+        data = {
+            'row': '#%s' % collection.id,
+            'color': btn,
+            'cell': '#%s td.status' % collection.id,
+            'status': status,
+        }
+        cache.set(key, data, COLLECTION_STATUS_TIMEOUT)
+    return data
 
 
 # views ----------------------------------------------------------------
 
+@search_index
 @storage_required
 def collections( request ):
+    """
+    We are displaying collection status vis-a-vis the project Gitolite server.
+    It takes too long to run git-status on every repo so, if repo statuses are not
+    cached they will be updated by jQuery after page load has finished.
+    """
     collections = []
     collection_ids = []
     for o in get_repos_orgs():
@@ -65,13 +99,19 @@ def collections( request ):
                 repo,org,cid = c[0],c[1],c[2]
                 collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
                 colls.append(collection)
-                collection_ids.append( {'repo':collection.repo, 'org':collection.org, 'cid':collection.cid} )
+                # get status if cached, farm out to jquery if not
+                collection.sync_status = _sync_status(request, repo, org, cid)
+                if not collection.sync_status:
+                    collection_ids.append( [repo,org,cid] )
         collections.append( (o,repo,org,colls) )
+    # list of URLs for status updater
     random.shuffle(collection_ids)
+    urls = ['"%s"' % reverse('webui-collection-sync-status-ajax',args=cid) for cid in collection_ids]
+    collection_status_urls = ', '.join(urls)
     return render_to_response(
         'webui/collections/index.html',
         {'collections': collections,
-         'collection_ids': collection_ids,},
+         'collection_status_urls': collection_status_urls,},
         context_instance=RequestContext(request, processors=[])
     )
 
@@ -132,20 +172,7 @@ def collection_json( request, repo, org, cid ):
 @ddrview
 @storage_required
 def sync_status_ajax( request, repo, org, cid ):
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
-    status = 'unknown'
-    btn = 'muted'
-    if   collection.repo_ahead(): status = 'ahead'; btn = 'warning'
-    elif collection.repo_behind(): status = 'behind'; btn = 'warning'
-    elif collection.repo_conflicted(): status = 'conflicted'; btn = 'danger'
-    elif collection.locked(): status = 'locked'; btn = 'warning'
-    elif collection.repo_synced(): status = 'synced'; btn = 'success'
-    data = {
-        'row': '#%s' % collection.id,
-        'color': btn,
-        'cell': '#%s td.status' % collection.id,
-        'status': status,
-    }
+    data = _sync_status(request, repo, org, cid, cache_set=True)
     return HttpResponse(json.dumps(data), mimetype="application/json")
 
 @ddrview
@@ -216,33 +243,35 @@ def new( request, repo, org ):
     if not (git_name and git_mail):
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     # get new collection ID
-    cid = None
-    cids = api.collections_next(request, repo, org, 1)
-    if cids:
-        cid = int(cids[-1].split('-')[2])
-    if cid:
-        # create the new collection repo
-        collection_uid,collection_path = _uid_path(request, repo, org, cid)
-        # collection.json template
-        Collection(collection_path).dump_json(path=settings.TEMPLATE_CJSON,
-                                              template=True)
-        exit,status = commands.create(git_name, git_mail,
-                                      collection_path,
-                                      [settings.TEMPLATE_CJSON, settings.TEMPLATE_EAD],
-                                      agent=settings.AGENT)
-        if exit:
-            logger.error(exit)
-            logger.error(status)
-            messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
-        else:
-            # update search index
-            json_path = os.path.join(collection_path, 'collection.json')
-            elasticsearch.add_document(settings.ELASTICSEARCH_HOST_PORT, 'ddr', 'collection', json_path)
-            # positive feedback
-            return HttpResponseRedirect( reverse('webui-collection-edit', args=[repo,org,cid]) )
-    else:
-        logger.error('Could not get new ID from workbench!')
+    try:
+        collection_ids = api.collections_next(request, repo, org, 1)
+    except Exception as e:
+        logger.error('Could not get new collecion ID!')
+        logger.error(str(e.args))
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_ERR_NO_IDS'])
+        messages.error(request, e)
+        return HttpResponseRedirect(reverse('webui-collections'))
+    cid = int(collection_ids[-1].split('-')[2])
+    # create the new collection repo
+    collection_uid,collection_path = _uid_path(request, repo, org, cid)
+    # collection.json template
+    Collection(collection_path).dump_json(path=settings.TEMPLATE_CJSON, template=True)
+    exit,status = commands.create(git_name, git_mail,
+                                  collection_path,
+                                  [settings.TEMPLATE_CJSON, settings.TEMPLATE_EAD],
+                                  agent=settings.AGENT)
+    if exit:
+        logger.error(exit)
+        logger.error(status)
+        messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
+    else:
+        # update search index
+        json_path = os.path.join(collection_path, 'collection.json')
+        with open(json_path, 'r') as f:
+            document = json.loads(f.read())
+        docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+        # positive feedback
+        return HttpResponseRedirect( reverse('webui-collection-edit', args=[repo,org,cid]) )
     # something happened...
     logger.error('Could not create new collecion!')
     messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_ERR_CREATE'])
@@ -291,7 +320,9 @@ def edit( request, repo, org, cid ):
                 messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
             else:
                 # update search index
-                elasticsearch.add_document(settings.ELASTICSEARCH_HOST_PORT, 'ddr', 'collection', collection.json_path)
+                with open(collection.json_path, 'r') as f:
+                    document = json.loads(f.read())
+                docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
                 # positive feedback
                 messages.success(request, success_msg)
                 return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )

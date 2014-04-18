@@ -22,6 +22,15 @@ RIGHTS_CHOICES = [["cc", "DDR Creative Commons"],
 
 FILE_FIELDS = [
     {
+        'name':       'role',
+        'xpath':      "",
+        'xpath_dup':  [],
+        'model_type': str,
+        # no form_type
+        # no form
+        'default':    '',
+    },
+    {
         'name':       'sha1',
         'xpath':      "",
         'xpath_dup':  [],

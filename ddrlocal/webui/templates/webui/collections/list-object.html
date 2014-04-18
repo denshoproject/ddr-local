@@ -1,0 +1,21 @@
+{% load thumbnail %}
+<!-- {{ object.id }} -->
+<div class="media {{ object.model }}">
+{% thumbnail object.signature_url "64x64" as img %}
+  <a class="pull-left" href="{{ object.absolute_url }}">
+    <img class="media-object" src="{{ img.url }}" class="img-responsive">
+  </a>
+{% endthumbnail %}
+  <div class="media-body">
+    <h4 class="media-heading">
+      <span class="badge badge-info">{{ object.model | capfirst }}</span>
+      <a href="{{ object.absolute_url }}">{{ object.id }} - {{ object.title }}</a>
+    </h4>
+    <div class="source muted">
+      {{ object.description|truncatewords_html:56 }}
+    </div>
+    <div class="url">
+      <a href="{{ object.absolute_url }}">{{ object.absolute_url }}</a>
+    </div>
+  </div><!-- .media-body -->
+</div><!-- .media -->

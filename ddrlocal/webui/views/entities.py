@@ -16,7 +16,7 @@ from django.shortcuts import Http404, get_object_or_404, render_to_response
 from django.template import RequestContext
 
 from DDR import commands
-from DDR import elasticsearch
+from DDR import docstore
 
 from ddrlocal.models.entity import ENTITY_FIELDS
 
@@ -140,47 +140,50 @@ def new( request, repo, org, cid ):
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
     # get new entity ID
-    eid = None
-    eids = api.entities_next(request, repo, org, cid, 1)
-    if eids:
-        eid = int(eids[-1].split('-')[3])
-    if eid:
-        # create new entity
-        entity_uid = '{}-{}-{}-{}'.format(repo,org,cid,eid)
-        entity_path = Entity.entity_path(request, repo, org, cid, eid)
-        # write entity.json template to entity location
-        Entity(entity_path).dump_json(path=settings.TEMPLATE_EJSON, template=True)
-        # commit files
-        exit,status = commands.entity_create(git_name, git_mail,
-                                             collection.path, entity_uid,
-                                             [collection.json_path_rel, collection.ead_path_rel],
-                                             [settings.TEMPLATE_EJSON, settings.TEMPLATE_METS],
-                                             agent=settings.AGENT)
-        
-        # load Entity object, inherit values from parent, write back to file
-        entity = Entity.from_json(entity_path)
-        entity.inherit(collection)
-        entity.dump_json()
-        updated_files = [entity.json_path]
-        exit,status = commands.entity_update(git_name, git_mail,
-                                             entity.parent_path, entity.id,
-                                             updated_files,
-                                             agent=settings.AGENT)
-        
-        collection.cache_delete()
-        if exit:
-            logger.error(exit)
-            logger.error(status)
-            messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
-        else:
-            # update search index
-            json_path = os.path.join(entity_path, 'entity.json')
-            elasticsearch.add_document(settings.ELASTICSEARCH_HOST_PORT, 'ddr', 'entity', json_path)
-            # positive feedback
-            return HttpResponseRedirect(reverse('webui-entity-edit', args=[repo,org,cid,eid]))
-    else:
-        logger.error('Could not get new ID from workbench!')
+    try:
+        entity_ids = api.entities_next(request, repo, org, cid, 1)
+    except Exception as e:
+        logger.error('Could not get new object ID from workbench!')
+        logger.error(str(e.args))
         messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_ERR_NO_IDS'])
+        messages.error(request, e)
+        return HttpResponseRedirect(reverse('webui-collection', args=[repo,org,cid]))
+    eid = int(entity_ids[-1].split('-')[3])
+    # create new entity
+    entity_uid = '{}-{}-{}-{}'.format(repo,org,cid,eid)
+    entity_path = Entity.entity_path(request, repo, org, cid, eid)
+    # write entity.json template to entity location
+    Entity(entity_path).dump_json(path=settings.TEMPLATE_EJSON, template=True)
+    # commit files
+    exit,status = commands.entity_create(git_name, git_mail,
+                                         collection.path, entity_uid,
+                                         [collection.json_path_rel, collection.ead_path_rel],
+                                         [settings.TEMPLATE_EJSON, settings.TEMPLATE_METS],
+                                         agent=settings.AGENT)
+    
+    # load Entity object, inherit values from parent, write back to file
+    entity = Entity.from_json(entity_path)
+    entity.inherit(collection)
+    entity.dump_json()
+    updated_files = [entity.json_path]
+    exit,status = commands.entity_update(git_name, git_mail,
+                                         entity.parent_path, entity.id,
+                                         updated_files,
+                                         agent=settings.AGENT)
+    
+    collection.cache_delete()
+    if exit:
+        logger.error(exit)
+        logger.error(status)
+        messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
+    else:
+        # update search index
+        json_path = os.path.join(entity_path, 'entity.json')
+        with open(json_path, 'r') as f:
+            document = json.loads(f.read())
+        docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+        # positive feedback
+        return HttpResponseRedirect(reverse('webui-entity-edit', args=[repo,org,cid,eid]))
     # something happened...
     logger.error('Could not create new entity!')
     messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_ERR_CREATE'])
@@ -235,7 +238,9 @@ def edit( request, repo, org, cid, eid ):
                 messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
             else:
                 # update search index
-                elasticsearch.add_document(settings.ELASTICSEARCH_HOST_PORT, 'ddr', 'entity', entity.json_path)
+                with open(entity.json_path, 'r') as f:
+                    document = json.loads(f.read())
+                docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
                 # positive feedback
                 messages.success(request, success_msg)
                 return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
