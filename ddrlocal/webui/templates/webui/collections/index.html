@@ -24,17 +24,18 @@
 </p>
 {% endif %}
 
+<table class="table table-condensed">
 {% for c in o.3 %}
-  {% if   c.unsynced        %}<input class="btn btn-mini btn-warning" name="sync" type="submit" value="Sync" />
-  {% elif c.repo_ahead      %}<input class="btn btn-mini btn-warning" name="sync" type="submit" value="Ahead" />
-  {% elif c.repo_behind     %}<input class="btn btn-mini btn-warning" name="sync" type="submit" value="Behind" />
-  {% elif c.repo_conflicted %}<input class="btn btn-mini btn-danger"  name="sync" type="submit" value="Conflicted" />
-  {% elif c.locked %}
-    <a href="#" class="btn btn-mini btn-warning muted" title="Sync [locked]"><i class="icon-lock icon-white"></i> Sync [locked]</a> 
-  {% else                   %}<input class="btn btn-mini btn-success" name="sync" type="submit" value="Synced"/>
-  {% endif %}
-  <a href="{{ c.url }}">{{ c.id }}</a> {% if c.title %}<a href="{{ c.url }}">{{ c.title }}{% endif %}</a><br />
+  <tr id="{{ c.id }}" {% if c.sync_status %}class="{{ c.sync_status.color }}"{% endif %}>
+    <td class="id-title">
+      <a href="{{ c.url }}">{{ c.id }}</a> {% if c.title %}&mdash; <a href="{{ c.url }}">{{ c.title }}{% endif %}</a>
+    </td>
+    <td class="status muted">
+      {% if c.sync_status %}{{ c.sync_status.status }}{% else %}...{% endif %}
+    </td>
+  </tr>
 {% endfor %}
+</table>
 
 {% endfor %}
 
@@ -42,3 +43,25 @@
   </div><!-- .row-fluid -->
 
 {% endblock content %}
+
+
+{% block javascript %}
+{% if collection_status_urls %}
+<script>
+  /*
+  Update collection git statuses
+  */
+  $(function () {
+      var collection_status_urls = [
+          {{ collection_status_urls|safe }}
+      ];
+      for ( var i = 0, l = collection_status_urls.length; i < l; i++ ) {
+          jQuery.getJSON(collection_status_urls[i], function(data) {
+              $(data["row"]).addClass(data["color"]);
+              $(data["cell"]).text(data["status"]);
+          });
+      }
+  })
+</script>
+{% endif %}{# collection_status_urls #}
+{% endblock %}

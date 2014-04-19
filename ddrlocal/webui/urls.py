@@ -7,7 +7,16 @@ urlpatterns = patterns(
     url(r'^logout/$', 'webui.views.logout', name='webui-logout'),
     url(r'^tasks/$', 'webui.views.tasks', name='webui-tasks'),
     url(r'^task-status/$', 'webui.views.task_status', name='webui-task-status'),
-    
+
+    # search
+
+    url(r'^search/admin/$', 'webui.views.search.admin', name='webui-search-admin'),
+    url(r'^search/reindex/$', 'webui.views.search.reindex', name='webui-search-reindex'),
+    url(r'^search/drop/$', 'webui.views.search.drop_index', name='webui-search-drop'),
+    #url(r'^search/(?P<field>[\w]+):(?P<term>[\w ,]+)/$', 'webui.views.search.term_query', name='webui-search-term-query'),
+    url(r'^search/results/$', 'webui.views.search.results', name='webui-search-results'),
+    url(r'^search/$', 'webui.views.search.index', name='webui-search-index'),
+
     # merge
 
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/merge/auto/$', 'webui.views.merge.edit_auto', name='webui-merge-auto'),
@@ -37,6 +46,7 @@ urlpatterns = patterns(
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/collection.json$', 'webui.views.collections.collection_json', name='webui-collection-json'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/ead.xml$', 'webui.views.collections.ead_xml', name='webui-collection-ead-xml'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/changelog/$', 'webui.views.collections.changelog', name='webui-collection-changelog'),
+    url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/sync-status.json$', 'webui.views.collections.sync_status_ajax', name='webui-collection-sync-status-ajax'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/git-status/$', 'webui.views.collections.git_status', name='webui-collection-git-status'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/$', 'webui.views.collections.detail', name='webui-collection'),
 

@@ -11,7 +11,7 @@ from django.template import RequestContext
 
 from DDR import commands
 
-from search.tasks import reindex_and_notify
+from webui.tasks import reindex_and_notify
 from storage import STORAGE_MESSAGES
 from storage import base_path, media_base_target, removables, removables_mounted
 from storage import mount, unmount, add_media_symlink, rm_media_symlink
@@ -98,8 +98,6 @@ def mount_device( request ):
             devicefile,label = raw.split(' ',1)
             mount(request, devicefile, label)
             # TODO regenerate redis caches
-            # regenerate local ElasticSearch index
-            reindex_and_notify(request)
     return HttpResponseRedirect( reverse('storage-index') )
 
 def unmount_device( request ):
@@ -122,8 +120,6 @@ def activate_device( request ):
             label = os.path.basename(path)
             messages.success(request, '<strong>%s</strong> is now the active device' % label)
             # TODO regenerate redis caches
-            # regenerate local ElasticSearch index
-            reindex_and_notify(request)
     return HttpResponseRedirect( reverse('storage-index') )
 
 def manual_symlink( request ):

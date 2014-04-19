@@ -104,6 +104,7 @@ from webui.tasks import add_file
 #def add_file( git_name, git_mail, entity, src_path, role, data ):
 #    print('add_file(%s, %s, %s, %s, %s, %s)' % (git_name, git_mail, entity, src_path, role, data))
 
+AGENT = 'importers.densho'
 
 
 
@@ -128,7 +129,8 @@ LANGUAGE_CHOICES_ALT = {
     'jpn': ['japanese', 'Japanese', 'jpn:Japanese',],
     'chi': ['chinese', 'Chinese', 'chi:Chinese',],
     'fre': ['french', 'French', 'fre:French',],
-    'ger': ['german', 'German', 'ger:German',],
+    'ger': ['german', 'German', 'ger:German',], 
+    'ita': ['italian', 'Italian', 'ita:Italian',],
     'kor': ['korean', 'Korean', 'kor:Korean',],
     'por': ['portuguese', 'Portuguese', 'por:Portuguese',],
     'rus': ['russian', 'Russian', 'rus:Russian',],
@@ -342,8 +344,13 @@ def invalid_values( object_class, headers, rowd ):
         if not choice_is_valid(STATUS_CHOICES_VALUES, rowd['status']): invalid.append('status')
         if not choice_is_valid(PUBLIC_CHOICES_VALUES, rowd['public']): invalid.append('public')
         if not choice_is_valid(RIGHTS_CHOICES_VALUES, rowd['rights']): invalid.append('rights')
+        # language can be 'eng', 'eng;jpn', 'eng:English', 'jpn:Japanese'
         for x in rowd['language'].strip().split(';'):
-            if not choice_is_valid(LANGUAGE_CHOICES_VALUES, x) and 'language' not in invalid:
+            if ':' in x:
+                code = x.strip().split(':')[0]
+            else:
+                code = x.strip()
+            if not choice_is_valid(LANGUAGE_CHOICES_VALUES, code) and 'language' not in invalid:
                 invalid.append('language')
         if not choice_is_valid(GENRE_CHOICES_VALUES, rowd['genre']): invalid.append('genre')
         if not choice_is_valid(FORMAT_CHOICES_VALUES, rowd['format']): invalid.append('format')
@@ -528,7 +535,16 @@ def import_entities( csv_path, collection_path, git_name, git_mail ):
         
         # --------------------------------------------------
         def prep_creators( data ): return [x.strip() for x in data.strip().split(';') if x]
-        def prep_language( data ): return [x.strip() for x in data.strip().split(';') if x]
+        def prep_language( data ):
+            """language can be 'eng', 'eng;jpn', 'eng:English', 'jpn:Japanese'
+            """
+            y = []
+            for x in data.strip().split(';'):
+                if ':' in x:
+                    y.append(x.strip().split(':')[0])
+                else:
+                    y.append(x.strip())
+            return y
         def prep_topics( data ): return [x.strip() for x in data.strip().split(';') if x]
         def prep_persons( data ): return [x.strip() for x in data.strip().split(';') if x]
         def prep_facility( data ): return [x.strip() for x in data.strip().split(';') if x]
@@ -552,7 +568,8 @@ def import_entities( csv_path, collection_path, git_name, git_mail ):
             exit,status = commands.entity_create(git_name, git_mail,
                                                  collection.path, entity_uid,
                                                  [collection.json_path_rel, collection.ead_path_rel],
-                                                 [settings.TEMPLATE_EJSON, settings.TEMPLATE_METS])
+                                                 [settings.TEMPLATE_EJSON, settings.TEMPLATE_METS],
+                                                 agent=AGENT)
             
             # reload newly-created Entity object
             entity = Entity.from_json(entity_path)
@@ -575,7 +592,8 @@ def import_entities( csv_path, collection_path, git_name, git_mail ):
             updated_files = [entity.json_path]
             exit,status = commands.entity_update(git_name, git_mail,
                                                  entity.parent_path, entity.id,
-                                                 updated_files)
+                                                 updated_files,
+                                                 agent=AGENT)
             
             rowfinished = datetime.now()
             rowelapsed = rowfinished - rowstarted
@@ -660,7 +678,7 @@ def import_files( csv_path, collection_path, git_name, git_mail ):
                 rowstarted = datetime.now()
                 print('%s %s/%s %s %s (%s)' % (dtfmt(rowstarted), n+1, len(rows), entity.id, src_path, humanize_bytes(os.path.getsize(src_path))))
                 #print('add_file(%s, %s, %s, %s, %s, %s)' % (git_name, git_mail, entity, src_path, role, rowd))
-                add_file( git_name, git_mail, entity, src_path, role, rowd )
+                add_file( git_name, git_mail, entity, src_path, role, rowd, agent=AGENT )
                 rowfinished = datetime.now()
                 rowelapsed = rowfinished - rowstarted
                 print('%s done (%s)' % (dtfmt(rowfinished), rowelapsed))

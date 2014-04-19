@@ -23,6 +23,8 @@ if not os.path.exists(CONFIG_FILE):
 config = ConfigParser.ConfigParser()
 config.read(CONFIG_FILE)
 
+AGENT = 'ddr-local'
+
 SECRET_KEY           = config.get('local','secret_key')
 LANGUAGE_CODE        = config.get('local','language_code')
 TIME_ZONE            = config.get('local','time_zone')
@@ -44,6 +46,7 @@ ACCESS_FILE_EXTENSION = config.get('local','access_file_extension')
 ACCESS_FILE_GEOMETRY = config.get('local','access_file_geometry')
 ACCESS_FILE_OPTIONS  = config.get('local','access_file_options')
 THUMBNAIL_GEOMETRY   = config.get('local','thumbnail_geometry')
+THUMBNAIL_COLORSPACE = 'sRGB'
 THUMBNAIL_OPTIONS    = config.get('local','thumbnail_options')
 DEFAULT_PERMISSION_COLLECTION = config.get('local','default_permission_collection')
 DEFAULT_PERMISSION_ENTITY     = config.get('local','default_permission_entity')
@@ -127,11 +130,11 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'django.contrib.admin',
     #
+    'bootstrap_pagination',
     'djcelery',
     'sorl.thumbnail',
     #
     'ddrlocal',
-    'search',
     'storage',
     'webui',
 )
@@ -167,8 +170,11 @@ BROKER_TRANSPORT_OPTIONS = {'visibility_timeout': 60 * 60}  # 1 hour
 CELERYD_HIJACK_ROOT_LOGGER = False
 
 # ElasticSearch
-ELASTICSEARCH_HOST = 'localhost'
-ELASTICSEARCH_PORT = '9200'
+DOCSTORE_HOSTS = [
+    {'host':'192.168.56.101', 'port':9200}
+]
+DOCSTORE_INDEX = 'documents0'
+RESULTS_PER_PAGE = 20
 
 # sorl-thumbnail
 THUMBNAIL_DEBUG = DEBUG
@@ -291,6 +297,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'django.core.context_processors.debug',
     'django.core.context_processors.i18n',
     'django.core.context_processors.media',
+    'django.core.context_processors.request',
     'django.core.context_processors.static',
     'django.core.context_processors.tz',
     'django.contrib.messages.context_processors.messages',

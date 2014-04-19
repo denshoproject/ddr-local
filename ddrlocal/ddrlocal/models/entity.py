@@ -25,10 +25,10 @@ STATUS_CHOICES = [['inprocess', 'In Progress'],
 PERMISSIONS_CHOICES = [['1','Public'],
                        ['0','Private'],]
 					
-RIGHTS_CHOICES = [['',''],
-                  ['cc','DDR Creative Commons'],
-                  ['nocc','Copyright restricted'],
-                  ['pdm','Public domain'],]
+RIGHTS_CHOICES = [["cc", "DDR Creative Commons"],
+                  ["pcc", "Copyright, with special 3rd-party grant permitted"],
+                  ["nocc", "Copyright restricted"],
+                  ["pdm", "Public domain" ],]
 
 LANGUAGE_CHOICES = [['',''],
                     ['eng','English'],
@@ -36,6 +36,7 @@ LANGUAGE_CHOICES = [['',''],
                     ['chi','Chinese'],
                     ['fre','French'],
                     ['ger','German'],
+					['ita', 'Italian'],
                     ['kor','Korean'],
                     ['por','Portuguese'],
                     ['rus','Russian'],
@@ -395,7 +396,7 @@ ENTITY_FIELDS = [
         'xpath':      '',
         'xpath_dup':  [],
         'model_type': str,
-        'form_type':  'DateField',
+        'form_type':  'CharField',
         'form': {
             'label':      'Digitize Date',
             'help_text':  'Date of scan. M/D/YYYY.',
@@ -616,12 +617,7 @@ def display_format( data ):
 # organization_id
 # digitize_person
 # digitize_organization
-
-def display_digitize_date( data ):
-    if type(data) == type(datetime.now()):
-        data = data.strftime(PRETTY_DATE_FORMAT)
-    return data
-
+# digitize_date
 # credit
 
 def display_topics( data ):
@@ -676,7 +672,40 @@ def formprep_parent(data):     return _formprep_basic(data)
 # location
 
 def formprep_creators(data):
-    data = ';\n'.join([n['namepart'] for n in data])
+    """Takes list of names and formats into "NAME:ROLE;\nNAME:ROLE"
+    
+    >>> data0 = ['Watanabe, Joe']
+    >>> formprep_creators(data0)
+    'Watanabe, Joe:author'
+    >>> data1 = ['Masuda, Kikuye:author']
+    >>> formprep_creators(data1)
+    'Masuda, Kikuye:author'
+    >>> data2 = [{'namepart':'Boyle, Rob:concept,editor', 'role':'author'}, {'namepart':'Cross, Brian:concept,editor', 'role':'author'}]
+    >>> formprep_creators(data2)
+    'Boyle, Rob:concept,editor;\nCross, Brian:concept,editor'
+    """
+    names = []
+    # split string into list
+    if isinstance(data, basestring) and (';' in data):
+        data = data.split(';')
+    # prep list of names (we hope that's what it is)
+    if isinstance(data, list):
+        for n in data:
+            if isinstance(n, dict):
+                # data1: dict with namepart and role in separate fields
+                if ':' in n['namepart']: # often role was put in name field
+                    names.append(n['namepart'])
+                else:
+                    names.append( ':'.join([ n['namepart'], n['role'] ]) )
+            elif isinstance(n, basestring):
+                # data2
+                if ':' in n:
+                    names.append(n)
+                else:
+                    names.append('%s:author' % n)
+            else:
+                assert False
+    data = ';\n'.join(names)
     return data
 
 # genre
@@ -736,9 +765,25 @@ def formpost_parent(data):     return _formpost_basic(data)
 # location
 
 def formpost_creators(data):
+    """Splits up data into separate names, each with namepart and role.
+    
+    >>> data0 = "Watanabe, Joe"
+    >>> formpost_creators(data0)
+    [{'namepart': 'Watanabe, Joe', 'role': 'author'}]
+    >>> data1 = "Masuda, Kikuye:author"
+    >>> formpost_creators(data1)
+    [{'namepart': 'Masuda, Kikuye', 'role': 'author'}]
+    >>> data2 = "Boyle, Rob:concept,editor; Cross, Brian:concept,editor"
+    >>> formpost_creators(data2)
+    [{'namepart': 'Boyle, Rob', 'role': 'concept,editor'}, {'namepart': 'Cross, Brian', 'role': 'concept,editor'}]
+    """
     a = []
     for n in data.split(';'):
-        b = {'namepart': n.strip(), 'role': 'author',}
+        if ':' in n:
+            name,role = n.strip().split(':')
+        else:
+            name = n.strip(); role = 'author'
+        b = {'namepart': name.strip(), 'role': role.strip(),}
         a.append(b)
     return a
 

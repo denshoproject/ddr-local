@@ -16,9 +16,9 @@ from django.shortcuts import Http404, get_object_or_404, render_to_response
 from django.template import RequestContext
 
 from DDR import commands
+from DDR import docstore
 from ddrlocal.models.files import FILE_FIELDS
 
-from search import add_update
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
 from webui.decorators import ddrview
@@ -166,7 +166,7 @@ def new( request, repo, org, cid, eid, role='master' ):
                 inherited.append( (field,getattr(entity,field)) )
             # start tasks
             result = entity_add_file.apply_async(
-                (git_name, git_mail, entity, src_path, role, data),
+                (git_name, git_mail, entity, src_path, role, data, settings.AGENT),
                 countdown=2)
             entity.files_log(1,'START task_id %s' % result.task_id)
             entity.files_log(1,'ddrlocal.webui.file.new')
@@ -333,13 +333,16 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
             file_.dump_json()
             exit,status = commands.entity_update(git_name, git_mail,
                                                  entity.parent_path, entity.id,
-                                                 [file_.json_path,])
+                                                 [file_.json_path,],
+                                                 agent=settings.AGENT)
             collection.cache_delete()
             if exit:
                 messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
             else:
                 # update search index
-                add_update('ddr', 'file', file_.json_path)
+                with open(file_.json_path, 'r') as f:
+                    document = json.loads(f.read())
+                docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
                 # positive feedback
                 messages.success(request, WEBUI_MESSAGES['VIEWS_FILES_UPDATED'])
                 return HttpResponseRedirect( reverse('webui-file', args=[repo,org,cid,eid,role,sha1]) )
@@ -400,7 +403,8 @@ def edit_old( request, repo, org, cid, eid, role, sha1 ):
                 entity.dump_mets()
                 exit,status = commands.entity_update(git_name, git_mail,
                                                      entity.parent_path, entity.id,
-                                                     [entity.json_path, entity.mets_path,])
+                                                     [entity.json_path, entity.mets_path,],
+                                                     agent=settings.AGENT)
                 if exit:
                     messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
                 else:

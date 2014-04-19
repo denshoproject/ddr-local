@@ -20,6 +20,8 @@ django-celery-with-redis # BSD      n/a                              n/a        
 
 # misc
 beautifulsoup4           # MIT      python-beautifulsoup (3.2.1-1)   python-beautifulsoup (3.2.1-1)   y
+django-bootstrap-pagination # MIT
+python-dateutil          # BSD      python-dateutil (1.5+dfsg-0.1)   python-dateutil (1.5+dfsg-1)     y
 envoy                    # MIT      n/a                              n/a                              y(?)
 lxml                     # BSD      python-lxml (2.3.2-1)            python-lxml (3.2.0-1)            y
 python-xmp-toolkit       # New BSD  n/a                              (sid) python-libxmp (v?)         ???

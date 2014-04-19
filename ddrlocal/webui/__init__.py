@@ -5,8 +5,9 @@ from django.conf import settings
 from django.core.cache import cache
 
 from DDR import commands
+from DDR.docstore import make_index_name, index_exists
 from DDR.dvcs import gitolite_info
-
+from storage import base_path
 
 
 WEBUI_MESSAGES = {
@@ -50,7 +51,6 @@ WEBUI_MESSAGES = {
 }
 
 
-
 def get_repos_orgs():
     """Returns list of repo-orgs that the current SSH key gives access to.
     
@@ -79,3 +79,27 @@ def get_repos_orgs():
         else:
             cache.set(key, repos_orgs, 60*1) # 1 minute
     return repos_orgs
+
+def set_docstore_index( request ):
+    """Ensure active Elasticsearch index matches active storage; complain if not.
+    
+    Look at mounted storage. Make an index name based on that.
+    If mounted and corresponding index exists in Elasticsearch, make sure it's
+    in session.  If index is in session but storage not mounted or Elasticearch
+    index doesn't exist, remove from session.
+    """
+    # gather info
+    docstore_index = None
+    docstore_index_exists = None
+    storage_label = request.session.get('storage_label', None)
+    if storage_label:
+        docstore_index = make_index_name(storage_label)
+        if docstore_index:
+            docstore_index_exists = index_exists(settings.DOCSTORE_HOSTS, docstore_index)
+    # rm index from session
+    if not (storage_label or docstore_index_exists):
+        request.session['docstore_index'] = None
+    # add index to session
+    if storage_label and docstore_index_exists and not request.session.get('docstore_index',None):
+        request.session['docstore_index'] = docstore_index
+    return storage_label,docstore_index_exists
