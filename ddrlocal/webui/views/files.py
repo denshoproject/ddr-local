@@ -457,7 +457,7 @@ def delete( request, repo, org, cid, eid, role, sha1 ):
         messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     try: file_ = entity.file(repo, org, cid, eid, role, sha1)
-    raise: Http404
+    except: raise Http404
     #
     if request.method == 'POST':
         form = DeleteFileForm(request.POST)

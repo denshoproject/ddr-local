@@ -18,7 +18,7 @@ from ddrlocal.models import DDRLocalEntity, DDRLocalFile, hash
 from webui.models import Collection
 
 from DDR import docstore, models
-from DDR.commands import entity_annex_add, entity_update, sync
+from DDR.commands import entity_annex_add, entity_update, entity_destroy, sync
 
 
 
@@ -493,66 +493,99 @@ def add_access( git_name, git_mail, entity, ddrfile, agent='' ):
 
 
 
-class DeleteDebugTask(Task):
+def collection_delete_entity(request, git_name, git_mail, collection, entity, agent):
+    # start tasks
+    result = delete_entity.apply_async(
+        (git_name, git_mail, collection.path, entity.id, agent),
+        countdown=2)
+    # lock collection
+    lockstatus = collection.lock(result.task_id)
+    # add celery task_id to session
+    celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
+    # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
+    celery_tasks[result.task_id] = {
+        'task_id': result.task_id,
+        'action': 'webui-entity-delete',
+        'collection_id': collection.id,
+        'entity_id': entity.id,
+        'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
+    request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
+
+class DeleteEntityTask(Task):
     abstract = True
         
     def on_failure(self, exc, task_id, args, kwargs, einfo):
-        logger.debug('DeleteDebugTask.on_failure(%s, %s, %s, %s)' % (exc, task_id, args, kwargs))
+        logger.debug('DeleteEntityTask.on_failure(%s, %s, %s, %s)' % (exc, task_id, args, kwargs))
     
     def on_success(self, retval, task_id, args, kwargs):
-        logger.debug('DeleteDebugTask.on_success(%s, %s, %s, %s)' % (retval, task_id, args, kwargs))
+        logger.debug('DeleteEntityTask.on_success(%s, %s, %s, %s)' % (retval, task_id, args, kwargs))
     
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
-        logger.debug('DeleteDebugTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
+        logger.debug('DeleteEntityTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
+        collection_path = args[2]
+        collection = Collection.from_json(collection_path)
+        lockstatus = collection.unlock(task_id)
 
-
-@task(base=DeleteDebugTask, name='webui-file-delete')
-def entity_delete_file( git_name, git_mail, entity, filename, agent='' ):
+@task(base=DeleteEntityTask, name='webui-entity-delete')
+def delete_entity( git_name, git_mail, collection_path, entity_id, agent='' ):
     """
-    @param entity: DDRLocalEntity
-    @param filename: File name.
+    @param collection_path
+    @param entity_id
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
     @param agent: (optional) Name of software making the change.
     """
-    file_ = delete_file(git_name, git_mail, entity, filename, agent)
-    return file_
+    logger.debug('collection_delete_entity(%s,%s,%s,%s,%s)' % (git_name, git_mail, collection_path, entity_id, agent))
+    status,message = entity_destroy(git_name, git_mail, collection_path, entity_id, agent)
+    return status,message,collection_path,entity_id
 
-def delete_file( git_name, git_mail, entity, filename, agent='' ):
-    """Delete file from entity
+
+
+def entity_delete_file(request, git_name, git_mail, entity, file_, agent):
+    # start tasks
+    result = delete_file.apply_async(
+        (git_name, git_mail, entity, file_, agent),
+        countdown=2)
+    # lock collection
+    lockstatus = entity.lock(result.task_id)
+    # add celery task_id to session
+    celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
+    # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
+    celery_tasks[result.task_id] = {
+        'task_id': result.task_id,
+        'action': 'webui-file-delete',
+        'entity_id': entity.id,
+        'filename': filename,
+        'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
+    request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
+
+class DeleteFileTask(Task):
+    abstract = True
+        
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
+        logger.debug('DeleteFileTask.on_failure(%s, %s, %s, %s)' % (exc, task_id, args, kwargs))
     
-    @param entity: DDRLocalEntity
-    @param filename: File name.
-    @param git_name: Username of git committer.
-    @param git_mail: Email of git committer.
-    @param agent: (optional) Name of software making the change.
-    @return file_ DDRLocalFile object
-    """
-    pass
-
-
-@task(base=DeleteDebugTask, name='webui-entity-delete')
-def collection_delete_entity( git_name, git_mail, collection, entity, agent='' ):
-    """
-    @param collection: DDRLocalCollection
-    @param entity: DDRLocalEntity
-    @param git_name: Username of git committer.
-    @param git_mail: Email of git committer.
-    @param agent: (optional) Name of software making the change.
-    """
-    file_ = delete_entity(git_name, git_mail, collection, entity, agent)
-    return file_
-
-def delete_entity( git_name, git_mail, collection, entity, agent='' ):
-    """Delete file from entity
+    def on_success(self, retval, task_id, args, kwargs):
+        logger.debug('DeleteFileTask.on_success(%s, %s, %s, %s)' % (retval, task_id, args, kwargs))
     
-    @param collection: DDRLocalCollection
-    @param entity: DDRLocalEntity
+    def after_return(self, status, retval, task_id, args, kwargs, einfo):
+        logger.debug('DeleteFileTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
+        entity_path = args[2]
+        entity = Entity.from_json(entity_path)
+        lockstatus = entity.unlock(task_id)
+
+@task(base=DeleteFileTask, name='webui-entity-delete')
+def delete_file( git_name, git_mail, entity_path, filename, agent='' ):
+    """
+    @param entity_path
+    @param filename
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
     @param agent: (optional) Name of software making the change.
     """
-    pass
+    logger.debug('delete_file(%s,%s,%s,%s,%s)' % (git_name, git_mail, entity_path, filename, agent))
+    status,message = file_destroy(git_name, git_mail, entity_path, filename, agent)
+    return status,message,entity_path,filename
 
 
 

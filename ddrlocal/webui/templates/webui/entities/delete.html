@@ -19,7 +19,15 @@
 {{ entity.id }}
 </h1>
 
-Are you <em>sure</em> you want to delete this object?
+<form name="delete-entity" action="" method="post">{% csrf_token %}
+<p>
+{{ form.confirmed }}
+{{ form.confirmed.help_text }}
+</p>
+<input type="submit" value="Delete" />
+&nbsp;
+<a href="{{ entity.url }}">Cancel</a>
+</form>
  
     </div><!-- .span12 -->
   </div><!-- .row -->

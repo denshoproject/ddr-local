@@ -17,4 +17,4 @@ class UpdateForm(forms.Form):
     xml = forms.CharField(widget=forms.Textarea)
 
 class DeleteEntityForm(forms.Form):
-    confirmed = forms.BooleanField()
+    confirmed = forms.BooleanField(help_text='Yes, I really want to delete this object.')
