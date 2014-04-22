@@ -1,0 +1,27 @@
+{% extends "webui/files/base.html" %}
+{% load thumbnail %}
+
+
+{% block title %}Delete | {{ file.basename }}{% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+<li><a href="{{ file.url }}">{{ file.basename }}</a></li>
+<li class="active">Delete</li>
+{% endblock breadcrumbs %}
+
+
+{% block content %}
+
+  <div class="row-fluid">
+    <div class="span12">
+
+<h1>
+{{ file.basename }}
+</h1>
+
+Are you <em>sure</em> you want to delete this file?
+
+    </div><!-- .span12 -->
+  </div><!-- .row-fluid -->
+
+{% endblock content %}

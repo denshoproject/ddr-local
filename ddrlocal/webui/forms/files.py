@@ -42,3 +42,6 @@ class EditFileForm(forms.Form):
 
 class NewAccessFileForm(forms.Form):
     path = forms.CharField(max_length=255, widget=forms.HiddenInput)
+
+class DeleteFileForm(forms.Form):
+    confirmed = forms.BooleanField()

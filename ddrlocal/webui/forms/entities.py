@@ -15,3 +15,6 @@ class JSONForm(forms.Form):
 
 class UpdateForm(forms.Form):
     xml = forms.CharField(widget=forms.Textarea)
+
+class DeleteEntityForm(forms.Form):
+    confirmed = forms.BooleanField()

@@ -45,6 +45,22 @@ TASK_STATUS_MESSAGES = {
         #'RETRY': '',
         #'REVOKED': '',
         },
+    'webui-file-delete': {
+        #'STARTED': '',
+        'PENDING': 'Deleting file <b>{filename}</b> from <a href="{entity_url}">{entity_id}</a>.',
+        'SUCCESS': 'Deleted file <a href="{file_url}">{filename}</a> from <a href="{entity_url}">{entity_id}</a>.',
+        'FAILURE': 'Could not delete file <a href="{file_url}">{filename}</a> from <a href="{entity_url}">{entity_id}</a>.',
+        #'RETRY': '',
+        #'REVOKED': '',
+        },
+    'webui-entity-delete': {
+        #'STARTED': '',
+        'PENDING': 'Deleting object <b>{entity_id}</b> from <a href="{collection_url}">{collection_id}</a>.',
+        'SUCCESS': 'Deleted object <a href="{entity_url}">{entity_id}</a> from <a href="{collection_url}">{collection_id}</a>.',
+        'FAILURE': 'Could not delete object <a href="{entity_url}">{entity_id}</a> from <a href="{collection_url}">{collection_id}</a>.',
+        #'RETRY': '',
+        #'REVOKED': '',
+        },
     'webui-file-new-access': {
         #'STARTED': '',
         'PENDING': 'Generating new access file for <b>{filename}</b> (<a href="{entity_url}">{entity_id}</a>).',
@@ -474,6 +490,69 @@ def add_access( git_name, git_mail, entity, ddrfile, agent='' ):
         
     entity.files_log(1, 'ddrlocal.webui.tasks.add_access: FINISHED')
     return f.__dict__
+
+
+
+class DeleteDebugTask(Task):
+    abstract = True
+        
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
+        logger.debug('DeleteDebugTask.on_failure(%s, %s, %s, %s)' % (exc, task_id, args, kwargs))
+    
+    def on_success(self, retval, task_id, args, kwargs):
+        logger.debug('DeleteDebugTask.on_success(%s, %s, %s, %s)' % (retval, task_id, args, kwargs))
+    
+    def after_return(self, status, retval, task_id, args, kwargs, einfo):
+        logger.debug('DeleteDebugTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
+
+
+@task(base=DeleteDebugTask, name='webui-file-delete')
+def entity_delete_file( git_name, git_mail, entity, filename, agent='' ):
+    """
+    @param entity: DDRLocalEntity
+    @param filename: File name.
+    @param git_name: Username of git committer.
+    @param git_mail: Email of git committer.
+    @param agent: (optional) Name of software making the change.
+    """
+    file_ = delete_file(git_name, git_mail, entity, filename, agent)
+    return file_
+
+def delete_file( git_name, git_mail, entity, filename, agent='' ):
+    """Delete file from entity
+    
+    @param entity: DDRLocalEntity
+    @param filename: File name.
+    @param git_name: Username of git committer.
+    @param git_mail: Email of git committer.
+    @param agent: (optional) Name of software making the change.
+    @return file_ DDRLocalFile object
+    """
+    pass
+
+
+@task(base=DeleteDebugTask, name='webui-entity-delete')
+def collection_delete_entity( git_name, git_mail, collection, entity, agent='' ):
+    """
+    @param collection: DDRLocalCollection
+    @param entity: DDRLocalEntity
+    @param git_name: Username of git committer.
+    @param git_mail: Email of git committer.
+    @param agent: (optional) Name of software making the change.
+    """
+    file_ = delete_entity(git_name, git_mail, collection, entity, agent)
+    return file_
+
+def delete_entity( git_name, git_mail, collection, entity, agent='' ):
+    """Delete file from entity
+    
+    @param collection: DDRLocalCollection
+    @param entity: DDRLocalEntity
+    @param git_name: Username of git committer.
+    @param git_mail: Email of git committer.
+    @param agent: (optional) Name of software making the change.
+    """
+    pass
 
 
 

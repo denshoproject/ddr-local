@@ -25,7 +25,7 @@ from webui import WEBUI_MESSAGES
 from webui import api
 from webui.decorators import ddrview
 from webui.forms import DDRForm
-from webui.forms.entities import NewEntityForm, JSONForm, UpdateForm
+from webui.forms.entities import NewEntityForm, JSONForm, UpdateForm, DeleteEntityForm
 from webui.mets import NAMESPACES, NAMESPACES_XPATH
 from webui.mets import METS_FIELDS, MetsForm
 from webui.models import Collection, Entity
@@ -468,3 +468,45 @@ def unlock( request, repo, org, cid, eid, task_id ):
         entity.unlock(task_id)
         messages.success(request, 'Object <b>%s</b> unlocked.' % entity.id)
     return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+
+@ddrview
+@login_required
+@storage_required
+def delete( request, repo, org, cid, eid, confirm=False ):
+    """Delete the requested entity.
+    """
+    git_name = request.session.get('git_name')
+    git_mail = request.session.get('git_mail')
+    if not git_name and git_mail:
+        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
+    try:
+        collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    except:
+        raise Http404
+    try:
+        entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+    except:
+        raise Http404
+    if collection.locked():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
+        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+    if entity.locked():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
+        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+    
+    if request.method == 'POST':
+        form = EntityDeleteForm(request.POST)
+        if form.is_valid():
+            assert False
+    else:
+        form = EntityDeleteForm()
+    return render_to_response(
+        'webui/entities/delete.html',
+        {'repo': entity.repo,
+         'org': entity.org,
+         'cid': entity.cid,
+         'eid': entity.eid,
+         'form': form,
+         },
+        context_instance=RequestContext(request, processors=[])
+    )
