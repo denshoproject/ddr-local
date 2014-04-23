@@ -46,22 +46,6 @@ TASK_STATUS_MESSAGES = {
         #'RETRY': '',
         #'REVOKED': '',
         },
-    'webui-file-delete': {
-        #'STARTED': '',
-        'PENDING': 'Deleting file <b>{filename}</b> from <a href="{entity_url}">{entity_id}</a>.',
-        'SUCCESS': 'Deleted file <a href="{file_url}">{filename}</a> from <a href="{entity_url}">{entity_id}</a>.',
-        'FAILURE': 'Could not delete file <a href="{file_url}">{filename}</a> from <a href="{entity_url}">{entity_id}</a>.',
-        #'RETRY': '',
-        #'REVOKED': '',
-        },
-    'webui-entity-delete': {
-        #'STARTED': '',
-        'PENDING': 'Deleting object <b>{entity_id}</b> from <a href="{collection_url}">{collection_id}</a>.',
-        'SUCCESS': 'Deleted object <a href="{entity_url}">{entity_id}</a> from <a href="{collection_url}">{collection_id}</a>.',
-        'FAILURE': 'Could not delete object <a href="{entity_url}">{entity_id}</a> from <a href="{collection_url}">{collection_id}</a>.',
-        #'RETRY': '',
-        #'REVOKED': '',
-        },
     'webui-file-new-access': {
         #'STARTED': '',
         'PENDING': 'Generating new access file for <b>{filename}</b> (<a href="{entity_url}">{entity_id}</a>).',
@@ -494,6 +478,15 @@ def add_access( git_name, git_mail, entity, ddrfile, agent='' ):
 
 
 
+TASK_STATUS_MESSAGES['webui-entity-delete'] = {
+    #'STARTED': '',
+    'PENDING': 'Deleting object <b>{entity_id}</b> from <a href="{collection_url}">{collection_id}</a>.',
+    'SUCCESS': 'Deleted object <b>{entity_id}</b> from <a href="{collection_url}">{collection_id}</a>.',
+    'FAILURE': 'Could not delete object <a href="{entity_url}">{entity_id}</a> from <a href="{collection_url}">{collection_id}</a>.',
+    #'RETRY': '',
+    #'REVOKED': '',
+}
+
 def collection_delete_entity(request, git_name, git_mail, collection, entity, agent):
     # start tasks
     result = delete_entity.apply_async(
@@ -507,7 +500,9 @@ def collection_delete_entity(request, git_name, git_mail, collection, entity, ag
     celery_tasks[result.task_id] = {
         'task_id': result.task_id,
         'action': 'webui-entity-delete',
+        'collection_url': collection.url(),
         'collection_id': collection.id,
+        'entity_url': entity.url(),
         'entity_id': entity.id,
         'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
@@ -542,6 +537,15 @@ def delete_entity( git_name, git_mail, collection_path, entity_id, agent='' ):
 
 
 
+TASK_STATUS_MESSAGES['webui-file-delete'] = {
+    #'STARTED': '',
+    'PENDING': 'Deleting file <b>{filename}</b> from <a href="{entity_url}">{entity_id}</a>.',
+    'SUCCESS': 'Deleted file <b>{filename}</b> from <a href="{entity_url}">{entity_id}</a>.',
+    'FAILURE': 'Could not delete file <a href="{file_url}">{filename}</a> from <a href="{entity_url}">{entity_id}</a>.',
+    #'RETRY': '',
+    #'REVOKED': '',
+}
+
 def entity_delete_file(request, git_name, git_mail, collection, entity, file_, agent):
     # start tasks
     result = delete_file.apply_async(
@@ -555,8 +559,10 @@ def entity_delete_file(request, git_name, git_mail, collection, entity, file_, a
     celery_tasks[result.task_id] = {
         'task_id': result.task_id,
         'action': 'webui-file-delete',
+        'entity_url': entity.url(),
         'entity_id': entity.id,
         'filename': file_.basename,
+        'file_url': file_.url(),
         'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
 
