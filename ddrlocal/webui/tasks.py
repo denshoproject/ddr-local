@@ -18,7 +18,8 @@ from ddrlocal.models import DDRLocalEntity, DDRLocalFile, hash
 from webui.models import Collection
 
 from DDR import docstore, models
-from DDR.commands import entity_annex_add, entity_update, entity_destroy, sync
+from DDR.commands import entity_annex_add, entity_update, sync
+from DDR.commands import entity_destroy, file_destroy
 
 
 
@@ -529,8 +530,8 @@ class DeleteEntityTask(Task):
 @task(base=DeleteEntityTask, name='webui-entity-delete')
 def delete_entity( git_name, git_mail, collection_path, entity_id, agent='' ):
     """
-    @param collection_path
-    @param entity_id
+    @param collection_path: string
+    @param entity_id: string
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
     @param agent: (optional) Name of software making the change.
@@ -541,13 +542,13 @@ def delete_entity( git_name, git_mail, collection_path, entity_id, agent='' ):
 
 
 
-def entity_delete_file(request, git_name, git_mail, entity, file_, agent):
+def entity_delete_file(request, git_name, git_mail, collection, entity, file_, agent):
     # start tasks
     result = delete_file.apply_async(
-        (git_name, git_mail, entity, file_, agent),
+        (git_name, git_mail, collection.path, entity.id, file_.basename, agent),
         countdown=2)
     # lock collection
-    lockstatus = entity.lock(result.task_id)
+    lockstatus = collection.lock(result.task_id)
     # add celery task_id to session
     celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
     # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
@@ -555,7 +556,7 @@ def entity_delete_file(request, git_name, git_mail, entity, file_, agent):
         'task_id': result.task_id,
         'action': 'webui-file-delete',
         'entity_id': entity.id,
-        'filename': filename,
+        'filename': file_.basename,
         'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
 
@@ -570,22 +571,38 @@ class DeleteFileTask(Task):
     
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
         logger.debug('DeleteFileTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
-        entity_path = args[2]
-        entity = Entity.from_json(entity_path)
-        lockstatus = entity.unlock(task_id)
+        collection_path = args[2]
+        collection = Collection.from_json(collection_path)
+        lockstatus = collection.unlock(task_id)
 
-@task(base=DeleteFileTask, name='webui-entity-delete')
-def delete_file( git_name, git_mail, entity_path, filename, agent='' ):
+@task(base=DeleteFileTask, name='webui-file-delete')
+def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, agent='' ):
     """
-    @param entity_path
-    @param filename
+    @param collection_path: string
+    @param entity_id: string
+    @param file_basename: string
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
     @param agent: (optional) Name of software making the change.
     """
-    logger.debug('delete_file(%s,%s,%s,%s,%s)' % (git_name, git_mail, entity_path, filename, agent))
-    status,message = file_destroy(git_name, git_mail, entity_path, filename, agent)
-    return status,message,entity_path,filename
+    logger.debug('delete_file(%s,%s,%s,%s,%s,%s)' % (git_name, git_mail, collection_path, entity_id, file_basename, agent))
+    # TODO rm_files list should come from the File model
+    file_id = os.path.splitext(file_basename)[0]
+    repo,org,cid,eid,role,sha1 = file_id.split('-')
+    entity = DDRLocalEntity.from_json(DDRLocalEntity.entity_path(None,repo,org,cid,eid))
+    file_ = entity.file(repo, org, cid, eid, role, sha1)
+    rm_files = file_.files_rel(collection_path)
+    logger.debug('rm_files: %s' % rm_files)
+    # remove file from entity.json
+    # TODO move this to commands.file_destroy or models.Entity
+    for f in entity.files:
+        if f.basename == file_basename:
+            entity.files.remove(f)
+    entity.dump_json()
+    updated_files = ['entity.json']
+    logger.debug('updated_files: %s' % updated_files)
+    status,message = file_destroy(git_name, git_mail, collection_path, entity_id, rm_files, updated_files, agent)
+    return status,message,collection_path,file_basename
 
 
 

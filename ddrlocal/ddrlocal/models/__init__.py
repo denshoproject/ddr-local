@@ -1164,6 +1164,23 @@ class DDRLocalFile( object ):
     
     # entities/files/???
     
+    def files_rel( self, collection_path ):
+        """Returns list of the file, its metadata JSON, and access file, relative to collection.
+        
+        @param collection_path
+        @returns: list of relative file paths
+        """
+        if collection_path[-1] != '/':
+            collection_path = '%s/' % collection_path
+        paths = [ ]
+        if self.path_abs and os.path.exists(self.path_abs) and (collection_path in self.path_abs):
+            paths.append(self.path_abs.replace(collection_path, ''))
+        if self.json_path and os.path.exists(self.json_path) and (collection_path in self.json_path):
+            paths.append(self.json_path.replace(collection_path, ''))
+        if self.access_abs and os.path.exists(self.access_abs) and (collection_path in self.access_abs):
+            paths.append(self.access_abs.replace(collection_path, ''))
+        return paths
+    
     def present( self ):
         """Indicates whether or not the original file is currently present in the filesystem.
         """

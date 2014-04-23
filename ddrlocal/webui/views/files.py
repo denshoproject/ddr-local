@@ -26,7 +26,7 @@ from webui.forms import DDRForm
 from webui.forms.files import NewFileForm, EditFileForm, NewAccessFileForm, DeleteFileForm
 from webui.forms.files import shared_folder_files
 from webui.models import Collection, Entity
-from webui.tasks import entity_add_file, entity_add_access
+from webui.tasks import entity_add_file, entity_add_access, entity_delete_file
 from webui.views.decorators import login_required
 
 
@@ -442,27 +442,28 @@ def edit_old( request, repo, org, cid, eid, role, sha1 ):
 @login_required
 @storage_required
 def delete( request, repo, org, cid, eid, role, sha1 ):
+    try:
+        entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+        file_ = entity.file(repo, org, cid, eid, role, sha1)
+    except:
+        raise Http404
+    collection = Collection.from_json(file_.collection_path)
+    if entity.locked():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
+        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+    if collection.locked():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
+        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     git_name = request.session.get('git_name')
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    try: collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
-    except: raise Http404
-    try: entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
-    except: raise Http404
-    if collection.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
-    if entity.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
-        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
-    try: file_ = entity.file(repo, org, cid, eid, role, sha1)
-    except: raise Http404
     #
     if request.method == 'POST':
         form = DeleteFileForm(request.POST)
-        if form.is_valid():
-            assert False
+        if form.is_valid() and form.cleaned_data['confirmed']:
+            entity_delete_file(request, git_name, git_mail, collection, entity, file_, settings.AGENT)
+            return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
     else:
         form = DeleteFileForm()
     return render_to_response(
@@ -473,6 +474,7 @@ def delete( request, repo, org, cid, eid, role, sha1 ):
          'eid': file_.eid,
          'role': file_.role,
          'sha1': file_.sha1,
+         'file': file_,
          'form': form,
          },
         context_instance=RequestContext(request, processors=[])

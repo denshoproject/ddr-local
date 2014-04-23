@@ -19,7 +19,15 @@
 {{ file.basename }}
 </h1>
 
-Are you <em>sure</em> you want to delete this file?
+<form name="delete-file" action="" method="post">{% csrf_token %}
+<p>
+{{ form.confirmed }}
+{{ form.confirmed.help_text }}
+</p>
+<input type="submit" value="Delete" />
+&nbsp;
+<a href="{{ file.url }}">Cancel</a>
+</form>
 
     </div><!-- .span12 -->
   </div><!-- .row-fluid -->
