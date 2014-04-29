@@ -315,7 +315,6 @@ def invalid_headers( object_class, headers ):
     exceptions = REQUIRED_FIELDS_EXCEPTIONS[object_class]
     if object_class == 'file':
         headers.remove('entity_id')
-        headers.remove('role')
     # validate
     missing_headers = []
     for field in the_official_fields:
