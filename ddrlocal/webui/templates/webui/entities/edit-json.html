@@ -125,7 +125,7 @@ Edit
   var tagApi = jQuery("#id_topics").tagsManager({
     replace: true,  /* puts data in "hidden-topics" field */
     backspace: [],  /* don't let backspace remove tags */
-    prefilled: []
+    prefilled: {{ topics_prefilled|safe }}
   });
 
   var topics_terms = [{% for term in topics_terms %}

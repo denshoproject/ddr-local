@@ -2,12 +2,14 @@ import json
 import logging
 logger = logging.getLogger(__name__)
 import os
+import re
 
 from bs4 import BeautifulSoup
 import requests
 
 from django.conf import settings
 from django.contrib import messages
+from django.core.cache import cache
 from django.core.context_processors import csrf
 from django.core.files import File
 from django.core.urlresolvers import reverse
@@ -32,6 +34,69 @@ from webui.models import Collection, Entity
 from webui.views.decorators import login_required
 from xmlforms.models import XMLModel
 
+
+
+# helpers --------------------------------------------------------------
+
+def vocab_topics():
+    """Loads topics choices list from vocab API.
+    
+    TODO This should probably be somewhere else
+    """
+    key = 'vocab:topics'
+    timeout = 60*60*24  # 24 hours
+    data = cache.get(key)
+    if not data:
+        r = requests.get(settings.VOCAB_TOPICS_URL)
+        if r.status_code == 200:
+            data = json.loads(r.text)
+            cache.set(key, data, timeout)
+    return data
+
+def tagmanager_prefilled_topics( selected_terms, all_terms ):
+    """Preps list of selected entity.topics for TagManager widget.
+    
+    TODO This should probably be somewhere else
+    
+    Topics used in DDR thus far may have different text than new topics,
+    though they should have same IDs.
+    This function takes 
+    
+    >>> entity.topics = ['a topic [10]']
+    >>> terms = ['A Topic [10]', 'Life The Universe and Everything [42]', ...]
+    >>> entity.prefilled_topics(terms)
+    ['A Topic [10]']
+    
+    @param topics_terms: list of topics terms
+    @param selected_term_ids: list of term IDs
+    @returns: list of terms for the term IDs
+    """
+    regex = re.compile('([\d]+)')
+    entity_topic_ids = []
+    for term in selected_terms:
+        match = regex.search(term)
+        if match:
+            for tid in match.groups():
+                entity_topic_ids.append(tid)
+    selected_topics = []
+    for term in all_terms:
+        match = regex.search(term)
+        if match:
+            for tid in match.groups():
+                if tid in entity_topic_ids:
+                    selected_topics.append(str(term))
+    return selected_topics
+
+def tagmanager_process_tags( form_terms ):
+    """Formats TagManager tags in format expected by Entity.topics.
+    
+    TODO This should probably be somewhere else
+    
+    >>> hidden_terms = u'Topic 1 [94],Topic 2 [95],Topic 3 [244]'
+    >>> process_cleaned_topics(hidden_terms, all_terms)
+    u'Topic 1 [94]; Topic 2 [95]; Topic 3 [244]'
+    """
+    return ']; '.join(form_terms.split('],'))
 
 
 # views ----------------------------------------------------------------
@@ -193,6 +258,10 @@ def new( request, repo, org, cid ):
 @login_required
 @storage_required
 def edit( request, repo, org, cid, eid ):
+    """
+    UI for Entity topics uses TagManager to represent topics as tags,
+    and typeahead.js so users only have to type part of a topic.
+    """
     git_name = request.session.get('git_name')
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
@@ -210,9 +279,18 @@ def edit( request, repo, org, cid, eid ):
         messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     #
+    # load topics choices data
+    # TODO This should be baked into models somehow.
+    topics_terms = vocab_topics()
     if request.method == 'POST':
         form = DDRForm(request.POST, fields=ENTITY_FIELDS)
         if form.is_valid():
+            
+            # clean up after TagManager
+            hidden_topics = request.POST.get('hidden-topics', None)
+            if hidden_topics:
+                form.cleaned_data['topics'] = tagmanager_process_tags(hidden_topics)
+            
             entity.form_post(form)
             entity.dump_json()
             entity.dump_mets()
@@ -246,9 +324,6 @@ def edit( request, repo, org, cid, eid ):
                 return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     else:
         form = DDRForm(entity.form_prep(), fields=ENTITY_FIELDS)
-    # load topics choices data
-    # TODO This should be baked into models somehow.
-    topics_terms = Entity.vocab_topics()
     return render_to_response(
         'webui/entities/edit-json.html',
         {'repo': entity.repo,
@@ -259,7 +334,9 @@ def edit( request, repo, org, cid, eid ):
          'collection': collection,
          'entity': entity,
          'form': form,
+         # data for TagManager
          'topics_terms': topics_terms,
+         'topics_prefilled': tagmanager_prefilled_topics(entity.topics, topics_terms),
          },
         context_instance=RequestContext(request, processors=[])
     )
