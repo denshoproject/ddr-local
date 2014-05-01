@@ -246,6 +246,9 @@ def edit( request, repo, org, cid, eid ):
                 return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     else:
         form = DDRForm(entity.form_prep(), fields=ENTITY_FIELDS)
+    # load topics choices data
+    # TODO This should be baked into models somehow.
+    topics_terms = Entity.vocab_topics()
     return render_to_response(
         'webui/entities/edit-json.html',
         {'repo': entity.repo,
@@ -256,6 +259,7 @@ def edit( request, repo, org, cid, eid ):
          'collection': collection,
          'entity': entity,
          'form': form,
+         'topics_terms': topics_terms,
          },
         context_instance=RequestContext(request, processors=[])
     )

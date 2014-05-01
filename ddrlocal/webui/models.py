@@ -1,9 +1,12 @@
+import json
 import logging
 logger = logging.getLogger(__name__)
 import os
 
 import envoy
+import requests
 
+from django.conf import settings
 from django.core.cache import cache
 from django.db import models
 
@@ -190,3 +193,18 @@ class Entity( DDRLocalEntity ):
     
     def update_inheritables( self, inheritables, cleaned_data ):
         return _update_inheritables(self, 'entity', inheritables, cleaned_data)
+    
+    @staticmethod
+    def vocab_topics():
+        """load topics choices data
+        TODO This should be baked into models somehow.
+        """
+        key = 'vocab:topics'
+        timeout = 60*60*24  # 24 hours
+        data = cache.get(key)
+        if not data:
+            r = requests.get(settings.VOCAB_TOPICS_URL)
+            if r.status_code == 200:
+                data = json.loads(r.text)
+                cache.set(key, data, timeout)
+        return data

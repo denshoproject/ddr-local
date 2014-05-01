@@ -40,3 +40,75 @@ Edit
   </div><!-- .row-fluid -->
 
 {% endblock content %}
+
+
+{% block pagecss %}
+<link rel="stylesheet" href="{{ STATIC_URL }}js/tagmanager/tagmanager.css">
+<style>
+  .tt-dropdown-menu {
+    max-height: 150px;
+    overflow-y: auto;
+  }
+</style>
+{% endblock pagecss %}
+
+
+{% block javascript %}
+<script type="text/javascript" src="{{ STATIC_URL }}js/typeahead/dist/typeahead.jquery.min.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}js/tagmanager/tagmanager.js"></script>
+<script>
+
+  /* Add classes to #id_topics so tagsManager and typeahead can work. */
+  $("#id_topics").attr({
+    class: "input-medium tm-input typeahead tt-suggestion",
+    autocomplete: "off",
+    placeholder: "Topics"
+  });
+
+  var tagApi = jQuery("#id_topics").tagsManager({
+    replace: true,  /* puts data in "hidden-topics" field */
+    backspace: [],  /* don't let backspace remove tags */
+    prefilled: []
+  });
+
+  var topics_terms = [{% for term in topics_terms %}
+    "{{ term|safe|addslashes }}",{% endfor %}
+  ];
+
+  var substringMatcher = function(strs) {
+    return function findMatches(q, cb) {
+      var matches, substringRegex;
+      // an array that will be populated with substring matches
+      matches = [];
+      // regex used to determine if a string contains the substring `q`
+      substrRegex = new RegExp(q, 'i');
+      // iterate through the pool of strings and for any string that
+      // contains the substring `q`, add it to the `matches` array
+      $.each(strs, function(i, str) {
+        if (substrRegex.test(str)) {
+          // the typeahead jQuery plugin expects suggestions to a
+          // JavaScript object, refer to typeahead docs for more info
+          matches.push({ value: str });
+        }
+      });
+      cb(matches);
+    };
+  };
+
+  $('#id_topics').typeahead(
+    { minLength:3, highlight:true },
+    { name:'topics_terms', displayKey:'value', source:substringMatcher(topics_terms)}
+  ).on('typeahead:selected', function (e, d) {
+    tagApi.tagsManager("pushTag", d.value);
+  });
+
+</script>
+{% endblock javascript %}
+
+
+  jQuery("#id_topics").typeahead({
+    name: 'topics',
+    prefetch: '{{ vocb_topics_url }}'
+  }).on('typeahead:selected', function (e, d) {
+    tagApi.tagsManager("pushTag", d.value);
+  });

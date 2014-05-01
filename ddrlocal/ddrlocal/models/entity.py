@@ -466,7 +466,7 @@ ENTITY_FIELDS = [
         'form': {
             'label':      'Topic',
             'help_text':  'Use the Densho Topics Controlled Vocabulary List found in Appendix E: Controlled Vocabularies. Multiple entries allowed; separate with a semi-colon. Include the topic ID in brackets after each topic.',
-            'widget':     'Textarea',
+            'widget':     '',
             'initial':    '',
             'required':   False,
         },
