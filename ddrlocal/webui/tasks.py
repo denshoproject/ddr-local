@@ -34,7 +34,7 @@ TASK_STATUS_MESSAGES = {
         #'STARTED': '',
         'PENDING': 'Uploading <b>{filename}</b> to <a href="{entity_url}">{entity_id}</a>.',
         'SUCCESS': 'Uploaded <a href="{file_url}">{filename}</a> to <a href="{entity_url}">{entity_id}</a>.',
-        'FAILURE': 'Could not upload <a href="{file_url}">{filename}</a> to <a href="{entity_url}">{entity_id}</a>.',
+        'FAILURE': 'Could not upload <b>{filename}</b> to <a href="{entity_url}">{entity_id}</a>.<br/>{result}',
         #'RETRY': '',
         #'REVOKED': '',
         },
@@ -145,7 +145,7 @@ def reindex_and_notify( index ):
 class FileAddDebugTask(Task):
     abstract = True
         
-    def on_failure(self, exc, task_id, args, kwargs, einfo):
+    def on_failure(self, exception, task_id, args, kwargs, einfo):
         entity = args[2]
         entity.files_log(0,'DDRTask.ON_FAILURE')
     
@@ -194,6 +194,14 @@ def add_file( git_name, git_mail, entity, src_path, role, data, agent='' ):
     Writes a log to ${entity}/addfile.log, formatted in pseudo-TAP.
     This log is returned along with a DDRLocalFile object.
     
+    NOTE on duplicates:
+    Filenames are in the form {repo}-{org}-{cid}-{eid}-{role}-{sha1}
+    It is possible for the same exact file to be attached to multiple Entities,
+    and for a file to be attached to an Entity as both a master and a mezzanine.
+    Because the SHA1 hashes for two copies of a file will be identical, it is NOT
+    possible for multiple copies of a file to exist with the same Entity and role
+    (e.g. two copies of a file that are masters for the same Entity).
+    
     @param entity: DDRLocalEntity
     @param src_path: Absolute path to an uploadable file.
     @param role: Keyword of a file role.
@@ -208,33 +216,46 @@ def add_file( git_name, git_mail, entity, src_path, role, data, agent='' ):
     entity.files_log(1, 'entity: %s' % entity.id)
     entity.files_log(1, 'data: %s' % data)
     
+    preflight_checks = []
+    # source file
     src_basename      = os.path.basename(src_path)
     src_exists        = os.path.exists(src_path)
     src_readable      = os.access(src_path, os.R_OK)
+    if src_exists:         preflight_checks.append('ok')
+    else:                  entity.files_log(0, 'Source file does not exist: {}'.format(src_path))
+    if src_readable:       preflight_checks.append('ok')
+    else:                  entity.files_log(0, 'Source file not readable: {}'.format(src_path))
+    
+    # Generate SHA1 here so it can be used in DDRLocalFile.file_name() and assigned to f.sha1
+    entity.files_log(0, 'Generating SHA1 for %s' % src_path)
+    try:
+        src_sha1   = hash(src_path, 'sha1')
+    except:
+        entity.files_log(0, 'src sha1 FAIL')
+        raise Exception('Could not generate SHA1 for %s' % src_path)
+    
+    # destination dir
     if not os.path.exists(entity.files_path):
         os.mkdir(entity.files_path)
     dest_dir          = entity.files_path
     dest_dir_exists   = os.path.exists(dest_dir)
     dest_dir_writable = os.access(dest_dir, os.W_OK)
-    dest_basename     = DDRLocalFile.file_name(entity, src_path, role)
+    if dest_dir_exists:    preflight_checks.append('ok')
+    else:                  entity.files_log(0, 'Destination directory does not exist: {}'.format(dest_dir))
+    if dest_dir_writable:  preflight_checks.append('ok')
+    else:                  entity.files_log(0, 'Destination directory not writable: {}'.format(dest_dir))
+    
+    # destination file
+    dest_basename     = DDRLocalFile.file_name(entity, src_path, role, sha1=src_sha1)
     dest_path         = os.path.join(dest_dir, dest_basename)
     dest_path_exists  = os.path.exists(dest_path)
-    s = []
-    if src_exists:         s.append('ok')
-    else:                  entity.files_log(0, 'Source file does not exist: {}'.format(src_path))
-    if src_readable:       s.append('ok')
-    else:                  entity.files_log(0, 'Source file not readable: {}'.format(src_path))
-    if dest_dir_exists:    s.append('ok')
-    else:                  entity.files_log(0, 'Destination directory does not exist: {}'.format(dest_dir))
-    if dest_dir_writable:  s.append('ok')
-    else:                  entity.files_log(0, 'Destination directory not writable: {}'.format(dest_dir))
-    #if not dest_path_exists: s.append('ok')
-    #else:                  entity.files_log(0, 'Destination file already exists!: {}'.format(dest_path))
-    preparations = ','.join(s)
+    # Refuse to upload duplicate file for same entity and role.
+    if dest_path_exists:
+        raise Exception('Entity already contains this %s file! %s' % (role, src_path))
     
     # do, or do not
     cp_successful = False
-    if preparations == 'ok,ok,ok,ok':  # ,ok
+    if ','.join(preflight_checks) == 'ok,ok,ok,ok':  # ,ok
         entity.files_log(1, 'Source file exists; is readable.  Destination dir exists, is writable.')
         entity.files_log(1, 'src file size: %s' % os.path.getsize(src_path))
         # task: copy
@@ -260,13 +281,11 @@ def add_file( git_name, git_mail, entity, src_path, role, data, agent='' ):
             setattr(f, field, data[field])
         f.size = os.path.getsize(f.path_abs)
         entity.files_log(1, 'dest file size: %s' % f.size)
-        # task: get SHA1 checksum (links entity.filemeta entity.files records
+        # task: get checksum (links entity.filemeta entity.files records
         entity.files_log(1, 'Checksumming...')
-        try:
-            f.sha1   = hash(src_path, 'sha1')
-            entity.files_log(1, 'sha1: %s' % f.sha1)
-        except:
-            entity.files_log(0, 'sha1 FAIL')
+        # SHA1 is generated above
+        f.sha1 = src_sha1
+        entity.files_log(1, 'sha1: %s' % f.sha1)
         try:
             f.md5    = hash(src_path, 'md5')
             entity.files_log(1, 'md5: %s' % f.md5)
@@ -726,12 +745,8 @@ def session_tasks( request ):
         if messages and status:
             template = messages.get(status, None)
         if template:
-            try:
-                msg = template.format(**task)
-                task['message'] = msg
-            except:
-                if not task.get('message', None):
-                    task['message'] = template
+            msg = template.format(**task)
+            task['message'] = msg
     # indicate if task is dismiss or not
     for task_id in tasks.keys():
         task = tasks[task_id]

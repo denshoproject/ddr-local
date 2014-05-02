@@ -1288,20 +1288,25 @@ class DDRLocalFile( object ):
         write_json(file_, self.json_path)
     
     @staticmethod
-    def file_name( entity, path_abs, role ):
+    def file_name( entity, path_abs, role, sha1=None ):
         """Generate a new name for the specified file; Use only when ingesting a file!
         
         rename files to standard names on ingest:
         %{repo}-%{org}-%{cid}-%{eid}-%{role}%{sha1}.%{ext}
         example: ddr-testing-56-101-master-fb73f9de29.jpg
         
+        SHA1 is optional so it can be passed in by a calling process that has already
+        generated it.
+        
         @param entity
         @param path_abs: Absolute path to the file.
         @param role
+        @param sha1: SHA1 hash (optional)
         """
         if os.path.exists and os.access(path_abs, os.R_OK):
             ext = os.path.splitext(path_abs)[1]
-            sha1 = hash(path_abs, 'sha1')
+            if not sha1:
+                sha1 = hash(path_abs, 'sha1')
             if sha1:
                 base = '-'.join([
                     entity.repo, entity.org, entity.cid, entity.eid,
