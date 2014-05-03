@@ -44,6 +44,13 @@ def detail( request, repo, org, cid, eid ):
     epath = Entity.entity_path(request,repo,org,cid,eid)
     entity = Entity.from_json(epath)
     tasks = request.session.get('celery-tasks', [])
+    entity_files = entity.files
+    entity__files = entity._files
+    duplicate_masters = entity.detect_file_duplicates('master')
+    duplicate_mezzanines = entity.detect_file_duplicates('mezzanine')
+    if duplicate_masters or duplicate_mezzanines:
+        url = reverse('webui-entity-files-dedupe', args=[repo,org,cid,eid])
+        messages.error(request, 'Duplicate files detected. <a href="%s">More info</a>' % url)
     return render_to_response(
         'webui/entities/detail.html',
         {'repo': entity.repo,
@@ -118,6 +125,24 @@ def files( request, repo, org, cid, eid ):
          'collection_uid': collection.id,
          'collection': collection,
          'entity': entity,},
+        context_instance=RequestContext(request, processors=[])
+    )
+
+@storage_required
+def files_dedupe( request, repo, org, cid, eid ):
+    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+    return render_to_response(
+        'webui/entities/files-dedupe.html',
+        {'repo': entity.repo,
+         'org': entity.org,
+         'cid': entity.cid,
+         'eid': entity.eid,
+         'collection_uid': collection.id,
+         'collection': collection,
+         'entity': entity,
+         'duplicate_masters': entity.detect_file_duplicates('master'),
+         'duplicate_mezzanines': entity.detect_file_duplicates('mezzanine'),},
         context_instance=RequestContext(request, processors=[])
     )
 

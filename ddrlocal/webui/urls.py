@@ -59,6 +59,7 @@ urlpatterns = patterns(
 
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/files/$', 'webui.views.entities.files', name='webui-entity-files'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/addfile.log$', 'webui.views.entities.addfile_log', name='webui-entity-addfilelog'),
+    url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/files/dedupe/$', 'webui.views.entities.files_dedupe', name='webui-entity-files-dedupe'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/changelog/$', 'webui.views.entities.changelog', name='webui-entity-changelog'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/entity.json$', 'webui.views.entities.entity_json', name='webui-entity-json'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/mets.xml$', 'webui.views.entities.mets_xml', name='webui-entity-mets-xml'),

@@ -729,6 +729,16 @@ class DDRLocalEntity( DDREntity ):
         files = [f for f in self.files if hasattr(f,'role') and (f.role == 'mezzanine')]
         return sorted(files, key=lambda f: f.sort)
     
+    def detect_file_duplicates( self, role ):
+        """
+        """
+        duplicates = []
+        for x,f in enumerate(self._files):
+            for y,f2 in enumerate(self._files):
+                if (f2 == f) and (f['role'] == role) and (y != x) and (f not in duplicates):
+                    duplicates.append(f)
+        return duplicates
+    
     def file( self, repo, org, cid, eid, role, sha1, newfile=None ):
         """Given a SHA1 hash, get the corresponding file dict.
         
@@ -902,6 +912,8 @@ class DDRLocalEntity( DDREntity ):
         
         # replace list of file paths with list of DDRLocalFile objects
         _files = []
+        # keep copy of the list for detect_file_duplicates()
+        self._files = self.files
         try:
             for f in self.files:
                 path_abs = os.path.join(self.files_path, f['path_rel'])
