@@ -877,6 +877,21 @@ class DDRLocalEntity( DDREntity ):
                 entity.id = entity_uid  # might get overwritten if entity.json is blank
         return entity
     
+    def _load_file_objects( self ):
+        """Replaces list of file info dicts with list of DDRLocalFile objects
+        
+        IMPORTANT: original 
+        """
+        # keep copy of the list for detect_file_duplicates()
+        self._files = [f for f in self.files]
+        try:
+            self.files = []
+            for f in self._files:
+                path_abs = os.path.join(self.files_path, f['path_rel'])
+                self.files.append(DDRLocalFile(path_abs))
+        except:
+            pass
+    
     def load_json(self, path):
         """Populate Entity data from .json file.
         @param path: Absolute path to entity
@@ -911,16 +926,7 @@ class DDRLocalEntity( DDREntity ):
                 setattr(self, ff['name'], ff.get('default',None))
         
         # replace list of file paths with list of DDRLocalFile objects
-        _files = []
-        # keep copy of the list for detect_file_duplicates()
-        self._files = self.files
-        try:
-            for f in self.files:
-                path_abs = os.path.join(self.files_path, f['path_rel'])
-                _files.append(DDRLocalFile(path_abs))
-        except:
-            pass
-        self.files = _files
+        self._load_file_objects()
     
     def dump_json(self, path=None, template=False):
         """Dump Entity data to .json file.
