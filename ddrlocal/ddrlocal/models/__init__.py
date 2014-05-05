@@ -730,7 +730,7 @@ class DDRLocalEntity( DDREntity ):
         return sorted(files, key=lambda f: f.sort)
     
     def detect_file_duplicates( self, role ):
-        """
+        """Returns list of file dicts that appear in Entity.files more than once
         """
         duplicates = []
         for x,f in enumerate(self._files):
@@ -738,6 +738,19 @@ class DDRLocalEntity( DDREntity ):
                 if (f2 == f) and (f['role'] == role) and (y != x) and (f not in duplicates):
                     duplicates.append(f)
         return duplicates
+    
+    def rm_file_duplicates( self ):
+        """Remove duplicates from the Entity.files (._files) list of dicts.
+        Technically, it rebuilds the last without the duplicates.
+        """
+        # regenerate files list
+        new_files = []
+        for f in self._files:
+            if f not in new_files:
+                new_files.append(f)
+        self.files = new_files
+        # reload objects
+        self._load_file_objects()
     
     def file( self, repo, org, cid, eid, role, sha1, newfile=None ):
         """Given a SHA1 hash, get the corresponding file dict.

@@ -29,10 +29,7 @@ Multiple copies of the following file(s) were uploaded.
 </p>
 
 <ul>
-{% for f in duplicate_masters %}
-<li>{{ f.path_rel }}</li>
-{% endfor %}
-{% for f in duplicate_mezzanines %}
+{% for f in duplicates %}
 <li>{{ f.path_rel }}</li>
 {% endfor %}
 </ul>
@@ -42,7 +39,17 @@ Unfortunately, when this happens only the most recent file metadata remains.
 It's possible to get the earlier metadata but you need to contact an administrator.
 If you don't care about the metadata, feel free to just click and remove the duplicates.
 </p>
-<a class="btn btn-danger"><i class="icon"></i> Remove duplicates</a>
+
+
+<form name="rm-duplicates" action="" method="post">{% csrf_token %}
+<p>
+{{ form.confirmed }}
+{{ form.confirmed.help_text }}
+</p>
+<input class="btn btn-danger" type="submit" value="Remove Duplicates" />
+&nbsp;
+<a href="{{ entity.url }}">Cancel</a>
+</form>
 
  
     </div><!-- .span12 -->

@@ -18,3 +18,6 @@ class UpdateForm(forms.Form):
 
 class DeleteEntityForm(forms.Form):
     confirmed = forms.BooleanField(help_text='Yes, I really want to delete this object.')
+
+class RmDuplicatesForm(forms.Form):
+    confirmed = forms.BooleanField(help_text='Yes, remove the duplicates.')

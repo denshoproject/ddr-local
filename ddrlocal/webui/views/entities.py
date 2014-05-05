@@ -26,7 +26,7 @@ from webui import WEBUI_MESSAGES
 from webui import api
 from webui.decorators import ddrview
 from webui.forms import DDRForm
-from webui.forms.entities import NewEntityForm, JSONForm, UpdateForm, DeleteEntityForm
+from webui.forms.entities import NewEntityForm, JSONForm, UpdateForm, DeleteEntityForm, RmDuplicatesForm
 from webui.mets import NAMESPACES, NAMESPACES_XPATH
 from webui.mets import METS_FIELDS, MetsForm
 from webui.models import Collection, Entity
@@ -125,24 +125,6 @@ def files( request, repo, org, cid, eid ):
          'collection_uid': collection.id,
          'collection': collection,
          'entity': entity,},
-        context_instance=RequestContext(request, processors=[])
-    )
-
-@storage_required
-def files_dedupe( request, repo, org, cid, eid ):
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
-    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
-    return render_to_response(
-        'webui/entities/files-dedupe.html',
-        {'repo': entity.repo,
-         'org': entity.org,
-         'cid': entity.cid,
-         'eid': entity.eid,
-         'collection_uid': collection.id,
-         'collection': collection,
-         'entity': entity,
-         'duplicate_masters': entity.detect_file_duplicates('master'),
-         'duplicate_mezzanines': entity.detect_file_duplicates('mezzanine'),},
         context_instance=RequestContext(request, processors=[])
     )
 
@@ -389,6 +371,64 @@ def delete( request, repo, org, cid, eid, confirm=False ):
          'entity': entity,
          'form': form,
          },
+        context_instance=RequestContext(request, processors=[])
+    )
+
+@login_required
+@storage_required
+def files_dedupe( request, repo, org, cid, eid ):
+    git_name = request.session.get('git_name')
+    git_mail = request.session.get('git_mail')
+    if not (git_name and git_mail):
+        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
+    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    if collection.locked():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
+        return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+    duplicate_masters = entity.detect_file_duplicates('master')
+    duplicate_mezzanines = entity.detect_file_duplicates('mezzanine')
+    duplicates = duplicate_masters + duplicate_mezzanines
+    if request.method == 'POST':
+        form = RmDuplicatesForm(request.POST)
+        if form.is_valid() and form.cleaned_data.get('confirmed',None) \
+                and (form.cleaned_data['confirmed'] == True):
+            # remove duplicates
+            entity.rm_file_duplicates()
+            # update metadata files
+            entity.dump_json()
+            entity.dump_mets()
+            updated_files = [entity.json_path, entity.mets_path,]
+            success_msg = WEBUI_MESSAGES['VIEWS_ENT_UPDATED']
+            exit,status = commands.entity_update(git_name, git_mail,
+                                                 entity.parent_path, entity.id,
+                                                 updated_files,
+                                                 agent=settings.AGENT)
+            collection.cache_delete()
+            if exit:
+                messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
+            else:
+                # update search index
+                with open(entity.json_path, 'r') as f:
+                    document = json.loads(f.read())
+                docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+                # positive feedback
+                messages.success(request, success_msg)
+                return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+    else:
+        data = {}
+        form = RmDuplicatesForm()
+    return render_to_response(
+        'webui/entities/files-dedupe.html',
+        {'repo': entity.repo,
+         'org': entity.org,
+         'cid': entity.cid,
+         'eid': entity.eid,
+         'collection_uid': collection.id,
+         'collection': collection,
+         'entity': entity,
+         'duplicates': duplicates,
+         'form': form,},
         context_instance=RequestContext(request, processors=[])
     )
 
