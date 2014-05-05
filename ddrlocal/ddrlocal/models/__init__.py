@@ -731,6 +731,9 @@ class DDRLocalEntity( DDREntity ):
     
     def detect_file_duplicates( self, role ):
         """Returns list of file dicts that appear in Entity.files more than once
+        
+        NOTE: This function looks only at the list of file dicts in entity.json;
+        it does not examine the filesystem.
         """
         duplicates = []
         for x,f in enumerate(self._files):
@@ -741,7 +744,9 @@ class DDRLocalEntity( DDREntity ):
     
     def rm_file_duplicates( self ):
         """Remove duplicates from the Entity.files (._files) list of dicts.
+        
         Technically, it rebuilds the last without the duplicates.
+        NOTE: See note for detect_file_duplicates().
         """
         # regenerate files list
         new_files = []
