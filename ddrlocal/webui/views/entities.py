@@ -301,6 +301,7 @@ def edit( request, repo, org, cid, eid ):
     # load topics choices data
     # TODO This should be baked into models somehow.
     topics_terms = tagmanager_terms('topics')
+    facility_terms = tagmanager_terms('facility')
     if request.method == 'POST':
         form = DDRForm(request.POST, fields=ENTITY_FIELDS)
         if form.is_valid():
@@ -309,6 +310,9 @@ def edit( request, repo, org, cid, eid ):
             hidden_topics = request.POST.get('hidden-topics', None)
             if hidden_topics:
                 form.cleaned_data['topics'] = tagmanager_process_tags(hidden_topics)
+            hidden_facility = request.POST.get('hidden-facility', None)
+            if hidden_facility:
+                form.cleaned_data['facility'] = tagmanager_process_tags(hidden_facility)
             
             entity.form_post(form)
             entity.dump_json()
@@ -345,6 +349,7 @@ def edit( request, repo, org, cid, eid ):
         form = DDRForm(entity.form_prep(), fields=ENTITY_FIELDS)
     
     topics_prefilled = tagmanager_prefilled_terms(entity.topics, topics_terms)
+    facility_prefilled = tagmanager_prefilled_terms(entity.facility, facility_terms)
     return render_to_response(
         'webui/entities/edit-json.html',
         {'repo': entity.repo,
@@ -357,7 +362,9 @@ def edit( request, repo, org, cid, eid ):
          'form': form,
          # data for TagManager
          'topics_terms': topics_terms,
+         'facility_terms': facility_terms,
          'topics_prefilled': topics_prefilled,
+         'facility_prefilled': facility_prefilled,
          },
         context_instance=RequestContext(request, processors=[])
     )

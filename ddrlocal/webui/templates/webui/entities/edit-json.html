@@ -118,6 +118,9 @@ Edit
   var topics_terms = [{% for term in topics_terms %}
     "{{ term|safe|addslashes }}",{% endfor %}
   ];
+  var facility_terms = [{% for term in facility_terms %}
+    "{{ term|safe|addslashes }}",{% endfor %}
+  ];
 
   /* Add classes to #id_topics so tagsManager and typeahead can work. */
   $("#id_topics").attr({
@@ -125,11 +128,21 @@ Edit
     autocomplete: "off",
     placeholder: "Topics"
   });
+  $("#id_facility").attr({
+    class: "input-medium tm-input typeahead tt-suggestion",
+    autocomplete: "off",
+    placeholder: "Facility"
+  });
 
   var tagApi = jQuery("#id_topics").tagsManager({
     replace: true,  /* puts data in "hidden-topics" field */
     backspace: [],  /* don't let backspace remove tags */
     prefilled: {{ topics_prefilled|safe }}
+  });
+  var tagApi = jQuery("#id_facility").tagsManager({
+    replace: true,  /* puts data in "hidden-facility" field */
+    backspace: [],  /* don't let backspace remove tags */
+    prefilled: {{ facility_prefilled|safe }}
   });
 
   var substringMatcher = function(strs) {
@@ -155,6 +168,12 @@ Edit
   $('#id_topics').typeahead(
     { minLength:3, highlight:true },
     { name:'topics_terms', displayKey:'value', source:substringMatcher(topics_terms)}
+  ).on('typeahead:selected', function (e, d) {
+    tagApi.tagsManager("pushTag", d.value);
+  });
+  $('#id_facility').typeahead(
+    { minLength:3, highlight:true },
+    { name:'facility_terms', displayKey:'value', source:substringMatcher(facility_terms)}
   ).on('typeahead:selected', function (e, d) {
     tagApi.tagsManager("pushTag", d.value);
   });
