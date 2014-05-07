@@ -106,6 +106,51 @@ def tagmanager_prefilled_terms( entity_terms, all_terms ):
                     selected_terms.append(str(term))
     return selected_terms
 
+#def tagmanager_prefilled_terms( entity_terms, all_terms ):
+#    """Preps list of selected entity.topics for TagManager widget.
+#    
+#    TODO This should probably be somewhere else
+#    
+#    Terms containing IDs will be replaced with canonical term descriptions
+#    from the official project controlled vocabulary service.
+#    This is because terms used in DDR thus far may have different text
+#    than new terms, though they should have same IDs.
+#    IMPORTANT: Terms with no ID should be displayed as-is.
+#    
+#    >>> entity.topics = ['a topic [10]', 'freetext term']
+#    >>> terms = ['A Topic [10]', 'freetext term']
+#    >>> entity.tagmanager_prefilled_terms(terms)
+#    ['A Topic [10]', 'freetext term']
+#    
+#    @param all_terms: list of terms for FIELD
+#    @param entity_terms: list of terms from entity
+#    @returns: list of terms for the term IDs
+#    """
+#    regex = re.compile('([\d]+)')
+#    # separate into ID'd and freetext lists.
+#    # Add indexs to all_terms as placeholders.
+#    terms = []
+#    entity_term_ids = {}
+#    freetext_terms = {}
+#    for n,term in enumerate(entity_terms):
+#        terms.append(n)
+#        match = regex.search(term)
+#        if match:
+#            for tid in match.groups():
+#                entity_term_ids[n] = tid
+#        else:
+#            freetext_terms[n] = term
+#    # replace placeholders for ID'd terms with canonical term descriptions from all_terms
+#    for n,tid in entity_term_ids.iteritems():
+#        for term in all_terms:
+#            if tid in term:
+#                terms[n] = term
+#    # replace placeholders for freetext terms
+#    for n,term in freetext_terms.iteritems():
+#        terms[n] = term
+#    # convert unicode terms to str
+#    return [str(term) for term in terms]
+
 def tagmanager_process_tags( form_terms ):
     """Formats TagManager tags in format expected by Entity.topics.
     
