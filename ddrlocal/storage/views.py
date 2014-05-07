@@ -14,7 +14,7 @@ from DDR import commands
 from webui.tasks import reindex_and_notify
 from storage import STORAGE_MESSAGES
 from storage import base_path, media_base_target, removables, removables_mounted
-from storage import mount, unmount, add_media_symlink, rm_media_symlink
+from storage import mount, mount_filepath, unmount, add_media_symlink, rm_media_symlink
 from storage.forms import MountForm, UmountForm, ActiveForm, ManualSymlinkForm
 
 
@@ -129,13 +129,7 @@ def manual_symlink( request ):
         manlink_form = ManualSymlinkForm(request.POST)
         if manlink_form.is_valid():
             path = manlink_form.cleaned_data['path']
-            rm_media_symlink()
-            add_media_symlink(path)
-            MB = settings.MEDIA_BASE
-            if os.path.exists(MB) and os.path.islink(MB) and os.access(MB,os.W_OK):
-                messages.success(request, '<strong>%s</strong> is now the active device.' % path)
-            else:
-                messages.error(request, 'Could not make <strong>%s</strong> the active device.' % path)
+            mount_filepath(request, path)
     return HttpResponseRedirect( reverse('storage-index') )
 
 

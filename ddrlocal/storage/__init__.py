@@ -73,6 +73,19 @@ def media_base_target():
         return os.path.realpath(settings.MEDIA_BASE)
     return None
 
+def devicefile_label_from_mediapath( path ):
+    """Extract devicefile and label from plain filesystem path.
+    
+    >>> path = '/media/ddrworkstation/ddr'
+    'ddrworkstation','ddrworkstation'
+    
+    @param raw: string
+    @returns: devicefile,label
+    """
+    devicefile = path.replace('/media/','').replace('/ddr','')
+    label = devicefile
+    return devicefile,label
+
 def disk_space(mount_path):
     """Returns disk space info for the mounted drive.
     
@@ -174,6 +187,23 @@ def mount( request, devicefile, label ):
         messages.warning(request, STORAGE_MESSAGES['MOUNT_FAIL_PATH'].format(devicefile, label, stat, mount_path))
     else:
         messages.error(request, STORAGE_MESSAGES['MOUNT_FAIL'].format(devicefile, label, stat, mount_path))
+    return mount_path
+
+def mount_filepath( request, mount_path ):
+    """
+    """
+    devicefile,label = devicefile_label_from_mediapath(mount_path)
+    rm_media_symlink()
+    add_media_symlink(mount_path)
+    MB = settings.MEDIA_BASE
+    if os.path.exists(MB) and os.path.islink(MB) and os.access(MB,os.W_OK):
+        messages.success(request, '<strong>%s</strong> is now the active device.' % mount_path)
+    else:
+        messages.error(request, 'Could not make <strong>%s</strong> the active device.' % mount_path)
+    # save label,mount_path in session
+    request.session['storage_devicefile'] = devicefile
+    request.session['storage_label'] = label
+    request.session['storage_mount_path'] = mount_path
     return mount_path
 
 def unmount( request, devicefile, label ):

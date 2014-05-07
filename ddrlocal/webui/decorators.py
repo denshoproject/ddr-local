@@ -36,6 +36,6 @@ def search_index(func):
         if not (storage_label or docstore_index_exists):
             messages.warning(
                 request,
-                'No storage mounted. Search is disabled.')
+                'Cound not find storage label. Search is disabled.')
         return func(request, *args, **kwargs)
     return inner
