@@ -40,3 +40,20 @@ Edit
   </div><!-- .row-fluid -->
 
 {% endblock content %}
+
+
+{% block javascript %}
+<script>
+
+  /* Write URLs to topics and facility helptext links. */
+  $("#vocab-topics-list").attr({
+    href: "{% url "webui-entity-vocab-terms" "topics" %}",
+    target: "_blank"
+  });
+  $("#vocab-facility-list").attr({
+    href: "{% url "webui-entity-vocab-terms" "facility" %}",
+    target: "_blank"
+  });
+
+</script>
+{% endblock javascript %}

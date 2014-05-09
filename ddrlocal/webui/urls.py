@@ -50,6 +50,7 @@ urlpatterns = patterns(
 
     # entities
 
+    url(r'^vocab/(?P<field>[\w]+)/$', 'webui.views.entities.vocab_terms', name='webui-entity-vocab-terms'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/entity.json/edit/$', 'webui.views.entities.edit_json', name='webui-entity-edit-json'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/mets.xml/edit/$', 'webui.views.entities.edit_mets_xml', name='webui-entity-edit-mets-xml'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/mets/edit/$', 'webui.views.entities.edit_mets', name='webui-entity-edit-mets'),
