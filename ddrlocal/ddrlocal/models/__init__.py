@@ -422,12 +422,13 @@ class DDRLocalCollection( DDRCollection ):
         entities = []
         if os.path.exists(self.files_path):
             for eid in os.listdir(self.files_path):
-                path = os.path.join(self.files_path, eid)
-                entity = DDRLocalEntity.from_json(path)
-                for lv in entity.labels_values():
-                    if lv['label'] == 'title':
-                        entity.title = lv['value']
-                entities.append(entity)
+                entity_json = os.path.join(self.files_path, eid, 'entity.json')
+                if os.path.exists(entity_json):
+                    entity = DDRLocalEntity.from_json(os.path.dirname(entity_json))
+                    for lv in entity.labels_values():
+                        if lv['label'] == 'title':
+                            entity.title = lv['value']
+                    entities.append(entity)
         entities = sorted(entities, key=lambda e: natural_order_string(e.uid))
         return entities
     
