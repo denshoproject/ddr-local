@@ -10,6 +10,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.core.context_processors import csrf
 from django.core.files import File
+from django.core.paginator import Paginator
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import Http404, get_object_or_404, render_to_response
@@ -53,6 +54,34 @@ def detail( request, repo, org, cid, eid ):
          'entity': entity,
          'tasks': tasks,
          'unlock_task_id': entity.locked(),},
+        context_instance=RequestContext(request, processors=[])
+    )
+
+@storage_required
+def files( request, repo, org, cid, eid, role ):
+    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+    if role == 'mezzanine':
+        files = entity.files_mezzanine()
+    else:
+        files = entity.files_master()
+    # paginate
+    thispage = request.GET.get('page', 1)
+    paginator = Paginator(files, settings.RESULTS_PER_PAGE)
+    page = paginator.page(thispage)
+    return render_to_response(
+        'webui/entities/files.html',
+        {'repo': entity.repo,
+         'org': entity.org,
+         'cid': entity.cid,
+         'eid': entity.eid,
+         'role': role,
+         'collection_uid': collection.id,
+         'collection': collection,
+         'entity': entity,
+         'paginator': paginator,
+         'page': page,
+         'thispage': thispage,},
         context_instance=RequestContext(request, processors=[])
     )
 
@@ -102,22 +131,6 @@ def mets_xml( request, repo, org, cid, eid ):
     entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
     soup = BeautifulSoup(entity.mets().xml, 'xml')
     return HttpResponse(soup.prettify(), mimetype="application/xml")
-
-@storage_required
-def files( request, repo, org, cid, eid ):
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
-    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
-    return render_to_response(
-        'webui/entities/files.html',
-        {'repo': entity.repo,
-         'org': entity.org,
-         'cid': entity.cid,
-         'eid': entity.eid,
-         'collection_uid': collection.id,
-         'collection': collection,
-         'entity': entity,},
-        context_instance=RequestContext(request, processors=[])
-    )
 
 @ddrview
 @login_required
