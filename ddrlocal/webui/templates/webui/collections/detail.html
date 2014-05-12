@@ -20,11 +20,9 @@
 
 
       <ul class="nav nav-tabs" id="tabs">
-        <li><a href="#metadata">Collection Metadata</a></li>
-        <li><a href="#objects">Objects</a></li>
+        <li class="active"><a href="#">Collection Metadata</a></li>
+        <li><a href="{% url "webui-collection-entities" repo org cid %}">Objects</a></li>
       </ul>
-      <div class="tab-content">
-        <div class="tab-pane" id="metadata">
 
 
 <div id="overview">
@@ -52,39 +50,6 @@
 </div><!-- #overview -->
 
 
-        </div><!-- .tab-content #metadata -->
-        <div class="tab-pane" id="objects">
-
-{% if username %}
-{% if collection.locked or collection.repo_behind or collection.repo_conflicted %}
-<p>
-<a class="btn btn-mini" title="This collection is locked"><i class="icon-lock"></i> New object [locked]</a>
-{% if collection.repo_behind %}<span id="edit-alert" class="alert alert-error">Editing is disabled until collection is synced.</span>{% endif %}
-{% if collection.repo_conflicted %}<span id="edit-alert" class="alert alert-error">Editing is disabled until merge conflict is resolved.</span>{% endif %}
-</p>
-{% else %}
-<p>
-<a href="{% url "webui-entity-new" repo org cid %}" class="btn-primary btn-small"><i class="icon-plus icon-white"></i> New object</a>
-</p>
-{% endif %}{# conflicted #}
-{% endif %}{#username #}
-
-{% for entity in entities %}
-<ul>
-  <li>
-    <a href="{{ entity.url }}">{{ entity.id }} {% if entity.title %}&mdash; {{ entity.title }}{% endif %}</a>
-  </li>
-</ul>
-{% endfor %}
-{% if entities %}
-<a class="pull-right" href="{% url "webui-collection-entities" repo org cid %}">more &raquo;</a>
-{% endif %}
-
-
-        </div><!-- .tab-content #objects -->
-      </div><!-- .tab-content -->
-
- 
     </div><!-- .span4 -->
   </div><!-- .row -->
 
@@ -111,15 +76,6 @@
 {% block javascript %}{{ block.super }}
 <script>
   $(function () {
-
-    /* initialize tabs(?) */
-    $('#tabs a').click(function (e) {
-      e.preventDefault();
-      $(this).tab('show');
-    })
-
-    /* show #metadata by default */
-    $('#tabs a[href="#metadata"]').tab('show');
 
   {% if unlock_task_id %}
     /* unlock link */

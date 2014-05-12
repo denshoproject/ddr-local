@@ -1,7 +1,8 @@
 {% extends "webui/collections/base.html" %}
+{% load bootstrap_pagination webui_tags %}
 
 
-{% block title %}Objects | {{ collection_uid }}{% endblock %}
+{% block title %}Objects | {{ collection.id }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
 <li><a href="{{ collection.url }}">{{ collection.id }}</a></li>
@@ -14,23 +15,56 @@
   <div class="row-fluid">
     <div class="span12">
 
-<h2>
+<h1>
 {{ collection.id }}
 {% if collection.title %}&mdash; {{ collection.title }}{% endif %}
-</h2>
-<h1>
-Objects
 </h1>
 
-<ul>
-{% for entity in entities %}
-<li><a href="{% url "webui-entity" entity.repo entity.org entity.cid entity.eid %}">{{ entity.id }}</a></li>
-{% endfor %}
+
+      <ul class="nav nav-tabs" id="tabs">
+        <li><a href="{{ collection.url }}">Collection Metadata</a></li>
+        <li class="active"><a href="#">Objects</a></li>
+      </ul>
+
+
 {% if username %}
-{% endif %}
+{% if collection.locked or collection.repo_behind or collection.repo_conflicted %}
+<p>
+<a class="btn btn-mini" title="This collection is locked"><i class="icon-lock"></i> New object [locked]</a>
+{% if collection.repo_behind %}<span id="edit-alert" class="alert alert-error">Editing is disabled until collection is synced.</span>{% endif %}
+{% if collection.repo_conflicted %}<span id="edit-alert" class="alert alert-error">Editing is disabled until merge conflict is resolved.</span>{% endif %}
+</p>
+{% else %}
+<p>
+<a href="{% url "webui-entity-new" repo org cid %}" class="btn-primary btn-small"><i class="icon-plus icon-white"></i> New object</a>
+</p>
+{% endif %}{# conflicted #}
+{% endif %}{#username #}
+
+
+{% if page.object_list %}
+  <div>
+    {{ paginator.count }} items<br/>
+  </div>
+
+<ul>
+{% for entity in page.object_list %}
+  <li><a href="{% url "webui-entity" entity.repo entity.org entity.cid entity.eid %}">{{ entity.id }} {% if entity.title %}&mdash; {{ entity.title }}{% endif %}</a></li>
+{% endfor %}
 </ul>
 
-    </div><!-- .span12 -->
-  </div><!-- .row-fluid -->
+{% if paginator.num_pages > 1 %}
+{% bootstrap_paginate page range=10 show_first_last="true" %}
+{% endif %}
+
+{% else %}
+<p>
+This collection has no objects.
+</p>
+{% endif %}
+
+ 
+    </div><!-- .span4 -->
+  </div><!-- .row -->
 
 {% endblock content %}
