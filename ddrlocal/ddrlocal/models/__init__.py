@@ -412,22 +412,40 @@ class DDRLocalCollection( DDRCollection ):
                 setattr(collection, f['name'], f['initial'])
         return collection
     
-    def entities( self ):
+    def entities( self, quick=None ):
         """Returns list of the Collection's Entity objects.
         
         >>> c = Collection.from_json('/tmp/ddr-testing-123')
         >>> c.entities()
         [<DDRLocalEntity ddr-testing-123-1>, <DDRLocalEntity ddr-testing-123-2>, ...]
+        
+        @param quick: Boolean List only titles and IDs
         """
+        # empty class used for quick view
+        class ListEntity( object ):
+            pass
         entities = []
         if os.path.exists(self.files_path):
+            # TODO use cached list if available
             for eid in os.listdir(self.files_path):
                 path = os.path.join(self.files_path, eid)
-                entity = DDRLocalEntity.from_json(path)
-                for lv in entity.labels_values():
-                    if lv['label'] == 'title':
-                        entity.title = lv['value']
-                entities.append(entity)
+                if quick:
+                    # fake Entity with just enough info for lists
+                    with open(os.path.join(path,'entity.json'), 'r') as f:
+                        for line in f.readlines():
+                            if '"title":' in line:
+                                e = ListEntity()
+                                e.id = e.uid = eid
+                                e.repo,e.org,e.cid,e.eid = eid.split('-')
+                                # make a miniature JSON doc out of just title line
+                                e.title = json.loads('{%s}' % line)['title']
+                                entities.append(e)
+                else:
+                    entity = DDRLocalEntity.from_json(path)
+                    for lv in entity.labels_values():
+                        if lv['label'] == 'title':
+                            entity.title = lv['value']
+                    entities.append(entity)
         entities = sorted(entities, key=lambda e: natural_order_string(e.uid))
         return entities
     
