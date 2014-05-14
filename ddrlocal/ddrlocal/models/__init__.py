@@ -1238,6 +1238,26 @@ class DDRLocalFile( object ):
                                                form.cleaned_data[key])
                 setattr(self, key, cleaned_data)
     
+    @staticmethod
+    def from_json(file_json):
+        """
+        @param file_json: Absolute path to the JSON metadata file
+        """
+        # This is complicated: The file object has to be created with
+        # the path to the file to which the JSON metadata file refers.
+        file_abs = None
+        fid = os.path.splitext(os.path.basename(file_json))[0]
+        fstub = '%s.' % fid
+        for filename in os.listdir(os.path.dirname(file_json)):
+            if (fstub in filename) and not ('json' in filename):
+                file_abs = os.path.join(os.path.dirname(file_json), filename)
+        # Now load the object
+        file_ = None
+        if os.path.exists(file_abs):
+            file_ = DDRLocalFile(file_abs)
+            file_.load_json()
+        return file_
+    
     def load_json(self):
         """Populate File data from .json file.
         @param path: Absolute path to file
