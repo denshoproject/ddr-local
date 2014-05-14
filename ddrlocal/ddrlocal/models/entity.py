@@ -852,7 +852,13 @@ def csvimport_facility( data ): return [x.strip() for x in data.strip().split(';
 def csvexport_record_created( data ): return data.strftime(DATETIME_FORMAT)
 def csvexport_record_lastmod( data ): return data.strftime(DATETIME_FORMAT)
 def csvexport_creators( data ):
-    items = ['%s:%s' % (d['namepart'],d['role']) for d in data]
+    items = []
+    for d in data:
+        # strings are already in format or close enough
+        if isinstance(d, str):
+            items.append(d)
+        elif isinstance(d, dict):
+            items.append('%s:%s' % (d['namepart'],d['role']))
     return ' ; '.join(items)
 def csvexport_language( data ):
     """only export the language codes ('eng,jpn')
