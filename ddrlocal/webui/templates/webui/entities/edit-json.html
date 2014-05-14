@@ -43,6 +43,11 @@ Edit
 
 
 {% block pagecss %}
+
+<script type="text/javascript" src="{{ STATIC_URL }}js/typeahead/dist/typeahead.jquery.min.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}js/tagmanager/tagmanager.js"></script>
+
+
 <link rel="stylesheet" href="{{ STATIC_URL }}js/tagmanager/tagmanager.css">
 <style>
 .tt-dropdown-menu, .gist {
@@ -73,6 +78,8 @@ Edit
 }
 .tt-hint {
   color: #999
+  background:none!important;
+  display:none!important;
 }
 .tt-dropdown-menu {
   width: 396px;
@@ -111,8 +118,8 @@ Edit
 
 
 {% block javascript %}
-<script type="text/javascript" src="{{ STATIC_URL }}js/typeahead/dist/typeahead.jquery.min.js"></script>
-<script type="text/javascript" src="{{ STATIC_URL }}js/tagmanager/tagmanager.js"></script>
+
+
 <script>
 
   var topics_terms = [{% for term in topics_terms %}
@@ -134,15 +141,17 @@ Edit
     placeholder: "Facility"
   });
 
-  var tagApi = jQuery("#id_topics").tagsManager({
+  var tagApi_t = jQuery("#id_topics").tagsManager({
     replace: true,  /* puts data in "hidden-topics" field */
     backspace: [],  /* don't let backspace remove tags */
-    prefilled: {{ topics_prefilled|safe }}
+    prefilled: {{ topics_prefilled|safe }},
+    onlyTagList: true
   });
-  var tagApi = jQuery("#id_facility").tagsManager({
+  var tagApi_f = jQuery("#id_facility").tagsManager({
     replace: true,  /* puts data in "hidden-facility" field */
     backspace: [],  /* don't let backspace remove tags */
-    prefilled: {{ facility_prefilled|safe }}
+    prefilled: {{ facility_prefilled|safe }}, 
+    onlyTagList: true
   });
 
   var substringMatcher = function(strs) {
@@ -169,13 +178,13 @@ Edit
     { minLength:3, highlight:true },
     { name:'topics_terms', displayKey:'value', source:substringMatcher(topics_terms)}
   ).on('typeahead:selected', function (e, d) {
-    tagApi.tagsManager("pushTag", d.value);
+    tagApi_t.tagsManager("pushTag", d.value);
   });
   $('#id_facility').typeahead(
     { minLength:3, highlight:true },
     { name:'facility_terms', displayKey:'value', source:substringMatcher(facility_terms)}
   ).on('typeahead:selected', function (e, d) {
-    tagApi.tagsManager("pushTag", d.value);
+    tagApi_f.tagsManager("pushTag", d.value);
   });
 
 </script>
