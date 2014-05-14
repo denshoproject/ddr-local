@@ -422,12 +422,13 @@ class DDRLocalCollection( DDRCollection ):
         entities = []
         if os.path.exists(self.files_path):
             for eid in os.listdir(self.files_path):
-                path = os.path.join(self.files_path, eid)
-                entity = DDRLocalEntity.from_json(path)
-                for lv in entity.labels_values():
-                    if lv['label'] == 'title':
-                        entity.title = lv['value']
-                entities.append(entity)
+                entity_json = os.path.join(self.files_path, eid, 'entity.json')
+                if os.path.exists(entity_json):
+                    entity = DDRLocalEntity.from_json(os.path.dirname(entity_json))
+                    for lv in entity.labels_values():
+                        if lv['label'] == 'title':
+                            entity.title = lv['value']
+                    entities.append(entity)
         entities = sorted(entities, key=lambda e: natural_order_string(e.uid))
         return entities
     
@@ -729,6 +730,34 @@ class DDRLocalEntity( DDREntity ):
         files = [f for f in self.files if hasattr(f,'role') and (f.role == 'mezzanine')]
         return sorted(files, key=lambda f: f.sort)
     
+    def detect_file_duplicates( self, role ):
+        """Returns list of file dicts that appear in Entity.files more than once
+        
+        NOTE: This function looks only at the list of file dicts in entity.json;
+        it does not examine the filesystem.
+        """
+        duplicates = []
+        for x,f in enumerate(self._files):
+            for y,f2 in enumerate(self._files):
+                if (f2 == f) and (f['role'] == role) and (y != x) and (f not in duplicates):
+                    duplicates.append(f)
+        return duplicates
+    
+    def rm_file_duplicates( self ):
+        """Remove duplicates from the Entity.files (._files) list of dicts.
+        
+        Technically, it rebuilds the last without the duplicates.
+        NOTE: See note for detect_file_duplicates().
+        """
+        # regenerate files list
+        new_files = []
+        for f in self._files:
+            if f not in new_files:
+                new_files.append(f)
+        self.files = new_files
+        # reload objects
+        self._load_file_objects()
+    
     def file( self, repo, org, cid, eid, role, sha1, newfile=None ):
         """Given a SHA1 hash, get the corresponding file dict.
         
@@ -867,6 +896,21 @@ class DDRLocalEntity( DDREntity ):
                 entity.id = entity_uid  # might get overwritten if entity.json is blank
         return entity
     
+    def _load_file_objects( self ):
+        """Replaces list of file info dicts with list of DDRLocalFile objects
+        
+        IMPORTANT: original 
+        """
+        # keep copy of the list for detect_file_duplicates()
+        self._files = [f for f in self.files]
+        try:
+            self.files = []
+            for f in self._files:
+                path_abs = os.path.join(self.files_path, f['path_rel'])
+                self.files.append(DDRLocalFile(path_abs))
+        except:
+            pass
+    
     def load_json(self, path):
         """Populate Entity data from .json file.
         @param path: Absolute path to entity
@@ -901,14 +945,7 @@ class DDRLocalEntity( DDREntity ):
                 setattr(self, ff['name'], ff.get('default',None))
         
         # replace list of file paths with list of DDRLocalFile objects
-        _files = []
-        try:
-            for f in self.files:
-                path_abs = os.path.join(self.files_path, f['path_rel'])
-                _files.append(DDRLocalFile(path_abs))
-        except:
-            pass
-        self.files = _files
+        self._load_file_objects()
     
     def dump_json(self, path=None, template=False):
         """Dump Entity data to .json file.
@@ -1164,6 +1201,23 @@ class DDRLocalFile( object ):
     
     # entities/files/???
     
+    def files_rel( self, collection_path ):
+        """Returns list of the file, its metadata JSON, and access file, relative to collection.
+        
+        @param collection_path
+        @returns: list of relative file paths
+        """
+        if collection_path[-1] != '/':
+            collection_path = '%s/' % collection_path
+        paths = [ ]
+        if self.path_abs and os.path.exists(self.path_abs) and (collection_path in self.path_abs):
+            paths.append(self.path_abs.replace(collection_path, ''))
+        if self.json_path and os.path.exists(self.json_path) and (collection_path in self.json_path):
+            paths.append(self.json_path.replace(collection_path, ''))
+        if self.access_abs and os.path.exists(self.access_abs) and (collection_path in self.access_abs):
+            paths.append(self.access_abs.replace(collection_path, ''))
+        return paths
+    
     def present( self ):
         """Indicates whether or not the original file is currently present in the filesystem.
         """
@@ -1271,20 +1325,25 @@ class DDRLocalFile( object ):
         write_json(file_, self.json_path)
     
     @staticmethod
-    def file_name( entity, path_abs, role ):
+    def file_name( entity, path_abs, role, sha1=None ):
         """Generate a new name for the specified file; Use only when ingesting a file!
         
         rename files to standard names on ingest:
         %{repo}-%{org}-%{cid}-%{eid}-%{role}%{sha1}.%{ext}
         example: ddr-testing-56-101-master-fb73f9de29.jpg
         
+        SHA1 is optional so it can be passed in by a calling process that has already
+        generated it.
+        
         @param entity
         @param path_abs: Absolute path to the file.
         @param role
+        @param sha1: SHA1 hash (optional)
         """
         if os.path.exists and os.access(path_abs, os.R_OK):
             ext = os.path.splitext(path_abs)[1]
-            sha1 = hash(path_abs, 'sha1')
+            if not sha1:
+                sha1 = hash(path_abs, 'sha1')
             if sha1:
                 base = '-'.join([
                     entity.repo, entity.org, entity.cid, entity.eid,
