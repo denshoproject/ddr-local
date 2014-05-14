@@ -822,6 +822,50 @@ def _formpost_basic(data):
 
 
 
+# csvimport_* --- import-from-csv functions ----------------------------
+#
+# These functions take data from a CSV field and convert it to Python
+# data for the corresponding Entity field.
+#
+
+def csvimport_creators( data ): return [x.strip() for x in data.strip().split(';') if x]
+def csvimport_language( data ):
+    """language can be 'eng', 'eng;jpn', 'eng:English', 'jpn:Japanese'
+    """
+    y = []
+    for x in data.strip().split(';'):
+        if ':' in x:
+            y.append(x.strip().split(':')[0])
+        else:
+            y.append(x.strip())
+    return y
+def csvimport_topics( data ): return [x.strip() for x in data.strip().split(';') if x]
+def csvimport_persons( data ): return [x.strip() for x in data.strip().split(';') if x]
+def csvimport_facility( data ): return [x.strip() for x in data.strip().split(';') if x]
+
+# csvexport_* --- export-to-csv functions ------------------------------
+#
+# These functions take Python data from the corresponding Entity field
+# and format it for export in a CSV field.
+#
+
+def csvexport_record_created( data ): return data.strftime(DATETIME_FORMAT)
+def csvexport_record_lastmod( data ): return data.strftime(DATETIME_FORMAT)
+def csvexport_creators( data ):
+    items = ['%s:%s' % (d['namepart'],d['role']) for d in data]
+    return ' ; '.join(items)
+def csvexport_language( data ):
+    """only export the language codes ('eng,jpn')
+    """
+    return ','.join(data)
+def csvexport_topics( data ): return '; '.join(data)
+def csvexport_persons( data ): return '; '.join(data)
+def csvexport_facility( data ): return '; '.join(data)
+
+
+
+
+
 # mets_* --- METS XML export functions ---------------------------------
 #
 # These functions take Python data from the corresponding Entity field
