@@ -1,9 +1,12 @@
+import json
 import logging
 logger = logging.getLogger(__name__)
 import os
 
 import envoy
+import requests
 
+from django.conf import settings
 from django.core.cache import cache
 from django.db import models
 

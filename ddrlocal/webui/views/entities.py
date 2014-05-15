@@ -3,6 +3,7 @@ import json
 import logging
 logger = logging.getLogger(__name__)
 import os
+import re
 
 from bs4 import BeautifulSoup
 import requests
@@ -39,7 +40,7 @@ from xmlforms.models import XMLModel
 
 # helpers --------------------------------------------------------------
 
-def vocab( fieldname ):
+def vocab_terms( fieldname ):
     """Loads and caches list of topics from vocab API.
     
     TODO This should probably be somewhere else
@@ -57,6 +58,128 @@ def vocab( fieldname ):
             cache.set(key, data, timeout)
     return data
 
+def tagmanager_terms( fieldname ):
+    key = 'vocab:%s:tagmanager' % fieldname
+    timeout = 60*60*1  # 1 hour
+    data = cache.get(key)
+    if not data:
+        data = []
+        vocab = vocab_terms(fieldname)
+        for term in vocab['terms']:
+            if term.get('path', None):
+                text = '%s [%s]' % (term['path'], term['id'])
+            else:
+                text = '%s [%s]' % (term['title'], term['id'])
+            data.append(text)
+        #cache.set(key, data, timeout)
+    return data
+    
+def tagmanager_prefilled_terms( entity_terms, all_terms ):
+    """Preps list of entity's selected terms for TagManager widget.
+    
+    TODO This should probably be somewhere else
+    
+    Topics used in DDR thus far may have different text than new topics,
+    though they should have same IDs.
+    This function takes 
+    
+    >>> entity.topics = ['a topic [10]']
+    >>> terms = ['A Topic [10]', 'Life The Universe and Everything [42]', ...]
+    >>> entity.prefilled_topics(terms)
+    ['A Topic [10]']
+    
+    @param all_terms: list of topics terms
+    @param entity_terms: list of terms
+    @returns: list of terms for the term IDs
+    """
+    regex = re.compile('([\d]+)')
+    entity_term_ids = []
+    for term in entity_terms:
+        match = regex.search(term)
+        if match:
+            for tid in match.groups():
+                entity_term_ids.append(tid)
+    selected_terms = []
+    for term in all_terms:
+        match = regex.search(term)
+        if match:
+            for tid in match.groups():
+                if tid in entity_term_ids:
+                    selected_terms.append(str(term))
+    return selected_terms
+
+def tagmanager_legacy_terms( entity_terms, all_terms ):
+    """Returns list of entity terms that do not appear in all_terms.
+    
+    TODO is "legacy" the right word to use for these?
+    
+    @param all_terms: list of topics terms
+    @param entity_terms: list of terms
+    @returns: list of terms
+    """
+    regex = re.compile('([\d]+)')
+    legacy_terms = []
+    for term in entity_terms:
+        match = regex.search(term)
+        if not match:
+            legacy_terms.append(str(term))
+    return legacy_terms
+
+#def tagmanager_prefilled_terms( entity_terms, all_terms ):
+#    """Preps list of selected entity.topics for TagManager widget.
+#    
+#    TODO This should probably be somewhere else
+#    
+#    Terms containing IDs will be replaced with canonical term descriptions
+#    from the official project controlled vocabulary service.
+#    This is because terms used in DDR thus far may have different text
+#    than new terms, though they should have same IDs.
+#    IMPORTANT: Terms with no ID should be displayed as-is.
+#    
+#    >>> entity.topics = ['a topic [10]', 'freetext term']
+#    >>> terms = ['A Topic [10]', 'freetext term']
+#    >>> entity.tagmanager_prefilled_terms(terms)
+#    ['A Topic [10]', 'freetext term']
+#    
+#    @param all_terms: list of terms for FIELD
+#    @param entity_terms: list of terms from entity
+#    @returns: list of terms for the term IDs
+#    """
+#    regex = re.compile('([\d]+)')
+#    # separate into ID'd and freetext lists.
+#    # Add indexs to all_terms as placeholders.
+#    terms = []
+#    entity_term_ids = {}
+#    freetext_terms = {}
+#    for n,term in enumerate(entity_terms):
+#        terms.append(n)
+#        match = regex.search(term)
+#        if match:
+#            for tid in match.groups():
+#                entity_term_ids[n] = tid
+#        else:
+#            freetext_terms[n] = term
+#    # replace placeholders for ID'd terms with canonical term descriptions from all_terms
+#    for n,tid in entity_term_ids.iteritems():
+#        for term in all_terms:
+#            if tid in term:
+#                terms[n] = term
+#    # replace placeholders for freetext terms
+#    for n,term in freetext_terms.iteritems():
+#        terms[n] = term
+#    # convert unicode terms to str
+#    return [str(term) for term in terms]
+
+def tagmanager_process_tags( form_terms ):
+    """Formats TagManager tags in format expected by Entity.topics.
+    
+    TODO This should probably be somewhere else
+    
+    >>> hidden_terms = u'Topic 1 [94],Topic 2 [95],Topic 3 [244]'
+    >>> process_cleaned_terms(hidden_terms, all_terms)
+    u'Topic 1 [94]; Topic 2 [95]; Topic 3 [244]'
+    """
+    return ']; '.join(form_terms.split('],'))
 
 
 # views ----------------------------------------------------------------
@@ -226,6 +349,10 @@ def new( request, repo, org, cid ):
 @login_required
 @storage_required
 def edit( request, repo, org, cid, eid ):
+    """
+    UI for Entity topics uses TagManager to represent topics as tags,
+    and typeahead.js so users only have to type part of a topic.
+    """
     git_name = request.session.get('git_name')
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
@@ -243,9 +370,22 @@ def edit( request, repo, org, cid, eid ):
         messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     #
+    # load topics choices data
+    # TODO This should be baked into models somehow.
+    topics_terms = tagmanager_terms('topics')
+    facility_terms = tagmanager_terms('facility')
     if request.method == 'POST':
         form = DDRForm(request.POST, fields=ENTITY_FIELDS)
         if form.is_valid():
+            
+            # clean up after TagManager
+            hidden_topics = request.POST.get('hidden-topics', None)
+            if hidden_topics:
+                form.cleaned_data['topics'] = tagmanager_process_tags(hidden_topics)
+            hidden_facility = request.POST.get('hidden-facility', None)
+            if hidden_facility:
+                form.cleaned_data['facility'] = tagmanager_process_tags(hidden_facility)
+            
             entity.form_post(form)
             entity.dump_json()
             entity.dump_mets()
@@ -279,6 +419,12 @@ def edit( request, repo, org, cid, eid ):
                 return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     else:
         form = DDRForm(entity.form_prep(), fields=ENTITY_FIELDS)
+    
+    topics_prefilled = tagmanager_prefilled_terms(entity.topics, topics_terms)
+    facility_prefilled = tagmanager_prefilled_terms(entity.facility, facility_terms)
+    # selected terms that don't appear in field_terms
+    topics_legacy = tagmanager_legacy_terms(entity.topics, topics_terms)
+    facility_legacy = tagmanager_legacy_terms(entity.facility, facility_terms)
     return render_to_response(
         'webui/entities/edit-json.html',
         {'repo': entity.repo,
@@ -289,21 +435,12 @@ def edit( request, repo, org, cid, eid ):
          'collection': collection,
          'entity': entity,
          'form': form,
+         # data for TagManager
+         'topics_terms': topics_terms,
+         'facility_terms': facility_terms,
+         'topics_prefilled': topics_prefilled,
+         'facility_prefilled': facility_prefilled,
          },
-        context_instance=RequestContext(request, processors=[])
-    )
-
-def vocab_terms( request, field ):
-    terms = []
-    for term in vocab(field)['terms']:
-        if term.get('path',None):
-            t = '%s [%s]' % (term['path'], term['id'])
-        else:
-            t = '%s [%s]' % (term['title'], term['id'])
-        terms.append(t)
-    return render_to_response(
-        'webui/entities/vocab.html',
-        {'terms': terms,},
         context_instance=RequestContext(request, processors=[])
     )
 

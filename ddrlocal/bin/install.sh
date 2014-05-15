@@ -6,13 +6,17 @@ PACKAGE_SERVER=tank.densho.org
 
 PIP_CACHE_DIR=/usr/local/src/pip-cache
 
-MODERNIZR=modernizr-2.6.2.js
-BOOTSTRAP=bootstrap-3.1.1-dist.zip
-JQUERY=jquery-1.11.0.min.js
 ELASTICSEARCH=elasticsearch-1.0.1.deb
-# wget https://github.com/twbs/bootstrap/releases/download/v3.1.1/bootstrap-3.1.1-dist.zip
-# wget http://code.jquery.com/jquery-1.11.0.min.js
+MODERNIZR=modernizr-2.6.2.js
+JQUERY=jquery-1.11.0.min.js
+BOOTSTRAP=bootstrap-3.1.1-dist.zip
+TAGMANAGER=tagmanager-3.0.1
+TYPEAHEAD=typeahead-0.10.2
 # wget https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.0.1.deb
+# wget http://code.jquery.com/jquery-1.11.0.min.js
+# wget https://github.com/twbs/bootstrap/releases/download/v3.1.1/bootstrap-3.1.1-dist.zip
+# wget https://github.com/max-favilli/tagmanager/archive/v3.0.1.tar.gz
+# wget https://github.com/twitter/typeahead.js/archive/v0.10.2.tar.gz
 
 # text color variables
 txtund=$(tput sgr 0 1)   # underline
@@ -123,6 +127,18 @@ wget -nc -P /var/www/static http://$PACKAGE_SERVER/$BOOTSTRAP
 echo "${bldgrn}jQuery${txtrst}"
 wget -nc -P /var/www/static/js http://$PACKAGE_SERVER/$JQUERY
 ln -s /var/www/static/js/$JQUERY /var/www/static/js/jquery.js
+
+echo "${bldgrn}tagmanager${txtrst}"
+wget -nc -P /var/www/static/ http://$PACKAGE_SERVER/$TAGMANAGER.tgz
+cd /var/www/static/ ; tar xzf /var/www/static/$TAGMANAGER.tgz
+chown -R root.root /var/www/static/$TAGMANAGER; chmod 755 /var/www/static/$TAGMANAGER
+ln -s /var/www/static/$TAGMANAGER /var/www/static/js/tagmanager
+
+echo "${bldgrn}typeahead${txtrst}"
+wget -nc -P /var/www/static/ http://$PACKAGE_SERVER/$TYPEAHEAD.tgz
+cd /var/www/static/ ; tar xzf /var/www/static/$TYPEAHEAD.tgz
+chown -R root.root /var/www/static/$TYPEAHEAD
+ln -s /var/www/static/$TYPEAHEAD /var/www/static/js/typeahead
 
 echo "${bldgrn}configuring ddr-local${txtrst}"
 # base settings file
