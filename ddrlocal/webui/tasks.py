@@ -14,7 +14,7 @@ from django.contrib import messages
 from django.core.urlresolvers import reverse
 
 from ddrlocal.models import DDRLocalEntity, DDRLocalFile
-from migration.densho import export_entities, export_files
+from migration.densho import export_entities, export_files, export_csv_path
 from webui.models import Collection
 
 from DDR import docstore, models
@@ -228,6 +228,40 @@ def collection_sync( git_name, git_mail, collection_path ):
         document = json.loads(f.read())
     docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
     return collection_path
+
+
+
+TASK_STATUS_MESSAGES['webui-csv-export-model'] = {
+    #'STARTED': '',
+    'PENDING': 'Exporting {collection_id} {things} to CSV.',
+    'SUCCESS': 'CSV file ready for download: <a href="{file_url}">{file_name}</a>.',
+    'FAILURE': 'Could not export {collection_id} {things} to CSV.',
+    #'RETRY': '',
+    #'REVOKED': '',
+}
+
+class CSVExportDebugTask(Task):
+    abstract = True
+    def on_failure(self, exc, task_id, args, kwargs):
+        pass
+    def on_success(self, retval, task_id, args, kwargs):
+        pass
+    def after_return(self, status, retval, task_id, args, kwargs, cinfo):
+        pass
+
+@task(base=CSVExportDebugTask, name='webui-csv-export-model')
+def csv_export_model( collection_path, model ):
+    """Export collection {model} metadata to CSV file.
+    
+    @return collection_path: Absolute path to collection.
+    @return model: 'entity' or 'file'.
+    """
+    csv_path = export_csv_path(collection_path, model)
+    if model == 'entity':
+        csv_path = export_entities(collection_path, csv_path)
+    elif model == 'file':
+        csv_path = export_files(collection_path, csv_path)
+    return csv_path
 
 
 

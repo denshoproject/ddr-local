@@ -54,6 +54,7 @@ DEFAULT_PERMISSION_FILE       = config.get('local','default_permission_file')
 LOG_FILE             = config.get('local', 'log_file')
 LOG_LEVEL            = config.get('local', 'log_level')
 VOCAB_TERMS_URL      = config.get('local', 'vocab_terms_url')
+CSV_TMPDIR           = '/tmp/ddr/csv'
 
 GITOLITE             = config.get('workbench','gitolite')
 CGIT_URL             = config.get('workbench','cgit_url')
