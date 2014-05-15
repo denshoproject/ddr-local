@@ -106,6 +106,23 @@ def tagmanager_prefilled_terms( entity_terms, all_terms ):
                     selected_terms.append(str(term))
     return selected_terms
 
+def tagmanager_legacy_terms( entity_terms, all_terms ):
+    """Returns list of entity terms that do not appear in all_terms.
+    
+    TODO is "legacy" the right word to use for these?
+    
+    @param all_terms: list of topics terms
+    @param entity_terms: list of terms
+    @returns: list of terms
+    """
+    regex = re.compile('([\d]+)')
+    legacy_terms = []
+    for term in entity_terms:
+        match = regex.search(term)
+        if not match:
+            legacy_terms.append(str(term))
+    return legacy_terms
+
 #def tagmanager_prefilled_terms( entity_terms, all_terms ):
 #    """Preps list of selected entity.topics for TagManager widget.
 #    
@@ -395,6 +412,9 @@ def edit( request, repo, org, cid, eid ):
     
     topics_prefilled = tagmanager_prefilled_terms(entity.topics, topics_terms)
     facility_prefilled = tagmanager_prefilled_terms(entity.facility, facility_terms)
+    # selected terms that don't appear in field_terms
+    topics_legacy = tagmanager_legacy_terms(entity.topics, topics_terms)
+    facility_legacy = tagmanager_legacy_terms(entity.facility, facility_terms)
     return render_to_response(
         'webui/entities/edit-json.html',
         {'repo': entity.repo,
