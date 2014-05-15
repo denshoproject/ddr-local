@@ -131,7 +131,8 @@ from ddrlocal.models.files import FILE_FIELDS
 
 AGENT = 'importers.densho'
 
-
+# Some files' XMP data is wayyyyyy too big
+csv.field_size_limit(sys.maxsize)
 CSV_DELIMITER = ','
 CSV_QUOTECHAR = '"'
 CSV_QUOTING = csv.QUOTE_ALL
@@ -743,6 +744,15 @@ def import_files( csv_path, collection_path, git_name, git_mail ):
 
 # export entities ------------------------------------------------------
 
+def export_csv_path( collection_path, model ):
+    collection_id = os.path.basename(collection_path)
+    if model == 'entity':
+        csv_filename = '%s-objects.csv' % collection_id
+    elif model == 'file':
+        csv_filename = '%s-files.csv' % collection_id
+    csv_path = os.path.join(settings.CSV_TMPDIR, csv_filename)
+    return csv_path
+
 def export_entities( collection_path, csv_path ):
     """
     @param collection_path: Absolute path to collection repo.
@@ -778,9 +788,11 @@ def export_entities( collection_path, csv_path ):
                     key = f['name']
                     label = f['form']['label']
                     # run csvexport_* functions on field data if present
-                    value = module_function(entitymodule,
-                                            'csvexport_%s' % key,
-                                            getattr(entity, f['name']))
+                    val = module_function(entitymodule,
+                                          'csvexport_%s' % key,
+                                          getattr(entity, f['name']))
+                    if val:
+                        value = val.encode('utf-8')
                 values.append(value)
             writer.writerow(values)
             
@@ -792,6 +804,9 @@ def export_entities( collection_path, csv_path ):
     elapsed = finished - started
     print('%s DONE (%s entities)' % (dtfmt(finished), len(paths)))
     print('%s elapsed' % elapsed)
+    if os.path.exists(csv_path):
+        return csv_path
+    return 'no file written'
 
 
 # export files ---------------------------------------------------------
@@ -830,10 +845,12 @@ def export_files( collection_path, csv_path ):
                     if hasattr(file_, f['name']):
                         key = f['name']
                         # run csvexport_* functions on field data if present
-                        value = module_function(filemodule,
-                                                'csvexport_%s' % key,
-                                                getattr(file_, f['name']))
-                    values.append(value)
+                        val = module_function(filemodule,
+                                              'csvexport_%s' % key,
+                                              getattr(file_, f['name']))
+                        if val:
+                            value = val.encode('utf-8')
+                     values.append(value)
                 writer.writerow(values)
             
                 rowfinished = datetime.now()
@@ -846,3 +863,6 @@ def export_files( collection_path, csv_path ):
     elapsed = finished - started
     print('%s DONE (%s files)' % (dtfmt(finished), len(paths)))
     print('%s elapsed' % elapsed)
+    if os.path.exists(csv_path):
+        return csv_path
+    return 'no file written'
