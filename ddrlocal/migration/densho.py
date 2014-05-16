@@ -796,7 +796,7 @@ def export_entities( collection_path, csv_path ):
                                           'csvexport_%s' % key,
                                           getattr(entity, f['name']))
                     if val:
-                        value = val.encode('utf-8')
+                        value = str(val).encode('utf-8')
                 values.append(value)
             writer.writerow(values)
             
@@ -854,7 +854,7 @@ def export_files( collection_path, csv_path ):
                                               'csvexport_%s' % key,
                                               getattr(file_, f['name']))
                         if val:
-                            value = val.encode('utf-8')
+                            value = str(val).encode('utf-8')
                     values.append(value)
                 writer.writerow(values)
             
