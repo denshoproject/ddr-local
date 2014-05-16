@@ -256,7 +256,8 @@ FIELD_NAMES = {
 def dtfmt(dt): return dt.strftime('%Y-%m-%dT%H:%M:%S.%f')
 
 def make_tmpdir():
-    os.makedirs(settings.CSV_TMPDIR)
+    if not os.path.exists(settings.CSV_TMPDIR):
+        os.makedirs(settings.CSV_TMPDIR)
     
 def make_csv_reader( csvfile ):
     """
@@ -795,8 +796,10 @@ def export_entities( collection_path, csv_path ):
                     val = module_function(entitymodule,
                                           'csvexport_%s' % key,
                                           getattr(entity, f['name']))
+                    if not (isinstance(val, str) or isinstance(val, unicode)):
+                        val = unicode(val)
                     if val:
-                        value = str(val).encode('utf-8')
+                        value = val.encode('utf-8')
                 values.append(value)
             writer.writerow(values)
             
@@ -853,8 +856,10 @@ def export_files( collection_path, csv_path ):
                         val = module_function(filemodule,
                                               'csvexport_%s' % key,
                                               getattr(file_, f['name']))
+                        if not (isinstance(val, str) or isinstance(val, unicode)):
+                            val = unicode(val)
                         if val:
-                            value = str(val).encode('utf-8')
+                            value = val.encode('utf-8')
                     values.append(value)
                 writer.writerow(values)
             
