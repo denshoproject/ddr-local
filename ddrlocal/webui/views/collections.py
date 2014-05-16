@@ -12,6 +12,7 @@ from django.contrib import messages
 from django.core.cache import cache
 from django.core.context_processors import csrf
 from django.core.files import File
+from django.core.paginator import Paginator
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import Http404, get_object_or_404, render_to_response
@@ -125,7 +126,6 @@ def detail( request, repo, org, cid ):
          'org': org,
          'cid': cid,
          'collection': collection,
-         'entities': collection.entities(),
          'unlock_task_id': collection.locked(),},
         context_instance=RequestContext(request, processors=[])
     )
@@ -134,19 +134,20 @@ def detail( request, repo, org, cid ):
 def entities( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     alert_if_conflicted(request, collection)
-    collection_uid,collection_path = _uid_path(request, repo, org, cid)
-    ead_path_rel = 'ead.xml'
-    ead_path_abs = os.path.join(collection_path, ead_path_rel)
-    ead = open( os.path.join(collection_path, 'ead.xml'), 'r').read()
-    ead_soup = BeautifulSoup(ead, 'xml')
-    entities = collection_entities(ead_soup)
+    entities = collection.entities(quick=True)
+    # paginate
+    thispage = request.GET.get('page', 1)
+    paginator = Paginator(entities, settings.RESULTS_PER_PAGE)
+    page = paginator.page(thispage)
     return render_to_response(
         'webui/collections/entities.html',
         {'repo': repo,
          'org': org,
          'cid': cid,
-         'entities': entities,
-         },
+         'collection': collection,
+         'paginator': paginator,
+         'page': page,
+         'thispage': thispage,},
         context_instance=RequestContext(request, processors=[])
     )
 
