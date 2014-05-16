@@ -1,6 +1,6 @@
 """
-import/densho
-=============
+migration/densho
+================
 
 These functions will
 - read a properly-formatted CSV document,
@@ -9,7 +9,7 @@ These functions will
 The Collection must exist on disk for this to work.
 
 
-The Densho import module is part of the master branch, so switch both ddr-local and ddr-cmdln to the master branch and run the update script.::
+The Densho migration module is part of the master branch, so switch both ddr-local and ddr-cmdln to the master branch and run the update script.::
 
     $ cd /usr/local/src/ddr-local/
     $ git fetch; git checkout master; git pull
@@ -46,12 +46,12 @@ Clone the collection.::
 Run the import.::
 
     $ ./manage.py shell
-    >>> from importers import densho
-    >>> csv_path = '/tmp/ddr-densho-242-entities.csv'
-    >>> collection_path = '/var/www/media/base/ddr-densho-242'
+    >>> from migration.densho import import_entities
+    >>> csv_path = '/tmp/ddr-testing-123-entities.csv'
+    >>> collection_path = '/tmp/ddr-testing-123'
     >>> git_name = 'gjost'
     >>> git_mail = 'gjost@densho.org'
-    >>> densho.import_entities(csv_path, collection_path, git_name, git_mail)
+    >>> import_entities(csv_path, collection_path, git_name, git_mail)
 
 Check everything.
 
@@ -68,16 +68,37 @@ Walkthrough - import files
 The process for importing files is basically the same as above, except that it takes longer.::
 
     $ ./manage.py shell
-    >>> from importers import densho
-    >>> csv_path = '/tmp/ddr-densho-242-files.csv'
-    >>> collection_path = '/var/www/media/base/ddr-densho-242'
+    >>> from migration.densho import import_files
+    >>> csv_path = '/tmp/ddr-testing-123-files.csv'
+    >>> collection_path = '/tmp/ddr-testing-123'
     >>> git_name = 'gjost'
     >>> git_mail = 'gjost@densho.org'
-    >>> densho.import_files(csv_path, collection_path, git_name, git_mail)
+    >>> import_files(csv_path, collection_path, git_name, git_mail)
 
 # Check everything.
 
 Sync with mits.  NOT IMPLEMENTED YET.
+
+
+Walkthrough - export entities and files
+---------------------------------------
+
+Become the ddr user if you are not already.::
+
+    $ su ddr
+    [password]
+
+Run the export.::
+
+    $ ./manage.py shell
+    >>> from migration.densho import export_entities, export_files
+    >>> collection_path = '/tmp/ddr-testing-123'
+    >>> csv_path = '/tmp/ddr-testing-123.csv'
+    >>> export_entities(collection_path, csv_path)
+    ...
+    >>> export_files(collection_path, csv_path)
+    ...
+
 
 """
 
@@ -85,6 +106,7 @@ from __future__ import division
 from copy import deepcopy
 import csv
 from datetime import datetime
+import json
 import logging
 logger = logging.getLogger(__name__)
 import os
@@ -94,19 +116,26 @@ import doctest
 from django.conf import settings
 
 from DDR import commands
+from DDR.models import metadata_files
 from webui.models import Collection, Entity
-from ddrlocal.models import DDRLocalFile
+from ddrlocal.models import module_function
+from ddrlocal.models import DDRLocalEntity, DDRLocalFile
+from ddrlocal.models import entity as entitymodule
+from ddrlocal.models import files as filemodule
 from ddrlocal.models.entity import ENTITY_FIELDS
 from ddrlocal.models.entity import STATUS_CHOICES, PERMISSIONS_CHOICES, RIGHTS_CHOICES
 from ddrlocal.models.entity import LANGUAGE_CHOICES, GENRE_CHOICES, FORMAT_CHOICES
 from ddrlocal.models.files import FILE_FIELDS
-from webui.tasks import add_file
 #def add_file( git_name, git_mail, entity, src_path, role, data ):
 #    print('add_file(%s, %s, %s, %s, %s, %s)' % (git_name, git_mail, entity, src_path, role, data))
 
 AGENT = 'importers.densho'
 
-
+# Some files' XMP data is wayyyyyy too big
+csv.field_size_limit(sys.maxsize)
+CSV_DELIMITER = ','
+CSV_QUOTECHAR = '"'
+CSV_QUOTING = csv.QUOTE_ALL
 
 # These are lists of alternative forms of controlled-vocabulary terms.
 # From these indexes are build that will be used to replace variant terms with the official term.
@@ -226,6 +255,34 @@ FIELD_NAMES = {
 
 def dtfmt(dt): return dt.strftime('%Y-%m-%dT%H:%M:%S.%f')
 
+def make_tmpdir():
+    if not os.path.exists(settings.CSV_TMPDIR):
+        os.makedirs(settings.CSV_TMPDIR)
+    
+def make_csv_reader( csvfile ):
+    """
+    @param csvfile: A file object.
+    """
+    reader = csv.reader(
+        csvfile,
+        delimiter=CSV_DELIMITER,
+        quoting=CSV_QUOTING,
+        quotechar=CSV_QUOTECHAR,
+    )
+    return reader
+
+def make_csv_writer( csvfile ):
+    """
+    @param csvfile: A file object.
+    """
+    writer = csv.writer(
+        csvfile,
+        delimiter=CSV_DELIMITER,
+        quoting=CSV_QUOTING,
+        quotechar=CSV_QUOTECHAR,
+    )
+    return writer
+
 def read_csv( path ):
     """
     @param path: Absolute path to CSV file
@@ -233,7 +290,7 @@ def read_csv( path ):
     """
     rows = []
     with open(path, 'rU') as f:  # the 'U' is for universal-newline mode
-        reader = csv.reader(f, delimiter=',', quoting=csv.QUOTE_ALL)
+        reader = make_csv_reader(f)
         for row in reader:
             rows.append(row)
     return rows
@@ -677,7 +734,7 @@ def import_files( csv_path, collection_path, git_name, git_mail ):
                 rowstarted = datetime.now()
                 print('%s %s/%s %s %s (%s)' % (dtfmt(rowstarted), n+1, len(rows), entity.id, src_path, humanize_bytes(os.path.getsize(src_path))))
                 #print('add_file(%s, %s, %s, %s, %s, %s)' % (git_name, git_mail, entity, src_path, role, rowd))
-                add_file( git_name, git_mail, entity, src_path, role, rowd, agent=AGENT )
+                entity.add_file( git_name, git_mail, src_path, role, rowd, agent=AGENT )
                 rowfinished = datetime.now()
                 rowelapsed = rowfinished - rowstarted
                 print('%s done (%s)' % (dtfmt(rowfinished), rowelapsed))
@@ -687,3 +744,135 @@ def import_files( csv_path, collection_path, git_name, git_mail ):
             print('%s done (%s rows)' % (dtfmt(finished), len(rows)))
             print('%s elapsed' % elapsed)
             print('')
+
+
+# export entities ------------------------------------------------------
+
+def export_csv_path( collection_path, model ):
+    collection_id = os.path.basename(collection_path)
+    if model == 'entity':
+        csv_filename = '%s-objects.csv' % collection_id
+    elif model == 'file':
+        csv_filename = '%s-files.csv' % collection_id
+    csv_path = os.path.join(settings.CSV_TMPDIR, csv_filename)
+    return csv_path
+
+def export_entities( collection_path, csv_path ):
+    """
+    @param collection_path: Absolute path to collection repo.
+    @param csv_path: Absolute path to CSV data file.
+    """
+    started = datetime.now()
+    print('%s starting import' % started)
+    make_tmpdir()
+    fieldnames = [field['name'] for field in entitymodule.ENTITY_FIELDS]
+    # exclude 'files' bc not hard to convert to CSV and not different from files export.
+    fieldnames.remove('files')
+    print(fieldnames)
+    paths = []
+    for path in metadata_files(basedir=collection_path, recursive=True):
+        if os.path.basename(path) == 'entity.json':
+            paths.append(path)
+    
+    with open(csv_path, 'wb') as csvfile:
+        writer = make_csv_writer(csvfile)
+        # headers
+        writer.writerow(fieldnames)
+        # everything else
+        for n,path in enumerate(paths):
+            rowstarted = datetime.now()
+            
+            entity_dir = os.path.dirname(path)
+            entity_id = os.path.basename(entity_dir)
+            entity = DDRLocalEntity.from_json(entity_dir)
+            # seealso ddrlocal.models.__init__.module_function()
+            values = []
+            for f in entitymodule.ENTITY_FIELDS:
+                value = ''
+                if hasattr(entity, f['name']) and f.get('form',None):
+                    key = f['name']
+                    label = f['form']['label']
+                    # run csvexport_* functions on field data if present
+                    val = module_function(entitymodule,
+                                          'csvexport_%s' % key,
+                                          getattr(entity, f['name']))
+                    if not (isinstance(val, str) or isinstance(val, unicode)):
+                        val = unicode(val)
+                    if val:
+                        value = val.encode('utf-8')
+                values.append(value)
+            writer.writerow(values)
+            
+            rowfinished = datetime.now()
+            rowelapsed = rowfinished - rowstarted
+            print('%s %s/%s %s (%s)' % (dtfmt(rowfinished), n+1, len(paths), entity_id, rowelapsed))
+    
+    finished = datetime.now()
+    elapsed = finished - started
+    print('%s DONE (%s entities)' % (dtfmt(finished), len(paths)))
+    print('%s elapsed' % elapsed)
+    if os.path.exists(csv_path):
+        return csv_path
+    return 'no file written'
+
+
+# export files ---------------------------------------------------------
+
+def export_files( collection_path, csv_path ):
+    """
+    @param collection_path: Absolute path to collection repo.
+    @param csv_path: Absolute path to CSV data file.
+    """
+    started = datetime.now()
+    print('%s starting import' % started)
+    make_tmpdir()
+    fieldnames = [field['name'] for field in filemodule.FILE_FIELDS]
+    print(fieldnames)
+    paths = []
+    for path in metadata_files(basedir=collection_path, recursive=True):
+        if ('master' in path) or ('mezzanine' in path):
+            paths.append(path)
+    
+    with open(csv_path, 'wb') as csvfile:
+        writer = make_csv_writer(csvfile)
+        # headers
+        writer.writerow(fieldnames)
+        # everything else
+        for n,path in enumerate(paths):
+            rowstarted = datetime.now()
+            
+            # load file object
+            filename = os.path.basename(path)
+            file_id = os.path.splitext(filename)[0]
+            file_ = DDRLocalFile.from_json(path)
+            if file_:
+                # seealso ddrlocal.models.__init__.module_function()
+                values = []
+                for f in filemodule.FILE_FIELDS:
+                    value = ''
+                    if hasattr(file_, f['name']):
+                        key = f['name']
+                        # run csvexport_* functions on field data if present
+                        val = module_function(filemodule,
+                                              'csvexport_%s' % key,
+                                              getattr(file_, f['name']))
+                        if not (isinstance(val, str) or isinstance(val, unicode)):
+                            val = unicode(val)
+                        if val:
+                            value = val.encode('utf-8')
+                    values.append(value)
+                writer.writerow(values)
+            
+                rowfinished = datetime.now()
+                rowelapsed = rowfinished - rowstarted
+                print('%s %s/%s %s (%s)' % (dtfmt(rowfinished), n+1, len(paths), file_id, rowelapsed))
+            else:
+                print('NO FILE FOR %s' % path)
+    
+    finished = datetime.now()
+    elapsed = finished - started
+    print('%s DONE (%s files)' % (dtfmt(finished), len(paths)))
+    print('%s elapsed' % elapsed)
+    if os.path.exists(csv_path):
+        return csv_path
+    return 'no file written'

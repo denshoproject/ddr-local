@@ -6,6 +6,7 @@ logger = logging.getLogger(__name__)
 import os
 import re
 from StringIO import StringIO
+import shutil
 import sys
 
 import envoy
@@ -1029,6 +1030,276 @@ class DDRLocalEntity( DDREntity ):
         xml_pretty = etree.tostring(tree, pretty_print=True)
         with open(self.mets_path, 'w') as f:
             f.write(xml_pretty)
+    
+    def add_file( self, git_name, git_mail, src_path, role, data, agent='' ):
+        """Add file to entity
+        
+        This method breaks out of OOP and manipulates entity.json directly.
+        Thus it needs to lock to prevent other edits while it does its thing.
+        Writes a log to ${entity}/addfile.log, formatted in pseudo-TAP.
+        This log is returned along with a DDRLocalFile object.
+        
+        @param src_path: Absolute path to an uploadable file.
+        @param role: Keyword of a file role.
+        @param git_name: Username of git committer.
+        @param git_mail: Email of git committer.
+        @param agent: (optional) Name of software making the change.
+        @return file_ DDRLocalFile object
+        """
+        f = None
+        
+        self.files_log(1, 'ddrlocal.models.DDRLocalEntity.add_file: START')
+        self.files_log(1, 'entity: %s' % self.id)
+        self.files_log(1, 'data: %s' % data)
+        
+        src_basename      = os.path.basename(src_path)
+        src_exists        = os.path.exists(src_path)
+        src_readable      = os.access(src_path, os.R_OK)
+        if not os.path.exists(self.files_path):
+            os.mkdir(self.files_path)
+        dest_dir          = self.files_path
+        dest_dir_exists   = os.path.exists(dest_dir)
+        dest_dir_writable = os.access(dest_dir, os.W_OK)
+        dest_basename     = DDRLocalFile.file_name(self, src_path, role)
+        dest_path         = os.path.join(dest_dir, dest_basename)
+        dest_path_exists  = os.path.exists(dest_path)
+        s = []
+        if src_exists:         s.append('ok')
+        else:                  self.files_log(0, 'Source file does not exist: {}'.format(src_path))
+        if src_readable:       s.append('ok')
+        else:                  self.files_log(0, 'Source file not readable: {}'.format(src_path))
+        if dest_dir_exists:    s.append('ok')
+        else:                  self.files_log(0, 'Destination directory does not exist: {}'.format(dest_dir))
+        if dest_dir_writable:  s.append('ok')
+        else:                  self.files_log(0, 'Destination directory not writable: {}'.format(dest_dir))
+        #if not dest_path_exists: s.append('ok')
+        #else:                  self.files_log(0, 'Destination file already exists!: {}'.format(dest_path))
+        preparations = ','.join(s)
+        
+        # do, or do not
+        cp_successful = False
+        if preparations == 'ok,ok,ok,ok':  # ,ok
+            self.files_log(1, 'Source file exists; is readable.  Destination dir exists, is writable.')
+            self.files_log(1, 'src file size: %s' % os.path.getsize(src_path))
+            # task: copy
+            self.files_log(1, 'cp %s %s' % (src_path, dest_path))
+            try:
+                shutil.copy(src_path, dest_path)
+            except:
+                # TODO would be nice to know why copy failed
+                self.files_log(0, 'copy FAIL')
+            if os.path.exists(dest_path):
+                cp_successful = True
+                self.files_log(1, 'copy ok')
+        
+        # file object
+        if cp_successful:
+            f = DDRLocalFile(dest_path)
+            self.files_log(1, 'Created DDRLocalFile: %s' % f)
+            f.basename_orig = src_basename
+            self.files_log(1, 'Original filename: %s' % f.basename_orig)
+            f.role = role
+            # form data
+            for field in data:
+                setattr(f, field, data[field])
+            f.size = os.path.getsize(f.path_abs)
+            self.files_log(1, 'dest file size: %s' % f.size)
+            # task: get SHA1 checksum (links entity.filemeta entity.files records
+            self.files_log(1, 'Checksumming...')
+            try:
+                f.sha1   = hash(src_path, 'sha1')
+                self.files_log(1, 'sha1: %s' % f.sha1)
+            except:
+                self.files_log(0, 'sha1 FAIL')
+            try:
+                f.md5    = hash(src_path, 'md5')
+                self.files_log(1, 'md5: %s' % f.md5)
+            except:
+                self.files_log(0, 'md5 FAIL')
+            try:
+                f.sha256 = hash(src_path, 'sha256')
+                self.files_log(1, 'sha256: %s' % f.sha256)
+            except:
+                self.files_log(0, 'sha256 FAIL')
+            # task: extract_xmp
+            self.files_log(1, 'Extracting XMP data...')
+            try:
+                f.xmp = DDRLocalFile.extract_xmp(src_path)
+                if f.xmp:
+                    self.files_log(1, 'got some XMP')
+                else:
+                    self.files_log(1, 'no XMP data')
+            except:
+                # TODO would be nice to know why XMP extract failed
+                self.files_log(0, 'XMP extract FAIL')
+        
+        # access file
+        if f and cp_successful:
+            # task: make access file
+            self.files_log(1, 'Making access file...')
+            # NOTE: do this before entity_annex_add so don't have to lock/unlock
+            status,result = DDRLocalFile.make_access_file(f.path_abs,
+                                                     settings.ACCESS_FILE_APPEND,
+                                                     settings.ACCESS_FILE_GEOMETRY,
+                                                     settings.ACCESS_FILE_OPTIONS)
+            if status:
+                self.files_log(0, 'access file FAIL: %s' % result)
+                f.access_rel = None
+            else:
+                access_rel = result
+                f.set_access(access_rel, self)
+                self.files_log(1, 'access_rel: %s' % f.access_rel)
+                self.files_log(1, 'access_abs: %s' % f.access_abs)
+        
+        # dump metadata, commit
+        if f and cp_successful:
+            self.files_log(1, 'Adding %s to entity...' % f)
+            self.files.append(f)
+            self.dump_json()
+            f.dump_json()
+            
+            git_files = [self.json_path_rel, f.json_path_rel]
+            annex_files = [f.basename]
+            if f.access_rel:
+                annex_files.append(os.path.basename(f.access_rel))
+            
+            self.files_log(1, 'entity_annex_add(%s, %s, %s, %s, %s, %s, %s)' % (
+                git_name, git_mail,
+                self.parent_path, self.id,
+                git_files, annex_files,
+                agent))
+            exit,status = commands.entity_annex_add(
+                git_name, git_mail,
+                self.parent_path, self.id, git_files, annex_files,
+                agent=agent)
+            self.files_log(1, 'entity_annex_add: exit: %s' % exit)
+            self.files_log(1, 'entity_annex_add: status: %s' % status)
+            
+        self.files_log(1, 'ddrlocal.models.DDRLocalEntity.add_file: FINISHED')
+        return f.__dict__
+    
+    def add_access( self, git_name, git_mail, ddrfile, agent='' ):
+        """Generate new access file for entity
+        
+        This method breaks out of OOP and manipulates entity.json directly.
+        Thus it needs to lock to prevent other edits while it does its thing.
+        Writes a log to ${entity}/addfile.log, formatted in pseudo-TAP.
+        This log is returned along with a DDRLocalFile object.
+        
+        @param ddrfile: DDRLocalFile
+        @param git_name: Username of git committer.
+        @param git_mail: Email of git committer.
+        @return file_ DDRLocalFile object
+        @param agent: (optional) Name of software making the change.
+        """
+        f = ddrfile
+        src_path = f.path_abs
+        
+        self.files_log(1, 'ddrlocal.models.DDRLocalEntity.add_access: START')
+        self.files_log(1, 'entity: %s' % self.id)
+        self.files_log(1, 'src: %s' % f.path_rel)
+        
+        src_basename      = os.path.basename(src_path)
+        src_exists        = os.path.exists(src_path)
+        src_readable      = os.access(src_path, os.R_OK)
+        if not os.path.exists(self.files_path):
+            os.mkdir(self.files_path)
+        dest_dir          = self.files_path
+        dest_dir_exists   = os.path.exists(dest_dir)
+        dest_dir_writable = os.access(dest_dir, os.W_OK)
+        access_filename = DDRLocalFile.access_file_name(os.path.splitext(src_path)[0],
+                                                   settings.ACCESS_FILE_APPEND,
+                                                   'jpg') # see DDRLocalFile.make_access_file
+        dest_basename     = os.path.basename(access_filename)
+        dest_path         = os.path.join(dest_dir, dest_basename)
+        dest_path_exists  = os.path.exists(dest_path)
+        s = []
+        if src_exists:         s.append('ok')
+        else:                  self.files_log(0, 'Source file does not exist: {}'.format(src_path))
+        if src_readable:       s.append('ok')
+        else:                  self.files_log(0, 'Source file not readable: {}'.format(src_path))
+        if dest_dir_exists:    s.append('ok')
+        else:                  self.files_log(0, 'Destination directory does not exist: {}'.format(dest_dir))
+        if dest_dir_writable:  s.append('ok')
+        else:                  self.files_log(0, 'Destination directory not writable: {}'.format(dest_dir))
+        #if not dest_path_exists: s.append('ok')
+        #else:                  self.files_log(0, 'Destination file already exists!: {}'.format(dest_path))
+        preparations = ','.join(s)
+        
+        # do, or do not
+        src_dest_ok = False
+        if preparations == 'ok,ok,ok,ok':  # ,ok
+            self.files_log(1, 'Source file exists; is readable.  Destination dir exists, is writable.')
+            src_dest_ok = True
+            
+        access_file = None
+        apath = None
+        if f and src_dest_ok:
+            # task: make access file
+            self.files_log(1, 'Making access file...')
+            # NOTE: do this before entity_annex_add so don't have to lock/unlock
+            status,result = DDRLocalFile.make_access_file(f.path_abs,
+                                                     settings.ACCESS_FILE_APPEND,
+                                                     settings.ACCESS_FILE_GEOMETRY,
+                                                     settings.ACCESS_FILE_OPTIONS)
+            if status:
+                self.files_log(0, 'status: %s' % status)
+                self.files_log(0, 'result: %s' % result)
+                self.files_log(0, 'access file FAIL: %s' % result)
+                f.access_rel = None
+            else:
+                self.files_log(1, 'status: %s' % status)
+                self.files_log(1, 'result: %s' % result)
+                access_rel = result
+                f.set_access(access_rel, self)
+                self.files_log(1, 'access_rel: %s' % f.access_rel)
+                self.files_log(1, 'access_abs: %s' % f.access_abs)
+        
+        if f and src_dest_ok and f.access_rel:
+            self.files_log(1, 'Adding %s to self...' % f)
+            # We have to write self.json again so that access file gets recorded there.
+            self.files_log(1, 'Writing %s' % self.json_path)
+            self.dump_json()
+            f.dump_json()
+            self.files_log(1, 'done')
+            # file JSON
+            try:
+                self.files_log(1, 'entity_update(%s, %s, %s, %s, %s)' % (
+                    git_name, git_mail,
+                    self.parent_path, self.id,
+                    f.json_path))
+                exit,status = commands.entity_update(
+                    git_name, git_mail,
+                    self.parent_path, self.id,
+                    [f.json_path,],
+                    agent=agent)
+                self.files_log(1, 'entity_update: exit: %s' % exit)
+                self.files_log(1, 'entity_update: status: %s' % status)
+            except:
+                # TODO would be nice to know why entity_annex_add failed
+                self.files_log(0, 'entity_update: ERROR')
+            if f.access_rel:
+                access_basename = os.path.basename(f.access_rel)
+                self.files_log(1, 'access file: %s' % access_basename)
+                try:
+                    # self.json gets written as part of this
+                    self.files_log(1, 'entity_annex_add(%s, %s, %s, %s, %s)' % (
+                        git_name, git_mail,
+                        self.parent_path,
+                        self.id, access_basename))
+                    exit,status = commands.entity_annex_add(
+                        git_name, git_mail,
+                        self.parent_path,
+                        self.id, access_basename,
+                        agent=agent)
+                    self.files_log(1, 'entity_annex_add: exit: %s' % exit)
+                    self.files_log(1, 'entity_annex_add: status: %s' % status)
+                except:
+                    # TODO would be nice to know why entity_annex_add failed
+                    self.files_log(0, 'entity_annex_add: ERROR')
+            
+        self.files_log(1, 'ddrlocal.models.DDRLocalEntity.add_access: FINISHED')
+        return f.__dict__
 
 
 
@@ -1291,6 +1562,26 @@ class DDRLocalFile( object ):
                                                'formpost_%s' % key,
                                                form.cleaned_data[key])
                 setattr(self, key, cleaned_data)
+    
+    @staticmethod
+    def from_json(file_json):
+        """
+        @param file_json: Absolute path to the JSON metadata file
+        """
+        # This is complicated: The file object has to be created with
+        # the path to the file to which the JSON metadata file refers.
+        file_abs = None
+        fid = os.path.splitext(os.path.basename(file_json))[0]
+        fstub = '%s.' % fid
+        for filename in os.listdir(os.path.dirname(file_json)):
+            if (fstub in filename) and not ('json' in filename):
+                file_abs = os.path.join(os.path.dirname(file_json), filename)
+        # Now load the object
+        file_ = None
+        if os.path.exists(file_abs) or os.path.islink(file_abs):
+            file_ = DDRLocalFile(file_abs)
+            file_.load_json()
+        return file_
     
     def load_json(self):
         """Populate File data from .json file.
