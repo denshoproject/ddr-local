@@ -850,7 +850,7 @@ def export_files( collection_path, csv_path ):
                                               getattr(file_, f['name']))
                         if val:
                             value = val.encode('utf-8')
-                     values.append(value)
+                    values.append(value)
                 writer.writerow(values)
             
                 rowfinished = datetime.now()
