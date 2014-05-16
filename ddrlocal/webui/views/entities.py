@@ -454,6 +454,21 @@ def edit( request, repo, org, cid, eid ):
         context_instance=RequestContext(request, processors=[])
     )
 
+
+def edit_vocab_terms( request, field ):
+    terms = []
+    for term in vocab_terms(field)['terms']:
+        if term.get('path',None):
+            t = '%s [%s]' % (term['path'], term['id'])
+        else:
+            t = '%s [%s]' % (term['title'], term['id'])
+        terms.append(t)
+    return render_to_response(
+        'webui/entities/vocab.html',
+        {'terms': terms,},
+        context_instance=RequestContext(request, processors=[])
+    )
+
 @ddrview
 @login_required
 @storage_required

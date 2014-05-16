@@ -465,7 +465,7 @@ ENTITY_FIELDS = [
         'form_type':  'CharField',
         'form': {
             'label':      'Topic',
-            'help_text':  'Use the Densho Topics Controlled Vocabulary List found in Appendix E: Controlled Vocabularies. Multiple entries allowed; separate with a semi-colon. Include the topic ID in brackets after each topic.',
+            'help_text':  'Use the <a id="vocab-topics-list" href="#">Densho Topics Controlled Vocabulary List</a> found in Appendix E: Controlled Vocabularies. Multiple entries allowed; separate with a semi-colon. Include the topic ID in brackets after each topic.',
             'widget':     '',
             'initial':    '',
             'required':   False,
@@ -495,7 +495,7 @@ ENTITY_FIELDS = [
         'form_type':  'CharField',
         'form': {
             'label':      'Facility',
-            'help_text':  'Use the Densho Facilities Controlled Vocabulary List found in Appendix E: Controlled Vocabularies. Multiple entries allowed; separate with a semi-colon.',
+            'help_text':  'Use the <a id="vocab-facility-list" href="#">Densho Facilities Controlled Vocabulary List</a> found in Appendix E: Controlled Vocabularies. Multiple entries allowed; separate with a semi-colon.',
             'widget':     '',
             'initial':    '',
             'required':   False,
