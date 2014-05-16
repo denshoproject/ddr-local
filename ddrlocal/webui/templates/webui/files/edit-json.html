@@ -4,7 +4,7 @@
 {% block title %}Edit | {{ entity.title }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{{ file.url }}">{{ file.basename }}</a></li>
+<li><a href="{{ file.url }}">{{ file.role }}-{{ file.sha1|slice:":10" }}</a></li>
 <li class="active">Edit</li>
 {% endblock breadcrumbs %}
 
@@ -25,8 +25,11 @@ Edit
 <table>
   <tr><th><label>Object ID:</label></th><td>{{ entity.id }}</td></tr>
   {{ form.as_table }}
+  <tr>
+    <th></th>
+    <td><button name="submit" type="submit" value="Save" class="btn btn-mini btn-primary">Save</button></td>
+  </tr>
 </table>
-<input name="submit" type="submit" value="Save" class="btn btn-primary" /><br/>
 </form>
 
     </div><!-- .span12 -->

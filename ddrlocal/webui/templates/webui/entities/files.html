@@ -5,8 +5,8 @@
 {% block title %}files | {{ entity.id }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{{ entity.url }}">{{ entity.id }}</a></li>
-<li class="active">Files &mdash; {{ role }}</li>
+<li><a href="{{ entity.url }}">{{ entity.eid }}</a></li>
+<li class="active">Files</li>
 {% endblock breadcrumbs %}
 
 
@@ -29,7 +29,7 @@
 {% if username %}
 {% if entity.locked or collection.locked or collection.repo_behind or collection.repo_conflicted %}
 <p>
-<a class="btn btn-mini" href="{% url "webui-file-browse-master" repo org cid eid %}"><i class="icon-plus"></i> Add a file</a>
+<button class="btn btn-mini" href="{% url "webui-file-browse-master" repo org cid eid %}"><i class="icon-plus"></i> Add a file</button>
 <!--
 or <a class="btn btn-mini" href="{% url "webui-file-batch-master" repo org cid eid %}">Add a batch of files</a>
 -->
@@ -46,6 +46,8 @@ or <a class="btn btn-primary btn-mini" href="{% if role == "master" %}{% url "we
 {% endif %}{# conflicted #}
 {% endif %}{#username #}
 
+{% if page.object_list %}
+
 <table class="table table-condensed">
   <thead>
 	<tr>
@@ -57,9 +59,6 @@ or <a class="btn btn-primary btn-mini" href="{% if role == "master" %}{% url "we
 	</tr>
   </thead>
   <tbody>	
-
-
-{% if page.object_list %}
 
   <div>
     {{ paginator.count }} items<br/>
@@ -96,7 +95,7 @@ or <a class="btn btn-primary btn-mini" href="{% if role == "master" %}{% url "we
 <p>
 This object has no {{ role }} files.
 </p>
-{% endif %}
+{% endif %}{# page.object_list #}
 
 
 </tbody>

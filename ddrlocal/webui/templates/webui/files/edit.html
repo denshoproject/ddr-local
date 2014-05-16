@@ -5,7 +5,7 @@
 {% block title %}Edit | {{ file.basename }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{{ file.url }}">{{ file.basename }}</a></li>
+<li><a href="{{ file.url }}">{{ file.role }}-{{ file.sha1|slice:":10" }}</a></li>
 <li class="active">Edit</li>
 {% endblock breadcrumbs %}
 

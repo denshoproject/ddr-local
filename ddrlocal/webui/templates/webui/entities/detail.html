@@ -5,7 +5,7 @@
 {% block title %}{{ entity.id }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li class="active">{{ entity.id }}</li>
+<li class="active">{{ entity.eid }}</li>
 {% endblock breadcrumbs %}
 
 
@@ -31,14 +31,14 @@
 {% if username %}
 {% if entity.locked or collection.locked or collection.repo_behind or collection.repo_conflicted %}
 <p>
-<a id="delete" class="btn btn-mini disabled" title="This object is locked"><i class="icon-lock"></i> delete</a>
-<a class="btn btn-mini" title="This object is locked"><i class="icon-lock"></i> Edit [locked]</a>
+<button id="delete" class="btn btn-mini disabled" title="This object is locked"><i class="icon-lock"></i> delete</button>
+<button class="btn btn-mini" title="This object is locked"><i class="icon-lock"></i> Edit [locked]</button>
 {% if collection.repo_behind %}<span id="edit-alert" class="alert alert-error">Editing is disabled until collection is synced.</span>{% endif %}
 {% if collection.repo_conflicted %}<span id="edit-alert" class="alert alert-error">Editing is disabled until merge conflict is resolved.</span>{% endif %}
 </p>
 {% else %}
 <p>
-<a id="delete" class="btn btn-mini" href="{% url "webui-entity-delete" repo org cid eid %}"><i class="icon-edit"></i> delete</a>
+<a id="delete" class="btn btn-primary btn-mini" href="{% url "webui-entity-delete" repo org cid eid %}"><i class="icon-edit"></i> delete</a>
 <a class="btn btn-primary btn-mini" href="{% url "webui-entity-edit" repo org cid eid %}"><i class="icon-edit icon-white"></i> Edit</a>
 </p>
 {% endif %}{# conflicted #}

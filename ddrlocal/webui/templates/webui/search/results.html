@@ -3,10 +3,14 @@
 
 {% block title %}Search Results{% endblock %}
 
+
+{% block breadcrumbs %}{{ block.super }}
+<li class="active">Results</li>
+{% endblock breadcrumbs %}
+
 {% block content %}
-<section id="shop" class="container">
-  <div class="row">
-    <div class="col-sm-12 col-md-12">
+  <div class="row-fluid">
+    <div class="span12">
 
 {% if error_message %}
 <p class="error">
@@ -16,12 +20,11 @@
 
 <p></p>
 
-
-<form class="input-group nomargin-bottom form-inline" role="form">
-  <input class="form-control" id="id_query" name="query" type="text" value="{{ query }}" placeholder="Search..." />
-  <span class="glyphicon glyphicon-search"></span>
-  <button class="btn btn-primary">Search</button>
+<form role="form" action="{% url "webui-search-results" %}" method="get">
+  <input name="query" id="id_query" type="text" class="form-control" placeholder="Search..." value="{{ query }}">
+  <button type="submit" class="btn btn-primary"><span class="glyphicon glyphicon-search"></span> Search</button>
 </form>
+
 
 <div id="querymeta">
 
@@ -101,7 +104,8 @@
 
 {% endif %}
 
-    </div><!-- .col-sm-12 col-md-12 -->
-  </div><!-- .row -->
-</section><!-- .container-fluid -->
+  </div><!-- .span12 -->
+</div><!-- .row-fluid -->
+
+
 {% endblock content %}
