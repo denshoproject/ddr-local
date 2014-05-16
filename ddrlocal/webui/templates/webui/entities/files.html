@@ -1,12 +1,12 @@
 {% extends "webui/entities/base.html" %}
-{% load thumbnail %}
+{% load bootstrap_pagination webui_tags thumbnail %}
 
 
 {% block title %}files | {{ entity.id }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
 <li><a href="{{ entity.url }}">{{ entity.id }}</a></li>
-<li class="active">Files</li>
+<li class="active">Files &mdash; {{ role }}</li>
 {% endblock breadcrumbs %}
 
 
@@ -15,29 +15,69 @@
   <div class="row-fluid">
     <div class="span12">
 
-<h2>
-{{ entity.id }}
-</h2>
-<h1>
-Files
-</h1>
+<h1>{{ entity.id }}</h1>
 
-<h3>Master</h3>
-{% if entity.files_master %}
+
+
+      <ul class="nav nav-tabs" id="tabs">
+        <li><a href="{{ entity.url }}">Object Metadata</a></li>
+        <li {% if role == "master" %}class="active"{% endif %}><a href="{% url "webui-entity-files" repo org cid eid "master" %}">Master Files</a></li>
+        <li {% if role == "mezzanine" %}class="active"{% endif %}><a href="{% url "webui-entity-files" repo org cid eid "mezzanine" %}">Mezzanine Files</a></li>
+      </ul>
+
+
+{% if username %}
+{% if entity.locked or collection.locked or collection.repo_behind or collection.repo_conflicted %}
+<p>
+<a class="btn btn-mini" href="{% url "webui-file-browse-master" repo org cid eid %}"><i class="icon-plus"></i> Add a file</a>
+<!--
+or <a class="btn btn-mini" href="{% url "webui-file-batch-master" repo org cid eid %}">Add a batch of files</a>
+-->
+{% if collection.repo_behind %}<span id="edit-alert" class="alert alert-error">Editing is disabled until collection is synced.</span>{% endif %}
+{% if collection.repo_conflicted %}<span id="edit-alert" class="alert alert-error">Editing is disabled until merge conflict is resolved.</span>{% endif %}
+</p>
+{% else %}
+<p>
+<a class="btn btn-primary btn-mini" href="{% if role == "master" %}{% url "webui-file-browse-master" repo org cid eid %}">{% else %}{% url "webui-file-browse-mezzanine" repo org cid eid %}">{% endif %}<i class="icon-plus icon-white"></i> Add a file</a>
+<!--
+or <a class="btn btn-primary btn-mini" href="{% if role == "master" %}{% url "webui-file-batch-master" repo org cid eid %}{% else %}{% url "webui-file-batch-mezzanine" repo org cid eid %}{% endif %}">Add a batch of files</a>
+-->
+</p>
+{% endif %}{# conflicted #}
+{% endif %}{#username #}
+
 <table class="table table-condensed">
   <thead>
 	<tr>
+{% if username %}
 		<th></th>
+{% endif %}
 		<th>Filename</th>
 		<th>Label</th>
 	</tr>
   </thead>
-  <tbody>
-{% for file in entity.files_master %}
+  <tbody>	
+
+
+{% if page.object_list %}
+
+  <div>
+    {{ paginator.count }} items<br/>
+  </div>
+
+{% for file in page.object_list %}
   <tr>
+{% if username %}
     <td>
-      <a class="btn btn-primary btn-mini" href="{{ file.url }}edit/"><i class="icon-edit icon-white"></i> Edit</a> <a class="btn btn-primary btn-mini disabled" title="Delete function is not currently available."><i class="icon-remove icon-white"></i> Delete</a>
+{% if entity.locked or collection.locked or collection.repo_behind or collection.repo_conflicted %}
+      <a class="btn btn-xs" href="{{ file.url }}edit/"><i class="icon-edit"></i> Edit</a>
+      <a class="btn btn-xs disabled" title="Delete function is not currently available."><i class="icon-remove"></i> Delete</a>
+{% else %}
+      <a class="btn btn-primary btn-xs" href="{{ file.url }}edit/"><i class="icon-edit icon-white"></i> Edit</a>
+      <a class="btn btn-primary btn-xs disabled" title="Delete function is not currently available."><i class="icon-remove icon-white"></i> Delete</a>
+{% endif %}{# conflicted #}
     </td>
+{% endif %}{#username #}
     <td>
       <a href="{{ file.url }}">{{ file.basename }}</a>
       ({{ file.size|filesizeformat }})
@@ -47,48 +87,20 @@ Files
     </td>
   </tr>
 {% endfor %}
-  </tbody>
-</table>
-{% endif %}
-<p>
-<a href="{% url "webui-file-new-master" repo org cid eid %}" class="btn btn-primary"><i class="icon-plus icon-white"></i> Add a file</a>
-or
-<a href="{% url "webui-file-batch-master" repo org cid eid %}" class="btn btn-primary"><i class="icon-plus icon-white"></i> Add a batch of files</a>
-</p>
 
-<h3>Mezzanine</h3>
-{% if entity.files_mezzanine %}
-<table class="table table-condensed">
-  <thead>
-	<tr>
-		<th></th>
-		<th>Filename</th>
-		<th>Label</th>
-	</tr>
-  </thead>
-  <tbody>
-{% for file in entity.files_mezzanine %}
-  <tr>
-    <td>
-      <a class="btn btn-primary btn-mini" href="{{ file.url }}edit/"><i class="icon-edit icon-white"></i> Edit</a> <a class="btn btn-primary btn-mini disabled" title="Delete function is not currently available."><i class="icon-remove icon-white"></i> Delete</a>
-    </td>
-    <td>
-      <a href="{{ file.url }}">{{ file.basename }}</a>
-      ({{ file.size|filesizeformat }})
-    </td>
-    <td>
-      {{ file.label }}
-    </td>
-  </tr>
-{% endfor %}
- </tbody>
-</table>
+{% if paginator.num_pages > 1 %}
+{% bootstrap_paginate page range=10 show_first_last="true" %}
 {% endif %}
+
+{% else %}
 <p>
-<a href="{% url "webui-file-new-mezzanine" repo org cid eid %}" class="btn btn-primary"><i class="icon-plus icon-white"></i> Add a file</a>
-or
-<a href="{% url "webui-file-batch-mezzanine" repo org cid eid %}" class="btn btn-primary"><i class="icon-plus icon-white"></i> Add a batch of files</a>
+This object has no {{ role }} files.
 </p>
+{% endif %}
+
+
+</tbody>
+</table>
 
     </div><!-- .span12 -->
   </div><!-- .row-fluid -->

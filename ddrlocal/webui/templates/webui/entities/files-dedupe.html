@@ -1,0 +1,58 @@
+{% extends "webui/entities/base.html" %}
+{% load thumbnail %}
+
+
+{% block title %}{{ entity.id }}{% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+<li><a href="{{ entity.url }}">{{ entity.id }}</a></li>
+<li class="active">Remove duplicate files</li>
+{% endblock breadcrumbs %}
+
+
+
+{% block content %}
+
+  <div class="row-fluid">
+    <div class="span12">
+
+<h2>
+{{ entity.id }}
+</h2>
+<h1>
+Remove duplicate files
+</h1>
+
+
+<p>
+Multiple copies of the following file(s) were uploaded.
+</p>
+
+<ul>
+{% for f in duplicates %}
+<li>{{ f.path_rel }}</li>
+{% endfor %}
+</ul>
+
+<p>
+Unfortunately, when this happens only the most recent file metadata remains.
+It's possible to get the earlier metadata but you need to contact an administrator.
+If you don't care about the metadata, feel free to just click and remove the duplicates.
+</p>
+
+
+<form name="rm-duplicates" action="" method="post">{% csrf_token %}
+<p>
+{{ form.confirmed }}
+{{ form.confirmed.help_text }}
+</p>
+<input class="btn btn-danger" type="submit" value="Remove Duplicates" />
+&nbsp;
+<a href="{{ entity.url }}">Cancel</a>
+</form>
+
+ 
+    </div><!-- .span12 -->
+  </div><!-- .row -->
+
+{% endblock content %}

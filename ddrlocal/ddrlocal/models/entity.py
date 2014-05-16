@@ -466,7 +466,7 @@ ENTITY_FIELDS = [
         'form': {
             'label':      'Topic',
             'help_text':  'Use the Densho Topics Controlled Vocabulary List found in Appendix E: Controlled Vocabularies. Multiple entries allowed; separate with a semi-colon. Include the topic ID in brackets after each topic.',
-            'widget':     'Textarea',
+            'widget':     '',
             'initial':    '',
             'required':   False,
         },
@@ -496,7 +496,7 @@ ENTITY_FIELDS = [
         'form': {
             'label':      'Facility',
             'help_text':  'Use the Densho Facilities Controlled Vocabulary List found in Appendix E: Controlled Vocabularies. Multiple entries allowed; separate with a semi-colon.',
-            'widget':     'Textarea',
+            'widget':     '',
             'initial':    '',
             'required':   False,
         },
@@ -629,11 +629,8 @@ def display_persons( data ):
         d.append({'person': line.strip()})
     return _display_multiline_dict('<a href="{person}">{person}</a>', d)
 
-#def display_facility( data ):
-#    d = []
-#    for line in data:
-#        d.append({'facility': line.strip()})
-#    return _render_multiline_dict('<a href="">{facility}</a>', d)
+def display_facility( data ):
+    return _display_multiline_dict('<a href="{url}">{label}</a>', data)
 
 # parent
 # notes
@@ -732,7 +729,16 @@ def formprep_topics(data):
 def formprep_persons(data):
     return ';\n'.join(data)
 
-def formprep_facility(data):   return _formprep_basic(data)
+def formprep_facility(data):
+    """Present as semicolon-separated list"""
+    a = []
+    for t in data:
+        if type(t) == type({}):
+            x = t['url']
+        else:
+            x = t
+        a.append(x)
+    return ';\n'.join(a)
 
 # notes
 
@@ -806,7 +812,11 @@ def formpost_topics(data):
 def formpost_persons(data):
     return [n.strip() for n in data.split(';')]
 
-def formpost_facility(data):   return _formpost_basic(data)
+def formpost_facility(data):
+    a = []
+    form_urls = [t.strip() for t in data.split(';')]
+    a = tematres.get_terms(form_urls)
+    return a
 
 # notes
 
@@ -819,6 +829,56 @@ def _formpost_basic(data):
         except:
             return data
     return ''
+
+
+
+# csvimport_* --- import-from-csv functions ----------------------------
+#
+# These functions take data from a CSV field and convert it to Python
+# data for the corresponding Entity field.
+#
+
+def csvimport_creators( data ): return [x.strip() for x in data.strip().split(';') if x]
+def csvimport_language( data ):
+    """language can be 'eng', 'eng;jpn', 'eng:English', 'jpn:Japanese'
+    """
+    y = []
+    for x in data.strip().split(';'):
+        if ':' in x:
+            y.append(x.strip().split(':')[0])
+        else:
+            y.append(x.strip())
+    return y
+def csvimport_topics( data ): return [x.strip() for x in data.strip().split(';') if x]
+def csvimport_persons( data ): return [x.strip() for x in data.strip().split(';') if x]
+def csvimport_facility( data ): return [x.strip() for x in data.strip().split(';') if x]
+
+# csvexport_* --- export-to-csv functions ------------------------------
+#
+# These functions take Python data from the corresponding Entity field
+# and format it for export in a CSV field.
+#
+
+def csvexport_record_created( data ): return data.strftime(DATETIME_FORMAT)
+def csvexport_record_lastmod( data ): return data.strftime(DATETIME_FORMAT)
+def csvexport_creators( data ):
+    items = []
+    for d in data:
+        # strings are already in format or close enough
+        if isinstance(d, str):
+            items.append(d)
+        elif isinstance(d, dict):
+            items.append('%s:%s' % (d['namepart'],d['role']))
+    return ' ; '.join(items)
+def csvexport_language( data ):
+    """only export the language codes ('eng,jpn')
+    """
+    return ','.join(data)
+def csvexport_topics( data ): return '; '.join(data)
+def csvexport_persons( data ): return '; '.join(data)
+def csvexport_facility( data ): return '; '.join(data)
+
+
 
 
 

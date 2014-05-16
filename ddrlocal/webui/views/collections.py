@@ -12,6 +12,7 @@ from django.contrib import messages
 from django.core.cache import cache
 from django.core.context_processors import csrf
 from django.core.files import File
+from django.core.paginator import Paginator
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import Http404, get_object_or_404, render_to_response
@@ -31,7 +32,7 @@ from webui.decorators import ddrview, search_index
 from webui.forms import DDRForm
 from webui.forms.collections import NewCollectionForm, UpdateForm
 from webui.models import Collection, COLLECTION_STATUS_CACHE_KEY, COLLECTION_STATUS_TIMEOUT
-from webui.tasks import collection_sync
+from webui.tasks import collection_sync, csv_export_model, export_csv_path
 from webui.views.decorators import login_required
 from xmlforms.models import XMLModel
 
@@ -125,7 +126,6 @@ def detail( request, repo, org, cid ):
          'org': org,
          'cid': cid,
          'collection': collection,
-         'entities': collection.entities(),
          'unlock_task_id': collection.locked(),},
         context_instance=RequestContext(request, processors=[])
     )
@@ -134,19 +134,20 @@ def detail( request, repo, org, cid ):
 def entities( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     alert_if_conflicted(request, collection)
-    collection_uid,collection_path = _uid_path(request, repo, org, cid)
-    ead_path_rel = 'ead.xml'
-    ead_path_abs = os.path.join(collection_path, ead_path_rel)
-    ead = open( os.path.join(collection_path, 'ead.xml'), 'r').read()
-    ead_soup = BeautifulSoup(ead, 'xml')
-    entities = collection_entities(ead_soup)
+    entities = collection.entities(quick=True)
+    # paginate
+    thispage = request.GET.get('page', 1)
+    paginator = Paginator(entities, settings.RESULTS_PER_PAGE)
+    page = paginator.page(thispage)
     return render_to_response(
         'webui/collections/entities.html',
         {'repo': repo,
          'org': org,
          'cid': cid,
-         'entities': entities,
-         },
+         'collection': collection,
+         'paginator': paginator,
+         'page': page,
+         'thispage': thispage,},
         context_instance=RequestContext(request, processors=[])
     )
 
@@ -338,6 +339,65 @@ def edit( request, repo, org, cid ):
          },
         context_instance=RequestContext(request, processors=[])
     )
+ 
+@login_required
+@storage_required
+def csv_export( request, repo, org, cid, model=None ):
+    """
+    """
+    if (not model) or (not (model in ['entity','file'])):
+        raise Http404
+    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    things = {'entity':'objects', 'file':'files'}
+    csv_path = export_csv_path(collection.path, model)
+    csv_filename = os.path.basename(csv_path)
+    if model == 'entity':
+        file_url = reverse('webui-collection-csv-entities', args=[repo,org,cid])
+    elif model == 'file':
+        file_url = reverse('webui-collection-csv-files', args=[repo,org,cid])
+    # do it
+    result = csv_export_model.apply_async( (collection.path,model), countdown=2)
+    # add celery task_id to session
+    celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
+    # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
+    task = {'task_id': result.task_id,
+            'action': 'webui-csv-export-model',
+            'collection_id': collection.id,
+            'collection_url': collection.url(),
+            'things': things[model],
+            'file_name': csv_filename,
+            'file_url': file_url,
+            'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
+    celery_tasks[result.task_id] = task
+    request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
+    return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+
+@storage_required
+def csv_download( request, repo, org, cid, model=None ):
+    """Offers CSV file in settings.CSV_TMPDIR for download.
+    
+    File must actually exist in settings.CSV_TMPDIR and be readable.
+    File must be readable by Python csv module.
+    If all that is true then it must be a legal CSV file.
+    """
+    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    path = export_csv_path(collection.path, model)
+    filename = os.path.basename(path)
+    if not os.path.exists(path):
+        raise Http404
+    import csv
+    # TODO use vars from migrations.densho or put them in settings.
+    CSV_DELIMITER = ','
+    CSV_QUOTECHAR = '"'
+    CSV_QUOTING = csv.QUOTE_ALL
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="%s"' % filename
+    writer = csv.writer(response, delimiter=CSV_DELIMITER, quotechar=CSV_QUOTECHAR, quoting=CSV_QUOTING)
+    with open(path, 'rb') as f:
+        reader = csv.reader(f, delimiter=CSV_DELIMITER, quotechar=CSV_QUOTECHAR, quoting=CSV_QUOTING)
+        for row in reader:
+            writer.writerow(row)
+    return response
 
 @ddrview
 @login_required
