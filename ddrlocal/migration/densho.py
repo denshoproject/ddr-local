@@ -255,6 +255,9 @@ FIELD_NAMES = {
 
 def dtfmt(dt): return dt.strftime('%Y-%m-%dT%H:%M:%S.%f')
 
+def make_tmpdir():
+    os.makedirs(settings.CSV_TMPDIR)
+    
 def make_csv_reader( csvfile ):
     """
     @param csvfile: A file object.
@@ -760,6 +763,7 @@ def export_entities( collection_path, csv_path ):
     """
     started = datetime.now()
     print('%s starting import' % started)
+    make_tmpdir()
     fieldnames = [field['name'] for field in entitymodule.ENTITY_FIELDS]
     # exclude 'files' bc not hard to convert to CSV and not different from files export.
     fieldnames.remove('files')
@@ -818,6 +822,7 @@ def export_files( collection_path, csv_path ):
     """
     started = datetime.now()
     print('%s starting import' % started)
+    make_tmpdir()
     fieldnames = [field['name'] for field in filemodule.FILE_FIELDS]
     print(fieldnames)
     paths = []
