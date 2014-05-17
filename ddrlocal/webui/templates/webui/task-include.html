@@ -1,5 +1,5 @@
 {% if celery_tasks %}
-<div class="alert">
+<div class="alert alert-warning">
   <a href="{% url "webui-tasks" %}?next={{ dismiss_next }}" style="float:right;">Background Tasks</a>
   {% for task in celery_tasks %}
   <span class="{{ task.status }}">{{ task.status }}: {{ task.message|safe }}</span><br/>
