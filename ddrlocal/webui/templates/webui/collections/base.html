@@ -19,15 +19,15 @@
       {% endif %}
 
     {% if collection.locked %}
-      <a href="#" class="btn btn-mini muted" title="Sync"><i class="icon-lock"></i> Sync</a>
+      <a href="#" class="btn btn-xs muted" title="Sync"><i class="icon-lock"></i> Sync</a>
     {% else %}
       <span id="sync-btn">
-        <input
-          {% if collection.repo_ahead %}class="btn btn-mini btn-warning"
-          {% elif collection.repo_behind %}class="btn btn-mini btn-warning"
-          {% else %}class="btn btn-mini btn-success"
+        <button
+          {% if collection.repo_ahead %}class="btn btn-xs btn-warning"
+          {% elif collection.repo_behind %}class="btn btn-xs btn-warning"
+          {% else %}class="btn btn-xs btn-success"
           {% endif %}
-          name="sync" type="submit" value="Sync" />
+          name="sync" type="submit" value="Sync">Sync</button>
       </span>
     {% endif %}
     </form>

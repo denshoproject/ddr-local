@@ -5,7 +5,7 @@
 {% block title %}Delete | {{ file.basename }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{{ file.url }}">{{ file.basename }}</a></li>
+<li><a href="{{ file.url }}">{{ file.role }}-{{ file.sha1|slice:":10" }}</a></li>
 <li class="active">Delete</li>
 {% endblock breadcrumbs %}
 
@@ -19,15 +19,25 @@
 {{ file.basename }}
 </h1>
 
+<table>
 <form name="delete-file" action="" method="post">{% csrf_token %}
-<p>
-{{ form.confirmed }}
-{{ form.confirmed.help_text }}
-</p>
-<input type="submit" value="Delete" />
+  <tr>
+    <th></th>
+    <td>
+      {{ form.confirmed }}
+      {{ form.confirmed.help_text }}
+    </td>
+  </tr>
+  <tr>
+    <th></th>
+    <td>
+<button class="btn btn-danger btn-mini" type="submit" value="Delete">Delete</button>
 &nbsp;
 <a href="{{ file.url }}">Cancel</a>
+    </td>
+  </tr>
 </form>
+</table>
 
     </div><!-- .span12 -->
   </div><!-- .row-fluid -->

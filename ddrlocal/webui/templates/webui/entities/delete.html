@@ -19,15 +19,25 @@
 {{ entity.id }}
 </h1>
 
+<table>
 <form name="delete-entity" action="" method="post">{% csrf_token %}
-<p>
-{{ form.confirmed }}
-{{ form.confirmed.help_text }}
-</p>
-<input type="submit" value="Delete" />
+  <tr>
+    <th></th>
+    <td>
+      {{ form.confirmed }}
+      {{ form.confirmed.help_text }}
+    </td>
+  </tr>
+  <tr>
+    <th></th>
+    <td>
+<button class="btn btn-danger btn-mini" type="submit" value="Delete">Delete</button>
 &nbsp;
-<a href="{{ entity.url }}">Cancel</a>
+<a href="{{ file.url }}">Cancel</a>
+    </td>
+  </tr>
 </form>
+</table>
  
     </div><!-- .span12 -->
   </div><!-- .row -->

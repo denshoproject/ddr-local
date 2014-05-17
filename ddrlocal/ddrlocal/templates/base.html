@@ -1,37 +1,38 @@
 <!DOCTYPE html>
-<html lang="en" class="no-js">
+<html lang="en">
 <head>
 
 <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
 <title>{% block title %}{% endblock %} | Workbench | DDR</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="">
 <meta name="author" content="">
 {% block headmeta %}{% endblock headmeta %}
 
-<script type="text/javascript" src="{{ STATIC_URL }}js/modernizr-2.6.2.js"></script>
+<link href="{{ STATIC_URL }}bootstrap/css/bootstrap.min.css" rel="stylesheet">
 
-<!-- styles -->
-<link rel="stylesheet" href="{{ STATIC_URL }}bootstrap/css/bootstrap.css">
-<link rel="stylesheet" href="{{ STATIC_URL }}bootstrap/css/bootstrap-responsive.css">
-
-<!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+<!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
 <!--[if lt IE 9]>
-  <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+  <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+  <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
 <![endif]-->
 
-<!-- fav and touch icons -->
-<link rel="shortcut icon" href="{{ STATIC_URL }}bootstrap/ico/favicon.png">
-<link rel="apple-touch-icon-precomposed" sizes="144x144" href="{{ STATIC_URL }}bootstrap/ico/apple-touch-icon-144-precomposed.png">
-<link rel="apple-touch-icon-precomposed" sizes="114x114" href="{{ STATIC_URL }}bootstrap/ico/apple-touch-icon-114-precomposed.png">
-<link rel="apple-touch-icon-precomposed" sizes="72x72" href="{{ STATIC_URL }}bootstrap/ico/apple-touch-icon-72-precomposed.png">
-<link rel="apple-touch-icon-precomposed" href="{{ STATIC_URL }}bootstrap/ico/apple-touch-icon-57-precomposed.png">
-
 <style>
+.navbar { margin-bottom:0px; }
+#navbar-search-query { border:#ccc; background:#444; }
+#user-info { }
+
 .breadcrumb { padding-left:0; }
-.breadcrumb li { margin:0; margin-right:10px; }
+.breadcrumb li { margin:0; }
 
 #indicators { margin-top:7px; padding:0px; float:right; }
+
+#celery-status a {
+  color:#8a6d3b; /* warning */
+}
 
 span.bullsep { margin-left:10px; margin-right:10px; }
 
@@ -46,11 +47,6 @@ form .helptext { color:#aaa; }
 form input, form textarea { width:100%; }
 form .errorlist { color:red; }
 form td { padding-bottom:20px; }
-
-/* celery tasks */
-.status.FAILED { color:red; }
-.status.PENDING { color:orange; }
-.status.SUCCESS { color:green; }
 
 #tasks td { padding-right:20px; }
 
@@ -71,64 +67,34 @@ form td { padding-bottom:20px; }
 
 
 
-<div class="navbar navbar-inverse navbar-static-top">
-  <div class="navbar-inner">
-    <div class="container">
-
-<a class="brand" href="{% url "webui-index" %}">DDR Workbench</a>
-
-<ul class="nav">
-  <li><a href="{% url "webui-index" %}">Home</a></li>
-  <li><a href="{% url "webui-collections" %}">Collections</a></li>
-  <li><a href="{% url "storage-index" %}">Storage</a></li>
-  <li>
-    <form name="search" class="navbar-search pull-right" action="{% url "webui-search-results" %}" method="get">
-    <input name="query" type="text" class="search-query" value="{{ query }}" placeholder="Search">
-    </form>
-  </li>
-</ul>
-
-<p id="user-info" class="navbar-text pull-right">
-    
-{% if username %}
-    {{ username }} / <a href="{% url "webui-logout" %}?redirect={{ logout_next }}">Log out</a>
-{% else %}
-    <a href="{% url "webui-login" %}">Log in</a>
-{% endif %}
-        
-&nbsp;&bull;&nbsp;
-
-{% if storage_type %}
-<span id="storage-type" class="label {% if storage_type == 'unknown' %}label-warning{% else %}label-info{% endif %}" title="storage type: {{ storage_type }}">
-  {{ storage_type }}
-</span>
-{% else %}
-<span id="storage-type" class="label label-important" title="storage type: unknown">
-  unknown
-</span>
-{% endif %}
-
-{% if storage_space %}
-<span id="storage-space" class="label {{ storage_space.label }}" title="size:{{ storage_space.size }} used:{{ storage_space.used }} available:{{ storage_space.percent }}%">
-  {{ storage_space.percent }}%
-</span>
-{% endif %}
-
-{% if storage_status == 'ok' %}
-<span id="storage-status" class="label label-success" title="storage status: OK">
-  OK
-</span>
-{% else %}
-<span id="storage-status" class="label label-important" title="storage status: {{ storage_status }}">
-  {{ storage_status }}
-</span>
-{% endif %} 
-   
-</p>
-
-    </div><!-- .container -->
-  </div>
-</div><!-- .navbar -->
+<nav class="navbar navbar-inverse" role="navigation">
+  <div class="container-fluid">
+    <!-- Brand and toggle get grouped for better mobile display -->
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="{% url "webui-index" %}">DDR Workbench</a>
+    </div>
+    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+      <!-- nav links -->
+      <ul class="nav navbar-nav">
+        <li><a href="{% url "webui-index" %}">Home</a></li>
+        <li><a href="{% url "webui-collections" %}">Collections</a></li>
+        <li><a href="{% url "storage-index" %}">Storage</a></li>
+      </ul>
+      <!-- search -->
+      <form class="navbar-form navbar-right" role="search" action="{% url "webui-search-results" %}" method="get">
+        <div class="form-group">
+          <input name="query" id="navbar-search-query" type="text" class="form-control" placeholder="Search">
+        </div>
+      </form>
+    </div><!-- /.navbar-collapse -->
+  </div><!-- /.container-fluid -->
+</nav>
 
 
 
@@ -139,6 +105,35 @@ form td { padding-bottom:20px; }
 
 
 <div id="indicators">
+
+  <div id="user-info">
+    {% if username %}
+      {{ username }} / <a href="{% url "webui-logout" %}?redirect={{ logout_next }}">Log out</a>
+    {% else %}
+      <a href="{% url "webui-login" %}">Log in</a>
+    {% endif %}
+    &nbsp;&bull;&nbsp;
+    {% if storage_type %}
+    <span id="storage-type" class="label {% if storage_type == 'unknown' %}label-warning{% else %}label-info{% endif %}" title="storage type: {{ storage_type }}">
+      {{ storage_type }}
+    </span>
+    {% else %}
+    <span id="storage-type" class="label label-important" title="storage type: unknown">
+      unknown
+    </span>
+    {% endif %}
+    {% if storage_space %}
+    <span id="storage-space" class="label {{ storage_space.label }}" title="size:{{ storage_space.size }} used:{{ storage_space.used }} available:{{ storage_space.percent }}%">
+      {{ storage_space.percent }}%
+    </span>
+    {% endif %}
+    {% if storage_status == 'ok' %}
+    <span id="storage-status" class="label label-success" title="storage status: OK">OK</span>
+    {% else %}
+    <span id="storage-status" class="label label-important" title="storage status: {{ storage_status }}">{{ storage_status }}</span>
+    {% endif %} 
+  </div><!-- #user-info -->
+
 {% block indicators %}{% endblock indicators %}
 </div><!-- #indicators -->
 

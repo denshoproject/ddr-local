@@ -432,15 +432,17 @@ class DDRLocalCollection( DDRCollection ):
                 path = os.path.join(self.files_path, eid)
                 if quick:
                     # fake Entity with just enough info for lists
-                    with open(os.path.join(path,'entity.json'), 'r') as f:
-                        for line in f.readlines():
-                            if '"title":' in line:
-                                e = ListEntity()
-                                e.id = e.uid = eid
-                                e.repo,e.org,e.cid,e.eid = eid.split('-')
-                                # make a miniature JSON doc out of just title line
-                                e.title = json.loads('{%s}' % line)['title']
-                                entities.append(e)
+                    entity_json_path = os.path.join(path,'entity.json')
+                    if os.path.exists(entity_json_path):
+                        with open(entity_json_path, 'r') as f:
+                            for line in f.readlines():
+                                if '"title":' in line:
+                                    e = ListEntity()
+                                    e.id = e.uid = eid
+                                    e.repo,e.org,e.cid,e.eid = eid.split('-')
+                                    # make a miniature JSON doc out of just title line
+                                    e.title = json.loads('{%s}' % line)['title']
+                                    entities.append(e)
                 else:
                     entity = DDRLocalEntity.from_json(path)
                     for lv in entity.labels_values():
