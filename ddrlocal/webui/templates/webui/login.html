@@ -15,12 +15,15 @@
 
 <h1>Log in</h1>
 
-<form name="login" action="" method="POST">{% csrf_token %}
 <table>
+<form name="login" action="" method="POST">{% csrf_token %}
   {{ form.as_table }}
-</table>
-<input name="submit" type="submit" class="btn btn-primary" value="Login"/><br/>
+  <tr>
+    <th></th>
+    <td><button name="submit" type="submit" value="Login" class="btn btn-mini btn-primary">Login</button></td>
+  </tr>
 </form>
+</table>
 
     </div><!-- .span12 -->
   </div><!-- .row-fluid -->
