@@ -69,11 +69,11 @@ or <a class="btn btn-primary btn-mini" href="{% if role == "master" %}{% url "we
 {% if username %}
     <td>
 {% if entity.locked or collection.locked or collection.repo_behind or collection.repo_conflicted %}
-      <a class="btn btn-xs" href="{{ file.url }}edit/"><i class="icon-edit"></i> Edit</a>
-      <a class="btn btn-xs disabled" title="Delete function is not currently available."><i class="icon-remove"></i> Delete</a>
+      <a class="btn btn-xs disabled" href="{{ file.url }}edit/"><i class="icon-edit"></i> Edit</a>
+      <a class="btn btn-xs disabled" href="{{ file.url }}delete/"><i class="icon-remove"></i> Delete</a>
 {% else %}
       <a class="btn btn-primary btn-xs" href="{{ file.url }}edit/"><i class="icon-edit icon-white"></i> Edit</a>
-      <a class="btn btn-primary btn-xs disabled" title="Delete function is not currently available."><i class="icon-remove icon-white"></i> Delete</a>
+      <a class="btn btn-primary btn-xs" href="{{ file.url }}delete/"><i class="icon-remove icon-white"></i> Delete</a>
 {% endif %}{# conflicted #}
     </td>
 {% endif %}{#username #}
