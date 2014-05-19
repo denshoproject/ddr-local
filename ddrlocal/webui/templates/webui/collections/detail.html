@@ -30,13 +30,13 @@
 {% if username %}
 {% if collection.locked or collection.repo_behind or collection.repo_conflicted %}
 <p>
-<button class="btn btn-mini" title="This collection is locked"><i class="icon-lock"></i> Edit [locked]</button>
+<button class="btn btn-mini" title="This collection is locked"><span class="glyphicon glyphicon-lock"></span> Edit [locked]</button>
 {% if collection.repo_behind %}<span id="edit-alert" class="alert alert-error">Editing is disabled until collection is synced.</span>{% endif %}
 {% if collection.repo_conflicted %}<span id="edit-alert" class="alert alert-error">Editing is disabled until merge conflict is resolved.</span>{% endif %}
 </p>
 {% else %}
 <p>
-<a class="btn btn-mini btn-primary" href="{% url "webui-collection-edit" repo org cid %}"><i class="icon-edit icon-white"></i> Edit</a>
+<a class="btn btn-mini btn-primary" href="{% url "webui-collection-edit" repo org cid %}"><span class="glyphicon glyphicon-edit icon-white"></span> Edit</a>
 </p>
 {% endif %}{# conflicted #}
 {% endif %}{#username #}

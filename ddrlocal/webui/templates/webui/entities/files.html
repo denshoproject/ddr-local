@@ -29,7 +29,7 @@
 {% if username %}
 {% if entity.locked or collection.locked or collection.repo_behind or collection.repo_conflicted %}
 <p>
-<button class="btn btn-mini" href="{% url "webui-file-browse-master" repo org cid eid %}"><i class="icon-plus"></i> Add a file</button>
+<button class="btn btn-mini" href="{% url "webui-file-browse-master" repo org cid eid %}"><span class="glyphicon glyphicon-plus"></span> Add a file</button>
 <!--
 or <a class="btn btn-mini" href="{% url "webui-file-batch-master" repo org cid eid %}">Add a batch of files</a>
 -->
@@ -38,7 +38,7 @@ or <a class="btn btn-mini" href="{% url "webui-file-batch-master" repo org cid e
 </p>
 {% else %}
 <p>
-<a class="btn btn-primary btn-mini" href="{% if role == "master" %}{% url "webui-file-browse-master" repo org cid eid %}">{% else %}{% url "webui-file-browse-mezzanine" repo org cid eid %}">{% endif %}<i class="icon-plus icon-white"></i> Add a file</a>
+<a class="btn btn-primary btn-mini" href="{% if role == "master" %}{% url "webui-file-browse-master" repo org cid eid %}">{% else %}{% url "webui-file-browse-mezzanine" repo org cid eid %}">{% endif %}<span class="glyphicon glyphicon-plus icon-white"></span> Add a file</a>
 <!--
 or <a class="btn btn-primary btn-mini" href="{% if role == "master" %}{% url "webui-file-batch-master" repo org cid eid %}{% else %}{% url "webui-file-batch-mezzanine" repo org cid eid %}{% endif %}">Add a batch of files</a>
 -->
@@ -69,11 +69,11 @@ or <a class="btn btn-primary btn-mini" href="{% if role == "master" %}{% url "we
 {% if username %}
     <td>
 {% if entity.locked or collection.locked or collection.repo_behind or collection.repo_conflicted %}
-      <a class="btn btn-xs disabled" href="{{ file.url }}edit/"><i class="icon-edit"></i> Edit</a>
-      <a class="btn btn-xs disabled" href="{{ file.url }}delete/"><i class="icon-remove"></i> Delete</a>
+      <a class="btn btn-xs disabled" href="{{ file.url }}edit/"><span class="glyphicon glyphicon-edit"></span> Edit</a>
+      <a class="btn btn-xs disabled" href="{{ file.url }}delete/"><span class="glyphicon glyphicon-remove"></span> Delete</a>
 {% else %}
-      <a class="btn btn-primary btn-xs" href="{{ file.url }}edit/"><i class="icon-edit icon-white"></i> Edit</a>
-      <a class="btn btn-primary btn-xs" href="{{ file.url }}delete/"><i class="icon-remove icon-white"></i> Delete</a>
+      <a class="btn btn-primary btn-xs" href="{{ file.url }}edit/"><span class="glyphicon glyphicon-edit icon-white"></span> Edit</a>
+      <a class="btn btn-primary btn-xs" href="{{ file.url }}delete/"><span class="glyphicon glyphicon-remove icon-white"></span> Delete</a>
 {% endif %}{# conflicted #}
     </td>
 {% endif %}{#username #}
