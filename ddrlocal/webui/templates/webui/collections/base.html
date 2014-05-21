@@ -11,24 +11,11 @@
   {% if collection %}
     <form name="collection-sync" action="{% url "webui-collection-sync" repo org cid %}" method="POST">
       {% csrf_token %}
-      
-      {% if collection.repo_conflicted %}<span class="label label-important">CONFLICTED</span>{% endif %}
-      {% if   collection.repo_diverged   %}<span class="label label-important">DIVERGED</span>
-      {% elif collection.repo_behind     %}<span class="label label-warning">Behind</span>
-      {% elif collection.repo_ahead      %}<span class="label label-warning">Ahead</span>
-      {% endif %}
-
+      <span id="sync-status" class="label label-default">sync status</span>
     {% if collection.locked %}
       <a href="#" class="btn btn-xs muted" title="Sync"><span class="glyphicon glyphicon-lock"></span> Sync</a>
     {% else %}
-      <span id="sync-btn">
-        <button
-          {% if collection.repo_ahead %}class="btn btn-xs btn-warning"
-          {% elif collection.repo_behind %}class="btn btn-xs btn-warning"
-          {% else %}class="btn btn-xs btn-success"
-          {% endif %}
-          name="sync" type="submit" value="Sync">Sync</button>
-      </span>
+      <button id="sync-btn" class="btn btn-xs hidden" name="sync" type="submit" value="Sync">Sync</button>
     {% endif %}
     </form>
   {% endif %}{# collection #}
@@ -37,9 +24,35 @@
 
 {% block javascript %}{{ block.super }}
 <script>
-  /* collection tooltips */
   $(function () { 
+    /* collection tooltips */
     $('#unsynced').tooltip({'placement':'bottom'});
+    
+{% if collection.sync_status %}
+    /* collection sync status: already cached on page-load */
+    var sync_status = '{{ collection.sync_status.status }}';
+    $('#sync-status').addClass('label-{{ collection.sync_status.color }}');
+    $('#sync-btn').addClass('btn-{{ collection.sync_status.color }}');
+    if (sync_status == 'synced') {
+      $('#sync-status').text('Synced');
+    } else {
+      $('#sync-status').text(sync_status);
+      $('#sync-btn').removeClass('hidden');
+    }
+{% else %}
+    /* collection sync status: get after page-load */
+    var collection_status_url = '{{ collection.sync_status_url|safe }}';
+    jQuery.getJSON(collection_status_url, function(data) {
+      $('#sync-status').addClass('label-' + data['color']);
+      $('#sync-btn'   ).addClass('btn-'   + data['color']);
+      if (data['status'] == 'synced') {
+        $('#sync-status').text('Synced');
+      } else {
+        $('#sync-status').text(data['status']);
+        $('#sync-btn').removeClass('hidden');
+      }
+    });
+{% endif %}
   })
 </script>
 {% endblock javascript %}
