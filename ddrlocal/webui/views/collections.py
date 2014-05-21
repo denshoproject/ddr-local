@@ -49,34 +49,6 @@ def alert_if_conflicted(request, collection):
         url = reverse('webui-merge', args=[collection.repo,collection.org,collection.cid])
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_CONFLICTED'].format(collection.id, url))
 
-COLLECTION_SYNC_STATUS_CACHE_KEY = 'webui:collection:%s:sync-status'
-
-def _sync_status( request, repo, org, cid, collection=None, cache_set=False ):
-    """Cache collection repo sync status info for collections list page.
-    Used in both .collections() and .sync_status_ajax().
-    """
-    collection_id = '-'.join([repo, org, cid])
-    key = COLLECTION_SYNC_STATUS_CACHE_KEY % collection_id
-    data = cache.get(key)
-    if not data and cache_set:
-        if not collection:
-            collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
-        status = 'unknown'
-        btn = 'muted'
-        if   collection.repo_ahead(): status = 'ahead'; btn = 'warning'
-        elif collection.repo_behind(): status = 'behind'; btn = 'warning'
-        elif collection.repo_conflicted(): status = 'conflicted'; btn = 'danger'
-        elif collection.locked(): status = 'locked'; btn = 'warning'
-        elif collection.repo_synced(): status = 'synced'; btn = 'success'
-        data = {
-            'row': '#%s' % collection.id,
-            'color': btn,
-            'cell': '#%s td.status' % collection.id,
-            'status': status,
-        }
-        cache.set(key, data, COLLECTION_STATUS_TIMEOUT)
-    return data
-
 
 # views ----------------------------------------------------------------
 
@@ -89,7 +61,7 @@ def collections( request ):
     cached they will be updated by jQuery after page load has finished.
     """
     collections = []
-    collection_ids = []
+    collection_status_urls = []
     for o in get_repos_orgs():
         repo,org = o.split('-')
         colls = []
@@ -100,19 +72,15 @@ def collections( request ):
                 repo,org,cid = c[0],c[1],c[2]
                 collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
                 colls.append(collection)
-                # get status if cached, farm out to jquery if not
-                collection.sync_status = _sync_status(request, repo, org, cid)
-                if not collection.sync_status:
-                    collection_ids.append( [repo,org,cid] )
+                if not collection.sync_status():
+                    collection_status_urls.append( "'%s'" % collection.sync_status_url())
         collections.append( (o,repo,org,colls) )
-    # list of URLs for status updater
-    random.shuffle(collection_ids)
-    urls = ['"%s"' % reverse('webui-collection-sync-status-ajax',args=cid) for cid in collection_ids]
-    collection_status_urls = ', '.join(urls)
+    # load statuses in random order
+    random.shuffle(collection_status_urls)
     return render_to_response(
         'webui/collections/index.html',
         {'collections': collections,
-         'collection_status_urls': collection_status_urls,},
+         'collection_status_urls': ', '.join(collection_status_urls),},
         context_instance=RequestContext(request, processors=[])
     )
 
@@ -173,7 +141,8 @@ def collection_json( request, repo, org, cid ):
 @ddrview
 @storage_required
 def sync_status_ajax( request, repo, org, cid ):
-    data = _sync_status(request, repo, org, cid, cache_set=True)
+    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    data = collection.sync_status(cache_set=True)
     return HttpResponse(json.dumps(data), mimetype="application/json")
 
 @ddrview

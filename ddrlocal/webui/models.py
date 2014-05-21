@@ -8,6 +8,7 @@ import requests
 
 from django.conf import settings
 from django.core.cache import cache
+from django.core.urlresolvers import reverse
 from django.db import models
 
 from ddrlocal.models import DDRLocalCollection, DDRLocalEntity, DDRLocalFile
@@ -89,6 +90,40 @@ def _load_object( json_path ):
     elif basename == 'collection.json':
         return Collection.from_json(dirname)
     return None
+
+COLLECTION_SYNC_STATUS_CACHE_KEY = 'webui:collection:%s:sync-status'
+
+def _sync_status( repo, org, cid, collection=None, cache_set=False ):
+    """Cache collection repo sync status info for collections list page.
+    Used in both .collections() and .sync_status_ajax().
+    
+    @param repo: 
+    @param org: 
+    @param cid: 
+    @param collection: 
+    @param cache_set: Run git-status if data is not cached
+    """
+    collection_id = '-'.join([repo, org, cid])
+    key = COLLECTION_SYNC_STATUS_CACHE_KEY % collection_id
+    data = cache.get(key)
+    if not data and cache_set:
+        if not collection:
+            collection = Collection.from_json(Collection.collection_path(None,repo,org,cid))
+        status = 'unknown'
+        btn = 'muted'
+        if   collection.repo_ahead(): status = 'ahead'; btn = 'warning'
+        elif collection.repo_behind(): status = 'behind'; btn = 'warning'
+        elif collection.repo_conflicted(): status = 'conflicted'; btn = 'danger'
+        elif collection.locked(): status = 'locked'; btn = 'warning'
+        elif collection.repo_synced(): status = 'synced'; btn = 'success'
+        data = {
+            'row': '#%s' % collection.id,
+            'color': btn,
+            'cell': '#%s td.status' % collection.id,
+            'status': status,
+        }
+        cache.set(key, data, COLLECTION_STATUS_TIMEOUT)
+    return data
     
 def _update_inheritables( parent_object, objecttype, inheritables, cleaned_data ):
     """Update specified inheritable fields of child objects using form data.
@@ -167,6 +202,12 @@ class Collection( DDRLocalCollection ):
             cache.set(key, data, COLLECTION_ANNEX_STATUS_TIMEOUT)
         return data
     
+    def sync_status( self, cache_set=False ):
+        return _sync_status( self.repo, self.org, self.cid, self, cache_set )
+    
+    def sync_status_url( self ):
+        return reverse('webui-collection-sync-status-ajax',args=(self.repo,self.org,self.cid))
+
     def selected_inheritables(self, cleaned_data ):
         return _selected_inheritables(self.inheritable_fields(), cleaned_data)
     
