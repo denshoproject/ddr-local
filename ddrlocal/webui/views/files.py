@@ -73,7 +73,7 @@ def detail( request, repo, org, cid, eid, role, sha1 ):
     )
 
 @storage_required
-def json( request, repo, org, cid, eid, role, sha1 ):
+def file_json( request, repo, org, cid, eid, role, sha1 ):
     entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
     file_ = entity.file(repo, org, cid, eid, role, sha1)
     if file_.json_path and os.path.exists(file_.json_path):
