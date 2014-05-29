@@ -9,6 +9,7 @@ from django.contrib import messages
 from django.core.cache import cache
 
 from DDR import commands
+from DDR import docstore
 
 
 STORAGE_MESSAGES = {
@@ -183,6 +184,8 @@ def mount( request, devicefile, label ):
         request.session['storage_mount_path'] = mount_path
         # write mount_path to cache
         bp = base_path(request)
+        # update elasticsearch alias
+        docstore.set_alias(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, label)
     elif mount_path == False:
         messages.warning(request, STORAGE_MESSAGES['MOUNT_FAIL_PATH'].format(devicefile, label, stat, mount_path))
     else:
@@ -204,6 +207,8 @@ def mount_filepath( request, mount_path ):
     request.session['storage_devicefile'] = devicefile
     request.session['storage_label'] = label
     request.session['storage_mount_path'] = mount_path
+    # update elasticsearch alias
+    docstore.set_alias(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, label)
     return mount_path
 
 def unmount( request, devicefile, label ):

@@ -90,7 +90,7 @@ def results( request ):
     for char in BAD_CHARS:
         query = query.replace(char, '')
         
-    if docstore_index and query:
+    if query:
         context['search_form'] = SearchForm({'query': query})
         
         # prep query for elasticsearch
@@ -101,7 +101,7 @@ def results( request ):
                 'record_lastmod': request.GET.get('record_lastmod', ''),}
         
         # do query and cache the results
-        results = docstore.search(settings.DOCSTORE_HOSTS, docstore_index,
+        results = docstore.search(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX,
                                   query=query, filters=filters,
                                   model='collection,entity,file', fields=fields, sort=sort)
         if results.get('hits',None) and not results.get('status',None):
