@@ -352,7 +352,7 @@ ENTITY_FIELDS = [
         'form': {
             'label':      'Alternate ID',
             'help_text':  'May be a physical or virtual record identifier. For example, a physical shelf/folder location, a negative number, an accession number, or a URI of an external database record.',
-            'max_length': 255,
+            'max_length': 512,
             'widget':     '',
             'initial':    '',
             'required':   False,
