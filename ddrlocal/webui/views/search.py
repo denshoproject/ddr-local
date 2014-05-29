@@ -58,12 +58,13 @@ def massage_query_results( results, thispage, size ):
 
 @search_index
 def index( request ):
-    docstore_index = request.session.get('docstore_index', None)
+    target_index = docstore.target_index(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
     return render_to_response(
         'webui/search/index.html',
         {'hide_header_search': True,
          'search_form': SearchForm,
-         'docstore_index': docstore_index,},
+         'docstore_index': settings.DOCSTORE_INDEX,
+         'target_index': target_index,},
         context_instance=RequestContext(request, processors=[])
     )
 
@@ -71,7 +72,7 @@ def index( request ):
 def results( request ):
     """Results of a search query or a DDR ID query.
     """
-    docstore_index = request.session.get('docstore_index', None)
+    target_index = docstore.target_index(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
     template = 'webui/search/results.html'
     context = {
         'hide_header_search': True,
@@ -82,7 +83,8 @@ def results( request ):
         'page': None,
         'filters': None,
         'sort': None,
-        'docstore_index': docstore_index,
+        'docstore_index': settings.DOCSTORE_INDEX,
+        'target_index': target_index,
     }
     context['query'] = request.GET.get('query', '')
     # silently strip out bad chars
@@ -128,7 +130,7 @@ def results( request ):
 def admin( request ):
     """Administrative stuff like re-indexing.
     """
-    docstore_index = request.session.get('docstore_index', None)
+    target_index = docstore.target_index(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
     server_info = []
     index_names = []
     indices = []
@@ -182,7 +184,8 @@ def admin( request ):
          'indices': indices,
          'indexform': indexform,
          'dropform': dropform,
-         'docstore_index': docstore_index,},
+         'docstore_index': settings.DOCSTORE_INDEX,
+         'target_index': target_index,},
         context_instance=RequestContext(request, processors=[])
     )
 
