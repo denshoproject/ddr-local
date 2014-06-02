@@ -10,10 +10,11 @@ from django.shortcuts import Http404, get_object_or_404, render_to_response, red
 from django.template import RequestContext
 
 from DDR import commands
+from DDR import storage
 
 from webui.tasks import reindex_and_notify
 from storage import STORAGE_MESSAGES
-from storage import base_path, media_base_target, removables, removables_mounted
+from storage import base_path, media_base_target
 from storage import mount, mount_filepath, unmount, add_media_symlink, rm_media_symlink
 from storage.forms import MountForm, UmountForm, ActiveForm, ManualSymlinkForm
 
@@ -30,10 +31,10 @@ def get_unmounted(removablez):
     return unmounted
 
 def unmounted_devices():
-    return [(d['devicefile'],d['label']) for d in get_unmounted(removables())]
+    return [(d['devicefile'],d['label']) for d in get_unmounted(storage.removables())]
 
 def mounted_devices():
-    return [(d['mountpath'],d['devicefile']) for d in removables_mounted()]
+    return [(d['mountpath'],d['devicefile']) for d in storage.removables_mounted()]
 
 def add_manual_symlink(devices):
     """Adds manually-set symlink to list of mounted devices if present.
@@ -54,8 +55,8 @@ def add_manual_symlink(devices):
 def index( request ):
     """Interface for mounting/unmounting drives and setting active device
     """
-    removablez = removables()
-    mounted = removables_mounted()
+    removablez = storage.removables()
+    mounted = storage.removables_mounted()
     unmounted = get_unmounted(removablez)
     udevices = unmounted_devices()
     mdevices = mounted_devices()
@@ -167,7 +168,7 @@ def remount1( request ):
     # the actual new devicefile
     devicefile_udisks = None
     if label:
-        for d in removables():
+        for d in storage.removables():
             if d['label'] == label:
                 devicefile_udisks = d['devicefile']
     # unmount, mount

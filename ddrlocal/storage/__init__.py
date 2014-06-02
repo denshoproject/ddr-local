@@ -86,48 +86,6 @@ def devicefile_label_from_mediapath( path ):
     label = devicefile
     return devicefile,label
 
-def disk_space(mount_path):
-    """Returns disk space info for the mounted drive.
-    
-    Uses 'df -h' on the back-end.
-        Filesystem  Size  Used  Avail  Use%  Mounted on
-    TODO Make this work on drives with spaces in their name!
-    """
-    fs = None
-    r = envoy.run('df -h')
-    for line in r.std_out.strip().split('\n'):
-        while line.find('  ') > -1:
-            line = line.replace('  ', ' ')
-        parts = line.split(' ')
-        path = parts[5]
-        if (path in mount_path) and (path != '/'):
-            fs = {'size': parts[1],
-                  'used': parts[2],
-                  'total': parts[3],
-                  'percent': parts[4].replace('%',''),
-                  'mount': parts[5],}
-    return fs
-
-def removables():
-    """Wrapper around DDR.commands.removables.
-    """
-    stat,removables = commands.removables()
-    return removables
-
-def removables_mounted():
-    """Wrapper around DDR.commands.removables_mounted that adds symlink info.
-    
-    The removable that is the target of the MEDIA_BASE symlink is marked as
-    m['media_base_target'] = True.
-    """
-    stat,mounted = commands.removables_mounted()
-    mbase = media_base_target()
-    for m in mounted:
-        m['media_base_target'] = False
-        if mbase and (m['mountpath'] in mbase):
-            m['media_base_target'] = True
-    return mounted
-
 def add_media_symlink(base_path):
     """Creates symlink to base_path in /var/www/media/
 
