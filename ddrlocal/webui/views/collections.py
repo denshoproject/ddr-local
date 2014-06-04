@@ -21,6 +21,7 @@ from django.template.loader import get_template
 
 from DDR import commands
 from DDR import docstore
+from DDR.models import make_object_id, id_from_path
 
 from ddrlocal.models.collection import COLLECTION_FIELDS
 
@@ -38,11 +39,6 @@ from xmlforms.models import XMLModel
 
 
 # helpers --------------------------------------------------------------
-
-def _uid_path(request, repo, org, cid):
-    uid = '{}-{}-{}'.format(repo, org, cid)
-    path = os.path.join(settings.MEDIA_BASE, uid)
-    return uid,path
 
 def alert_if_conflicted(request, collection):
     if collection.repo_conflicted():
@@ -223,7 +219,7 @@ def new( request, repo, org ):
         return HttpResponseRedirect(reverse('webui-collections'))
     cid = int(collection_ids[-1].split('-')[2])
     # create the new collection repo
-    collection_uid,collection_path = _uid_path(request, repo, org, cid)
+    collection_path = Collection.collection_path(request,repo,org,cid)
     # collection.json template
     Collection(collection_path).dump_json(path=settings.TEMPLATE_CJSON, template=True)
     exit,status = commands.create(git_name, git_mail,
@@ -434,7 +430,8 @@ def edit_xml( request, repo, org, cid, slug, Form, FIELDS ):
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    collection_uid,collection_path = _uid_path(request, repo, org, cid)
+    collection_path = Collection.collection_path(request,repo,org,cid)
+    collection_id = id_from_path(collection_path)
     ead_path_rel = 'ead.xml'
     ead_path_abs = os.path.join(collection_path, ead_path_rel)
     with open(ead_path_abs, 'r') as f:
@@ -473,7 +470,7 @@ def edit_xml( request, repo, org, cid, slug, Form, FIELDS ):
         {'repo': repo,
          'org': org,
          'cid': cid,
-         'collection_uid': collection_uid,
+         'collection_uid': collection_id,
          'slug': slug,
          'form': form,},
         context_instance=RequestContext(request, processors=[])
