@@ -22,7 +22,7 @@ from DDR import commands
 from DDR import dvcs
 from DDR import natural_order_string
 from DDR.models import Collection as DDRCollection, Entity as DDREntity
-from ddrlocal import VERSION, git_commit
+from ddrlocal import VERSION, COMMIT
 from ddrlocal.models import collection as collectionmodule
 from ddrlocal.models import entity as entitymodule
 from ddrlocal.models import files as filemodule
@@ -587,7 +587,7 @@ class DDRLocalCollection( DDRCollection ):
         @param template: [optional] Boolean. If true, write default values for fields.
         """
         collection = [{'application': 'https://github.com/densho/ddr-local.git',
-                       'commit': git_commit(),
+                       'commit': COMMIT,
                        'release': VERSION,
                        'git': git_version(self.path),}]
         template_passthru = ['id', 'record_created', 'record_lastmod']
@@ -974,7 +974,7 @@ class DDRLocalEntity( DDREntity ):
         @param template: [optional] Boolean. If true, write default values for fields.
         """
         entity = [{'application': 'https://github.com/densho/ddr-local.git',
-                   'commit': git_commit(),
+                   'commit': COMMIT,
                    'release': VERSION,
                    'git': git_version(self.parent_path),}]
         exceptions = ['files', 'filemeta']
@@ -1620,7 +1620,7 @@ class DDRLocalFile( object ):
         """
         # TODO DUMP FILE AND FILEMETA PROPERLY!!!
         file_ = [{'application': 'https://github.com/densho/ddr-local.git',
-                  'commit': git_commit(),
+                  'commit': COMMIT,
                   'release': VERSION,
                   'git': git_version(self.collection_path),},
                  {'path_rel': self.path_rel},]

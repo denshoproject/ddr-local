@@ -3,22 +3,12 @@ import logging
 logger = logging.getLogger(__name__)
 import os
 
-import envoy
-
 from django.conf import settings
 from django.core.urlresolvers import reverse
 
+from ddrlocal import COMMIT
 from webui.tasks import session_tasks_list
 
-
-def git_commit():
-    """Returns the ddr-local repo's most recent Git commit.
-    """
-    try:
-        commit = envoy.run('git log --pretty=format:"%H" -1').std_out
-    except:
-        commit = 'unknown'
-    return commit
 
 def sitewide(request):
     """Variables that need to be inserted into all templates.
@@ -35,7 +25,7 @@ def sitewide(request):
         'time': datetime.now().isoformat(),
         'pid': os.getpid(),
         'host': os.uname()[1],
-        'commit': git_commit()[:7],
+        'commit': COMMIT[:7],
         # user info
         'username': request.session.get('username', None),
         'git_name': request.session.get('git_name', None),
