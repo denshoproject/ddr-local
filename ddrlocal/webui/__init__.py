@@ -6,7 +6,7 @@ from django.core.cache import cache
 
 from DDR import commands
 from DDR.docstore import make_index_name, index_exists
-from DDR.dvcs import gitolite_info
+from DDR.dvcs import gitolite_info, gitolite_orgs
 from storage import base_path
 
 
@@ -63,17 +63,11 @@ def get_repos_orgs():
     key = 'ddrlocal:gitolite_repos_orgs'
     repos_orgs = cache.get(key)
     if not repos_orgs:
-        repos_orgs = []
         status,lines = gitolite_info(settings.GITOLITE)
         if status and not lines:
             logging.error('commands.gitolite_info() status:%s, lines:%s' % (status,lines))
             logging.error('| Is ddr missing its SSH keys?')
-        for line in lines:
-            if 'R W C' in line:
-                parts = line.replace('R W C', '').strip().split('-')
-                repo_org = '-'.join([parts[0], parts[1]])
-                if repo_org not in repos_orgs:
-                    repos_orgs.append(repo_org)
+        repos_orgs = gitolite_orgs(lines)
         if repos_orgs:
             cache.set(key, repos_orgs, settings.REPOS_ORGS_TIMEOUT)
         else:
