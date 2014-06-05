@@ -22,7 +22,7 @@ from DDR import commands
 from DDR import dvcs
 from DDR import natural_order_string
 from DDR.models import Collection as DDRCollection, Entity as DDREntity
-from DDR.models import file_hash
+from DDR.models import module_function, module_xml_function, file_hash
 from ddrlocal import VERSION, COMMIT
 from ddrlocal.models import collection as collectionmodule
 from ddrlocal.models import entity as entitymodule
@@ -34,43 +34,6 @@ from ddrlocal.models.xml import EAD, METS
 
 COLLECTION_FILES_PREFIX = 'files'
 ENTITY_FILES_PREFIX = 'files'
-
-def module_function(module, function_name, value):
-    """If named function is present in module and callable, pass value to it and return result.
-    
-    Among other things this may be used to prep data for display, prepare it
-    for editing in a form, or convert cleaned form data into Python data for
-    storage in objects.
-    
-    @param module: A Python module
-    @param function_name: Name of the function to be executed.
-    @param value: A single value to be passed to the function, or None.
-    @returns: Whatever the specified function returns.
-    """
-    if (function_name in dir(module)):
-        function = getattr(module, function_name)
-        value = function(value)
-    return value
-
-def module_xml_function(module, function_name, tree, NAMESPACES, f, value):
-    """If module function is present and callable, pass value to it and return result.
-    
-    Same as module_function() but with XML we need to pass namespaces lists to
-    the functions.
-    Used in dump_ead(), dump_mets().
-    
-    @param module: A Python module
-    @param function_name: Name of the function to be executed.
-    @param tree: An lxml tree object.
-    @param NAMESPACES: Dict of namespaces used in the XML document.
-    @param f: Field dict (from MODEL_FIELDS).
-    @param value: A single value to be passed to the function, or None.
-    @returns: Whatever the specified function returns.
-    """
-    if (function_name in dir(module)):
-        function = getattr(module, function_name)
-        tree = function(tree, NAMESPACES, f, value)
-    return tree
 
 def write_json(data, path):
     """Write JSON using consistent formatting and sorting.
