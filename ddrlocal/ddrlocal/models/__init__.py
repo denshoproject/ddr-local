@@ -15,13 +15,12 @@ from lxml import etree
 from sorl.thumbnail import default
 
 from django.conf import settings
-from django.core.files import File
 
 from DDR import commands
 from DDR import dvcs
 from DDR import natural_order_string
 from DDR.models import Collection as DDRCollection, Entity as DDREntity
-from DDR.models import file_hash, _inheritable_fields, _inherit
+from DDR.models import dissect_path, file_hash, _inheritable_fields, _inherit
 from DDR.models import module_function, module_xml_function, write_json
 from ddrlocal import VERSION, COMMIT
 from ddrlocal.models import collection as collectionmodule
@@ -113,18 +112,6 @@ class DDRLocalCollection( DDRCollection ):
         <DDRLocalCollection ddr-testing-123>
         """
         return "<DDRLocalCollection %s>" % (self.id)
-    
-
-    @staticmethod
-    def collection_path(request, repo, org, cid):
-        """Returns absolute path to collection repo directory.
-        
-        TODO Move to webui.models
-        
-        >>> DDRLocalCollection.collection_path(None, 'ddr', 'testing', 123)
-        '/var/www/media/base/ddr-testing-123'
-        """
-        return os.path.join(settings.MEDIA_BASE, '{}-{}-{}'.format(repo, org, cid))
     
     @staticmethod
     def create(path):
@@ -405,14 +392,6 @@ class DDRLocalEntity( DDREntity ):
     
     def __repr__(self):
         return "<DDRLocalEntity %s>" % (self.id)
-    
-    @staticmethod
-    def entity_path(request, repo, org, cid, eid):
-        collection_uid = '{}-{}-{}'.format(repo, org, cid)
-        entity_uid     = '{}-{}-{}-{}'.format(repo, org, cid, eid)
-        collection_abs = os.path.join(settings.MEDIA_BASE, collection_uid)
-        entity_abs     = os.path.join(collection_abs, COLLECTION_FILES_PREFIX, entity_uid)
-        return entity_abs
     
     def files_master( self ):
         files = [f for f in self.files if hasattr(f,'role') and (f.role == 'master')]
@@ -1061,9 +1040,9 @@ class DDRLocalFile( object ):
         """
         # accept either path_abs or path_rel
         if kwargs and kwargs.get('path_abs',None):
-            self.path_abs = path_abs
+            self.path_abs = kwargs['path_abs']
         elif kwargs and kwargs.get('path_rel',None):
-            self.path_rel = path_rel
+            self.path_rel = kwargs['path_rel']
         else:
             if args and args[0]:
                 s = os.path.splitext(args[0])
@@ -1085,9 +1064,6 @@ class DDRLocalFile( object ):
             # NOTE: we get role from filename and also from JSON data, if available
             self.role = parts[4]
             self.sha1 = parts[5]
-            self.collection_path = DDRLocalCollection.collection_path(None, self.repo, self.org, self.cid)
-            self.entity_path = DDRLocalEntity.entity_path(None, self.repo, self.org, self.cid, self.eid)
-            self.entity_files_path = os.path.join(self.entity_path, ENTITY_FILES_PREFIX)
         # get one path if the other not present
         if self.entity_path and self.path_rel and not self.path_abs:
             self.path_abs = os.path.join(self.entity_files_path, self.path_rel)
@@ -1098,6 +1074,10 @@ class DDRLocalFile( object ):
             self.path_rel = self.path_rel[1:]
         # load JSON
         if self.path_abs:
+            p = dissect_path(self.path_abs)
+            self.collection_path = p.collection_path
+            self.entity_path = p.entity_path
+            self.entity_files_path = os.path.join(self.entity_path, ENTITY_FILES_PREFIX)
             # file JSON
             self.json_path = os.path.join(os.path.splitext(self.path_abs)[0], '.json')
             self.json_path = self.json_path.replace('/.json', '.json')
@@ -1113,10 +1093,6 @@ class DDRLocalFile( object ):
     
     def __repr__(self):
         return "<DDRLocalFile %s (%s)>" % (self.basename, self.basename_orig)
-    
-    @staticmethod
-    def file_path(request, repo, org, cid, eid, role, sha1):
-        return os.path.join(settings.MEDIA_BASE, '{}-{}-{}-{}-{}-{}'.format(repo, org, cid, eid, role, sha1))
     
     # _lockfile
     # lock
