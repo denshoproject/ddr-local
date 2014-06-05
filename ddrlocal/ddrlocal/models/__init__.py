@@ -22,7 +22,8 @@ from DDR import commands
 from DDR import dvcs
 from DDR import natural_order_string
 from DDR.models import Collection as DDRCollection, Entity as DDREntity
-from DDR.models import file_hash, module_function, module_xml_function, write_json
+from DDR.models import file_hash, _inheritable_fields, _inherit
+from DDR.models import module_function, module_xml_function, write_json
 from ddrlocal import VERSION, COMMIT
 from ddrlocal.models import collection as collectionmodule
 from ddrlocal.models import entity as entitymodule
@@ -30,36 +31,8 @@ from ddrlocal.models import files as filemodule
 from ddrlocal.models.meta import CollectionJSON, EntityJSON, read_json
 from ddrlocal.models.xml import EAD, METS
 
-
-
 COLLECTION_FILES_PREFIX = 'files'
 ENTITY_FILES_PREFIX = 'files'
-
-def _inheritable_fields( MODEL_FIELDS ):
-    """Returns a list of fields that can inherit or grant values.
-    
-    Inheritable fields are marked 'inheritable':True in MODEL_FIELDS.
-    
-    @param MODEL_FIELDS
-    @returns: list
-    """
-    inheritable = []
-    for f in MODEL_FIELDS:
-        if f.get('inheritable', None):
-            inheritable.append(f['name'])
-    return inheritable
-
-def _inherit( parent, child ):
-    """Set inheritable fields in child object with values from parent.
-    
-    @param parent: A webui.models.Collection or webui.models.Entity
-    @param child: A webui.models.Entity or webui.models.File
-    """
-    for field in parent.inheritable_fields():
-        if hasattr(parent, field) and hasattr(child, field):
-            setattr(child, field, getattr(parent, field))
-
-
 
 MODEL_FIELDS = [
     {
