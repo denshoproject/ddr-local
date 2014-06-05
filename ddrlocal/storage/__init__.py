@@ -79,7 +79,7 @@ def devicefile_label_from_mediapath( path ):
     >>> path = '/media/ddrworkstation/ddr'
     'ddrworkstation','ddrworkstation'
     
-    @param raw: string
+    @param path: string
     @returns: devicefile,label
     """
     devicefile = path.replace('/media/','').replace('/ddr','')
@@ -149,6 +149,8 @@ def mount( request, devicefile, label ):
 
 def mount_filepath( request, mount_path ):
     """
+    @param request: Django request object; used to access session.
+    @param mount_path: Absolute path to mounted device; "/ddr" will be appended.
     """
     devicefile,label = devicefile_label_from_mediapath(mount_path)
     rm_media_symlink()
@@ -166,6 +168,10 @@ def mount_filepath( request, mount_path ):
 
 def unmount( request, devicefile, label ):
     """Removes /var/www/ddr/media symlink, unmounts requested device, gives feedback.
+    
+    @param request: Django request object; used to access session.
+    @param devicefile: 
+    @param label: Device label
     """
     logger.debug('unmount(%s, %s)' % (devicefile, label))
     unmounted = None
