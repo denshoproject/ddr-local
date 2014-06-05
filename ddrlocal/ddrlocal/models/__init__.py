@@ -22,6 +22,7 @@ from DDR import commands
 from DDR import dvcs
 from DDR import natural_order_string
 from DDR.models import Collection as DDRCollection, Entity as DDREntity
+from DDR.models import file_hash
 from ddrlocal import VERSION, COMMIT
 from ddrlocal.models import collection as collectionmodule
 from ddrlocal.models import entity as entitymodule
@@ -1102,17 +1103,17 @@ class DDRLocalEntity( DDREntity ):
             # task: get SHA1 checksum (links entity.filemeta entity.files records
             self.files_log(1, 'Checksumming...')
             try:
-                f.sha1   = hash(src_path, 'sha1')
+                f.sha1   = file_hash(src_path, 'sha1')
                 self.files_log(1, 'sha1: %s' % f.sha1)
             except:
                 self.files_log(0, 'sha1 FAIL')
             try:
-                f.md5    = hash(src_path, 'md5')
+                f.md5    = file_hash(src_path, 'md5')
                 self.files_log(1, 'md5: %s' % f.md5)
             except:
                 self.files_log(0, 'md5 FAIL')
             try:
-                f.sha256 = hash(src_path, 'sha256')
+                f.sha256 = file_hash(src_path, 'sha256')
                 self.files_log(1, 'sha256: %s' % f.sha256)
             except:
                 self.files_log(0, 'sha256 FAIL')
@@ -1319,27 +1320,6 @@ FILE_KEYS = ['path_rel',
              'thumb',
              'access_rel',
              'xmp',]
-
-
-
-def hash(path, algo='sha1'):
-    if algo == 'sha256':
-        h = hashlib.sha256()
-    elif algo == 'md5':
-        h = hashlib.md5()
-    else:
-        h = hashlib.sha1()
-    block_size=1024
-    f = open(path, 'rb')
-    while True:
-        data = f.read(block_size)
-        if not data:
-            break
-        h.update(data)
-    f.close()
-    return h.hexdigest()
-
-
 
 class DDRLocalFile( object ):
     # path relative to /
@@ -1629,7 +1609,7 @@ class DDRLocalFile( object ):
         if os.path.exists and os.access(path_abs, os.R_OK):
             ext = os.path.splitext(path_abs)[1]
             if not sha1:
-                sha1 = hash(path_abs, 'sha1')
+                sha1 = file_hash(path_abs, 'sha1')
             if sha1:
                 base = '-'.join([
                     entity.repo, entity.org, entity.cid, entity.eid,
