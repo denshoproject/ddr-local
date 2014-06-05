@@ -16,7 +16,6 @@ from sorl.thumbnail import default
 
 from django.conf import settings
 from django.core.files import File
-from django.core.urlresolvers import reverse
 
 from DDR import commands
 from DDR import dvcs
@@ -115,27 +114,6 @@ class DDRLocalCollection( DDRCollection ):
         """
         return "<DDRLocalCollection %s>" % (self.id)
     
-    def url( self ):
-        """Returns relative URL in context of webui app.
-        
-        TODO Move to webui.models
-        
-        >>> c = DDRLocalCollection('/tmp/ddr-testing-123')
-        >>> c.url()
-        '/ui/ddr-testing-123/'
-        """
-        return reverse('webui-collection', args=[self.repo, self.org, self.cid])
-    
-    def cgit_url( self ):
-        """Returns cgit URL for collection.
-        
-        TODO Move to webui.models
-        
-        >>> c = DDRLocalCollection('/tmp/ddr-testing-123')
-        >>> c.cgit_url()
-        'http://partner.densho.org/cgit/cgit.cgi/ddr-testing-123/'
-        """
-        return '{}/cgit.cgi/{}/'.format(settings.CGIT_URL, self.uid)
 
     @staticmethod
     def collection_path(request, repo, org, cid):
@@ -428,9 +406,6 @@ class DDRLocalEntity( DDREntity ):
     def __repr__(self):
         return "<DDRLocalEntity %s>" % (self.id)
     
-    def url( self ):
-        return reverse('webui-entity', args=[self.repo, self.org, self.cid, self.eid])
-
     @staticmethod
     def entity_path(request, repo, org, cid, eid):
         collection_uid = '{}-{}-{}'.format(repo, org, cid)
@@ -1138,21 +1113,6 @@ class DDRLocalFile( object ):
     
     def __repr__(self):
         return "<DDRLocalFile %s (%s)>" % (self.basename, self.basename_orig)
-    
-    def url( self ):
-        return reverse('webui-file', args=[self.repo, self.org, self.cid, self.eid, self.role, self.sha1[:10]])
-    
-    def media_url( self ):
-        if self.path_rel:
-            stub = os.path.join(self.entity_files_path.replace(settings.MEDIA_ROOT,''), self.path_rel)
-            return '%s%s' % (settings.MEDIA_URL, stub)
-        return None
-    
-    def access_url( self ):
-        if self.access_rel:
-            stub = os.path.join(self.entity_files_path.replace(settings.MEDIA_ROOT,''), self.access_rel)
-            return '%s%s' % (settings.MEDIA_URL, stub)
-        return None
     
     @staticmethod
     def file_path(request, repo, org, cid, eid, role, sha1):

@@ -161,6 +161,28 @@ def _update_inheritables( parent_object, objecttype, inheritables, cleaned_data 
 
 class Collection( DDRLocalCollection ):
     
+    def url( self ):
+        """Returns relative URL in context of webui app.
+        
+        TODO Move to webui.models
+        
+        >>> c = DDRLocalCollection('/tmp/ddr-testing-123')
+        >>> c.url()
+        '/ui/ddr-testing-123/'
+        """
+        return reverse('webui-collection', args=[self.repo, self.org, self.cid])
+    
+    def cgit_url( self ):
+        """Returns cgit URL for collection.
+        
+        TODO Move to webui.models
+        
+        >>> c = DDRLocalCollection('/tmp/ddr-testing-123')
+        >>> c.cgit_url()
+        'http://partner.densho.org/cgit/cgit.cgi/ddr-testing-123/'
+        """
+        return '{}/cgit.cgi/{}/'.format(settings.CGIT_URL, self.uid)
+    
     def cache_delete( self ):
         cache.delete(COLLECTION_FETCH_CACHE_KEY % self.id)
         cache.delete(COLLECTION_STATUS_CACHE_KEY % self.id)
@@ -218,6 +240,9 @@ class Collection( DDRLocalCollection ):
 
 class Entity( DDRLocalEntity ):
     
+    def url( self ):
+        return reverse('webui-entity', args=[self.repo, self.org, self.cid, self.eid])
+    
     @staticmethod
     def from_json(entity_abs):
         entity = None
@@ -234,3 +259,22 @@ class Entity( DDRLocalEntity ):
     
     def update_inheritables( self, inheritables, cleaned_data ):
         return _update_inheritables(self, 'entity', inheritables, cleaned_data)
+
+
+
+class DDRFile( DDRLocalFile ):
+    
+    def url( self ):
+        return reverse('webui-file', args=[self.repo, self.org, self.cid, self.eid, self.role, self.sha1[:10]])
+    
+    def media_url( self ):
+        if self.path_rel:
+            stub = os.path.join(self.entity_files_path.replace(settings.MEDIA_ROOT,''), self.path_rel)
+            return '%s%s' % (settings.MEDIA_URL, stub)
+        return None
+    
+    def access_url( self ):
+        if self.access_rel:
+            stub = os.path.join(self.entity_files_path.replace(settings.MEDIA_ROOT,''), self.access_rel)
+            return '%s%s' % (settings.MEDIA_URL, stub)
+        return None
