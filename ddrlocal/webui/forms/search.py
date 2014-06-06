@@ -13,7 +13,12 @@ class SearchForm(forms.Form):
     query = forms.CharField(max_length=255)
 
 
-def _index_choices( request, show_missing=False ):
+def _index_choices( request, show_missing=False, default=None ):
+    """
+    @param request: 
+    @param show_missing: 
+    @param default: choice tuple or None
+    """
     # current indices in Elasticsearch
     indices = []
     for index in index_names(settings.DOCSTORE_HOSTS):
@@ -34,7 +39,10 @@ def _index_choices( request, show_missing=False ):
                 if store_index and (store_index not in indices):
                     indices.append(store_index)
     # make list of tuples for choices menu
-    return [(index,index) for index in indices]
+    choices = [(index,index) for index in indices]
+    if default:
+        choices.insert(0, default)
+    return choices
 
 class IndexConfirmForm(forms.Form):
     index = forms.ChoiceField(choices=[])
@@ -47,7 +55,8 @@ class IndexConfirmForm(forms.Form):
         super(IndexConfirmForm, self).__init__(*args, **kwargs)
         # add current index to list
         if request:
-            self.fields['index'].choices = _index_choices(request, show_missing=True)
+            self.fields['index'].choices = _index_choices(
+                request, show_missing=True, default=('', 'Select an index'))
 
 class DropConfirmForm(forms.Form):
     index = forms.ChoiceField(choices=[])
@@ -61,4 +70,5 @@ class DropConfirmForm(forms.Form):
         super(DropConfirmForm, self).__init__(*args, **kwargs)
         # add current index to list
         if request:
-            self.fields['index'].choices = _index_choices(request)
+            self.fields['index'].choices = _index_choices(
+                request, default=('', 'Select an index'))
