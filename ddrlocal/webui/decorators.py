@@ -28,14 +28,18 @@ def search_index(func):
     @wraps(func, assigned=available_attrs(func))
     def inner(request, *args, **kwargs):
         storage_label,docstore_index_exists = set_docstore_index(request)
-        # feedback
-        if storage_label and not docstore_index_exists:
-            messages.warning(
-                request,
-                'No search index for %s. Search is disabled. Please reindex.' % (storage_label))
-        if not (storage_label or docstore_index_exists):
-            messages.warning(
-                request,
-                'Cound not find storage label. Search is disabled.')
+        s = ' '; d = ' '
+        if storage_label: s = 's'
+        if docstore_index_exists: d = 'd'
+        key = ''.join([s,d])
+        error_messages = {
+            'sd': None, # nothing to see here, move along
+            's ': 'No search index for %s. Search is disabled. Please reindex.' % (storage_label),
+            ' d': 'No storage devices mounted. Search is disabled.',
+            '  ': 'No storage devices mounted and no search index. Search is disabled.',
+        }
+        msg = error_messages[key]
+        if msg:
+            messages.warning(request, msg)
         return func(request, *args, **kwargs)
     return inner
