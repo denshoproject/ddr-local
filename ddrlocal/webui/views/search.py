@@ -58,12 +58,13 @@ def massage_query_results( results, thispage, size ):
 
 @search_index
 def index( request ):
-    docstore_index = request.session.get('docstore_index', None)
+    target_index = docstore.target_index(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
     return render_to_response(
         'webui/search/index.html',
         {'hide_header_search': True,
          'search_form': SearchForm,
-         'docstore_index': docstore_index,},
+         'docstore_index': settings.DOCSTORE_INDEX,
+         'target_index': target_index,},
         context_instance=RequestContext(request, processors=[])
     )
 
@@ -71,7 +72,7 @@ def index( request ):
 def results( request ):
     """Results of a search query or a DDR ID query.
     """
-    docstore_index = request.session.get('docstore_index', None)
+    target_index = docstore.target_index(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
     template = 'webui/search/results.html'
     context = {
         'hide_header_search': True,
@@ -82,7 +83,8 @@ def results( request ):
         'page': None,
         'filters': None,
         'sort': None,
-        'docstore_index': docstore_index,
+        'docstore_index': settings.DOCSTORE_INDEX,
+        'target_index': target_index,
     }
     context['query'] = request.GET.get('query', '')
     # silently strip out bad chars
@@ -90,7 +92,7 @@ def results( request ):
     for char in BAD_CHARS:
         query = query.replace(char, '')
         
-    if docstore_index and query:
+    if query:
         context['search_form'] = SearchForm({'query': query})
         
         # prep query for elasticsearch
@@ -101,7 +103,7 @@ def results( request ):
                 'record_lastmod': request.GET.get('record_lastmod', ''),}
         
         # do query and cache the results
-        results = docstore.search(settings.DOCSTORE_HOSTS, docstore_index,
+        results = docstore.search(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX,
                                   query=query, filters=filters,
                                   model='collection,entity,file', fields=fields, sort=sort)
         if results.get('hits',None) and not results.get('status',None):
@@ -128,7 +130,7 @@ def results( request ):
 def admin( request ):
     """Administrative stuff like re-indexing.
     """
-    docstore_index = request.session.get('docstore_index', None)
+    target_index = docstore.target_index(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
     server_info = []
     index_names = []
     indices = []
@@ -182,7 +184,8 @@ def admin( request ):
          'indices': indices,
          'indexform': indexform,
          'dropform': dropform,
-         'docstore_index': docstore_index,},
+         'docstore_index': settings.DOCSTORE_INDEX,
+         'target_index': target_index,},
         context_instance=RequestContext(request, processors=[])
     )
 

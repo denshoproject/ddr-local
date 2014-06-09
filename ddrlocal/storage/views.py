@@ -10,6 +10,7 @@ from django.shortcuts import Http404, get_object_or_404, render_to_response, red
 from django.template import RequestContext
 
 from DDR import commands
+from DDR import docstore
 
 from webui.tasks import reindex_and_notify
 from storage import STORAGE_MESSAGES
@@ -119,6 +120,8 @@ def activate_device( request ):
             add_media_symlink(new_base_path)
             label = os.path.basename(path)
             messages.success(request, '<strong>%s</strong> is now the active device' % label)
+            # update elasticsearch alias
+            docstore.set_alias(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, label)
             # TODO regenerate redis caches
     return HttpResponseRedirect( reverse('storage-index') )
 
