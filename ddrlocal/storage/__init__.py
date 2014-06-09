@@ -95,18 +95,19 @@ def disk_space(mount_path):
     TODO Make this work on drives with spaces in their name!
     """
     fs = None
-    r = envoy.run('df -h')
-    for line in r.std_out.strip().split('\n'):
-        while line.find('  ') > -1:
-            line = line.replace('  ', ' ')
-        parts = line.split(' ')
-        path = parts[5]
-        if (path in mount_path) and (path != '/'):
-            fs = {'size': parts[1],
-                  'used': parts[2],
-                  'total': parts[3],
-                  'percent': parts[4].replace('%',''),
-                  'mount': parts[5],}
+    if mount_path:
+        r = envoy.run('df -h')
+        for line in r.std_out.strip().split('\n'):
+            while line.find('  ') > -1:
+                line = line.replace('  ', ' ')
+            parts = line.split(' ')
+            path = parts[5]
+            if (path in mount_path) and (path != '/'):
+                fs = {'size': parts[1],
+                      'used': parts[2],
+                      'total': parts[3],
+                      'percent': parts[4].replace('%',''),
+                      'mount': parts[5],}
     return fs
 
 def removables():
@@ -139,16 +140,18 @@ def add_media_symlink(base_path):
     target = base_path
     link = settings.MEDIA_BASE
     link_parent = os.path.split(link)[0]
-    s = []
-    if os.path.exists(target):          s.append('1')
-    else:                               s.append('0')
-    if os.path.exists(link_parent):     s.append('1')
-    else:                               s.append('0')
-    if os.access(link_parent, os.W_OK): s.append('1')
-    else:                               s.append('0')
-    s = ''.join(s)
-    if s == '111':
-        os.symlink(target, link)
+    if target and link and link_parent:
+        s = []
+        if os.path.exists(target):          s.append('1')
+        else:                               s.append('0')
+        if os.path.exists(link_parent):     s.append('1')
+        else:                               s.append('0')
+        if os.access(link_parent, os.W_OK): s.append('1')
+        else:                               s.append('0')
+        s = ''.join(s)
+        if s == '111':
+            logger.debug('symlink target=%s, link=%s' % (target, link))
+            os.symlink(target, link)
 
 def rm_media_symlink():
     """Remove the media symlink (see add_media_symlink).
