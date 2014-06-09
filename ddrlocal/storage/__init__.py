@@ -53,14 +53,16 @@ def base_path(request=None):
     if path and (path != BASE_PATH_DEFAULT):
         # expires %{BASE_PATH_TIMEOUT} after last access
         cache.set(key, path, BASE_PATH_TIMEOUT)
-        return path
     else:
         mount_path = None
         path = BASE_PATH_DEFAULT
         if request:
             mount_path = request.session.get('storage_mount_path', None)
         if mount_path:
-            path = os.path.join(mount_path, settings.DDR_USBHDD_BASE_DIR)
+            logger.debug('mount_path: %s' % mount_path)
+            if not (os.path.basename(mount_path) == settings.DDR_USBHDD_BASE_DIR):
+                path = os.path.join(mount_path, settings.DDR_USBHDD_BASE_DIR)
+            logger.debug('caching: %s' % path)
             cache.set(key, path, BASE_PATH_TIMEOUT)
     return path
 
