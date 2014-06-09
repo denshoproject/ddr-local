@@ -87,6 +87,12 @@ def set_docstore_index( request ):
     If mounted and corresponding index exists in Elasticsearch, make sure it's
     in session.  If index is in session but storage not mounted or Elasticearch
     index doesn't exist, remove from session.
+    
+    storage_label: label of storage currently in session
+    docstore_index_exists: Elasticsearch index exists for storage_label (or not)
+    
+    @param request:
+    @returns: storage_label,docstore_index_exists
     """
     # gather info
     docstore_index = None
