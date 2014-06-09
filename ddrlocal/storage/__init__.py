@@ -139,6 +139,7 @@ def add_media_symlink(base_path):
     to the real media directory in the nginx config.  This func adds a symlink
     from /var/www/media/ to the ddr/ directory of the USB HDD.
     """
+    logger.debug('add_media_symlink(%s)' % base_path)
     target = base_path
     link = settings.MEDIA_BASE
     link_parent = os.path.split(link)[0]
@@ -158,6 +159,7 @@ def add_media_symlink(base_path):
 def rm_media_symlink():
     """Remove the media symlink (see add_media_symlink).
     """
+    logger.debug('rm_media_symlink()')
     link = settings.MEDIA_BASE
     s = []
     if os.path.exists(link):     s.append('1') 
@@ -167,12 +169,13 @@ def rm_media_symlink():
     if os.access(link, os.W_OK): s.append('1') 
     else:                        s.append('0')
     if ''.join(s) == '111':
+        logger.debug('removing %s' % link)
         os.remove(link)
 
 def mount( request, devicefile, label ):
     """Mounts requested device, adds /var/www/ddr/media symlink, gives feedback.
     """
-    logger.debug('mount(%s, %s)' % (devicefile, label))
+    logger.debug('mount(devicefile=%s, label=%s)' % (devicefile, label))
     if not (devicefile and label):
         messages.error(request, STORAGE_MESSAGES['MOUNT_ERR_MISSING_INFO'].format(devicefile, label))
         return None
@@ -182,7 +185,8 @@ def mount( request, devicefile, label ):
     if mount_path:
         messages.success(request, STORAGE_MESSAGES['MOUNT_SUCCESS'].format(label))
         rm_media_symlink()
-        add_media_symlink(base_path())
+        basepath = base_path()
+        add_media_symlink(basepath)
         # save label,mount_path in session
         request.session['storage_devicefile'] = devicefile
         request.session['storage_label'] = label
