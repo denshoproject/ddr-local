@@ -5,7 +5,7 @@ from django.conf import settings
 
 from DDR import storage
 
-from storage import base_path, disk_space
+from storage import base_path
 
 BOOTSTRAP_COLORS = {'red': 'btn-danger',
                     'yellow': 'btn-warning',
@@ -18,7 +18,7 @@ def sitewide(request):
     storage_mount_path = base_path(request)
     stype = storage.storage_type(storage_mount_path)
     sstatus = storage.storage_status(storage_mount_path)
-    dspace = disk_space(storage_mount_path)
+    dspace = storage.disk_space(storage_mount_path)
     # change color of disk space pill
     if dspace and dspace.get('percent',None):
         if    dspace['percent'] <= 10: dspace['label'] = BOOTSTRAP_COLORS['red']

@@ -82,55 +82,12 @@ def devicefile_label_from_mediapath( path ):
     >>> path = '/media/ddrworkstation/ddr'
     'ddrworkstation','ddrworkstation'
     
-    @param raw: string
+    @param path: string
     @returns: devicefile,label
     """
     devicefile = path.replace('/media/','').replace('/ddr','')
     label = devicefile
     return devicefile,label
-
-def disk_space(mount_path):
-    """Returns disk space info for the mounted drive.
-    
-    Uses 'df -h' on the back-end.
-        Filesystem  Size  Used  Avail  Use%  Mounted on
-    TODO Make this work on drives with spaces in their name!
-    """
-    fs = None
-    if mount_path:
-        r = envoy.run('df -h')
-        for line in r.std_out.strip().split('\n'):
-            while line.find('  ') > -1:
-                line = line.replace('  ', ' ')
-            parts = line.split(' ')
-            path = parts[5]
-            if (path in mount_path) and (path != '/'):
-                fs = {'size': parts[1],
-                      'used': parts[2],
-                      'total': parts[3],
-                      'percent': parts[4].replace('%',''),
-                      'mount': parts[5],}
-    return fs
-
-def removables():
-    """Wrapper around DDR.commands.removables.
-    """
-    stat,removables = commands.removables()
-    return removables
-
-def removables_mounted():
-    """Wrapper around DDR.commands.removables_mounted that adds symlink info.
-    
-    The removable that is the target of the MEDIA_BASE symlink is marked as
-    m['media_base_target'] = True.
-    """
-    stat,mounted = commands.removables_mounted()
-    mbase = media_base_target()
-    for m in mounted:
-        m['media_base_target'] = False
-        if mbase and (m['mountpath'] in mbase):
-            m['media_base_target'] = True
-    return mounted
 
 def add_media_symlink(base_path):
     """Creates symlink to base_path in /var/www/media/
@@ -203,6 +160,8 @@ def mount( request, devicefile, label ):
 
 def mount_filepath( request, mount_path ):
     """
+    @param request: Django request object; used to access session.
+    @param mount_path: Absolute path to mounted device; "/ddr" will be appended.
     """
     devicefile,label = devicefile_label_from_mediapath(mount_path)
     rm_media_symlink()
@@ -222,6 +181,10 @@ def mount_filepath( request, mount_path ):
 
 def unmount( request, devicefile, label ):
     """Removes /var/www/ddr/media symlink, unmounts requested device, gives feedback.
+    
+    @param request: Django request object; used to access session.
+    @param devicefile: 
+    @param label: Device label
     """
     logger.debug('unmount(%s, %s)' % (devicefile, label))
     unmounted = None

@@ -40,36 +40,33 @@ class DDRForm(forms.Form):
             MODEL_FIELDS = kwargs.pop('fields')
         else:
             MODEL_FIELDS = []
-        
         super(DDRForm, self).__init__(*args, **kwargs)
-        
-        fields = []
-        for fkwargs in deepcopy(MODEL_FIELDS): # don't modify fields data
-            
-            if fkwargs.get('form', None) and fkwargs.get('form_type', None):
-                
-                # replace widget name with widget object
-                if fkwargs['form'].get('widget', None):
-                    widget_name = fkwargs['form']['widget']
-                    if hasattr(forms, widget_name):
-                        fkwargs['form']['widget'] = getattr(forms, widget_name)
-                
-                # instantiate Field object and to list
-                field_name = fkwargs['form_type']
-                if hasattr(forms, field_name):
-                    form_field_object = getattr(forms, field_name)
-                    fobject = form_field_object(*[], **fkwargs['form'])
-                    fields.append((fkwargs['name'], fobject))
-                
-            # if field is inheritable, add inherit-this checkbox
-            if fkwargs.get('inheritable', None):
-                helptext = "Apply value of %s to this object's children" % fkwargs['form']['label']
-                #CHOICES = ((1, helptext),)
-                #fobject = forms.ChoiceField(label='', choices=CHOICES,
-                #                            widget=forms.CheckboxSelectMultiple,
-                #                            required=False, initial=False)
-                fobject = forms.BooleanField(label='', required=False, help_text=helptext)
-                fields.append(('%s_inherit' % fkwargs['name'], fobject))
-        
-        # Django Form object takes a SortedDict rather than list
-        self.fields = SortedDict(fields)
+        self.fields = construct_form(deepcopy(MODEL_FIELDS))
+
+def construct_form(model_fields):
+    fields = []
+    for fkwargs in model_fields: # don't modify fields data
+        if fkwargs.get('form', None) and fkwargs.get('form_type', None):
+            # replace widget name with widget object
+            if fkwargs['form'].get('widget', None):
+                widget_name = fkwargs['form']['widget']
+                if hasattr(forms, widget_name):
+                    fkwargs['form']['widget'] = getattr(forms, widget_name)
+            # instantiate Field object and to list
+            field_name = fkwargs['form_type']
+            if hasattr(forms, field_name):
+                form_field_object = getattr(forms, field_name)
+                fobject = form_field_object(*[], **fkwargs['form'])
+                fields.append((fkwargs['name'], fobject))
+        # if field is inheritable, add inherit-this checkbox
+        if fkwargs.get('inheritable', None):
+            helptext = "Apply value of %s to this object's children" % fkwargs['form']['label']
+            #CHOICES = ((1, helptext),)
+            #fobject = forms.ChoiceField(label='', choices=CHOICES,
+            #                            widget=forms.CheckboxSelectMultiple,
+            #                            required=False, initial=False)
+            fobject = forms.BooleanField(label='', required=False, help_text=helptext)
+            fields.append(('%s_inherit' % fkwargs['name'], fobject))
+    # Django Form object takes a SortedDict rather than list
+    fields = SortedDict(fields)
+    return fields

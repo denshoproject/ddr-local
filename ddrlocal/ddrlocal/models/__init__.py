@@ -15,132 +15,22 @@ from lxml import etree
 from sorl.thumbnail import default
 
 from django.conf import settings
-from django.core.files import File
-from django.core.urlresolvers import reverse
 
 from DDR import commands
 from DDR import dvcs
 from DDR import natural_order_string
 from DDR.models import Collection as DDRCollection, Entity as DDREntity
-from ddrlocal import VERSION, git_commit
+from DDR.models import dissect_path, file_hash, _inheritable_fields, _inherit
+from DDR.models import module_function, module_xml_function, write_json
+from ddrlocal import VERSION, COMMIT
 from ddrlocal.models import collection as collectionmodule
 from ddrlocal.models import entity as entitymodule
 from ddrlocal.models import files as filemodule
 from ddrlocal.models.meta import CollectionJSON, EntityJSON, read_json
 from ddrlocal.models.xml import EAD, METS
 
-
-
 COLLECTION_FILES_PREFIX = 'files'
 ENTITY_FILES_PREFIX = 'files'
-
-def git_version(repo_path=None):
-    """Returns version info for Git and git-annex.
-    
-    If repo_path is specified, returns version of local repo's annex.
-    example:
-    'git version 1.7.10.4; git-annex version: 3.20120629; local repository version: 3; ' \
-    'default repository version: 3; supported repository versions: 3; ' \
-    'upgrade supported from repository versions: 0 1 2'
-    
-    @param repo_path: Absolute path to repository (optional).
-    @returns string
-    """
-    try:
-        # git
-        gitv = envoy.run('git --version').std_out.strip()
-        # git annex
-        if repo_path and os.path.exists(repo_path):
-            os.chdir(repo_path)
-        annex = envoy.run('git annex version').std_out.strip().split('\n')
-        gitversion = '; '.join([gitv] + annex)
-    except Exception as err:
-        gitversion = '%s' % err
-    return gitversion
-
-def module_function(module, function_name, value):
-    """If named function is present in module and callable, pass value to it and return result.
-    
-    Among other things this may be used to prep data for display, prepare it
-    for editing in a form, or convert cleaned form data into Python data for
-    storage in objects.
-    
-    @param module: A Python module
-    @param function_name: Name of the function to be executed.
-    @param value: A single value to be passed to the function, or None.
-    @returns: Whatever the specified function returns.
-    """
-    if (function_name in dir(module)):
-        function = getattr(module, function_name)
-        value = function(value)
-    return value
-
-def module_xml_function(module, function_name, tree, NAMESPACES, f, value):
-    """If module function is present and callable, pass value to it and return result.
-    
-    Same as module_function() but with XML we need to pass namespaces lists to
-    the functions.
-    Used in dump_ead(), dump_mets().
-    
-    @param module: A Python module
-    @param function_name: Name of the function to be executed.
-    @param tree: An lxml tree object.
-    @param NAMESPACES: Dict of namespaces used in the XML document.
-    @param f: Field dict (from MODEL_FIELDS).
-    @param value: A single value to be passed to the function, or None.
-    @returns: Whatever the specified function returns.
-    """
-    if (function_name in dir(module)):
-        function = getattr(module, function_name)
-        tree = function(tree, NAMESPACES, f, value)
-    return tree
-
-def write_json(data, path):
-    """Write JSON using consistent formatting and sorting.
-    
-    For versioning and history to be useful we need data fields to be written
-    in a format that is easy to edit by hand and in which values can be compared
-    from one commit to the next.  This function prints JSON with nice spacing
-    and indentation and with sorted keys, so fields will be in the same relative
-    position across commits.
-    
-    >>> data = {'a':1, 'b':2}
-    >>> path = '/tmp/ddrlocal.models.write_json.json'
-    >>> write_json(data, path)
-    >>> with open(path, 'r') as f:
-    ...     print(f.readlines())
-    ...
-    ['{\n', '    "a": 1,\n', '    "b": 2\n', '}']
-    """
-    json_pretty = json.dumps(data, indent=4, separators=(',', ': '), sort_keys=True)
-    with open(path, 'w') as f:
-        f.write(json_pretty)
-
-def _inheritable_fields( MODEL_FIELDS ):
-    """Returns a list of fields that can inherit or grant values.
-    
-    Inheritable fields are marked 'inheritable':True in MODEL_FIELDS.
-    
-    @param MODEL_FIELDS
-    @returns: list
-    """
-    inheritable = []
-    for f in MODEL_FIELDS:
-        if f.get('inheritable', None):
-            inheritable.append(f['name'])
-    return inheritable
-
-def _inherit( parent, child ):
-    """Set inheritable fields in child object with values from parent.
-    
-    @param parent: A webui.models.Collection or webui.models.Entity
-    @param child: A webui.models.Entity or webui.models.File
-    """
-    for field in parent.inheritable_fields():
-        if hasattr(parent, field) and hasattr(child, field):
-            setattr(child, field, getattr(parent, field))
-
-
 
 MODEL_FIELDS = [
     {
@@ -222,179 +112,6 @@ class DDRLocalCollection( DDRCollection ):
         <DDRLocalCollection ddr-testing-123>
         """
         return "<DDRLocalCollection %s>" % (self.id)
-    
-    def url( self ):
-        """Returns relative URL in context of webui app.
-        
-        TODO Move to webui.models
-        
-        >>> c = DDRLocalCollection('/tmp/ddr-testing-123')
-        >>> c.url()
-        '/ui/ddr-testing-123/'
-        """
-        return reverse('webui-collection', args=[self.repo, self.org, self.cid])
-    
-    def cgit_url( self ):
-        """Returns cgit URL for collection.
-        
-        TODO Move to webui.models
-        
-        >>> c = DDRLocalCollection('/tmp/ddr-testing-123')
-        >>> c.cgit_url()
-        'http://partner.densho.org/cgit/cgit.cgi/ddr-testing-123/'
-        """
-        return '{}/cgit.cgi/{}/'.format(settings.CGIT_URL, self.uid)
-
-    @staticmethod
-    def collection_path(request, repo, org, cid):
-        """Returns absolute path to collection repo directory.
-        
-        TODO Move to webui.models
-        
-        >>> DDRLocalCollection.collection_path(None, 'ddr', 'testing', 123)
-        '/var/www/media/base/ddr-testing-123'
-        """
-        return os.path.join(settings.MEDIA_BASE, '{}-{}-{}'.format(repo, org, cid))
-    
-    def repo_fetch( self ):
-        """Fetch latest changes to collection repo from origin/master.
-        """
-        result = '-1'
-        if os.path.exists(os.path.join(self.path, '.git')):
-            result = commands.fetch(self.path)
-        else:
-            result = '%s is not a git repository' % self.path
-        return result
-    
-    def repo_status( self ):
-        """Get status of collection repo vis-a-vis origin/master.
-        
-        The repo_(synced,ahead,behind,diverged,conflicted) functions all use
-        the result of this function so that git-status is only called once.
-        """
-        if not self._status and (os.path.exists(os.path.join(self.path, '.git'))):
-            status = dvcs.repo_status(self.path, short=True)
-            if status:
-                self._status = status
-        return self._status
-    
-    def repo_synced( self ):     return dvcs.synced(self.repo_status())
-    def repo_ahead( self ):      return dvcs.ahead(self.repo_status())
-    def repo_behind( self ):     return dvcs.behind(self.repo_status())
-    def repo_diverged( self ):   return dvcs.diverged(self.repo_status())
-    def repo_conflicted( self ): return dvcs.conflicted(self.repo_status())
-    
-    def repo_annex_status( self ):
-        """Get annex status of collection repo.
-        """
-        if not self._astatus and (os.path.exists(os.path.join(self.path, '.git'))):
-            astatus = commands.annex_status(self.path)
-            if astatus:
-                self._astatus = astatus
-        return self._astatus
-    
-    def _lockfile( self ):
-        """Returns absolute path to collection repo lockfile.
-        
-        Note that the actual file may or may not be present.
-        
-        >>> c = DDRLocalCollection('/tmp/ddr-testing-123')
-        >>> c._lockfile()
-        '/tmp/ddr-testing-123/lock'
-        """
-        return os.path.join(self.path, 'lock')
-     
-    def lock( self, task_id ):
-        """Writes lockfile to collection dir; complains if can't.
-        
-        Celery tasks don't seem to know their own task_id, and there don't
-        appear to be any handlers that can be called just *before* a task
-        is fired. so it appears to be impossible for a task to lock itself.
-        
-        This method should(?) be called immediately after starting the task:
-        >> result = collection_sync.apply_async((args...), countdown=2)
-        >> lock_status = collection.lock(result.task_id)
-        
-        >>> path = '/tmp/ddr-testing-123'
-        >>> os.mkdir(path)
-        >>> c = DDRLocalCollection(path)
-        >>> c.lock('abcdefg')
-        'ok'
-        >>> c.lock('abcdefg')
-        'locked'
-        >>> c.unlock('abcdefg')
-        'ok'
-        >>> os.rmdir(path)
-        
-        TODO return 0 if successful
-        
-        @param task_id
-        @returns 'ok' or 'locked'
-        """
-        path = self._lockfile()
-        if os.path.exists(path):
-            return 'locked'
-        with open(self._lockfile(), 'w') as f:
-            f.write(task_id)
-        return 'ok'
-     
-    def unlock( self, task_id ):
-        """Removes lockfile or complains if can't
-        
-        This method should be called by celery Task.after_return()
-        See "Abstract classes" section of http://celery.readthedocs.org/en/latest/userguide/tasks.html#custom-task-classes
-        
-        >>> path = '/tmp/ddr-testing-123'
-        >>> os.mkdir(path)
-        >>> c = DDRLocalCollection(path)
-        >>> c.lock('abcdefg')
-        'ok'
-        >>> c.unlock('xyz')
-        'task_id miss'
-        >>> c.unlock('abcdefg')
-        'ok'
-        >>> c.unlock('abcdefg')
-        'not locked'
-        >>> os.rmdir(path)
-        
-        TODO return 0 if successful
-        
-        @param task_id
-        @returns 'ok', 'not locked', 'task_id miss', 'blocked'
-        """
-        path = self._lockfile()
-        if not os.path.exists(path):
-            return 'not locked'
-        with open(path, 'r') as f:
-            lockfile_task_id = f.read().strip()
-        if lockfile_task_id and (lockfile_task_id != task_id):
-            return 'task_id miss'
-        os.remove(path)
-        if os.path.exists(path):
-            return 'blocked'
-        return 'ok'
-    
-    def locked( self ):
-        """Returns celery task_id if collection repo is locked, False if not
-        
-        >>> c = DDRLocalCollection('/tmp/ddr-testing-123')
-        >>> c.locked()
-        False
-        >>> c.lock('abcdefg')
-        'ok'
-        >>> c.locked()
-        'abcdefg'
-        >>> c.unlock('abcdefg')
-        'ok'
-        >>> c.locked()
-        False
-        """
-        path = self._lockfile()
-        if os.path.exists(path):
-            with open(path, 'r') as f:
-                task_id = f.read().strip()
-            return task_id
-        return False
     
     @staticmethod
     def create(path):
@@ -587,9 +304,9 @@ class DDRLocalCollection( DDRCollection ):
         @param template: [optional] Boolean. If true, write default values for fields.
         """
         collection = [{'application': 'https://github.com/densho/ddr-local.git',
-                       'commit': git_commit(),
+                       'commit': COMMIT,
                        'release': VERSION,
-                       'git': git_version(self.path),}]
+                       'git': dvcs.git_version(self.path),}]
         template_passthru = ['id', 'record_created', 'record_lastmod']
         for ff in collectionmodule.COLLECTION_FIELDS:
             item = {}
@@ -675,72 +392,6 @@ class DDRLocalEntity( DDREntity ):
     
     def __repr__(self):
         return "<DDRLocalEntity %s>" % (self.id)
-    
-    def url( self ):
-        return reverse('webui-entity', args=[self.repo, self.org, self.cid, self.eid])
-
-    @staticmethod
-    def entity_path(request, repo, org, cid, eid):
-        collection_uid = '{}-{}-{}'.format(repo, org, cid)
-        entity_uid     = '{}-{}-{}-{}'.format(repo, org, cid, eid)
-        collection_abs = os.path.join(settings.MEDIA_BASE, collection_uid)
-        entity_abs     = os.path.join(collection_abs, COLLECTION_FILES_PREFIX, entity_uid)
-        return entity_abs
-    
-    def _lockfile( self ):
-        return os.path.join(self.path, 'lock')
-     
-    def lock( self, task_id ):
-        """Writes lockfile to entity dir; complains if can't.
-        
-        Celery tasks don't seem to know their own task_id, and there don't
-        appear to be any handlers that can be called just *before* a task
-        is fired. so it appears to be impossible for a task to lock itself.
-        
-        This method should(?) be called immediately after starting the task:
-        >> result = entity_add_file.apply_async((args...), countdown=2)
-        >> lock_status = entity.lock(result.task_id)
-
-        @param task_id
-        @returns 'ok' or 'locked'
-        """
-        path = self._lockfile()
-        if os.path.exists(path):
-            return 'locked'
-        with open(self._lockfile(), 'w') as f:
-            f.write(task_id)
-        return 'ok'
-     
-    def unlock( self, task_id ):
-        """Removes lockfile or complains if can't
-        
-        This method should be called by celery Task.after_return()
-        See "Abstract classes" section of http://celery.readthedocs.org/en/latest/userguide/tasks.html#custom-task-classes
-        
-        @param task_id
-        @returns 'ok', 'not locked', 'task_id miss', 'blocked'
-        """
-        path = self._lockfile()
-        if not os.path.exists(path):
-            return 'not locked'
-        with open(path, 'r') as f:
-            lockfile_task_id = f.read().strip()
-        if lockfile_task_id and (lockfile_task_id != task_id):
-            return 'task_id miss'
-        os.remove(path)
-        if os.path.exists(path):
-            return 'blocked'
-        return 'ok'
-    
-    def locked( self ):
-        """Indicates whether entity is locked; if locked returns celery task_id.
-        """
-        path = self._lockfile()
-        if os.path.exists(path):
-            with open(path, 'r') as f:
-                task_id = f.read().strip()
-            return task_id
-        return False
     
     def files_master( self ):
         files = [f for f in self.files if hasattr(f,'role') and (f.role == 'master')]
@@ -974,9 +625,9 @@ class DDRLocalEntity( DDREntity ):
         @param template: [optional] Boolean. If true, write default values for fields.
         """
         entity = [{'application': 'https://github.com/densho/ddr-local.git',
-                   'commit': git_commit(),
+                   'commit': COMMIT,
                    'release': VERSION,
-                   'git': git_version(self.parent_path),}]
+                   'git': dvcs.git_version(self.parent_path),}]
         exceptions = ['files', 'filemeta']
         template_passthru = ['id', 'record_created', 'record_lastmod']
         for ff in entitymodule.ENTITY_FIELDS:
@@ -1126,17 +777,17 @@ class DDRLocalEntity( DDREntity ):
             # task: get SHA1 checksum (links entity.filemeta entity.files records
             self.files_log(1, 'Checksumming...')
             try:
-                f.sha1   = hash(src_path, 'sha1')
+                f.sha1   = file_hash(src_path, 'sha1')
                 self.files_log(1, 'sha1: %s' % f.sha1)
             except:
                 self.files_log(0, 'sha1 FAIL')
             try:
-                f.md5    = hash(src_path, 'md5')
+                f.md5    = file_hash(src_path, 'md5')
                 self.files_log(1, 'md5: %s' % f.md5)
             except:
                 self.files_log(0, 'md5 FAIL')
             try:
-                f.sha256 = hash(src_path, 'sha256')
+                f.sha256 = file_hash(src_path, 'sha256')
                 self.files_log(1, 'sha256: %s' % f.sha256)
             except:
                 self.files_log(0, 'sha256 FAIL')
@@ -1344,27 +995,6 @@ FILE_KEYS = ['path_rel',
              'access_rel',
              'xmp',]
 
-
-
-def hash(path, algo='sha1'):
-    if algo == 'sha256':
-        h = hashlib.sha256()
-    elif algo == 'md5':
-        h = hashlib.md5()
-    else:
-        h = hashlib.sha1()
-    block_size=1024
-    f = open(path, 'rb')
-    while True:
-        data = f.read(block_size)
-        if not data:
-            break
-        h.update(data)
-    f.close()
-    return h.hexdigest()
-
-
-
 class DDRLocalFile( object ):
     # path relative to /
     # (ex: /var/www/media/base/ddr-testing-71/files/ddr-testing-71-6/files/ddr-testing-71-6-dd9ec4305d.jpg)
@@ -1410,9 +1040,9 @@ class DDRLocalFile( object ):
         """
         # accept either path_abs or path_rel
         if kwargs and kwargs.get('path_abs',None):
-            self.path_abs = path_abs
+            self.path_abs = kwargs['path_abs']
         elif kwargs and kwargs.get('path_rel',None):
-            self.path_rel = path_rel
+            self.path_rel = kwargs['path_rel']
         else:
             if args and args[0]:
                 s = os.path.splitext(args[0])
@@ -1434,9 +1064,6 @@ class DDRLocalFile( object ):
             # NOTE: we get role from filename and also from JSON data, if available
             self.role = parts[4]
             self.sha1 = parts[5]
-            self.collection_path = DDRLocalCollection.collection_path(None, self.repo, self.org, self.cid)
-            self.entity_path = DDRLocalEntity.entity_path(None, self.repo, self.org, self.cid, self.eid)
-            self.entity_files_path = os.path.join(self.entity_path, ENTITY_FILES_PREFIX)
         # get one path if the other not present
         if self.entity_path and self.path_rel and not self.path_abs:
             self.path_abs = os.path.join(self.entity_files_path, self.path_rel)
@@ -1447,6 +1074,10 @@ class DDRLocalFile( object ):
             self.path_rel = self.path_rel[1:]
         # load JSON
         if self.path_abs:
+            p = dissect_path(self.path_abs)
+            self.collection_path = p.collection_path
+            self.entity_path = p.entity_path
+            self.entity_files_path = os.path.join(self.entity_path, ENTITY_FILES_PREFIX)
             # file JSON
             self.json_path = os.path.join(os.path.splitext(self.path_abs)[0], '.json')
             self.json_path = self.json_path.replace('/.json', '.json')
@@ -1462,25 +1093,6 @@ class DDRLocalFile( object ):
     
     def __repr__(self):
         return "<DDRLocalFile %s (%s)>" % (self.basename, self.basename_orig)
-    
-    def url( self ):
-        return reverse('webui-file', args=[self.repo, self.org, self.cid, self.eid, self.role, self.sha1[:10]])
-    
-    def media_url( self ):
-        if self.path_rel:
-            stub = os.path.join(self.entity_files_path.replace(settings.MEDIA_ROOT,''), self.path_rel)
-            return '%s%s' % (settings.MEDIA_URL, stub)
-        return None
-    
-    def access_url( self ):
-        if self.access_rel:
-            stub = os.path.join(self.entity_files_path.replace(settings.MEDIA_ROOT,''), self.access_rel)
-            return '%s%s' % (settings.MEDIA_URL, stub)
-        return None
-    
-    @staticmethod
-    def file_path(request, repo, org, cid, eid, role, sha1):
-        return os.path.join(settings.MEDIA_BASE, '{}-{}-{}-{}-{}-{}'.format(repo, org, cid, eid, role, sha1))
     
     # _lockfile
     # lock
@@ -1620,9 +1232,9 @@ class DDRLocalFile( object ):
         """
         # TODO DUMP FILE AND FILEMETA PROPERLY!!!
         file_ = [{'application': 'https://github.com/densho/ddr-local.git',
-                  'commit': git_commit(),
+                  'commit': COMMIT,
                   'release': VERSION,
-                  'git': git_version(self.collection_path),},
+                  'git': dvcs.git_version(self.collection_path),},
                  {'path_rel': self.path_rel},]
         for ff in filemodule.FILE_FIELDS:
             item = {}
@@ -1653,7 +1265,7 @@ class DDRLocalFile( object ):
         if os.path.exists and os.access(path_abs, os.R_OK):
             ext = os.path.splitext(path_abs)[1]
             if not sha1:
-                sha1 = hash(path_abs, 'sha1')
+                sha1 = file_hash(path_abs, 'sha1')
             if sha1:
                 base = '-'.join([
                     entity.repo, entity.org, entity.cid, entity.eid,

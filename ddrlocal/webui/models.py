@@ -12,6 +12,7 @@ from django.core.urlresolvers import reverse
 from django.db import models
 
 from ddrlocal.models import DDRLocalCollection, DDRLocalEntity, DDRLocalFile
+from ddrlocal.models import COLLECTION_FILES_PREFIX, ENTITY_FILES_PREFIX
 from ddrlocal.models import collection as collectionmodule
 from ddrlocal.models import entity as entitymodule
 from ddrlocal.models import files as filemodule
@@ -161,6 +162,37 @@ def _update_inheritables( parent_object, objecttype, inheritables, cleaned_data 
 
 class Collection( DDRLocalCollection ):
     
+    @staticmethod
+    def collection_path(request, repo, org, cid):
+        """Returns absolute path to collection repo directory.
+        
+        >>> DDRLocalCollection.collection_path(None, 'ddr', 'testing', 123)
+        '/var/www/media/base/ddr-testing-123'
+        """
+        return os.path.join(settings.MEDIA_BASE, '{}-{}-{}'.format(repo, org, cid))
+    
+    def url( self ):
+        """Returns relative URL in context of webui app.
+        
+        TODO Move to webui.models
+        
+        >>> c = DDRLocalCollection('/tmp/ddr-testing-123')
+        >>> c.url()
+        '/ui/ddr-testing-123/'
+        """
+        return reverse('webui-collection', args=[self.repo, self.org, self.cid])
+    
+    def cgit_url( self ):
+        """Returns cgit URL for collection.
+        
+        TODO Move to webui.models
+        
+        >>> c = DDRLocalCollection('/tmp/ddr-testing-123')
+        >>> c.cgit_url()
+        'http://partner.densho.org/cgit/cgit.cgi/ddr-testing-123/'
+        """
+        return '{}/cgit.cgi/{}/'.format(settings.CGIT_URL, self.uid)
+    
     def cache_delete( self ):
         cache.delete(COLLECTION_FETCH_CACHE_KEY % self.id)
         cache.delete(COLLECTION_STATUS_CACHE_KEY % self.id)
@@ -217,6 +249,17 @@ class Collection( DDRLocalCollection ):
 
 
 class Entity( DDRLocalEntity ):
+
+    @staticmethod
+    def entity_path(request, repo, org, cid, eid):
+        collection_uid = '{}-{}-{}'.format(repo, org, cid)
+        entity_uid     = '{}-{}-{}-{}'.format(repo, org, cid, eid)
+        collection_abs = os.path.join(settings.MEDIA_BASE, collection_uid)
+        entity_abs     = os.path.join(collection_abs, COLLECTION_FILES_PREFIX, entity_uid)
+        return entity_abs
+    
+    def url( self ):
+        return reverse('webui-entity', args=[self.repo, self.org, self.cid, self.eid])
     
     @staticmethod
     def from_json(entity_abs):
@@ -234,3 +277,26 @@ class Entity( DDRLocalEntity ):
     
     def update_inheritables( self, inheritables, cleaned_data ):
         return _update_inheritables(self, 'entity', inheritables, cleaned_data)
+
+
+
+class DDRFile( DDRLocalFile ):
+    
+    def url( self ):
+        return reverse('webui-file', args=[self.repo, self.org, self.cid, self.eid, self.role, self.sha1[:10]])
+    
+    def media_url( self ):
+        if self.path_rel:
+            stub = os.path.join(self.entity_files_path.replace(settings.MEDIA_ROOT,''), self.path_rel)
+            return '%s%s' % (settings.MEDIA_URL, stub)
+        return None
+    
+    def access_url( self ):
+        if self.access_rel:
+            stub = os.path.join(self.entity_files_path.replace(settings.MEDIA_ROOT,''), self.access_rel)
+            return '%s%s' % (settings.MEDIA_URL, stub)
+        return None
+    
+    @staticmethod
+    def file_path(request, repo, org, cid, eid, role, sha1):
+        return os.path.join(settings.MEDIA_BASE, '{}-{}-{}-{}-{}-{}'.format(repo, org, cid, eid, role, sha1))

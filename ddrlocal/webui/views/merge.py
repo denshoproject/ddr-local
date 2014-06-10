@@ -22,7 +22,6 @@ from webui.decorators import ddrview
 from webui.models import Collection
 from webui.views.decorators import login_required
 from webui.forms.merge import MergeCommitForm, MergeRawForm, MergeJSONForm
-from webui.merge import list_unmerged, merge_add, merge_commit, diverge_commit
 
 
 
@@ -60,6 +59,7 @@ def merge( request, repo, org, cid ):
     Sends user around to different editors and things until everything is merged.
     """
     collection_path = Collection.collection_path(request,repo,org,cid)
+    repository = dvcs.repository(collection_path)
     collection = Collection.from_json(collection_path)
     task_id = collection.locked()
     status = commands.status(collection_path)
@@ -67,17 +67,17 @@ def merge( request, repo, org, cid ):
     behind = collection.repo_behind()
     diverged = collection.repo_diverged()
     conflicted = collection.repo_conflicted()
-    unmerged = list_unmerged(collection_path)
-    staged = dvcs.list_staged(dvcs.repository(collection_path))
+    unmerged = dvcs.list_conflicted(repository)
+    staged = dvcs.list_staged(repository)
     if request.method == 'POST':
         form = MergeCommitForm(request.POST)
         if form.is_valid():
             which = form.cleaned_data['which']
             if which == 'merge':
-                merge_commit(collection_path)
+                dvcs.merge_commit(repository)
                 committed = 1
             elif which == 'commit':
-                diverge_commit(collection_path)
+                dvcs.diverge_commit(repository)
                 committed = 1
             else:
                 committed = 0
@@ -127,7 +127,7 @@ def edit_auto( request, repo, org, cid ):
     filepath = os.path.join(collection_path, filename)
     with open(filepath, 'r') as f:
         text = f.read()
-    merged = merge.automerge(text, 'left')
+    merged = dvcs.automerge_conflicted(text, 'left')
     with open(filepath, 'w') as f:
         f.write(merged)
     
@@ -146,6 +146,7 @@ def edit_raw( request, repo, org, cid ):
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     collection_path = Collection.collection_path(request,repo,org,cid)
+    repository = dvcs.repository(collection_path)
     filename = ''
     if request.method == 'POST':
         filename = request.POST.get('filename', None)
@@ -161,7 +162,7 @@ def edit_raw( request, repo, org, cid ):
             with open(filepath, 'w') as f:
                 f.write(text)
             # git add file
-            merge_add(collection_path, filename)
+            dvcs.merge_add(repository, filename)
             return HttpResponseRedirect( reverse('webui-merge', args=[repo,org,cid]) )
     else:
         with open(filepath, 'r') as f:
@@ -180,8 +181,8 @@ def edit_raw( request, repo, org, cid ):
 def edit_json( request, repo, org, cid ):
     """
     """
-    from webui import merge
     collection_path = Collection.collection_path(request,repo,org,cid)
+    repository = dvcs.repository(collection_path)
     
     filename = ''
     if request.method == 'POST':
@@ -194,7 +195,7 @@ def edit_json( request, repo, org, cid ):
         path = os.path.join(collection_path, filename)
         with open(path, 'r') as f:
             txt = f.read()
-        fields = merge.conflicting_fields(txt)
+        fields = dvcs.conflicting_fields(txt)
     
     if request.method == 'POST':
         #form = MergeJSONForm(request.POST)
@@ -204,7 +205,7 @@ def edit_json( request, repo, org, cid ):
         #    with open(filepath, 'w') as f:
         #        f.write(text)
         #    # git add file
-        #    merge_add(collection_path, filename)
+        #    dvcs.merge_add(repository, filename)
         assert False
     elif request.method == 'GET':
         form = MergeJSONForm(fields=fields)

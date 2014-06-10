@@ -11,10 +11,11 @@ from django.template import RequestContext
 
 from DDR import commands
 from DDR import docstore
+from DDR.storage import removables, removables_mounted
 
 from webui.tasks import reindex_and_notify
 from storage import STORAGE_MESSAGES
-from storage import base_path, media_base_target, removables, removables_mounted
+from storage import base_path, media_base_target
 from storage import mount, mount_filepath, unmount, add_media_symlink, rm_media_symlink
 from storage.forms import MountForm, UmountForm, ActiveForm, ManualSymlinkForm
 
@@ -54,6 +55,11 @@ def add_manual_symlink(devices):
 
 def index( request ):
     """Interface for mounting/unmounting drives and setting active device
+    
+    - mount_form -> mount_device
+    - umount_form -> unmount_device
+    - active_form -> activate_device
+    - manlink_form -> manual_symlink
     """
     removablez = removables()
     mounted = removables_mounted()
@@ -92,6 +98,8 @@ def index( request ):
     )
 
 def mount_device( request ):
+    """Mount a USB device; wrapper around storage.mount().
+    """
     if request.method == 'POST':
         mount_form = MountForm(request.POST, devices=unmounted_devices())
         if mount_form.is_valid():
@@ -102,6 +110,8 @@ def mount_device( request ):
     return HttpResponseRedirect( reverse('storage-index') )
 
 def unmount_device( request ):
+    """Unmount a USB device; wrapper around storage.unmount().
+    """
     if request.method == 'POST':
         umount_form = UmountForm(request.POST, devices=mounted_devices())
         if umount_form.is_valid():
@@ -111,6 +121,10 @@ def unmount_device( request ):
     return HttpResponseRedirect( reverse('storage-index') )
 
 def activate_device( request ):
+    """Point MEDIA_BASE at a mounted device.
+    
+    MEDIA_BASE may not point to a USB device even though it is mounted.
+    """
     if request.method == 'POST':
         active_form = ActiveForm(request.POST, devices=mounted_devices())
         if active_form.is_valid():
@@ -126,7 +140,7 @@ def activate_device( request ):
     return HttpResponseRedirect( reverse('storage-index') )
 
 def manual_symlink( request ):
-    """Sets the MEDIA_BASE symlink to an arbitrary path; used for browsing non-USB storage.
+    """Sets the MEDIA_BASE symlink to an arbitrary path; used for attaching non-USB storage.
     """
     if request.method == 'POST':
         manlink_form = ManualSymlinkForm(request.POST)
@@ -194,6 +208,8 @@ def remount1( request ):
     return redirect(url)
 
 def storage_required( request ):
+    """@storage_required redirects to this page if no storage available.
+    """
     return render_to_response(
         'storage/required.html',
         {},

@@ -13,9 +13,8 @@ from django.conf import settings
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 
-from ddrlocal.models import DDRLocalEntity, DDRLocalFile
 from migration.densho import export_entities, export_files, export_csv_path
-from webui.models import Collection
+from webui.models import Collection, Entity, DDRFile
 
 from DDR import docstore, models
 from DDR.commands import entity_destroy, file_destroy
@@ -172,7 +171,7 @@ class FileAddDebugTask(Task):
 @task(base=FileAddDebugTask, name='entity-add-file')
 def entity_add_file( git_name, git_mail, entity, src_path, role, data, agent='' ):
     """
-    @param entity: DDRLocalEntity
+    @param entity: Entity
     @param src_path: Absolute path to an uploadable file.
     @param role: Keyword of a file role.
     @param data: Dict containing form data.
@@ -185,8 +184,8 @@ def entity_add_file( git_name, git_mail, entity, src_path, role, data, agent='' 
 @task(base=FileAddDebugTask, name='entity-add-access')
 def entity_add_access( git_name, git_mail, entity, ddrfile, agent='' ):
     """
-    @param entity: DDRLocalEntity
-    @param ddrfile: DDRLocalFile
+    @param entity: Entity
+    @param ddrfile: DDRFile
     @param src_path: Absolute path to an uploadable file.
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
@@ -313,7 +312,7 @@ def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, 
     # TODO rm_files list should come from the File model
     file_id = os.path.splitext(file_basename)[0]
     repo,org,cid,eid,role,sha1 = file_id.split('-')
-    entity = DDRLocalEntity.from_json(DDRLocalEntity.entity_path(None,repo,org,cid,eid))
+    entity = DDREntity.from_json(DDREntity.entity_path(None,repo,org,cid,eid))
     file_ = entity.file(repo, org, cid, eid, role, sha1)
     rm_files = file_.files_rel(collection_path)
     logger.debug('rm_files: %s' % rm_files)
