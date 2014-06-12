@@ -193,13 +193,13 @@ Edit
   };
 
   $('#id_topics').typeahead(
-    { minLength:3, highlight:true },
+    { minLength:2, highlight:true },
     { name:'topics_terms', displayKey:'value', source:substringMatcher(topics_terms)}
   ).on('typeahead:selected', function (e, d) {
     tagApi_t.tagsManager("pushTag", d.value);
   });
   $('#id_facility').typeahead(
-    { minLength:3, highlight:true },
+    { minLength:2, highlight:true },
     { name:'facility_terms', displayKey:'value', source:substringMatcher(facility_terms)}
   ).on('typeahead:selected', function (e, d) {
     tagApi_f.tagsManager("pushTag", d.value);
