@@ -277,6 +277,23 @@ class Entity( DDRLocalEntity ):
     
     def update_inheritables( self, inheritables, cleaned_data ):
         return _update_inheritables(self, 'entity', inheritables, cleaned_data)
+    
+    def _load_file_objects( self ):
+        """Replaces list of file info dicts with list of DDRFile objects
+        
+        Overrides the function in ddrlocal.models.DDRLocalEntity, which
+        adds DDRLocalFile objects which are missing certain methods of
+        DDRFile.
+        """
+        # keep copy of the list for detect_file_duplicates()
+        self._files = [f for f in self.files]
+        try:
+            self.files = []
+            for f in self._files:
+                path_abs = os.path.join(self.files_path, f['path_rel'])
+                self.files.append(DDRFile(path_abs))
+        except:
+            pass
 
 
 
