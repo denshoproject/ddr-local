@@ -300,6 +300,8 @@ class DDRLocalCollection( DDRCollection ):
     def dump_json(self, path=None, template=False):
         """Dump Collection data to .json file.
         
+        TODO This should not actually write the JSON! It should return JSON to the code that calls it.
+        
         @param path: [optional] Alternate file path.
         @param template: [optional] Boolean. If true, write default values for fields.
         """
@@ -342,6 +344,7 @@ class DDRLocalCollection( DDRCollection ):
         """Dump Collection data to ead.xml file.
         
         TODO render a Django/Jinja template instead of using lxml
+        TODO This should not actually write the XML! It should return XML to the code that calls it.
         """
         NAMESPACES = None
         tree = etree.fromstring(self.ead().xml)
@@ -621,6 +624,8 @@ class DDRLocalEntity( DDREntity ):
     def dump_json(self, path=None, template=False):
         """Dump Entity data to .json file.
         
+        TODO This should not actually write the JSON! It should return JSON to the code that calls it.
+        
         @param path: [optional] Alternate file path.
         @param template: [optional] Boolean. If true, write default values for fields.
         """
@@ -670,6 +675,9 @@ class DDRLocalEntity( DDREntity ):
     
     def dump_mets(self):
         """Dump Entity data to mets.xml file.
+        
+        TODO render a Django/Jinja template instead of using lxml
+        TODO This should not actually write the XML! It should return XML to the code that calls it.
         """
         NAMESPACES = {
             'mets':  'http://www.loc.gov/METS/',
@@ -1037,6 +1045,7 @@ class DDRLocalFile( object ):
     
     def __init__(self, *args, **kwargs):
         """
+        TODO refactor and simplify this horrible code!
         """
         # accept either path_abs or path_rel
         if kwargs and kwargs.get('path_abs',None):
@@ -1234,6 +1243,9 @@ class DDRLocalFile( object ):
     
     def dump_json(self):
         """Dump File data to .json file.
+        
+        TODO This should not actually write the JSON! It should return JSON to the code that calls it.
+        
         @param path: Absolute path to .json file.
         """
         # TODO DUMP FILE AND FILEMETA PROPERLY!!!
