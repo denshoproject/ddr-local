@@ -63,6 +63,10 @@
 
 {% if collection %}
 <div class="muted" id="expert">
+  csv (<span
+  ><a class="muted" href="{% url "webui-collection-export-entities" repo org cid %}">objects</a></span>,<span
+  ><a class="muted" href="{% url "webui-collection-export-files" repo org cid %}">files</a></span>)
+  <span class="bullsep">&bull;</span>
   <span><a class="muted" href="{% url "webui-collection-json" repo org cid %}">json</a></span>
   <span class="bullsep">&bull;</span>
   <span>
