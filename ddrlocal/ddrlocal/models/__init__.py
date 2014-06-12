@@ -1054,6 +1054,12 @@ class DDRLocalFile( object ):
             self.basename = os.path.basename(self.path_abs)
         elif self.path_rel:
             self.basename = os.path.basename(self.path_rel)
+        # IMPORTANT: path_rel is the link between Entity and File
+        # It MUST be present in entity.json and file.json or lots of
+        # things will break!
+        # NOTE: path_rel is basically the same as basename
+        if self.path_abs and not self.path_rel:
+            self.path_rel = self.basename
         # much info is encoded in filename
         if self.basename:
             parts = os.path.splitext(self.basename)[0].split('-')
