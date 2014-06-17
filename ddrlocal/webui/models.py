@@ -218,10 +218,10 @@ class Collection( DDRLocalCollection ):
             cache.set(key, data, COLLECTION_FETCH_TIMEOUT)
         return data
     
-    def repo_status( self ):
+    def repo_status( self, force=False ):
         key = COLLECTION_STATUS_CACHE_KEY % self.id
         data = cache.get(key)
-        if not data:
+        if force or (not data):
             data = super(Collection, self).repo_status()
             cache.set(key, data, COLLECTION_STATUS_TIMEOUT)
         return data

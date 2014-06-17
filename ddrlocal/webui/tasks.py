@@ -141,6 +141,109 @@ def reindex_and_notify( index ):
 
 
 
+class GitStatusTask(Task):
+    abstract = True
+        
+    def on_failure(self, exc, task_id, args, kwargs):
+        logger.debug('GitStatusTask.on_failure(%s, %s, %s, %s)' % (exc, task_id, args, kwargs))
+    
+    def on_success(self, retval, task_id, args, kwargs):
+        logger.debug('GitStatusTask.on_success(%s, %s, %s, %s)' % (retval, task_id, args, kwargs))
+    
+    def after_return(self, status, retval, task_id, args, kwargs):
+        logger.debug('GitStatusTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
+
+GIT_STATUS_LOCK_PATH = '/var/www/media/base/.gitstatuslock'
+
+"""
+.gitstatuslock is a JSON file
+List of locks forming a FIFO queue
+[
+    {u'collection_id': u'ddr-testing-141', u'timestamp': datetime.datetime(2014, 6, 13, 16, 0, 51, 25726)},
+    {u'collection_id': u'ddr-testing-124', u'timestamp': datetime.datetime(2014, 6, 13, 16, 5, 24, 700248)}
+]
+
+"""
+
+def gitstatus_read_lockfile():
+    data = []
+    if os.path.exists(GIT_STATUS_LOCK_PATH):
+        with open(GIT_STATUS_LOCK_PATH, 'r') as f:
+            text = f.read()
+        data = json.loads(text)
+        for entry in data:
+            entry['timestamp'] = datetime.strptime(entry['timestamp'], settings.TIMESTAMP_FORMAT)
+    return data
+
+def gitstatus_lock( collection_id ):
+    """Adds entry to lockfile if not already present
+    """
+    lock = gitstatus_read_lockfile()
+    in_queue = False
+    if lock:
+        for entry in lock:
+            if entry['collection_id'] == collection_id:
+                in_queue = True
+    if not in_queue:
+        lock.append({
+            'collection_id': collection_id,
+            'timestamp': datetime.now(),
+        })
+        # TODO set cached status to "queued"
+    for entry in lock:
+        # convert timestamps to strings
+        entry['timestamp'] = datetime.strftime(entry['timestamp'], settings.TIMESTAMP_FORMAT)
+    models.write_json(lock, GIT_STATUS_LOCK_PATH)
+    return lock
+
+def gitstatus_unlock( collection_id ):
+    """Removes entry from lockfile
+    """
+    old_lock = gitstatus_read_lockfile()
+    lock = []
+    if old_lock:
+        for entry in old_lock:
+            if entry['collection_id'] == collection_id:
+                # TODO set cached status to "completed"
+            else:
+                lock.append(entry)
+    for entry in lock:
+        # convert timestamps to strings
+        entry['timestamp'] = datetime.strftime(entry['timestamp'], settings.TIMESTAMP_FORMAT)
+    models.write_json(lock, GIT_STATUS_LOCK_PATH)
+    return lock
+    
+    
+@task(base=GitStatusTask, name='webui-git-status')
+def gitstatus_update( collection_id ):
+    """
+    @param collection_id
+    """
+    # user asked to update status for this collection
+    # add it to queue if not already present
+    lock = gitstatus_lock(collection_id)
+    # now go through lock entries until done
+    updating = True
+    while(updating):
+        lock = gitstatus_read_lockfile()
+        for entry in lock:
+            cid = entry['collection_id']
+            unlock(cid)
+        else:
+            updating = False
+    print('done')
+    
+    
+
+    #     git-status lock           echo "2014-06-13T11:37:21 ddr-testing-141" > /var/www/media/base/.gitstatuslock
+    #     set status to "updating"  {"id":"ddr-testing-141", "state":"updating", "timestamp":"2014-06-13T11:37:21"}
+    #     git-status                $ cd ddr-testing-141; git status
+    #     set status to "cached"    {"id":"ddr-testing-141", "git-status":"...", timestamp":"2014-06-13T11:37:21"}
+    #     git-status unlock         $ rm /var/www/media/base/.gitstatuslock
+    pass
+    
+
+
 class FileAddDebugTask(Task):
     abstract = True
         
