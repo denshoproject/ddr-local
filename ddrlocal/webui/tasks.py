@@ -312,7 +312,7 @@ def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, 
     # TODO rm_files list should come from the File model
     file_id = os.path.splitext(file_basename)[0]
     repo,org,cid,eid,role,sha1 = file_id.split('-')
-    entity = DDREntity.from_json(DDREntity.entity_path(None,repo,org,cid,eid))
+    entity = Entity.from_json(Entity.entity_path(None,repo,org,cid,eid))
     file_ = entity.file(repo, org, cid, eid, role, sha1)
     rm_files = file_.files_rel(collection_path)
     logger.debug('rm_files: %s' % rm_files)
