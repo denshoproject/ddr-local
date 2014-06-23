@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 import os
 import time
@@ -27,11 +28,25 @@ def gitstatus_loop():
     while writable and not locked:
         gitstatus_update()
         time.sleep(GITSTATUS_INTERVAL)
+        locked = gitstatus_locked()
+
+def gitstatus_lock():
+    if not os.path.exists(GITSTATUS_LOCK_PATH):
+        now = datetime.now().strftime(settings.TIMESTAMP_FORMAT)
+        with open(GITSTATUS_LOCK_PATH, 'w') as f:
+            f.write(now)
+
+def gitstatus_unlock():
+    if os.path.exists(GITSTATUS_LOCK_PATH):
+        os.remove(GITSTATUS_LOCK_PATH)
 
 def gitstatus_locked():
     if os.path.exists(GITSTATUS_LOCK_PATH):
         return True
     return False
+
+def gitstatus_kill():
+    pass
 
 def gitstatus_next_repo():
     """Gets next collection_path from gitstatus queue.
