@@ -5,6 +5,7 @@ TEMPLATE_DEBUG = DEBUG
 
 # ----------------------------------------------------------------------
 
+from datetime import timedelta
 import ConfigParser
 import logging
 import os
@@ -106,8 +107,6 @@ PRETTY_DATETIME_FORMAT = '%d %B %Y, %I:%M %p'
 # when redirected to either login or storage remount page
 REDIRECT_URL_SESSION_KEY = 'remount_redirect_uri'
 
-CELERY_TASKS_SESSION_KEY = 'celery-tasks'
-
 REPOS_ORGS_TIMEOUT = 60*30 # 30min
 
 # ----------------------------------------------------------------------
@@ -165,11 +164,21 @@ CACHES = {
     }
 }
 
-# Celery
-BROKER_URL            = 'redis://%s:%s/%s' % (REDIS_HOST, REDIS_PORT, REDIS_DB_CELERY_BROKER)
+# celery
+CELERY_TASKS_SESSION_KEY = 'celery-tasks'
 CELERY_RESULT_BACKEND = 'redis://%s:%s/%s' % (REDIS_HOST, REDIS_PORT, REDIS_DB_CELERY_RESULT)
+BROKER_URL            = 'redis://%s:%s/%s' % (REDIS_HOST, REDIS_PORT, REDIS_DB_CELERY_BROKER)
 BROKER_TRANSPORT_OPTIONS = {'visibility_timeout': 60 * 60}  # 1 hour
 CELERYD_HIJACK_ROOT_LOGGER = False
+CELERY_ACCEPT_CONTENT = ['pickle', 'json', 'msgpack', 'yaml']
+CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
+CELERYBEAT_PIDFILE = '/tmp/celerybeat.pid'
+CELERYBEAT_SCHEDULE = {
+    'webui-git-status': {
+        'task': 'webui.tasks.gitstatus_update',
+        'schedule': timedelta(seconds=60),
+    },
+}
 
 # ElasticSearch
 DOCSTORE_HOSTS = [

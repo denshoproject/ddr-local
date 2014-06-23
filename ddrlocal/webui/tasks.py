@@ -191,7 +191,7 @@ def _gitstatus_next_repo():
         f1.write(json.dumps(paths))
     return collection_path
 
-@task(base=GitStatusTask, name='webui-git-status')
+@task(base=GitStatusTask, name='webui.tasks.gitstatus_update')
 def gitstatus_update():
     """
     ENSURING A TASK IS ONLY EXECUTED ONE AT A TIME
