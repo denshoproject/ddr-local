@@ -157,10 +157,13 @@ chmod 644 /usr/local/src/ddr-local/ddrlocal/ddrlocal/settings.py
 echo "${bldgrn}restarting supervisord${txtrst}"
 cp /usr/local/src/ddr-local/debian/conf/supervisord.conf /etc/supervisor/
 cp /usr/local/src/ddr-local/debian/conf/celeryd.conf /etc/supervisor/conf.d/
+cp /usr/local/src/ddr-local/debian/conf/celerybeat.conf /etc/supervisor/conf.d/
 cp /usr/local/src/ddr-local/debian/conf/gunicorn_ddrlocal.conf /etc/supervisor/conf.d/
 chown root.root /etc/supervisor/conf.d/celeryd.conf
+chown root.root /etc/supervisor/conf.d/celerybeat.conf
 chown root.root /etc/supervisor/conf.d/gunicorn_ddrlocal.conf
 chmod 644 /etc/supervisor/conf.d/celeryd.conf
+chmod 644 /etc/supervisor/conf.d/celerybeat.conf
 chmod 644 /etc/supervisor/conf.d/gunicorn_ddrlocal.conf
 /etc/init.d/supervisor restart
 echo ""  # supervisord status doesn't print the \n itself
