@@ -11,6 +11,7 @@ import requests
 
 from django.conf import settings
 from django.contrib import messages
+from django.core.cache import cache
 from django.core.urlresolvers import reverse
 
 from migration.densho import export_entities, export_files, export_csv_path
@@ -19,6 +20,7 @@ from webui.models import Collection, Entity, DDRFile
 from DDR import docstore, models
 from DDR.commands import entity_destroy, file_destroy
 from DDR.commands import sync
+from DDR.storage import is_writable
 
 
 
@@ -144,104 +146,98 @@ def reindex_and_notify( index ):
 class GitStatusTask(Task):
     abstract = True
         
-    def on_failure(self, exc, task_id, args, kwargs):
-        logger.debug('GitStatusTask.on_failure(%s, %s, %s, %s)' % (exc, task_id, args, kwargs))
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
+        logger.debug('GitStatusTask.on_failure(%s, %s, %s, %s, %s)' % (exc, task_id, args, kwargs, einfo))
+        _gitstatus_log('GitStatusTask.on_failure(%s, %s, %s, %s, %s)' % (exc, task_id, args, kwargs, einfo))
     
     def on_success(self, retval, task_id, args, kwargs):
         logger.debug('GitStatusTask.on_success(%s, %s, %s, %s)' % (retval, task_id, args, kwargs))
+        _gitstatus_log('GitStatusTask.on_success(%s, %s, %s, %s)' % (retval, task_id, args, kwargs))
     
-    def after_return(self, status, retval, task_id, args, kwargs):
-        logger.debug('GitStatusTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
+    def after_return(self, status, retval, task_id, args, kwargs, einfo):
+        logger.debug('GitStatusTask.after_return(%s, %s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs, einfo))
+        _gitstatus_log('GitStatusTask.after_return(%s, %s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs, einfo))
 
-GIT_STATUS_LOCK_PATH = '/var/www/media/base/.gitstatuslock'
+GITSTATUS_LOG = os.path.join(settings.MEDIA_BASE, '.gitstatus.log')
+GITSTATUS_QUEUE_PATH = os.path.join(settings.MEDIA_BASE, '.gitstatus-queue')
+GITSTATUS_LOCK_PATH = os.path.join(settings.MEDIA_BASE, '.gitstatus-stop')
+GITSTATUS_LOCK_ID = 'gitstatus-update-lock'
+GITSTATUS_LOCK_EXPIRE = 60 * 5 # Lock expires in 5 minutes
+GITSTATUS_INTERVAL = 10
 
-"""
-.gitstatuslock is a JSON file
-List of locks forming a FIFO queue
-[
-    {u'collection_id': u'ddr-testing-141', u'timestamp': datetime.datetime(2014, 6, 13, 16, 0, 51, 25726)},
-    {u'collection_id': u'ddr-testing-124', u'timestamp': datetime.datetime(2014, 6, 13, 16, 5, 24, 700248)}
-]
+def _gitstatus_log(msg):
+    entry = '%s %s' % (datetime.now().strftime(settings.TIMESTAMP_FORMAT), msg)
+    with open(GITSTATUS_LOG, 'a') as f:
+        f.write(entry)
 
-"""
-
-def gitstatus_read_lockfile():
-    data = []
-    if os.path.exists(GIT_STATUS_LOCK_PATH):
-        with open(GIT_STATUS_LOCK_PATH, 'r') as f:
-            text = f.read()
-        data = json.loads(text)
-        for entry in data:
-            entry['timestamp'] = datetime.strptime(entry['timestamp'], settings.TIMESTAMP_FORMAT)
-    return data
-
-def gitstatus_lock( collection_id ):
-    """Adds entry to lockfile if not already present
+def _gitstatus_next_repo():
+    """Gets next collection_path from gitstatus queue.
     """
-    lock = gitstatus_read_lockfile()
-    in_queue = False
-    if lock:
-        for entry in lock:
-            if entry['collection_id'] == collection_id:
-                in_queue = True
-    if not in_queue:
-        lock.append({
-            'collection_id': collection_id,
-            'timestamp': datetime.now(),
-        })
-        # TODO set cached status to "queued"
-    for entry in lock:
-        # convert timestamps to strings
-        entry['timestamp'] = datetime.strftime(entry['timestamp'], settings.TIMESTAMP_FORMAT)
-    models.write_json(lock, GIT_STATUS_LOCK_PATH)
-    return lock
+    collection_path = None
+    # load existing queue; populate queue if empty
+    paths = []
+    if os.path.exists(GITSTATUS_QUEUE_PATH):
+        with open(GITSTATUS_QUEUE_PATH, 'r') as f:
+            paths = json.loads(f.read())
+    if len(paths) == 0:
+        repo='ddr'; org='densho'
+        paths = Collection.collections(settings.MEDIA_BASE, repository=repo, organization=org)
+    # pull next collection from list
+    if len(paths):
+        collection_path = paths[0]
+        del paths[0]
+    # write updated queue
+    with open(GITSTATUS_QUEUE_PATH, 'w') as f1:
+        f1.write(json.dumps(paths))
+    return collection_path
 
-def gitstatus_unlock( collection_id ):
-    """Removes entry from lockfile
-    """
-    old_lock = gitstatus_read_lockfile()
-    lock = []
-    if old_lock:
-        for entry in old_lock:
-            if entry['collection_id'] == collection_id:
-                # TODO set cached status to "completed"
-            else:
-                lock.append(entry)
-    for entry in lock:
-        # convert timestamps to strings
-        entry['timestamp'] = datetime.strftime(entry['timestamp'], settings.TIMESTAMP_FORMAT)
-    models.write_json(lock, GIT_STATUS_LOCK_PATH)
-    return lock
-    
-    
 @task(base=GitStatusTask, name='webui-git-status')
-def gitstatus_update( collection_id ):
+def gitstatus_update():
     """
-    @param collection_id
+    ENSURING A TASK IS ONLY EXECUTED ONE AT A TIME
+    http://docs.celeryproject.org/en/latest/tutorials/task-cookbook.html#cookbook-task-serial
+    
+    if not (store readable):
+        log "store is not readable"; die
+    if store locked:
+        log "store is locked since TIMESTAMP for some other operation"; die
+    if no collections list:
+        make new list of collections (randomized)
+    pull next item off the queue
+    if (not cached):
+        set repo state to "updating"
+        git-status
+        cache the results
+        set repo state to "cached"
     """
-    # user asked to update status for this collection
-    # add it to queue if not already present
-    lock = gitstatus_lock(collection_id)
-    # now go through lock entries until done
-    updating = True
-    while(updating):
-        lock = gitstatus_read_lockfile()
-        for entry in lock:
-            cid = entry['collection_id']
-            unlock(cid)
-        else:
-            updating = False
-    print('done')
-    
-    
-
-    #     git-status lock           echo "2014-06-13T11:37:21 ddr-testing-141" > /var/www/media/base/.gitstatuslock
-    #     set status to "updating"  {"id":"ddr-testing-141", "state":"updating", "timestamp":"2014-06-13T11:37:21"}
-    #     git-status                $ cd ddr-testing-141; git status
-    #     set status to "cached"    {"id":"ddr-testing-141", "git-status":"...", timestamp":"2014-06-13T11:37:21"}
-    #     git-status unlock         $ rm /var/www/media/base/.gitstatuslock
-    pass
-    
+    _gitstatus_log('gitstatus_update()')
+    acquire_lock = lambda: cache.add(GITSTATUS_LOCK_ID, 'true', GITSTATUS_LOCK_EXPIRE)
+    release_lock = lambda: cache.delete(GITSTATUS_LOCK_ID)
+    #logger.debug('git status: %s', collection_path)
+    git_status = None
+    if acquire_lock():
+        _gitstatus_log('lock acquired')
+        try:
+            writable = is_writable(settings.MEDIA_BASE)
+            locked = os.path.exists(GITSTATUS_LOCK_PATH)
+            if writable and not locked:
+                collection_path = _gitstatus_next_repo()
+                _gitstatus_log(collection_path)
+                collection = Collection.from_json(collection_path)
+                git_status = collection.repo_status(force=True)
+                _gitstatus_log(git_status)
+            else:
+                if not writable:
+                    _gitstatus_log('MEDIA_BASE not writable!')
+                if locked:
+                    _gitstatus_log('locked!!!')
+        finally:
+            release_lock()
+            _gitstatus_log('lock released')
+        return collection_path,git_status
+    #logger.debug('git-status: another worker already running')
+    #return 'git-status: another worker already running'
+    return None
 
 
 class FileAddDebugTask(Task):
