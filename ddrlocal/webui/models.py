@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 import logging
 logger = logging.getLogger(__name__)
@@ -10,6 +11,8 @@ from django.conf import settings
 from django.core.cache import cache
 from django.core.urlresolvers import reverse
 from django.db import models
+
+from DDR import dvcs
 
 from ddrlocal.models import DDRLocalCollection, DDRLocalEntity, DDRLocalFile
 from ddrlocal.models import COLLECTION_FILES_PREFIX, ENTITY_FILES_PREFIX
@@ -94,29 +97,23 @@ def _load_object( json_path ):
 
 COLLECTION_SYNC_STATUS_CACHE_KEY = 'webui:collection:%s:sync-status'
 
-def _sync_status( repo, org, cid, collection=None, cache_set=False ):
+def _sync_status( collection, git_status, cache_set=False, force=False ):
     """Cache collection repo sync status info for collections list page.
     Used in both .collections() and .sync_status_ajax().
     
-    @param repo: 
-    @param org: 
-    @param cid: 
     @param collection: 
     @param cache_set: Run git-status if data is not cached
     """
-    collection_id = '-'.join([repo, org, cid])
-    key = COLLECTION_SYNC_STATUS_CACHE_KEY % collection_id
+    key = COLLECTION_SYNC_STATUS_CACHE_KEY % collection.id
     data = cache.get(key)
-    if not data and cache_set:
-        if not collection:
-            collection = Collection.from_json(Collection.collection_path(None,repo,org,cid))
+    if force or (not data and cache_set):
         status = 'unknown'
         btn = 'muted'
-        if   collection.repo_ahead(): status = 'ahead'; btn = 'warning'
-        elif collection.repo_behind(): status = 'behind'; btn = 'warning'
-        elif collection.repo_conflicted(): status = 'conflicted'; btn = 'danger'
+        if   dvcs.ahead(git_status): status = 'ahead'; btn = 'warning'
+        elif dvcs.behind(git_status): status = 'behind'; btn = 'warning'
+        elif dvcs.conflicted(git_status): status = 'conflicted'; btn = 'danger'
+        elif dvcs.synced(git_status): status = 'synced'; btn = 'success'
         elif collection.locked(): status = 'locked'; btn = 'warning'
-        elif collection.repo_synced(): status = 'synced'; btn = 'success'
         data = {
             'row': '#%s' % collection.id,
             'color': btn,
@@ -159,6 +156,44 @@ def _update_inheritables( parent_object, objecttype, inheritables, cleaned_data 
     return child_ids,changed_files
 
 
+def gitstatus_path( collection_path ):
+    return os.path.join(collection_path, '.gitstatus')
+
+def gitstatus_format( status, annex_status, sync_status ):
+    """writes git-status,git-annex-status,sync-status to a file with timestamp
+    """
+    return '\n%%\n'.join([
+        datetime.now().strftime(settings.TIMESTAMP_FORMAT),
+        status,
+        annex_status,
+        sync_status,
+    ])
+
+def gitstatus_parse( text ):
+    """
+    
+    """
+    timestamp,status,annex_status,sync_status = [part.strip() for part in text.split('%%')]
+    return [
+        datetime.now().strptime(timestamp, settings.TIMESTAMP_FORMAT),
+        status,
+        annex_status,
+        sync_status,
+    ]
+
+def gitstatus_write( collection_path, status, annex_status, sync_status ):
+    text = gitstatus_format(status, annex_status, sync_status)
+    with open(gitstatus_path(collection_path), 'w') as f:
+        f.write(text)
+    return text
+
+def gitstatus_read( collection_path ):
+    with open(gitstatus_path(collection_path), 'r') as f:
+        text = f.read()
+    return gitstatus_parse(text)
+
+
+
 
 class Collection( DDRLocalCollection ):
     
@@ -170,6 +205,14 @@ class Collection( DDRLocalCollection ):
         '/var/www/media/base/ddr-testing-123'
         """
         return os.path.join(settings.MEDIA_BASE, '{}-{}-{}'.format(repo, org, cid))
+    
+    def gitstatus_path( self ):
+        """Returns absolute path to collection .gitstatus cache file.
+        
+        >>> DDRLocalCollection.collection_path(None, 'ddr', 'testing', 123)
+        '/var/www/media/base/ddr-test-123/.gitstatus'
+        """
+        return gitstatus_path(self.path)
     
     def url( self ):
         """Returns relative URL in context of webui app.
@@ -234,11 +277,25 @@ class Collection( DDRLocalCollection ):
             cache.set(key, data, COLLECTION_ANNEX_STATUS_TIMEOUT)
         return data
     
-    def sync_status( self, cache_set=False ):
-        return _sync_status( self.repo, self.org, self.cid, self, cache_set )
+    def sync_status( self, git_status, cache_set=False, force=False ):
+        return _sync_status( self, git_status, cache_set, force )
     
     def sync_status_url( self ):
         return reverse('webui-collection-sync-status-ajax',args=(self.repo,self.org,self.cid))
+    
+    def gitstatus( self, force=False ):
+        """
+        @param force: Boolean Forces refresh of status
+        """
+        if os.path.exists(gitstatus_path(self.path)) and not force:
+            timestamp,status,annex_status,sync_status = gitstatus_read(self.path)
+        else:
+            status = super(Collection, self).repo_status()
+            annex_status = super(Collection, self).repo_annex_status()
+            sync_status = self.sync_status(git_status=status, force=True)
+            text = gitstatus_write(self.path, status, annex_status, json.dumps(sync_status))
+            timestamp,status,annex_status,sync_status = gitstatus_parse(text)
+        return timestamp,status,annex_status,sync_status
 
     def selected_inheritables(self, cleaned_data ):
         return _selected_inheritables(self.inheritable_fields(), cleaned_data)
