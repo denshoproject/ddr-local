@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import os
 
@@ -16,6 +16,7 @@ from django.core.urlresolvers import reverse
 
 from migration.densho import export_entities, export_files, export_csv_path
 from webui.models import Collection, Entity, DDRFile
+from webui.models import gitstatus_read
 
 from DDR import docstore, models
 from DDR.commands import entity_destroy, file_destroy
@@ -165,7 +166,8 @@ GITSTATUS_QUEUE_PATH = os.path.join(settings.MEDIA_BASE, '.gitstatus-queue')
 GITSTATUS_LOCK_PATH = os.path.join(settings.MEDIA_BASE, '.gitstatus-stop')
 GITSTATUS_LOCK_ID = 'gitstatus-update-lock'
 GITSTATUS_LOCK_EXPIRE = 60 * 5 # Lock expires in 5 minutes
-GITSTATUS_INTERVAL = 10
+GITSTATUS_INTERVAL = 60*2
+GITSTATUS_BACKOFF = 30
 
 def _gitstatus_log(msg):
     entry = '%s %s\n' % (datetime.now().strftime(settings.TIMESTAMP_FORMAT), msg)
@@ -173,25 +175,101 @@ def _gitstatus_log(msg):
         f.write(entry)
 
 def _gitstatus_next_repo():
-    """Gets next collection_path from gitstatus queue.
+    """Gets next collection_path from gitstatus queue unless BACKOFF
+    
+    This function attempts to read GITSTATUS_QUEUE_PATH.
+    If no GITSTATUS_QUEUE_PATH exists then one will be made.
+    If GITSTATUS_QUEUE_PATH contains BACKOFF timestamp and not enough time
+    has passed it returns the backoff timestamp.
+    
+    Sample file 0:
+        /var/www/media/base/ddr-densho-252 2014-06-24T1503:22-07:00
+        /var/www/media/base/ddr-densho-255 2014-06-24T1503:22-07:00
+        /var/www/media/base/ddr-densho-282 2014-06-24T1503:22-07:00
+    
+    Sample file 1:
+        backoff 2014-06-24T1503:22-07:00
+    
+    Sample file 2:
+        backoff 2014-06-24T1503:22-07:00
+        /var/www/media/base/ddr-densho-252 2014-06-24T1503:22-07:00
+        /var/www/media/base/ddr-densho-255 2014-06-24T1503:22-07:00
+        /var/www/media/base/ddr-densho-282 2014-06-24T1503:22-07:00
+    
+    @returns: collection_path or (msg,timedelta)
     """
-    collection_path = None
     # load existing queue; populate queue if empty
-    paths = []
+    contents = ''
     if os.path.exists(GITSTATUS_QUEUE_PATH):
         with open(GITSTATUS_QUEUE_PATH, 'r') as f:
-            paths = json.loads(f.read())
-    if len(paths) == 0:
+            contents = f.read()
+    lines = []
+    for line in contents.strip().split('\n'):
+        line = line.strip()
+        if line:
+            lines.append(line)
+    if not lines:
+        # refresh
+        # TODO list all organizations!
         repo='ddr'; org='densho'
         paths = Collection.collections(settings.MEDIA_BASE, repository=repo, organization=org)
-    # pull next collection from list
-    if len(paths):
-        collection_path = paths[0]
-        del paths[0]
-    # write updated queue
-    with open(GITSTATUS_QUEUE_PATH, 'w') as f1:
-        f1.write(json.dumps(paths))
-    return collection_path
+        for path in paths:
+            # TODO timestamp should come from the repo's .gitstatus file!
+            timestamp,status,annex_status,sync_status = gitstatus_read(path)
+            ts = timestamp.strftime(settings.TIMESTAMP_FORMAT)
+            line = ' '.join([path, ts])
+            lines.append(line)
+#    # if backoff leave the queue file as is
+#    gitstatus_backoff = timedelta(seconds=GITSTATUS_BACKOFF)
+#    for n,line in enumerate(lines):
+#        if 'backoff' in line:
+#            msg,ts = line.split(' ')
+#            timestamp = datetime.strptime(ts, settings.TIMESTAMP_FORMAT)
+#            elapsed = datetime.now() - timestamp
+#            if elapsed < gitstatus_backoff:
+#                # not enough time elapsed: die
+#                delay = gitstatus_backoff - elapsed
+#                return 'backoff',delay
+#            else:
+#                # enough time has passed: rm the backoff
+#                lines.remove(line)
+    # any eligible collections?
+    eligible = []
+    gitstatus_interval = timedelta(seconds=GITSTATUS_INTERVAL)
+    delay = gitstatus_interval
+    for line in lines:
+        path,ts = line.split(' ')
+        timestamp = datetime.strptime(ts, settings.TIMESTAMP_FORMAT)
+        elapsed = datetime.now() - timestamp
+        if elapsed > gitstatus_interval:
+            eligible.append(line)
+        else:
+            # report smallest interval (e.g. next possible update time)
+            wait = gitstatus_interval - elapsed
+            if wait < delay:
+               delay = wait
+    # we have collections
+    if lines:
+        if eligible:
+            # eligible collections - pop the first one off the queue
+            for line in lines:
+                if line == eligible[0]:
+                    lines.remove(line)
+            text = '\n'.join(lines) + '\n'
+            with open(GITSTATUS_QUEUE_PATH, 'w') as f1:
+                f1.write(text)
+            collection_path,ts = eligible[0].split(' ')
+            return collection_path
+        else:
+            # collections but none eligible: back off!
+#            timestamp = datetime.now()
+#            backoff = 'backoff %s' % timestamp.strftime(settings.TIMESTAMP_FORMAT)
+#            lines.insert(0, backoff)
+            text = '\n'.join(lines) + '\n'
+            with open(GITSTATUS_QUEUE_PATH, 'w') as f1:
+                f1.write(text)
+            return 'notready',delay
+    return None
 
 @task(base=GitStatusTask, name='webui.tasks.gitstatus_update')
 def gitstatus_update():
