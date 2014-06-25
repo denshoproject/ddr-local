@@ -171,9 +171,17 @@ def gitstatus_format( status, annex_status, sync_status ):
 
 def gitstatus_parse( text ):
     """
-    
+    @returns: timestamp,status,annex_status,sync_status
     """
-    timestamp,status,annex_status,sync_status = [part.strip() for part in text.split('%%')]
+    # we don't know in advance how many fields exist in .gitstatus
+    # so get as many as we can
+    variables = [None,None,None,None]
+    for n,part in enumerate(text.split('%%')):
+        variables[n] = part.strip()
+    timestamp = variables[0]
+    status = variables[1]
+    annex_status = variables[2]
+    sync_status = variables[3]
     return [
         datetime.now().strptime(timestamp, settings.TIMESTAMP_FORMAT),
         status,
