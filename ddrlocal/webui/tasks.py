@@ -15,6 +15,7 @@ from django.core.cache import cache
 from django.core.urlresolvers import reverse
 
 from migration.densho import export_entities, export_files, export_csv_path
+from webui import get_repos_orgs
 from webui.models import Collection, Entity, DDRFile
 from webui.models import gitstatus_read
 
@@ -216,20 +217,20 @@ def _gitstatus_next_repo():
             lines.append(line)
     if not lines:
         # refresh
-        # TODO list all organizations!
-        repo='ddr'; org='densho'
-        paths = Collection.collections(settings.MEDIA_BASE, repository=repo, organization=org)
-        for path in paths:
-            # get time repo gitstatus last update
-            # if no gitstatus file, make immediately updatable
-            gitstat = gitstatus_read(path)
-            if gitstat:
-                timestamp,elapsed,status,annex_status,sync_status = gitstat
-                ts = timestamp.strftime(settings.TIMESTAMP_FORMAT)
-            else:
-                ts = datetime.fromtimestamp(0).strftime(settings.TIMESTAMP_FORMAT)
-            line = ' '.join([path, ts])
-            lines.append(line)
+        for o in get_repos_orgs():
+            repo,org = o.split('-')
+            paths = Collection.collections(settings.MEDIA_BASE, repository=repo, organization=org)
+            for path in paths:
+                # get time repo gitstatus last update
+                # if no gitstatus file, make immediately updatable
+                gitstat = gitstatus_read(path)
+                if gitstat:
+                    timestamp,elapsed,status,annex_status,sync_status = gitstat
+                    ts = timestamp.strftime(settings.TIMESTAMP_FORMAT)
+                else:
+                    ts = datetime.fromtimestamp(0).strftime(settings.TIMESTAMP_FORMAT)
+                line = ' '.join([path, ts])
+                lines.append(line)
 #    # if backoff leave the queue file as is
 #    gitstatus_backoff = timedelta(seconds=GITSTATUS_BACKOFF)
 #    for n,line in enumerate(lines):
