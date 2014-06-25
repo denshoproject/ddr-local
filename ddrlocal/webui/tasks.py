@@ -214,9 +214,14 @@ def _gitstatus_next_repo():
         repo='ddr'; org='densho'
         paths = Collection.collections(settings.MEDIA_BASE, repository=repo, organization=org)
         for path in paths:
-            # TODO timestamp should come from the repo's .gitstatus file!
-            timestamp,status,annex_status,sync_status = gitstatus_read(path)
-            ts = timestamp.strftime(settings.TIMESTAMP_FORMAT)
+            # get time repo gitstatus last update
+            # if no gitstatus file, make immediately updatable
+            gitstat = gitstatus_read(path)
+            if gitstat:
+                timestamp,elapsed,status,annex_status,sync_status = gitstat
+                ts = timestamp.strftime(settings.TIMESTAMP_FORMAT)
+            else:
+                ts = datetime.fromtimestamp(0).strftime(settings.TIMESTAMP_FORMAT)
             line = ' '.join([path, ts])
             lines.append(line)
 #    # if backoff leave the queue file as is
