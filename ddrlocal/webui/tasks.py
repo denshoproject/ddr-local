@@ -158,7 +158,9 @@ class GitStatusTask(Task):
         logger.debug('GitStatusTask.after_return(%s, %s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs, einfo))
         _gitstatus_log('GitStatusTask.after_return(%s, %s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs, einfo))
 
-GITSTATUS_LOG = os.path.join(settings.MEDIA_BASE, '.gitstatus.log')
+# Logfile records gitstatus-update activity
+GITSTATUS_LOG = '/var/log/ddr/gitstatus.log'
+# File used to 
 GITSTATUS_QUEUE_PATH = os.path.join(settings.MEDIA_BASE, '.gitstatus-queue')
 GITSTATUS_LOCK_PATH = os.path.join(settings.MEDIA_BASE, '.gitstatus-stop')
 GITSTATUS_LOCK_ID = 'gitstatus-update-lock'
