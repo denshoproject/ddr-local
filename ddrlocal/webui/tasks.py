@@ -295,34 +295,44 @@ def gitstatus_update():
         cache the results
         set repo state to "cached"
     """
-    _gitstatus_log('gitstatus_update()')
+    _gitstatus_log('gitstatus_update() ---------------------')
     acquire_lock = lambda: cache.add(GITSTATUS_LOCK_ID, 'true', GITSTATUS_LOCK_EXPIRE)
     release_lock = lambda: cache.delete(GITSTATUS_LOCK_ID)
     #logger.debug('git status: %s', collection_path)
-    git_status = None
+    message = None
     if acquire_lock():
-        _gitstatus_log('lock acquired')
+        _gitstatus_log('celery lock acquired')
         try:
             writable = is_writable(settings.MEDIA_BASE)
             locked = os.path.exists(GITSTATUS_LOCK_PATH)
-            if writable and not locked:
-                collection_path = _gitstatus_next_repo()
-                _gitstatus_log(collection_path)
-                collection = Collection.from_json(collection_path)
-                git_status = collection.repo_status(force=True)
-                _gitstatus_log(git_status)
+            if locked:
+                _gitstatus_log('locked by another celery process')
+                message = 'locked by another process'
+            elif writable:
+                response = _gitstatus_next_repo()
+                _gitstatus_log(response)
+                if isinstance(response, list) or isinstance(response, tuple):
+                    message = str(response)
+                else:
+                    collection_path = response
+                    collection = Collection.from_json(collection_path)
+                    timestamp,elapsed,status,annex_status,sync_status = collection.gitstatus(force=True)
+                    _gitstatus_log(timestamp)
+                    _gitstatus_log(status)
+                    _gitstatus_log(annex_status[72])
+                    message = '%s updated in %s' % (collection_path, str(elapsed))
             else:
-                if not writable:
-                    _gitstatus_log('MEDIA_BASE not writable!')
-                if locked:
-                    _gitstatus_log('locked!!!')
+                _gitstatus_log('MEDIA_BASE not writable!')
+                message = 'MEDIA_BASE not writable!'
         finally:
             release_lock()
-            _gitstatus_log('lock released')
-        return collection_path,git_status
-    #logger.debug('git-status: another worker already running')
+            _gitstatus_log('celery lock released')
+    else:
+        _gitstatus_log("couldn't get celery lock")
+        message = "couldn't get celery lock"
+        #logger.debug('git-status: another worker already running')
     #return 'git-status: another worker already running'
-    return None
+    return message
 
 
 class FileAddDebugTask(Task):
