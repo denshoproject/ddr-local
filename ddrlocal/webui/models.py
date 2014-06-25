@@ -310,8 +310,12 @@ class Collection( DDRLocalCollection ):
         return reverse('webui-collection-sync-status-ajax',args=(self.repo,self.org,self.cid))
     
     def gitstatus( self, force=False ):
-        """
+        """Gets a bunch of status info for the collection; refreshes if forced
+        
+        timestamp, elapsed, status, annex_status, sync_status
+        
         @param force: Boolean Forces refresh of status
+        @returns: dict
         """
         if os.path.exists(gitstatus_path(self.path)) and not force:
             timestamp,elapsed,status,annex_status,sync_status = gitstatus_read(self.path)
@@ -324,7 +328,13 @@ class Collection( DDRLocalCollection ):
             elapsed = timestamp - start
             text = gitstatus_write(self.path, timestamp, elapsed, status, annex_status, json.dumps(sync_status))
             timestamp,elapsed,status,annex_status,sync_status = gitstatus_parse(text)
-        return timestamp,elapsed,status,annex_status,sync_status
+        return {
+            'timestamp': timestamp,
+            'elapsed': elapsed,
+            'status': status,
+            'annex_status': annex_status,
+            'sync_status': sync_status,
+        }
 
     def selected_inheritables(self, cleaned_data ):
         return _selected_inheritables(self.inheritable_fields(), cleaned_data)

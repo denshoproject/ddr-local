@@ -159,39 +159,45 @@ class GitStatusTask(Task):
         logger.debug('GitStatusTask.after_return(%s, %s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs, einfo))
         _gitstatus_log('GitStatusTask.after_return(%s, %s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs, einfo))
 
-# Logfile records gitstatus-update activity
+# Records gitstatus-update activity
 GITSTATUS_LOG = '/var/log/ddr/gitstatus.log'
-# File used to 
+
+# Paths to collection repos to be updated, and timestamps of last update.
 GITSTATUS_QUEUE_PATH = os.path.join(settings.MEDIA_BASE, '.gitstatus-queue')
+
+# Processes that should not be interrupted by gitstatus-update should
+# write something to this file (doesn't matter what) and remove the file
+# when they are finished.
 GITSTATUS_LOCK_PATH = os.path.join(settings.MEDIA_BASE, '.gitstatus-stop')
-GITSTATUS_LOCK_ID = 'gitstatus-update-lock'
-GITSTATUS_LOCK_EXPIRE = 60 * 5 # Lock expires in 5 minutes
+
+# Minimum interval between git-status updates per collection repository.
 GITSTATUS_INTERVAL = 60*2
+
 GITSTATUS_BACKOFF = 30
 
 def _gitstatus_log(msg):
+    """celery does not like writing to logs, so write to separate logfile
+    """
     entry = '%s %s\n' % (datetime.now().strftime(settings.TIMESTAMP_FORMAT), msg)
     with open(GITSTATUS_LOG, 'a') as f:
         f.write(entry)
 
 def _gitstatus_next_repo():
-    """Gets next collection_path from gitstatus queue unless BACKOFF
+    """Gets next collection_path or time til next ready to be updated
     
-    This function attempts to read GITSTATUS_QUEUE_PATH.
-    If no GITSTATUS_QUEUE_PATH exists then one will be made.
-    If GITSTATUS_QUEUE_PATH contains BACKOFF timestamp and not enough time
-    has passed it returns the backoff timestamp.
+    Each line of GITSTATUS_QUEUE_PATH contains a collection_path and
+    a timestamp of the last time git-status was done on the collection.
+    Timestamps come from .gitstatus files in the collection repos.
+    If a repo has no .gitstatus file then date in past is used (e.g. update now).
+    The first collection with a timestamp more than GITSTATUS_INTERVAL
+    in the past is returned.
+    If there are collections but they are too recent a 'notready'
+    message is returned along with the time til next is available.
     
     Sample file 0:
-        /var/www/media/base/ddr-densho-252 2014-06-24T1503:22-07:00
-        /var/www/media/base/ddr-densho-255 2014-06-24T1503:22-07:00
-        /var/www/media/base/ddr-densho-282 2014-06-24T1503:22-07:00
+        [empty]
     
     Sample file 1:
-        backoff 2014-06-24T1503:22-07:00
-    
-    Sample file 2:
-        backoff 2014-06-24T1503:22-07:00
         /var/www/media/base/ddr-densho-252 2014-06-24T1503:22-07:00
         /var/www/media/base/ddr-densho-255 2014-06-24T1503:22-07:00
         /var/www/media/base/ddr-densho-282 2014-06-24T1503:22-07:00
@@ -266,7 +272,7 @@ def _gitstatus_next_repo():
             collection_path,ts = eligible[0].split(' ')
             return collection_path
         else:
-            # collections but none eligible: back off!
+#            # collections but none eligible: back off!
 #            timestamp = datetime.now()
 #            backoff = 'backoff %s' % timestamp.strftime(settings.TIMESTAMP_FORMAT)
 #            lines.insert(0, backoff)
@@ -279,23 +285,22 @@ def _gitstatus_next_repo():
 @task(base=GitStatusTask, name='webui.tasks.gitstatus_update')
 def gitstatus_update():
     """
-    ENSURING A TASK IS ONLY EXECUTED ONE AT A TIME
+    
+    - Ensures only one gitstatus_update task running at a time
+    - Checks to make sure MEDIA_BASE is readable and that no
+      other process has requested a lock.
+    - Pulls next collection_path off the queue.
+    - Triggers a gitstatus update/write
+    - 
+    
+    Reference: Ensuring only one gitstatus_update runs at a time
     http://docs.celeryproject.org/en/latest/tutorials/task-cookbook.html#cookbook-task-serial
     
-    if not (store readable):
-        log "store is not readable"; die
-    if store locked:
-        log "store is locked since TIMESTAMP for some other operation"; die
-    if no collections list:
-        make new list of collections (randomized)
-    pull next item off the queue
-    if (not cached):
-        set repo state to "updating"
-        git-status
-        cache the results
-        set repo state to "cached"
+    @returns: success/fail message
     """
     _gitstatus_log('gitstatus_update() ---------------------')
+    GITSTATUS_LOCK_ID = 'gitstatus-update-lock'
+    GITSTATUS_LOCK_EXPIRE = 60 * 5
     acquire_lock = lambda: cache.add(GITSTATUS_LOCK_ID, 'true', GITSTATUS_LOCK_EXPIRE)
     release_lock = lambda: cache.delete(GITSTATUS_LOCK_ID)
     #logger.debug('git status: %s', collection_path)
