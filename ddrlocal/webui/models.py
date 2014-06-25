@@ -159,11 +159,11 @@ def _update_inheritables( parent_object, objecttype, inheritables, cleaned_data 
 def gitstatus_path( collection_path ):
     return os.path.join(collection_path, '.gitstatus')
 
-def gitstatus_format( status, annex_status, sync_status ):
+def gitstatus_format( timestamp, elapsed, status, annex_status, sync_status ):
     """Formats git-status,git-annex-status,sync-status and timestamp
     
     Sample:
-        {timestamp}
+        {timestamp} {elapsed}
         %%
         {status}
         %%
@@ -171,8 +171,12 @@ def gitstatus_format( status, annex_status, sync_status ):
         %%
         {sync status}
     """
+    timestamp_elapsed = ' '.join([
+        timestamp.strftime(settings.TIMESTAMP_FORMAT),
+        str(elapsed)
+    ])
     return '\n%%\n'.join([
-        datetime.now().strftime(settings.TIMESTAMP_FORMAT),
+        timestamp_elapsed,
         status,
         annex_status,
         sync_status,
@@ -180,28 +184,26 @@ def gitstatus_format( status, annex_status, sync_status ):
 
 def gitstatus_parse( text ):
     """
-    @returns: timestamp,status,annex_status,sync_status
+    @returns: timestamp,elapsed,status,annex_status,sync_status
     """
     # we don't know in advance how many fields exist in .gitstatus
     # so get as many as we can
     variables = [None,None,None,None]
     for n,part in enumerate(text.split('%%')):
         variables[n] = part.strip()
-    timestamp = variables[0]
+    meta = variables[0]
+    if meta:
+        ts,elapsed = meta.split(' ')
+        timestamp = datetime.strptime(ts, settings.TIMESTAMP_FORMAT)
     status = variables[1]
     annex_status = variables[2]
     sync_status = variables[3]
-    return [
-        datetime.now().strptime(timestamp, settings.TIMESTAMP_FORMAT),
-        status,
-        annex_status,
-        sync_status,
-    ]
+    return [timestamp, elapsed, status, annex_status, sync_status,]
 
-def gitstatus_write( collection_path, status, annex_status, sync_status ):
+def gitstatus_write( collection_path, timestamp, elapsed, status, annex_status, sync_status ):
     """Writes .gitstatus for the collection; see gitstatus_format.
     """
-    text = gitstatus_format(status, annex_status, sync_status)
+    text = gitstatus_format(timestamp, elapsed, status, annex_status, sync_status) + '\n'
     with open(gitstatus_path(collection_path), 'w') as f:
         f.write(text)
     return text
@@ -312,14 +314,17 @@ class Collection( DDRLocalCollection ):
         @param force: Boolean Forces refresh of status
         """
         if os.path.exists(gitstatus_path(self.path)) and not force:
-            timestamp,status,annex_status,sync_status = gitstatus_read(self.path)
+            timestamp,elapsed,status,annex_status,sync_status = gitstatus_read(self.path)
         else:
+            start = datetime.now()
             status = super(Collection, self).repo_status()
             annex_status = super(Collection, self).repo_annex_status()
             sync_status = self.sync_status(git_status=status, force=True)
-            text = gitstatus_write(self.path, status, annex_status, json.dumps(sync_status))
-            timestamp,status,annex_status,sync_status = gitstatus_parse(text)
-        return timestamp,status,annex_status,sync_status
+            timestamp = datetime.now()
+            elapsed = timestamp - start
+            text = gitstatus_write(self.path, timestamp, elapsed, status, annex_status, json.dumps(sync_status))
+            timestamp,elapsed,status,annex_status,sync_status = gitstatus_parse(text)
+        return timestamp,elapsed,status,annex_status,sync_status
 
     def selected_inheritables(self, cleaned_data ):
         return _selected_inheritables(self.inheritable_fields(), cleaned_data)
