@@ -160,7 +160,16 @@ def gitstatus_path( collection_path ):
     return os.path.join(collection_path, '.gitstatus')
 
 def gitstatus_format( status, annex_status, sync_status ):
-    """writes git-status,git-annex-status,sync-status to a file with timestamp
+    """Formats git-status,git-annex-status,sync-status and timestamp
+    
+    Sample:
+        {timestamp}
+        %%
+        {status}
+        %%
+        {annex status}
+        %%
+        {sync status}
     """
     return '\n%%\n'.join([
         datetime.now().strftime(settings.TIMESTAMP_FORMAT),
@@ -190,15 +199,22 @@ def gitstatus_parse( text ):
     ]
 
 def gitstatus_write( collection_path, status, annex_status, sync_status ):
+    """Writes .gitstatus for the collection; see gitstatus_format.
+    """
     text = gitstatus_format(status, annex_status, sync_status)
     with open(gitstatus_path(collection_path), 'w') as f:
         f.write(text)
     return text
 
 def gitstatus_read( collection_path ):
-    with open(gitstatus_path(collection_path), 'r') as f:
-        text = f.read()
-    return gitstatus_parse(text)
+    """Reads .gitstatus for the collection and returns parsed data.
+    """
+    path = gitstatus_path(collection_path)
+    if os.path.exists(path):
+        with open(path, 'r') as f:
+            text = f.read()
+        return gitstatus_parse(text)
+    return None
 
 
 
