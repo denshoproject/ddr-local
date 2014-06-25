@@ -168,7 +168,7 @@ GITSTATUS_LOCK_EXPIRE = 60 * 5 # Lock expires in 5 minutes
 GITSTATUS_INTERVAL = 10
 
 def _gitstatus_log(msg):
-    entry = '%s %s' % (datetime.now().strftime(settings.TIMESTAMP_FORMAT), msg)
+    entry = '%s %s\n' % (datetime.now().strftime(settings.TIMESTAMP_FORMAT), msg)
     with open(GITSTATUS_LOG, 'a') as f:
         f.write(entry)
 
