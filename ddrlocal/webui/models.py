@@ -317,9 +317,10 @@ class Collection( DDRLocalCollection ):
         @param force: Boolean Forces refresh of status
         @returns: dict
         """
+        timestamp=None; elapsed=None; status=None; annex_status=None; sync_status=None
         if os.path.exists(gitstatus_path(self.path)) and not force:
             timestamp,elapsed,status,annex_status,sync_status = gitstatus_read(self.path)
-        else:
+        elif force:
             start = datetime.now()
             status = super(Collection, self).repo_status()
             annex_status = super(Collection, self).repo_annex_status()
