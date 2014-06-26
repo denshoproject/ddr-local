@@ -133,6 +133,7 @@ INSTALLED_APPS = (
     #
     'bootstrap_pagination',
     'djcelery',
+    'gunicorn',
     'sorl.thumbnail',
     #
     'ddrlocal',
