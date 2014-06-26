@@ -323,10 +323,7 @@ def gitstatus_update():
                     collection_path = response
                     collection = Collection.from_json(collection_path)
                     timestamp,elapsed,status,annex_status,sync_status = collection.gitstatus(force=True)
-                    _gitstatus_log(timestamp)
-                    _gitstatus_log(status)
-                    _gitstatus_log(annex_status[72])
-                    message = '%s updated in %s' % (collection_path, str(elapsed))
+                    message = '%s updated' % (collection_path)
             else:
                 _gitstatus_log('MEDIA_BASE not writable!')
                 message = 'MEDIA_BASE not writable!'
