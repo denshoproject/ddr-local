@@ -20,13 +20,14 @@ from ddrlocal.models import collection as collectionmodule
 from ddrlocal.models import entity as entitymodule
 from ddrlocal.models import files as filemodule
 
-COLLECTION_FETCH_CACHE_KEY = 'webui:collection:%s:fetch'
-COLLECTION_STATUS_CACHE_KEY = 'webui:collection:%s:status'
-COLLECTION_ANNEX_STATUS_CACHE_KEY = 'webui:collection:%s:annex_status'
+from webui import gitstatus
 
-COLLECTION_FETCH_TIMEOUT = 0
-COLLECTION_STATUS_TIMEOUT = 60 * 10
-COLLECTION_ANNEX_STATUS_TIMEOUT = 60 * 10
+from webui import COLLECTION_FETCH_CACHE_KEY
+from webui import COLLECTION_STATUS_CACHE_KEY
+from webui import COLLECTION_ANNEX_STATUS_CACHE_KEY
+from webui import COLLECTION_FETCH_TIMEOUT
+from webui import COLLECTION_STATUS_TIMEOUT
+from webui import COLLECTION_ANNEX_STATUS_TIMEOUT
 
 
 
@@ -94,40 +95,6 @@ def _load_object( json_path ):
     elif basename == 'collection.json':
         return Collection.from_json(dirname)
     return None
-
-COLLECTION_SYNC_STATUS_CACHE_KEY = 'webui:collection:%s:sync-status'
-
-def _sync_status( collection, git_status, timestamp, cache_set=False, force=False ):
-    """Cache collection repo sync status info for collections list page.
-    Used in both .collections() and .sync_status_ajax().
-    
-    TODO do we need to cache this any more? we're writing this to REPO/.gitstatus
-    
-    @param collection: 
-    @param cache_set: Run git-status if data is not cached
-    """
-    # IMPORTANT: DO NOT call collection.gitstatus() it will loop
-    key = COLLECTION_SYNC_STATUS_CACHE_KEY % collection.id
-    data = cache.get(key)
-    if force or (not data and cache_set):
-        status = 'unknown'
-        btn = 'muted'
-        if   dvcs.ahead(git_status): status = 'ahead'; btn = 'warning'
-        elif dvcs.behind(git_status): status = 'behind'; btn = 'warning'
-        elif dvcs.conflicted(git_status): status = 'conflicted'; btn = 'danger'
-        elif dvcs.synced(git_status): status = 'synced'; btn = 'success'
-        elif collection.locked(): status = 'locked'; btn = 'warning'
-        if isinstance(timestamp, datetime):
-            timestamp = timestamp.strftime(settings.TIMESTAMP_FORMAT)
-        data = {
-            'row': '#%s' % collection.id,
-            'color': btn,
-            'cell': '#%s td.status' % collection.id,
-            'status': status,
-            'timestamp': timestamp,
-        }
-        cache.set(key, data, COLLECTION_STATUS_TIMEOUT)
-    return data
     
 def _update_inheritables( parent_object, objecttype, inheritables, cleaned_data ):
     """Update specified inheritable fields of child objects using form data.
@@ -162,70 +129,6 @@ def _update_inheritables( parent_object, objecttype, inheritables, cleaned_data 
     return child_ids,changed_files
 
 
-def gitstatus_path( collection_path ):
-    return os.path.join(collection_path, '.gitstatus')
-
-def gitstatus_format( timestamp, elapsed, status, annex_status, sync_status ):
-    """Formats git-status,git-annex-status,sync-status and timestamp
-    
-    Sample:
-        {timestamp} {elapsed}
-        %%
-        {status}
-        %%
-        {annex status}
-        %%
-        {sync status}
-    """
-    timestamp_elapsed = ' '.join([
-        timestamp.strftime(settings.TIMESTAMP_FORMAT),
-        str(elapsed)
-    ])
-    return '\n%%\n'.join([
-        timestamp_elapsed,
-        status,
-        annex_status,
-        sync_status,
-    ])
-
-def gitstatus_parse( text ):
-    """
-    @returns: timestamp,elapsed,status,annex_status,sync_status
-    """
-    # we don't know in advance how many fields exist in .gitstatus
-    # so get as many as we can
-    variables = [None,None,None,None]
-    for n,part in enumerate(text.split('%%')):
-        variables[n] = part.strip()
-    meta = variables[0]
-    if meta:
-        ts,elapsed = meta.split(' ')
-        timestamp = datetime.strptime(ts, settings.TIMESTAMP_FORMAT)
-    status = variables[1]
-    annex_status = variables[2]
-    sync_status = variables[3]
-    return [timestamp, elapsed, status, annex_status, sync_status,]
-
-def gitstatus_write( collection_path, timestamp, elapsed, status, annex_status, sync_status ):
-    """Writes .gitstatus for the collection; see gitstatus_format.
-    """
-    text = gitstatus_format(timestamp, elapsed, status, annex_status, sync_status) + '\n'
-    with open(gitstatus_path(collection_path), 'w') as f:
-        f.write(text)
-    return text
-
-def gitstatus_read( collection_path ):
-    """Reads .gitstatus for the collection and returns parsed data.
-    """
-    path = gitstatus_path(collection_path)
-    if os.path.exists(path):
-        with open(path, 'r') as f:
-            text = f.read()
-        return gitstatus_parse(text)
-    return None
-
-
-
 
 class Collection( DDRLocalCollection ):
     
@@ -244,7 +147,7 @@ class Collection( DDRLocalCollection ):
         >>> DDRLocalCollection.collection_path(None, 'ddr', 'testing', 123)
         '/var/www/media/base/ddr-test-123/.gitstatus'
         """
-        return gitstatus_path(self.path)
+        return gitstatus.path(self.path)
     
     def url( self ):
         """Returns relative URL in context of webui app.
@@ -317,13 +220,13 @@ class Collection( DDRLocalCollection ):
         in collection base template and thus on pretty much every page.
         If Collection.gitstatus() is available it's a lot faster.
         """
-        gitstatus = self.gitstatus()
-        if gitstatus and gitstatus.get('status',None):
-            if   function_name == 'synced': return dvcs.synced(gitstatus['status'])
-            elif function_name == 'ahead': return dvcs.ahead(gitstatus['status'])
-            elif function_name == 'behind': return dvcs.behind(gitstatus['status'])
-            elif function_name == 'diverged': return dvcs.diverged(gitstatus['status'])
-            elif function_name == 'conflicted': return dvcs.conflicted(gitstatus['status'])
+        gs = gitstatus.read(self.path)
+        if gs and gs.get('status',None):
+            if   function_name == 'synced': return dvcs.synced(gs['status'])
+            elif function_name == 'ahead': return dvcs.ahead(gs['status'])
+            elif function_name == 'behind': return dvcs.behind(gs['status'])
+            elif function_name == 'diverged': return dvcs.diverged(gs['status'])
+            elif function_name == 'conflicted': return dvcs.conflicted(gs['status'])
         else:
             if   function_name == 'synced': return super(Collection, self).repo_synced()
             elif function_name == 'ahead': return super(Collection, self).repo_ahead()
@@ -339,38 +242,13 @@ class Collection( DDRLocalCollection ):
     def repo_conflicted( self ): return self._repo_state('conflicted')
         
     def sync_status( self, git_status, timestamp, cache_set=False, force=False ):
-        return _sync_status( self, git_status, timestamp, cache_set, force )
+        return gitstatus.sync_status( self, git_status, timestamp, cache_set, force )
     
     def sync_status_url( self ):
         return reverse('webui-collection-sync-status-ajax',args=(self.repo,self.org,self.cid))
     
     def gitstatus( self, force=False ):
-        """Gets a bunch of status info for the collection; refreshes if forced
-        
-        timestamp, elapsed, status, annex_status, sync_status
-        
-        @param force: Boolean Forces refresh of status
-        @returns: dict
-        """
-        timestamp=None; elapsed=None; status=None; annex_status=None; sync_status=None
-        if os.path.exists(gitstatus_path(self.path)) and not force:
-            timestamp,elapsed,status,annex_status,sync_status = gitstatus_read(self.path)
-        elif force:
-            start = datetime.now()
-            status = super(Collection, self).repo_status()
-            annex_status = super(Collection, self).repo_annex_status()
-            timestamp = datetime.now()
-            sync_status = self.sync_status(git_status=status, timestamp=timestamp, force=True)
-            elapsed = timestamp - start
-            text = gitstatus_write(self.path, timestamp, elapsed, status, annex_status, json.dumps(sync_status))
-            timestamp,elapsed,status,annex_status,sync_status = gitstatus_parse(text)
-        return {
-            'timestamp': timestamp,
-            'elapsed': elapsed,
-            'status': status,
-            'annex_status': annex_status,
-            'sync_status': sync_status,
-        }
+        return gitstatus.read(self.path)
 
     def selected_inheritables(self, cleaned_data ):
         return _selected_inheritables(self.inheritable_fields(), cleaned_data)

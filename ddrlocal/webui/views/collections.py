@@ -69,8 +69,8 @@ def collections( request ):
                 collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
                 colls.append(collection)
                 gitstatus = collection.gitstatus()
-                if gitstatus.get('sync_status'):
-                    collection.sync_status = json.loads(gitstatus['sync_status'])
+                if gitstatus and gitstatus.get('sync_status'):
+                    collection.sync_status = gitstatus['sync_status']
                 else:
                     collection_status_urls.append( "'%s'" % collection.sync_status_url())
         collections.append( (o,repo,org,colls) )
@@ -142,8 +142,12 @@ def collection_json( request, repo, org, cid ):
 def sync_status_ajax( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     gitstatus = collection.gitstatus()
-    sync_status = gitstatus['sync_status']
-    return HttpResponse(sync_status, mimetype="application/json")
+    if gitstatus:
+        sync_status = gitstatus['sync_status']
+        if sync_status.get('timestamp',None):
+            sync_status['timestamp'] = sync_status['timestamp'].strftime(settings.TIMESTAMP_FORMAT)
+        return HttpResponse(json.dumps(sync_status), mimetype="application/json")
+    raise Http404
 
 @ddrview
 @storage_required

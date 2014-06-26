@@ -15,14 +15,12 @@ from django.core.cache import cache
 from django.core.urlresolvers import reverse
 
 from migration.densho import export_entities, export_files, export_csv_path
-from webui import get_repos_orgs
 from webui.models import Collection, Entity, DDRFile
-from webui.models import gitstatus_read
+from webui import gitstatus
 
 from DDR import docstore, models
 from DDR.commands import entity_destroy, file_destroy
 from DDR.commands import sync
-from DDR.storage import is_writable
 
 
 
@@ -150,176 +148,19 @@ class GitStatusTask(Task):
         
     def on_failure(self, exc, task_id, args, kwargs, einfo):
         logger.debug('GitStatusTask.on_failure(%s, %s, %s, %s, %s)' % (exc, task_id, args, kwargs, einfo))
-        _gitstatus_log('GitStatusTask.on_failure(%s, %s, %s, %s, %s)' % (exc, task_id, args, kwargs, einfo))
+        gitstatus.log('GitStatusTask.on_failure(%s, %s, %s, %s, %s)' % (exc, task_id, args, kwargs, einfo))
     
     def on_success(self, retval, task_id, args, kwargs):
         logger.debug('GitStatusTask.on_success(%s, %s, %s, %s)' % (retval, task_id, args, kwargs))
-        _gitstatus_log('GitStatusTask.on_success(%s, %s, %s, %s)' % (retval, task_id, args, kwargs))
+        gitstatus.log('GitStatusTask.on_success(%s, %s, %s, %s)' % (retval, task_id, args, kwargs))
     
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
         logger.debug('GitStatusTask.after_return(%s, %s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs, einfo))
-        _gitstatus_log('GitStatusTask.after_return(%s, %s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs, einfo))
-
-def _gitstatus_log(msg):
-    """celery does not like writing to logs, so write to separate logfile
-    """
-    entry = '%s %s\n' % (datetime.now().strftime(settings.TIMESTAMP_FORMAT), msg)
-    with open(settings.GITSTATUS_LOG, 'a') as f:
-        f.write(entry)
-
-def _gitstatus_next_repo():
-    """Gets next collection_path or time til next ready to be updated
-    
-    Each line of GITSTATUS_QUEUE_PATH contains a collection_path and
-    a timestamp of the last time git-status was done on the collection.
-    Timestamps come from .gitstatus files in the collection repos.
-    If a repo has no .gitstatus file then date in past is used (e.g. update now).
-    The first collection with a timestamp more than GITSTATUS_INTERVAL
-    in the past is returned.
-    If there are collections but they are too recent a 'notready'
-    message is returned along with the time til next is available.
-    
-    Sample file 0:
-        [empty]
-    
-    Sample file 1:
-        /var/www/media/base/ddr-densho-252 2014-06-24T1503:22-07:00
-        /var/www/media/base/ddr-densho-255 2014-06-24T1503:22-07:00
-        /var/www/media/base/ddr-densho-282 2014-06-24T1503:22-07:00
-    
-    @returns: collection_path or (msg,timedelta)
-    """
-    # load existing queue; populate queue if empty
-    contents = ''
-    if os.path.exists(settings.GITSTATUS_QUEUE_PATH):
-        with open(settings.GITSTATUS_QUEUE_PATH, 'r') as f:
-            contents = f.read()
-    lines = []
-    for line in contents.strip().split('\n'):
-        line = line.strip()
-        if line:
-            lines.append(line)
-    if not lines:
-        # refresh
-        for o in get_repos_orgs():
-            repo,org = o.split('-')
-            paths = Collection.collections(settings.MEDIA_BASE, repository=repo, organization=org)
-            for path in paths:
-                # get time repo gitstatus last update
-                # if no gitstatus file, make immediately updatable
-                gitstat = gitstatus_read(path)
-                if gitstat:
-                    timestamp,elapsed,status,annex_status,sync_status = gitstat
-                    ts = timestamp.strftime(settings.TIMESTAMP_FORMAT)
-                else:
-                    ts = datetime.fromtimestamp(0).strftime(settings.TIMESTAMP_FORMAT)
-                line = ' '.join([path, ts])
-                lines.append(line)
-#    # if backoff leave the queue file as is
-#    gitstatus_backoff = timedelta(seconds=settings.GITSTATUS_BACKOFF)
-#    for n,line in enumerate(lines):
-#        if 'backoff' in line:
-#            msg,ts = line.split(' ')
-#            timestamp = datetime.strptime(ts, settings.TIMESTAMP_FORMAT)
-#            elapsed = datetime.now() - timestamp
-#            if elapsed < gitstatus_backoff:
-#                # not enough time elapsed: die
-#                delay = gitstatus_backoff - elapsed
-#                return 'backoff',delay
-#            else:
-#                # enough time has passed: rm the backoff
-#                lines.remove(line)
-    # any eligible collections?
-    eligible = []
-    gitstatus_interval = timedelta(seconds=settings.GITSTATUS_INTERVAL)
-    delay = gitstatus_interval
-    for line in lines:
-        path,ts = line.split(' ')
-        timestamp = datetime.strptime(ts, settings.TIMESTAMP_FORMAT)
-        elapsed = datetime.now() - timestamp
-        if elapsed > gitstatus_interval:
-            eligible.append(line)
-        else:
-            # report smallest interval (e.g. next possible update time)
-            wait = gitstatus_interval - elapsed
-            if wait < delay:
-               delay = wait
-    # we have collections
-    if lines:
-        if eligible:
-            # eligible collections - pop the first one off the queue
-            for line in lines:
-                if line == eligible[0]:
-                    lines.remove(line)
-            text = '\n'.join(lines) + '\n'
-            with open(settings.GITSTATUS_QUEUE_PATH, 'w') as f1:
-                f1.write(text)
-            collection_path,ts = eligible[0].split(' ')
-            return collection_path
-        else:
-#            # collections but none eligible: back off!
-#            timestamp = datetime.now()
-#            backoff = 'backoff %s' % timestamp.strftime(settings.TIMESTAMP_FORMAT)
-#            lines.insert(0, backoff)
-            text = '\n'.join(lines) + '\n'
-            with open(settings.GITSTATUS_QUEUE_PATH, 'w') as f1:
-                f1.write(text)
-            return 'notready',delay
-    return None
+        gitstatus.log('GitStatusTask.after_return(%s, %s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs, einfo))
 
 @task(base=GitStatusTask, name='webui.tasks.gitstatus_update')
 def gitstatus_update():
-    """
-    
-    - Ensures only one gitstatus_update task running at a time
-    - Checks to make sure MEDIA_BASE is readable and that no
-      other process has requested a lock.
-    - Pulls next collection_path off the queue.
-    - Triggers a gitstatus update/write
-    - 
-    
-    Reference: Ensuring only one gitstatus_update runs at a time
-    http://docs.celeryproject.org/en/latest/tutorials/task-cookbook.html#cookbook-task-serial
-    
-    @returns: success/fail message
-    """
-    _gitstatus_log('gitstatus_update() ---------------------')
-    GITSTATUS_LOCK_ID = 'gitstatus-update-lock'
-    GITSTATUS_LOCK_EXPIRE = 60 * 5
-    acquire_lock = lambda: cache.add(GITSTATUS_LOCK_ID, 'true', GITSTATUS_LOCK_EXPIRE)
-    release_lock = lambda: cache.delete(GITSTATUS_LOCK_ID)
-    #logger.debug('git status: %s', collection_path)
-    message = None
-    if acquire_lock():
-        _gitstatus_log('celery lock acquired')
-        try:
-            writable = is_writable(settings.MEDIA_BASE)
-            locked = os.path.exists(settings.GITSTATUS_LOCK_PATH)
-            if locked:
-                _gitstatus_log('locked by another celery process')
-                message = 'locked by another process'
-            elif writable:
-                response = _gitstatus_next_repo()
-                _gitstatus_log(response)
-                if isinstance(response, list) or isinstance(response, tuple):
-                    message = str(response)
-                else:
-                    collection_path = response
-                    collection = Collection.from_json(collection_path)
-                    timestamp,elapsed,status,annex_status,sync_status = collection.gitstatus(force=True)
-                    message = '%s updated' % (collection_path)
-            else:
-                _gitstatus_log('MEDIA_BASE not writable!')
-                message = 'MEDIA_BASE not writable!'
-        finally:
-            release_lock()
-            _gitstatus_log('celery lock released')
-    else:
-        _gitstatus_log("couldn't get celery lock")
-        message = "couldn't get celery lock"
-        #logger.debug('git-status: another worker already running')
-    #return 'git-status: another worker already running'
-    return message
+    return gitstatus.update_store()
 
 
 class FileAddDebugTask(Task):
