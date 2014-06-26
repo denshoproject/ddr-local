@@ -160,27 +160,11 @@ class GitStatusTask(Task):
         logger.debug('GitStatusTask.after_return(%s, %s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs, einfo))
         _gitstatus_log('GitStatusTask.after_return(%s, %s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs, einfo))
 
-# Records gitstatus-update activity
-GITSTATUS_LOG = '/var/log/ddr/gitstatus.log'
-
-# Paths to collection repos to be updated, and timestamps of last update.
-GITSTATUS_QUEUE_PATH = os.path.join(settings.MEDIA_BASE, '.gitstatus-queue')
-
-# Processes that should not be interrupted by gitstatus-update should
-# write something to this file (doesn't matter what) and remove the file
-# when they are finished.
-GITSTATUS_LOCK_PATH = os.path.join(settings.MEDIA_BASE, '.gitstatus-stop')
-
-# Minimum interval between git-status updates per collection repository.
-GITSTATUS_INTERVAL = 60*2
-
-GITSTATUS_BACKOFF = 30
-
 def _gitstatus_log(msg):
     """celery does not like writing to logs, so write to separate logfile
     """
     entry = '%s %s\n' % (datetime.now().strftime(settings.TIMESTAMP_FORMAT), msg)
-    with open(GITSTATUS_LOG, 'a') as f:
+    with open(settings.GITSTATUS_LOG, 'a') as f:
         f.write(entry)
 
 def _gitstatus_next_repo():
@@ -207,8 +191,8 @@ def _gitstatus_next_repo():
     """
     # load existing queue; populate queue if empty
     contents = ''
-    if os.path.exists(GITSTATUS_QUEUE_PATH):
-        with open(GITSTATUS_QUEUE_PATH, 'r') as f:
+    if os.path.exists(settings.GITSTATUS_QUEUE_PATH):
+        with open(settings.GITSTATUS_QUEUE_PATH, 'r') as f:
             contents = f.read()
     lines = []
     for line in contents.strip().split('\n'):
@@ -232,7 +216,7 @@ def _gitstatus_next_repo():
                 line = ' '.join([path, ts])
                 lines.append(line)
 #    # if backoff leave the queue file as is
-#    gitstatus_backoff = timedelta(seconds=GITSTATUS_BACKOFF)
+#    gitstatus_backoff = timedelta(seconds=settings.GITSTATUS_BACKOFF)
 #    for n,line in enumerate(lines):
 #        if 'backoff' in line:
 #            msg,ts = line.split(' ')
@@ -247,7 +231,7 @@ def _gitstatus_next_repo():
 #                lines.remove(line)
     # any eligible collections?
     eligible = []
-    gitstatus_interval = timedelta(seconds=GITSTATUS_INTERVAL)
+    gitstatus_interval = timedelta(seconds=settings.GITSTATUS_INTERVAL)
     delay = gitstatus_interval
     for line in lines:
         path,ts = line.split(' ')
@@ -268,7 +252,7 @@ def _gitstatus_next_repo():
                 if line == eligible[0]:
                     lines.remove(line)
             text = '\n'.join(lines) + '\n'
-            with open(GITSTATUS_QUEUE_PATH, 'w') as f1:
+            with open(settings.GITSTATUS_QUEUE_PATH, 'w') as f1:
                 f1.write(text)
             collection_path,ts = eligible[0].split(' ')
             return collection_path
@@ -278,7 +262,7 @@ def _gitstatus_next_repo():
 #            backoff = 'backoff %s' % timestamp.strftime(settings.TIMESTAMP_FORMAT)
 #            lines.insert(0, backoff)
             text = '\n'.join(lines) + '\n'
-            with open(GITSTATUS_QUEUE_PATH, 'w') as f1:
+            with open(settings.GITSTATUS_QUEUE_PATH, 'w') as f1:
                 f1.write(text)
             return 'notready',delay
     return None
@@ -310,7 +294,7 @@ def gitstatus_update():
         _gitstatus_log('celery lock acquired')
         try:
             writable = is_writable(settings.MEDIA_BASE)
-            locked = os.path.exists(GITSTATUS_LOCK_PATH)
+            locked = os.path.exists(settings.GITSTATUS_LOCK_PATH)
             if locked:
                 _gitstatus_log('locked by another celery process')
                 message = 'locked by another process'

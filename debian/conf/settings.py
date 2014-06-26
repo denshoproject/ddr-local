@@ -109,6 +109,17 @@ REDIRECT_URL_SESSION_KEY = 'remount_redirect_uri'
 
 REPOS_ORGS_TIMEOUT = 60*30 # 30min
 
+GITSTATUS_LOG = '/var/log/ddr/gitstatus.log'
+# File used to manage queue for gitstatus-update
+GITSTATUS_QUEUE_PATH = os.path.join(settings.MEDIA_BASE, '.gitstatus-queue')
+# Processes that should not be interrupted by gitstatus-update should
+# write something to this file (doesn't matter what) and remove the file
+# when they are finished.
+GITSTATUS_LOCK_PATH = os.path.join(settings.MEDIA_BASE, '.gitstatus-stop')
+# Minimum interval between git-status updates per collection repository.
+GITSTATUS_INTERVAL = 60*60*1
+GITSTATUS_BACKOFF = 30
+
 # ----------------------------------------------------------------------
 
 import djcelery
