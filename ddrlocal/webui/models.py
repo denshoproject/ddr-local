@@ -303,6 +303,18 @@ class Collection( DDRLocalCollection ):
             cache.set(key, data, COLLECTION_ANNEX_STATUS_TIMEOUT)
         return data
     
+    def repo_conflicted( self ):
+        conflicted = False
+        # try the quick way first
+        gitstatus = self.gitstatus()
+        if gitstatus and gitstatus.get('status',None):
+            if dvcs.conflicted(gitstatus['status']):
+                conflicted = True
+        # the old slow way
+        else:
+            conflicted = super(Collection, self).repo_conflicted()
+        return conflicted
+        
     def sync_status( self, git_status, cache_set=False, force=False ):
         return _sync_status( self, git_status, cache_set, force )
     
