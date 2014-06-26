@@ -68,7 +68,10 @@ def collections( request ):
                 repo,org,cid = c[0],c[1],c[2]
                 collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
                 colls.append(collection)
-                if not collection.sync_status():
+                gitstatus = collection.gitstatus()
+                if gitstatus.get('sync_status'):
+                    collection.sync_status = json.loads(gitstatus['sync_status'])
+                else:
                     collection_status_urls.append( "'%s'" % collection.sync_status_url())
         collections.append( (o,repo,org,colls) )
     # load statuses in random order
@@ -138,24 +141,25 @@ def collection_json( request, repo, org, cid ):
 @storage_required
 def sync_status_ajax( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
-    data = collection.sync_status(cache_set=True)
-    return HttpResponse(json.dumps(data), mimetype="application/json")
+    gitstatus = collection.gitstatus()
+    sync_status = gitstatus['sync_status']
+    return HttpResponse(sync_status, mimetype="application/json")
 
 @ddrview
 @storage_required
 def git_status( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     alert_if_conflicted(request, collection)
-    status = collection.repo_status()
-    astatus = collection.repo_annex_status()
+    gitstatus = collection.gitstatus()
     return render_to_response(
         'webui/collections/git-status.html',
         {'repo': repo,
          'org': org,
          'cid': cid,
          'collection': collection,
-         'status': status,
-         'astatus': astatus,
+         'status': gitstatus['status'],
+         'astatus': gitstatus['annex_status'],
+         'timestamp': gitstatus['timestamp'],
          },
         context_instance=RequestContext(request, processors=[])
     )
