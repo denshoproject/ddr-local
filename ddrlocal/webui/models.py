@@ -97,13 +97,16 @@ def _load_object( json_path ):
 
 COLLECTION_SYNC_STATUS_CACHE_KEY = 'webui:collection:%s:sync-status'
 
-def _sync_status( collection, git_status, cache_set=False, force=False ):
+def _sync_status( collection, git_status, timestamp, cache_set=False, force=False ):
     """Cache collection repo sync status info for collections list page.
     Used in both .collections() and .sync_status_ajax().
+    
+    TODO do we need to cache this any more? we're writing this to REPO/.gitstatus
     
     @param collection: 
     @param cache_set: Run git-status if data is not cached
     """
+    # IMPORTANT: DO NOT call collection.gitstatus() it will loop
     key = COLLECTION_SYNC_STATUS_CACHE_KEY % collection.id
     data = cache.get(key)
     if force or (not data and cache_set):
@@ -114,11 +117,14 @@ def _sync_status( collection, git_status, cache_set=False, force=False ):
         elif dvcs.conflicted(git_status): status = 'conflicted'; btn = 'danger'
         elif dvcs.synced(git_status): status = 'synced'; btn = 'success'
         elif collection.locked(): status = 'locked'; btn = 'warning'
+        if isinstance(timestamp, datetime):
+            timestamp = timestamp.strftime(settings.TIMESTAMP_FORMAT)
         data = {
             'row': '#%s' % collection.id,
             'color': btn,
             'cell': '#%s td.status' % collection.id,
             'status': status,
+            'timestamp': timestamp,
         }
         cache.set(key, data, COLLECTION_STATUS_TIMEOUT)
     return data
@@ -315,8 +321,8 @@ class Collection( DDRLocalCollection ):
             conflicted = super(Collection, self).repo_conflicted()
         return conflicted
         
-    def sync_status( self, git_status, cache_set=False, force=False ):
-        return _sync_status( self, git_status, cache_set, force )
+    def sync_status( self, git_status, timestamp, cache_set=False, force=False ):
+        return _sync_status( self, git_status, timestamp, cache_set, force )
     
     def sync_status_url( self ):
         return reverse('webui-collection-sync-status-ajax',args=(self.repo,self.org,self.cid))
@@ -336,8 +342,8 @@ class Collection( DDRLocalCollection ):
             start = datetime.now()
             status = super(Collection, self).repo_status()
             annex_status = super(Collection, self).repo_annex_status()
-            sync_status = self.sync_status(git_status=status, force=True)
             timestamp = datetime.now()
+            sync_status = self.sync_status(git_status=status, timestamp=timestamp, force=True)
             elapsed = timestamp - start
             text = gitstatus_write(self.path, timestamp, elapsed, status, annex_status, json.dumps(sync_status))
             timestamp,elapsed,status,annex_status,sync_status = gitstatus_parse(text)
