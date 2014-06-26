@@ -189,8 +189,7 @@ def next_repo():
                 # if no gitstatus file, make immediately updatable
                 gs = read(path)
                 if gs:
-                    timestamp,elapsed,status,annex_status,syncstatus = gs
-                    ts = timestamp.strftime(settings.TIMESTAMP_FORMAT)
+                    ts = gs['timestamp'].strftime(settings.TIMESTAMP_FORMAT)
                 else:
                     ts = datetime.fromtimestamp(0).strftime(settings.TIMESTAMP_FORMAT)
                 line = ' '.join([path, ts])
