@@ -309,17 +309,34 @@ class Collection( DDRLocalCollection ):
             cache.set(key, data, COLLECTION_ANNEX_STATUS_TIMEOUT)
         return data
     
-    def repo_conflicted( self ):
-        conflicted = False
-        # try the quick way first
+    def _repo_state( self, function_name ):
+        """Use Collection.gitstatus if present (faster)
+        
+        Collection.repo_FUNCTION() required a git-status call so status
+        could be passed to dvcs.FUNCTION().  These functions are called
+        in collection base template and thus on pretty much every page.
+        If Collection.gitstatus() is available it's a lot faster.
+        """
         gitstatus = self.gitstatus()
         if gitstatus and gitstatus.get('status',None):
-            if dvcs.conflicted(gitstatus['status']):
-                conflicted = True
-        # the old slow way
+            if   function_name == 'synced': return dvcs.synced(gitstatus['status'])
+            elif function_name == 'ahead': return dvcs.ahead(gitstatus['status'])
+            elif function_name == 'behind': return dvcs.behind(gitstatus['status'])
+            elif function_name == 'diverged': return dvcs.diverged(gitstatus['status'])
+            elif function_name == 'conflicted': return dvcs.conflicted(gitstatus['status'])
         else:
-            conflicted = super(Collection, self).repo_conflicted()
-        return conflicted
+            if   function_name == 'synced': return super(Collection, self).repo_synced()
+            elif function_name == 'ahead': return super(Collection, self).repo_ahead()
+            elif function_name == 'behind': return super(Collection, self).repo_behind()
+            elif function_name == 'diverged': return super(Collection, self).repo_diverged()
+            elif function_name == 'conflicted': return super(Collection, self).repo_conflicted()
+        return None
+
+    def repo_synced( self ): return self._repo_state('synced')
+    def repo_ahead( self ): return self._repo_state('ahead')
+    def repo_behind( self ): return self._repo_state('behind')
+    def repo_diverged( self ): return self._repo_state('diverged')
+    def repo_conflicted( self ): return self._repo_state('conflicted')
         
     def sync_status( self, git_status, timestamp, cache_set=False, force=False ):
         return _sync_status( self, git_status, timestamp, cache_set, force )
