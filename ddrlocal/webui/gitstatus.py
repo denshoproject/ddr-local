@@ -1,3 +1,27 @@
+"""
+gitstatus
+
+This module was born out of a desire to show users the status of
+repositories in relation to the central server, and several attempts
+to improve performance that resulted.
+
+Once there are enough large collections in a Store running git-status
+and git-annex-status starts to take a long time.
+Previous attempts to address this involved caching the status,
+and running the git-status updates after page-load in response
+to AJAX requests.  Neither of these approaches worked well.
+
+With this module, git-status and git-annex-status are run in the
+background by Celery/celerybeat.  The background process uses a queue
+file that resides at the root of the Store that is currently in use
+(new queue file is created as needed).  The results for individual
+collection repositories are written to files at the root of the repos.
+The UI gets status info from these files rather than running
+git-status/git-annex-status directly.  Cache files hang around until
+they are replaced.  The user is informed when the files were last
+updated and (TODO) can request an update if they want.
+"""
+
 from datetime import datetime, timedelta
 import json
 import os
