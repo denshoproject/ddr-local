@@ -193,8 +193,10 @@ class FileAddDebugTask(Task):
         else:
             entity.files_log(0,lockstatus)
         entity.files_log(1, 'END task_id %s\n' % task_id)
-        collection = Collection.from_json(Collection.collection_path(None,entity.repo,entity.org,entity.cid))
+        collection_path = Collection.collection_path(None,entity.repo,entity.org,entity.cid)
+        collection = Collection.from_json(collection_path)
         collection.cache_delete()
+        gitstatus.update(collection_path)
         gitstatus.unlock()
 
 @task(base=FileAddDebugTask, name='entity-add-file')
@@ -269,6 +271,7 @@ class DeleteEntityTask(Task):
         collection_path = args[2]
         collection = Collection.from_json(collection_path)
         lockstatus = collection.unlock(task_id)
+        gitstatus.update(collection_path)
         gitstatus.unlock()
 
 @task(base=DeleteEntityTask, name='webui-entity-delete')
@@ -330,6 +333,7 @@ class DeleteFileTask(Task):
         collection_path = args[2]
         collection = Collection.from_json(collection_path)
         lockstatus = collection.unlock(task_id)
+        gitstatus.update(collection_path)
         gitstatus.unlock()
 
 @task(base=DeleteFileTask, name='webui-file-delete')
@@ -380,6 +384,7 @@ class CollectionSyncDebugTask(Task):
         #       starts in webui.views.collections.sync
         collection.unlock(task_id)
         collection.cache_delete()
+        gitstatus.update(collection_path)
         gitstatus.unlock()
 
 @task(base=CollectionSyncDebugTask, name='collection-sync')

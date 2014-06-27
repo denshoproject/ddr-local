@@ -33,7 +33,7 @@ from webui.decorators import ddrview, search_index
 from webui.forms import DDRForm
 from webui.forms.collections import NewCollectionForm, UpdateForm
 from webui.models import Collection, COLLECTION_STATUS_CACHE_KEY, COLLECTION_STATUS_TIMEOUT
-from webui.tasks import collection_sync, csv_export_model, export_csv_path
+from webui.tasks import collection_sync, csv_export_model, export_csv_path, gitstatus_update
 from webui.views.decorators import login_required
 from xmlforms.models import XMLModel
 
@@ -244,6 +244,7 @@ def new( request, repo, org ):
         with open(json_path, 'r') as f:
             document = json.loads(f.read())
         docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+        gitstatus_update.apply_async((collection_path,), countdown=2)
         # positive feedback
         return HttpResponseRedirect( reverse('webui-collection-edit', args=[repo,org,cid]) )
     # something happened...
@@ -297,6 +298,7 @@ def edit( request, repo, org, cid ):
                 with open(collection.json_path, 'r') as f:
                     document = json.loads(f.read())
                 docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+                gitstatus_update.apply_async((collection.path,), countdown=2)
                 # positive feedback
                 messages.success(request, success_msg)
                 return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )

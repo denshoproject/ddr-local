@@ -26,7 +26,7 @@ from webui.forms import DDRForm
 from webui.forms.files import NewFileForm, EditFileForm, NewAccessFileForm, DeleteFileForm
 from webui.forms.files import shared_folder_files
 from webui.models import Collection, Entity
-from webui.tasks import entity_add_file, entity_add_access, entity_delete_file
+from webui.tasks import entity_add_file, entity_add_access, entity_delete_file, gitstatus_update
 from webui.views.decorators import login_required
 
 
@@ -344,6 +344,7 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
                 with open(file_.json_path, 'r') as f:
                     document = json.loads(f.read())
                 docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+                gitstatus_update.apply_async((collection.path,), countdown=2)
                 # positive feedback
                 messages.success(request, WEBUI_MESSAGES['VIEWS_FILES_UPDATED'])
                 return HttpResponseRedirect( reverse('webui-file', args=[repo,org,cid,eid,role,sha1]) )

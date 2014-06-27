@@ -33,7 +33,7 @@ from webui.forms.entities import NewEntityForm, JSONForm, UpdateForm, DeleteEnti
 from webui.mets import NAMESPACES, NAMESPACES_XPATH
 from webui.mets import METS_FIELDS, MetsForm
 from webui.models import Collection, Entity
-from webui.tasks import collection_delete_entity
+from webui.tasks import collection_delete_entity, gitstatus_update
 from webui.views.decorators import login_required
 from xmlforms.models import XMLModel
 
@@ -348,6 +348,7 @@ def new( request, repo, org, cid ):
         with open(json_path, 'r') as f:
             document = json.loads(f.read())
         docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+        gitstatus_update.apply_async((collection.path,), countdown=2)
         # positive feedback
         return HttpResponseRedirect(reverse('webui-entity-edit', args=[repo,org,cid,eid]))
     # something happened...
@@ -424,6 +425,7 @@ def edit( request, repo, org, cid, eid ):
                 with open(entity.json_path, 'r') as f:
                     document = json.loads(f.read())
                 docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+                gitstatus_update.apply_async((collection.path,), countdown=2)
                 # positive feedback
                 messages.success(request, success_msg)
                 return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
@@ -510,6 +512,7 @@ def edit_json( request, repo, org, cid, eid ):
                 if exit:
                     messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
                 else:
+                    gitstatus_update.apply_async((collection.path,), countdown=2)
                     messages.success(request, WEBUI_MESSAGES['VIEWS_ENT_UPDATED'])
                     return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
             else:
@@ -612,6 +615,7 @@ def files_dedupe( request, repo, org, cid, eid ):
                 with open(entity.json_path, 'r') as f:
                     document = json.loads(f.read())
                 docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+                gitstatus_update.apply_async((collection.path,), countdown=2)
                 # positive feedback
                 messages.success(request, success_msg)
                 return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
