@@ -24,6 +24,8 @@ updated and (TODO) can request an update if they want.
 
 from datetime import datetime, timedelta
 import json
+import logging
+logger = logging.getLogger(__name__)
 import os
 
 from django.conf import settings
@@ -173,13 +175,20 @@ def update( collection_path ):
 
 def lock( msg ):
     """Sets a lock that prevents update_store from running
+    
+    TODO Other parts of the app may want to do this too
     """
     text = None
-    if not os.path.exists(settings.GITSTATUS_LOCK_PATH):
+    if os.path.exists(settings.GITSTATUS_LOCK_PATH):
+        with open(settings.GITSTATUS_LOCK_PATH, 'r') as f:
+            text = f.read()
+        logger.debug('Already locked: %s' % text)
+    else:
         ts = datetime.now().strftime(settings.TIMESTAMP_FORMAT)
         text = '%s %s' % (ts, msg)
         with open(settings.GITSTATUS_LOCK_PATH, 'w') as f:
             f.write(text)
+            logger.debug('Locked: %s' % text)
     return text
 
 def unlock():
@@ -188,9 +197,12 @@ def unlock():
     if os.path.exists(settings.GITSTATUS_LOCK_PATH):
         os.remove(settings.GITSTATUS_LOCK_PATH)
         if not os.path.exists(settings.GITSTATUS_LOCK_PATH):
+            logger.debug('Unlocked')
             return True
         else:
+            logger.debug('Could not unlock')
             return False
+    logger.debug('not locked')
     return None
 
 def locked():
