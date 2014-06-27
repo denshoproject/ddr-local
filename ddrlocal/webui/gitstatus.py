@@ -147,6 +147,37 @@ def update( collection_path ):
     text = write(collection_path, timestamp, elapsed, status, annex_status, syncstatus)
     return loads(text)
 
+def lock( msg ):
+    """Sets a lock that prevents update_store from running
+    """
+    text = None
+    if not os.path.exists(settings.GITSTATUS_LOCK_PATH):
+        ts = datetime.now().strftime(settings.TIMESTAMP_FORMAT)
+        text = '%s %s' % (ts, msg)
+        with open(settings.GITSTATUS_LOCK_PATH, 'w') as f:
+            f.write(text)
+    return text
+
+def unlock():
+    """Removes lock and allows update_store to run again
+    """
+    if os.path.exists(settings.GITSTATUS_LOCK_PATH):
+        os.remove(settings.GITSTATUS_LOCK_PATH)
+        if not os.path.exists(settings.GITSTATUS_LOCK_PATH):
+            return True
+        else:
+            return False
+    return None
+
+def locked():
+    """
+    """
+    if os.path.exists(settings.GITSTATUS_LOCK_PATH):
+        with open(settings.GITSTATUS_LOCK_PATH, 'r') as f:
+            text = f.read()
+        return text
+    return False
+
 def next_repo():
     """Gets next collection_path or time til next ready to be updated
     
@@ -272,10 +303,10 @@ def update_store():
         log('celery lock acquired')
         try:
             writable = is_writable(settings.MEDIA_BASE)
-            locked = os.path.exists(settings.GITSTATUS_LOCK_PATH)
-            if locked:
-                log('locked by another celery process')
-                message = 'locked by another process'
+            lockd = locked()
+            if lockd:
+                message = 'locked: %s' % lockd
+                log(message)
             elif writable:
                 response = next_repo()
                 log(response)
