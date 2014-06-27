@@ -160,6 +160,10 @@ class GitStatusTask(Task):
         logger.debug('GitStatusTask.after_return(%s, %s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs, einfo))
         gitstatus.log('GitStatusTask.after_return(%s, %s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs, einfo))
 
+@task(base=GitStatusTask, name='webui.tasks.gitstatus_update')
+def gitstatus_update( collection_path ):
+    return gitstatus.update(collection_path)
+
 @task(base=GitStatusTask, name='webui.tasks.gitstatus_update_store')
 def gitstatus_update_store():
     return gitstatus.update_store()
