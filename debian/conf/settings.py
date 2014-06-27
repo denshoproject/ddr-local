@@ -186,8 +186,8 @@ CELERY_ACCEPT_CONTENT = ['pickle', 'json', 'msgpack', 'yaml']
 CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
 CELERYBEAT_PIDFILE = '/tmp/celerybeat.pid'
 CELERYBEAT_SCHEDULE = {
-    'webui-git-status': {
-        'task': 'webui.tasks.gitstatus_update',
+    'webui-git-status-update-store': {
+        'task': 'webui.tasks.gitstatus_update_store',
         'schedule': timedelta(seconds=60),
     },
 }
