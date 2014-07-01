@@ -10,3 +10,8 @@ class NewCollectionForm(forms.Form):
 
 class UpdateForm(forms.Form):
     xml = forms.CharField(widget=forms.Textarea)
+
+class SyncConfirmForm(forms.Form):
+    confirmed = forms.BooleanField(
+        help_text='Yes, I want to synchronize this collection.'
+    )
