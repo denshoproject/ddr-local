@@ -13,8 +13,29 @@ class LoginForm(forms.Form):
     password = forms.CharField(widget=forms.PasswordInput)
     next = forms.CharField(max_length=255, required=False, widget=forms.HiddenInput)
 
-class TaskDismissForm(forms.Form):
+class TaskDismissForm( forms.Form ):
     next = forms.CharField(max_length=255, required=False, widget=forms.HiddenInput)
+    
+    def __init__( self, *args, **kwargs ):
+        if kwargs.get('celery_tasks', None):
+            celery_tasks = kwargs.pop('celery_tasks')
+        else:
+            celery_tasks = []
+        super(TaskDismissForm, self).__init__(*args, **kwargs)
+        fields = [
+            ('next', self.fields['next'])
+        ]
+        for task in celery_tasks:
+            if task.get('task_id', None) and task.get('dismissable', None):
+                fields.append(
+                    ('dismiss_%s' % task['task_id'], forms.BooleanField(required=False))
+                )
+            else:
+                fields.append(
+                    ('greyed_%s' % task['task_id'], forms.BooleanField(required=False))
+                )
+        # Django Form object takes a SortedDict rather than list
+        self.fields = SortedDict(fields)
 
 class DDRForm(forms.Form):
     def __init__(self, *args, **kwargs):
