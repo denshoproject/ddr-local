@@ -1,0 +1,65 @@
+{% extends "webui/collections/base.html" %}
+{% load thumbnail %}
+
+
+{% block title %}Sync | {{ collection.id }}{% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+<li><a href="{{ collection.url }}">{{ collection.id }}</a></li>
+<li class="active">Sync</li>
+{% endblock breadcrumbs %}
+
+
+{% block content %}
+
+  <div class="row-fluid">
+    <div class="span12">
+
+<h1>
+{{ collection.id }}
+</h1>
+
+<div class="alert alert-danger" role="alert">
+
+<h2 style="margin-top:0px;">
+<span class="glyphicon glyphicon-warning-sign"></span>
+IMPORTANT
+</h2>
+<p>
+Synchronizing collections requires network access and can sometimes take a long time.
+</p>
+<p>
+<strong>Interrupting a sync operation may result in loss of data!</strong>
+</p>
+<p>
+Please do not initiate a sync unless you are prepared to let it finish!
+</p>
+
+<table>
+<form name="sync-confirm" action="" method="post">{% csrf_token %}
+  <tr>
+    <td>
+{{ form.confirmed }}
+Yes, I do indeed want to sync this collection.
+    </td>
+    <td>
+&nbsp;
+&nbsp;
+<button class="btn btn-danger btn-mini" type="submit" value="Sync">Sync</button>
+&nbsp;
+&nbsp;
+/
+&nbsp;
+&nbsp;
+<a href="{{ collection.url }}" class="btn btn-primary btn-mini">Cancel sync</a>
+    </td>
+  </tr>
+</form>
+</table>
+
+</div><!-- .alert-danger -->
+ 
+    </div><!-- .span12 -->
+  </div><!-- .row -->
+
+{% endblock content %}
