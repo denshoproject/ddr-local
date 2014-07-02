@@ -47,11 +47,21 @@ more&nbsp;info
     </td>
     <td>
 {% if task.dismissable %}
-<input id="id_dismiss_{{ task.task_id }}" name="dismiss_{{ task.task_id }}" type="checkbox" />
+<input id="id_dismiss_{{ task.task_id }}" name="dismiss_{{ task.task_id }}" class="task_checkbox" type="checkbox" />
 {% endif %}
     </td>
   </tr>
 {% endfor %}
+
+{% if dismissable_tasks %}
+  <tr>
+    <td colspan="4">
+    </td>
+    <td>
+<a id="select-all" href="#" class="btn btn-primary btn-xs">Select All</a>
+<a id="unselect-all" href="#" class="btn btn-primary btn-xs">Unselect All</a>
+    </td>
+  </tr>
 
   <tr>
     <td colspan="4">
@@ -60,6 +70,7 @@ more&nbsp;info
 <button type="submit" class="btn btn-primary">Dismiss tasks</button>
     </td>
   </tr>
+{% endif %}{# dismissable_tasks #}
 
 </form>
 </table>
@@ -68,3 +79,23 @@ more&nbsp;info
   </div><!-- .row-fluid -->
 
 {% endblock content %}
+
+
+{% block javascript %}{{ block.super }}
+<script>
+  $(function () {
+    /* (un)select-all tasks */
+    $("#unselect-all").hide();
+    $("#select-all").click(function() {
+      $(".task_checkbox").prop('checked', true);
+      $("#select-all").hide();
+      $("#unselect-all").show();
+    });
+    $("#unselect-all").click(function() {
+      $(".task_checkbox").prop('checked', false);
+      $("#unselect-all").hide();
+      $("#select-all").show();
+    });
+  })
+</script>
+{% endblock javascript %}

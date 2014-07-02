@@ -113,10 +113,12 @@ def tasks( request ):
             'next': request.GET.get('next',None),
         }
         form = TaskDismissForm(data, celery_tasks=celery_tasks)
+        dismissable_tasks = [1 for task in celery_tasks if task['dismissable']]
     return render_to_response(
         'webui/tasks.html',
         {'form': form,
          'celery_tasks': celery_tasks,
+         'dismissable_tasks': dismissable_tasks,
          'hide_celery_tasks': True,},
         context_instance=RequestContext(request, processors=[])
     )
