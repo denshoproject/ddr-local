@@ -1046,6 +1046,7 @@ class DDRLocalFile( object ):
     collection_path = None
     entity_path = None
     entity_files_path = None
+    links = None
     
     def __init__(self, *args, **kwargs):
         """
@@ -1448,8 +1449,11 @@ class DDRLocalFile( object ):
         """List of path_rels of files that link to this file.
         """
         incoming = []
-        r = envoy.run('find {} -name "*.json" -print'.format(self.entity_files_path))
-        jsons = r.std_out.strip().split('\n')
+        cmd = 'find {} -name "*.json" -print'.format(self.entity_files_path)
+        r = envoy.run(cmd)
+        jsons = []
+        if r.std_out:
+            jsons = r.std_out.strip().split('\n')
         for fn in jsons:
             with open(fn, 'r') as f:
                 raw = f.read()
@@ -1470,13 +1474,15 @@ class DDRLocalFile( object ):
     def links_outgoing( self ):
         """List of path_rels of files this file links to.
         """
-        return [link.strip() for link in self.links.strip().split(';')]
+        if self.links:
+            return [link.strip() for link in self.links.strip().split(';')]
+        return []
     
     def links_all( self ):
         """List of path_rels of files that link to this file or are linked to from this file.
         """
-        all = self.links_outgoing()
+        links = self.links_outgoing()
         for l in self.links_incoming():
-            if l not in all:
-                all.append(l)
-        return all
+            if l not in links:
+                links.append(l)
+        return links
