@@ -18,7 +18,7 @@ from django.conf import settings
 
 from DDR import commands
 from DDR import dvcs
-from DDR import natural_order_string
+from DDR import natural_order_string, natural_sort
 from DDR.models import Collection as DDRCollection, Entity as DDREntity
 from DDR.models import dissect_path, file_hash, _inheritable_fields, _inherit
 from DDR.models import module_function, module_xml_function, write_json
@@ -141,32 +141,36 @@ class DDRLocalCollection( DDRCollection ):
         """
         # empty class used for quick view
         class ListEntity( object ):
-            pass
-        entities = []
+            def __repr__(self):
+                return "<DDRListEntity %s>" % (self.id)
+        entity_paths = []
         if os.path.exists(self.files_path):
             # TODO use cached list if available
             for eid in os.listdir(self.files_path):
                 path = os.path.join(self.files_path, eid)
-                if quick:
-                    # fake Entity with just enough info for lists
-                    entity_json_path = os.path.join(path,'entity.json')
-                    if os.path.exists(entity_json_path):
-                        with open(entity_json_path, 'r') as f:
-                            for line in f.readlines():
-                                if '"title":' in line:
-                                    e = ListEntity()
-                                    e.id = e.uid = eid
-                                    e.repo,e.org,e.cid,e.eid = eid.split('-')
-                                    # make a miniature JSON doc out of just title line
-                                    e.title = json.loads('{%s}' % line)['title']
-                                    entities.append(e)
-                else:
-                    entity = DDRLocalEntity.from_json(path)
-                    for lv in entity.labels_values():
-                        if lv['label'] == 'title':
-                            entity.title = lv['value']
-                    entities.append(entity)
-        entities = sorted(entities, key=lambda e: natural_order_string(e.uid))
+                entity_paths.append(path)
+        entity_paths = natural_sort(entity_paths)
+        entities = []
+        for path in entity_paths:
+            if quick:
+                # fake Entity with just enough info for lists
+                entity_json_path = os.path.join(path,'entity.json')
+                if os.path.exists(entity_json_path):
+                    with open(entity_json_path, 'r') as f:
+                        for line in f.readlines():
+                            if '"title":' in line:
+                                e = ListEntity()
+                                e.id = e.uid = eid = os.path.basename(path)
+                                e.repo,e.org,e.cid,e.eid = eid.split('-')
+                                # make a miniature JSON doc out of just title line
+                                e.title = json.loads('{%s}' % line)['title']
+                                entities.append(e)
+            else:
+                entity = DDRLocalEntity.from_json(path)
+                for lv in entity.labels_values():
+                    if lv['label'] == 'title':
+                        entity.title = lv['value']
+                entities.append(entity)
         return entities
     
     def inheritable_fields( self ):
