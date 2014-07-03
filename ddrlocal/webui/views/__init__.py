@@ -1,4 +1,5 @@
 from datetime import datetime
+import json
 import logging
 logger = logging.getLogger(__name__)
 
@@ -17,6 +18,7 @@ from webui import api
 from webui.decorators import ddrview
 from webui.forms import LoginForm, TaskDismissForm
 from webui.tasks import dismiss_session_task, session_tasks_list
+from webui.views.decorators import login_required
 
 # helpers --------------------------------------------------------------
 
@@ -132,3 +134,9 @@ def task_status( request ):
         {'dismiss_next': request.GET.get('this', reverse('webui-index'))},
         context_instance=RequestContext(request, processors=[])
     )
+
+@login_required
+def task_dismiss( request, task_id ):
+    dismiss_session_task(request, task_id)
+    data = {'status':'ok'}
+    return HttpResponse(json.dumps(data), mimetype="application/json")
