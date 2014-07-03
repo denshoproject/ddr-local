@@ -17,10 +17,7 @@ class TaskDismissForm( forms.Form ):
     next = forms.CharField(max_length=255, required=False, widget=forms.HiddenInput)
     
     def __init__( self, *args, **kwargs ):
-        if kwargs.get('celery_tasks', None):
-            celery_tasks = kwargs.pop('celery_tasks')
-        else:
-            celery_tasks = []
+        celery_tasks = kwargs.pop('celery_tasks')
         super(TaskDismissForm, self).__init__(*args, **kwargs)
         fields = [
             ('next', self.fields['next'])
