@@ -1,8 +1,44 @@
 {% if celery_tasks %}
-<div class="alert alert-warning">
+<div id="celery-tasks" class="alert alert-warning">
   <a href="{% url "webui-tasks" %}?next={{ dismiss_next }}" style="float:right;">Background Tasks</a>
+  <table>
   {% for task in celery_tasks %}
-  <span class="{{ task.status }}">{{ task.status }}: {{ task.message|safe }}</span><br/>
+    <tr class="task {{ task.task_id }}">
+      <td>
+        {{ task.status }}:
+        {{ task.message|safe }}
+      </td>
+      <td class="task-dismiss {{ task.task_id }}">
+{% if task.dismissable and request.user %}&nbsp;&nbsp;&nbsp;&nbsp;
+        <a id="{{ task.task_id }}" href="#"><span class="glyphicon glyphicon-remove"></span> Dismiss</a>
+{% endif %}{# dismissable #}
+      </td>
+    </tr>
+  </div>
   {% endfor %}
+  </table>
 </div>
+<script>
+  $(function(){
+    /* respond to dismiss btn clicks */
+    $(".task-dismiss a").on("click", function() {
+      /* Dismiss the task and remove alert. */
+      /* Remove entire alerts box if all tasks removed. */
+      $(this).css("border", "solid red 1px");
+      var task_id = $(this).attr("id");
+      var tr = "tr." + task_id;
+      var url = "/ui/tasks/" + task_id + "/dismiss/";
+      jQuery.getJSON(url, function(data) {
+        $(tr).remove();
+        var n = 0
+        $("tr.task").each(function() {
+            n = n + 1;
+        });
+        if (n == 0) {
+            $("#celery-tasks").remove();
+        }
+      });
+    });
+  });
+</script>
 {% endif %}

@@ -191,6 +191,7 @@ form td { padding-bottom:20px; }
 {% if not hide_celery_tasks %}
 <script>
   /* update celery status */
+  /* NOTE: see code in task-include.html. */
   $(function(){
     $("#celery-status").load("{{ celery_status_url }}?this={{ request.META.PATH_INFO }}");
     window.setInterval(function(){
