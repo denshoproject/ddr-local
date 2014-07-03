@@ -9,7 +9,7 @@
 
 
 {% block headmeta %}
-<meta http-equiv="refresh" content="60;URL=">
+<meta http-equiv="refresh" content="30;URL=">
 {% endblock %}
 
 
@@ -19,6 +19,8 @@
     <div class="span12">
 
 <h1>Tasks</h1>
+
+{% if celery_tasks %}
 
 <table id="tasks" class="table">
 <form name="task-dismiss" action="" method="post">{% csrf_token %}
@@ -72,13 +74,26 @@ more&nbsp;info
     <td colspan="4">
     </td>
     <td>
-<button type="submit" class="btn btn-primary">Dismiss tasks</button>
+<button type="submit" class="btn btn-primary">Dismiss selected tasks</button>
     </td>
   </tr>
 {% endif %}{# dismissable_tasks #}
 
 </form>
 </table>
+
+{% else %}
+
+<p class="text-muted">
+No pending tasks.
+</p>
+{% if form.next.value %}
+<a href="{{ form.next.value }}" class="btn btn-default btn-default">
+  &laquo; Back
+</a>
+{% endif %}
+
+{% endif %}{# celery_tasks #}
 
     </div><!-- .span12 -->
   </div><!-- .row-fluid -->
