@@ -46,8 +46,26 @@ def log(msg):
     with open(settings.GITSTATUS_LOG, 'a') as f:
         f.write(entry)
 
+def tmp_dir():
+    path = os.path.join(settings.MEDIA_BASE, 'tmp')
+    if not os.path.exists(path):
+        os.makedirs(path)
+    return path
+    
+def queue_path():
+    return os.path.join(
+        tmp_dir(),
+        'gitstatus-queue'
+    )
+
 def path( collection_path ):
-    return os.path.join(collection_path, '.gitstatus')
+    """
+    - STORE/status/ddr-test-123.status
+    """
+    return os.path.join(
+        tmp_dir(),
+        '%s.status' % os.path.basename(collection_path)
+    )
 
 def dumps( timestamp, elapsed, status, annex_status, syncstatus ):
     """Formats git-status,git-annex-status,sync-status and timestamp as text
@@ -239,8 +257,8 @@ def next_repo():
     """
     # load existing queue; populate queue if empty
     contents = ''
-    if os.path.exists(settings.GITSTATUS_QUEUE_PATH):
-        with open(settings.GITSTATUS_QUEUE_PATH, 'r') as f:
+    if os.path.exists(queue_path()):
+        with open(queue_path(), 'r') as f:
             contents = f.read()
     lines = []
     for line in contents.strip().split('\n'):
@@ -299,7 +317,7 @@ def next_repo():
                 if line == eligible[0]:
                     lines.remove(line)
             text = '\n'.join(lines) + '\n'
-            with open(settings.GITSTATUS_QUEUE_PATH, 'w') as f1:
+            with open(queue_path(), 'w') as f1:
                 f1.write(text)
             collection_path,ts = eligible[0].split(' ')
             return collection_path
@@ -309,7 +327,7 @@ def next_repo():
 #            backoff = 'backoff %s' % timestamp.strftime(settings.TIMESTAMP_FORMAT)
 #            lines.insert(0, backoff)
             text = '\n'.join(lines) + '\n'
-            with open(settings.GITSTATUS_QUEUE_PATH, 'w') as f1:
+            with open(queue_path(), 'w') as f1:
                 f1.write(text)
             return 'notready',delay
     return None
