@@ -33,7 +33,8 @@ from django.core.cache import cache
 
 from DDR import dvcs
 from DDR.storage import is_writable
-from DDR.models import Collection, id_from_path
+from DDR.models import id_from_path
+from ddrlocal.models import DDRLocalCollection as Collection
 from webui import get_repos_orgs
 from webui import COLLECTION_STATUS_TIMEOUT
 
@@ -250,7 +251,7 @@ def next_repo():
         # refresh
         for o in get_repos_orgs():
             repo,org = o.split('-')
-            paths = Collection.collections(settings.MEDIA_BASE, repository=repo, organization=org)
+            paths = Collection.collection_paths(settings.MEDIA_BASE, repository=repo, organization=org)
             for path in paths:
                 # get time repo gitstatus last update
                 # if no gitstatus file, make immediately updatable
