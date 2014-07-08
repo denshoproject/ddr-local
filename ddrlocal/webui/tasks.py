@@ -546,10 +546,15 @@ def session_tasks_list( request ):
 
 def dismiss_session_task( request, task_id ):
     """Dismiss a task from session_tasks.
+    
+    Removes 'startd' fields bc datetime objects not serializable to JSON.
     """
     newtasks = {}
     tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
     for tid in tasks.keys():
         if tid != task_id:
-            newtasks[tid] = tasks[tid]
+            task = tasks[tid]
+            if task.get('startd',None):
+                task.pop('startd')
+            newtasks[tid] = task
     request.session[settings.CELERY_TASKS_SESSION_KEY] = newtasks

@@ -1,4 +1,5 @@
 from datetime import datetime
+import json
 import logging
 logger = logging.getLogger(__name__)
 
@@ -17,6 +18,7 @@ from webui import api
 from webui.decorators import ddrview
 from webui.forms import LoginForm, TaskDismissForm
 from webui.tasks import dismiss_session_task, session_tasks_list
+from webui.views.decorators import login_required
 
 # helpers --------------------------------------------------------------
 
@@ -91,31 +93,34 @@ def logout( request ):
 def tasks( request ):
     """Show pending/successful/failed tasks; UI for dismissing tasks.
     """
+    # add start datetime to tasks list
+    celery_tasks = session_tasks_list(request)
+    for task in celery_tasks:
+        task['startd'] = datetime.strptime(task['start'], settings.TIMESTAMP_FORMAT)
+
     if request.method == 'POST':
-        form = TaskDismissForm(request.POST)
+        form = TaskDismissForm(request.POST, celery_tasks=celery_tasks)
         if form.is_valid():
-            # dismiss task notification
-            task_id = None
-            for key in request.POST.keys():
-                if key.find('task_id') > -1:
-                    label,task_id = key.split(':')
-            if task_id:
-                dismiss_session_task(request, task_id)
+            for task in celery_tasks:
+                fieldname = 'dismiss_%s' % task['task_id']
+                if (fieldname in form.cleaned_data.keys()) and form.cleaned_data[fieldname]:
+                    dismiss_session_task(request, task['task_id'])
             # redirect
             redirect_uri = form.cleaned_data['next']
             if not redirect_uri:
                 redirect_uri = reverse('webui-index')
             return HttpResponseRedirect(redirect_uri)
     else:
-        form = TaskDismissForm(initial={'next':request.GET.get('next',''),})
-    # add start datetime to tasks list
-    celery_tasks = session_tasks_list(request)
-    for task in celery_tasks:
-        task['startd'] = datetime.strptime(task['start'], settings.TIMESTAMP_FORMAT)
+        data = {
+            'next': request.GET.get('next',None),
+        }
+        form = TaskDismissForm(data, celery_tasks=celery_tasks)
+        dismissable_tasks = [1 for task in celery_tasks if task['dismissable']]
     return render_to_response(
         'webui/tasks.html',
         {'form': form,
          'celery_tasks': celery_tasks,
+         'dismissable_tasks': dismissable_tasks,
          'hide_celery_tasks': True,},
         context_instance=RequestContext(request, processors=[])
     )
@@ -129,3 +134,9 @@ def task_status( request ):
         {'dismiss_next': request.GET.get('this', reverse('webui-index'))},
         context_instance=RequestContext(request, processors=[])
     )
+
+@login_required
+def task_dismiss( request, task_id ):
+    dismiss_session_task(request, task_id)
+    data = {'status':'ok'}
+    return HttpResponse(json.dumps(data), mimetype="application/json")
