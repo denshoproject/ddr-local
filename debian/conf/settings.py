@@ -1,14 +1,25 @@
-# Django settings for ddrlocal.
+"""
+Django settings for ddrlocal project.
+
+For more information on this file, see
+https://docs.djangoproject.com/en/1.6/topics/settings/
+
+For the full list of settings and their values, see
+https://docs.djangoproject.com/en/1.6/ref/settings/
+"""
+
+# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+import os
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+
+# ----------------------------------------------------------------------
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
-# ----------------------------------------------------------------------
-
-from datetime import timedelta
 import ConfigParser
+from datetime import timedelta
 import logging
-import os
 
 os.environ['USER'] = 'ddr'
 
@@ -134,13 +145,13 @@ MANAGERS = ADMINS
 SITE_ID = 1
 
 INSTALLED_APPS = (
+    'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django.contrib.admin',
     #
     'bootstrap_pagination',
     'djcelery',
@@ -329,8 +340,8 @@ TEMPLATE_CONTEXT_PROCESSORS = (
 )
 
 MIDDLEWARE_CLASSES = (
-    'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',

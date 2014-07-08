@@ -33,24 +33,16 @@
     var sync_status = '{{ collection.sync_status.status }}';
     $('#sync-status').addClass('label-{{ collection.sync_status.color }}');
     $('#sync-btn').addClass('btn-{{ collection.sync_status.color }}');
-    if (sync_status == 'synced') {
-      $('#sync-status').text('Synced');
-    } else {
-      $('#sync-status').text(sync_status);
-      $('#sync-btn').removeClass('hidden');
-    }
+    $('#sync-status').text(sync_status);
+    $('#sync-btn').removeClass('hidden');
 {% else %}
     /* collection sync status: get after page-load */
     var collection_status_url = '{{ collection.sync_status_url|safe }}';
     jQuery.getJSON(collection_status_url, function(data) {
       $('#sync-status').addClass('label-' + data['color']);
       $('#sync-btn'   ).addClass('btn-'   + data['color']);
-      if (data['status'] == 'synced') {
-        $('#sync-status').text('Synced');
-      } else {
-        $('#sync-status').text(data['status']);
-        $('#sync-btn').removeClass('hidden');
-      }
+      $('#sync-status').text(data['status']);
+      $('#sync-btn').removeClass('hidden');
     });
 {% endif %}
   })
