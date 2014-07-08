@@ -74,7 +74,7 @@ cd /usr/local/src
 git clone https://github.com/densho/ddr-lint.git
 cd /usr/local/src/ddr-lint/ddrlint
 python setup.py install
-pip install --download-cache=$PIP_CACHE_DIR -r /usr/local/src/ddr-cmdln/ddr/requirements/production.txt
+pip install -U --download-cache=$PIP_CACHE_DIR -r /usr/local/src/ddr-cmdln/ddr/requirements/production.txt
 
 echo "${bldgrn}ddr-cmdln${txtrst}"
 apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev pmount udisks python-dev python-pip
@@ -82,7 +82,7 @@ cd /usr/local/src
 git clone https://github.com/densho/ddr-cmdln.git
 cd /usr/local/src/ddr-cmdln/ddr
 python setup.py install
-pip install --download-cache=$PIP_CACHE_DIR -r /usr/local/src/ddr-cmdln/ddr/requirements/production.txt
+pip install -U --download-cache=$PIP_CACHE_DIR -r /usr/local/src/ddr-cmdln/ddr/requirements/production.txt
 adduser ddr plugdev
 
 echo "${bldgrn}ddr-local${txtrst}"
@@ -90,14 +90,14 @@ apt-get --assume-yes install imagemagick libexempi3 libssl-dev python-dev libxml
 cd /usr/local/src
 git clone https://github.com/densho/ddr-local.git
 cd /usr/local/src/ddr-local/ddrlocal
-pip install --download-cache=$PIP_CACHE_DIR -r /usr/local/src/ddr-local/ddrlocal/requirements/production.txt
+pip install -U --download-cache=$PIP_CACHE_DIR -r /usr/local/src/ddr-local/ddrlocal/requirements/production.txt
 
 #echo "${bldgrn}ddr-public${txtrst}"
 #apt-get --assume-yes install imagemagick supervisor
 #cd /usr/local/src
 #git clone https://github.com/densho/ddr-public.git
 #cd /usr/local/src/ddr-public/ddrpublic
-#pip install --download-cache=$PIP_CACHE_DIR -U -r /usr/local/src/ddr-public/ddrpublic/requirements/production.txt
+#pip install -U --download-cache=$PIP_CACHE_DIR -U -r /usr/local/src/ddr-public/ddrpublic/requirements/production.txt
 #chown -R root.ddr /usr/local/src/ddr-public
 #chmod +x /usr/local/src/ddr-public/ddrpublic/manage.py
 
