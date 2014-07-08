@@ -463,9 +463,12 @@ class DDRLocalEntity( DDREntity ):
         
         @returns: absolute path to logfile
         """
-        return os.path.join(os.path.dirname(self.parent_path), 'log',
-                            self.parent_uid,
-                            '%s-addfile.log' % self.id)
+        logpath = os.path.join(os.path.dirname(self.parent_path), 'log',
+                               self.parent_uid,
+                               '%s-addfile.log' % self.id)
+        if not os.path.exists(os.path.dirname(logpath)):
+            os.makedirs(os.path.dirname(logpath))
+        return logpath
     
     def files_log( self, ok=None, msg=None ):
         """Returns log of add_files activity; adds an entry if status,msg given.
@@ -475,8 +478,6 @@ class DDRLocalEntity( DDREntity ):
         @returns log: A text file.
         """
         logpath = self._addfile_log_path()
-        if not os.path.exists(os.path.dirname(logpath)):
-            os.makedirs(os.path.dirname(logpath))
         if ok and msg:
             if ok: ok = 'ok'
             else:  ok = 'not ok'
