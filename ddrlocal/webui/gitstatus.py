@@ -57,6 +57,12 @@ def queue_path():
         tmp_dir(),
         'gitstatus-queue'
     )
+    
+def lock_path():
+    return os.path.join(
+        tmp_dir(),
+        'gitstatus-lock'
+    )
 
 def path( collection_path ):
     """
@@ -192,45 +198,74 @@ def update( collection_path ):
     text = write(collection_path, timestamp, elapsed, status, annex_status, syncstatus)
     return loads(text)
 
-def lock( msg ):
-    """Sets a lock that prevents update_store from running
+def lock( task_id ):
+    """Sets a lock to prevent update_store from running
+    
+    Multiple locks can be set. Locks are added to the lockfile
+    and removed on unlock. This helps avoid a race condition:
+    - Task A locks.
+    - Task B locks.
+    - Task B unlocks, removing lockfile.
+    - gitstatus.update_store() thinks it's okay to run.
     
     TODO Other parts of the app may want to do this too
+    
+    @param task_id: Unique identifier for task.
+    @returns: Complete text of lockfile
     """
-    text = None
-    if os.path.exists(settings.GITSTATUS_LOCK_PATH):
-        with open(settings.GITSTATUS_LOCK_PATH, 'r') as f:
-            text = f.read()
-        logger.debug('Already locked: %s' % text)
-    else:
-        ts = datetime.now().strftime(settings.TIMESTAMP_FORMAT)
-        text = '%s %s' % (ts, msg)
-        with open(settings.GITSTATUS_LOCK_PATH, 'w') as f:
-            f.write(text)
-            logger.debug('Locked: %s' % text)
-    return text
+    ts = datetime.now().strftime(settings.TIMESTAMP_FORMAT)
+    text = '%s %s' % (ts, task_id)
+    LOCK = lock_path()
+    locks = []
+    if os.path.exists(LOCK):
+        with open(LOCK, 'r') as f:
+            locks = f.readlines()
+    already = None
+    for lock in locks:
+        lock = lock.strip()
+        if lock:
+            ts,tsk = lock.split(' ', 1)
+            if task_id == tsk:
+                already = True
+    if not already:
+        locks.append(text)
+    cleaned = [lock.strip() for lock in locks]
+    lockfile_text = '\n'.join(cleaned)
+    with open(LOCK, 'w') as f:
+        f.write(lockfile_text)
+    return lockfile_text
 
-def unlock():
-    """Removes lock and allows update_store to run again
+def unlock( task_id ):
+    """Removes specified lock and allows update_store to run again
+    
+    @param task_id: Unique identifier for task.
+    @returns: Complete text of lockfile
     """
-    if os.path.exists(settings.GITSTATUS_LOCK_PATH):
-        os.remove(settings.GITSTATUS_LOCK_PATH)
-        if not os.path.exists(settings.GITSTATUS_LOCK_PATH):
-            logger.debug('Unlocked')
-            return True
-        else:
-            logger.debug('Could not unlock')
-            return False
-    logger.debug('not locked')
-    return None
+    LOCK = lock_path()
+    locks = []
+    if os.path.exists(LOCK):
+        with open(LOCK, 'r') as f:
+            locks = f.readlines()
+    remaining = []
+    for lock in locks:
+        lock = lock.strip()
+        if lock:
+            ts,tsk = lock.split(' ', 1)
+            if not task_id == tsk:
+                remaining.append(lock)
+    lockfile_text = '\n'.join(remaining)
+    with open(LOCK, 'w') as f:
+        f.write(lockfile_text)
+    return lockfile_text
 
 def locked():
     """
     """
-    if os.path.exists(settings.GITSTATUS_LOCK_PATH):
-        with open(settings.GITSTATUS_LOCK_PATH, 'r') as f:
-            text = f.read()
-        return text
+    LOCK = lock_path()
+    if os.path.exists(LOCK):
+        with open(LOCK, 'r') as f:
+            locks = f.readlines()
+        return locks
     return False
 
 def next_repo():

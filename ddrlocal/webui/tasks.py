@@ -89,7 +89,7 @@ class ElasticsearchTask(Task):
         logger.debug('ElasticsearchTask.on_success(%s, %s, %s, %s)' % (retval, task_id, args, kwargs))
     
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
-        gitstatus.unlock()
+        gitstatus.unlock('reindex')
         logger.debug('ElasticsearchTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
 
 @task(base=ElasticsearchTask, name='webui-search-reindex')
@@ -197,7 +197,7 @@ class FileAddDebugTask(Task):
         collection = Collection.from_json(collection_path)
         collection.cache_delete()
         gitstatus.update(collection_path)
-        gitstatus.unlock()
+        gitstatus.unlock('entity_add_file')
 
 @task(base=FileAddDebugTask, name='entity-add-file')
 def entity_add_file( git_name, git_mail, entity, src_path, role, data, agent='' ):
@@ -272,7 +272,7 @@ class DeleteEntityTask(Task):
         collection = Collection.from_json(collection_path)
         lockstatus = collection.unlock(task_id)
         gitstatus.update(collection_path)
-        gitstatus.unlock()
+        gitstatus.unlock('delete_entity')
 
 @task(base=DeleteEntityTask, name='webui-entity-delete')
 def delete_entity( git_name, git_mail, collection_path, entity_id, agent='' ):
@@ -334,7 +334,7 @@ class DeleteFileTask(Task):
         collection = Collection.from_json(collection_path)
         lockstatus = collection.unlock(task_id)
         gitstatus.update(collection_path)
-        gitstatus.unlock()
+        gitstatus.unlock('delete_file')
 
 @task(base=DeleteFileTask, name='webui-file-delete')
 def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, agent='' ):
@@ -385,7 +385,7 @@ class CollectionSyncDebugTask(Task):
         collection.unlock(task_id)
         collection.cache_delete()
         gitstatus.update(collection_path)
-        gitstatus.unlock()
+        gitstatus.unlock('collection_sync')
 
 @task(base=CollectionSyncDebugTask, name='collection-sync')
 def collection_sync( git_name, git_mail, collection_path ):
