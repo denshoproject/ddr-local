@@ -8,6 +8,11 @@
 {% endblock breadcrumbs %}
 
 
+{% block headmeta %}
+<meta http-equiv="refresh" content="30;URL=">
+{% endblock %}
+
+
 {% block content %}
 
   <div class="row-fluid">
@@ -15,9 +20,12 @@
 
 <h1>Tasks</h1>
 
+{% if celery_tasks %}
+
 <table id="tasks" class="table">
 <form name="task-dismiss" action="" method="post">{% csrf_token %}
-  {{ form.next }}
+  <input type='hidden' name='next' value='{{ form.next.value }}' />
+
 {% for task in celery_tasks %}
   <tr>
     <td class="status {{ task.status }}">
@@ -46,15 +54,68 @@ more&nbsp;info
     </td>
     <td>
 {% if task.dismissable %}
-<input type="submit" name="task_id:{{ task.task_id }}" value="dismiss" class="btn-mini btn-link" />
+<input id="id_dismiss_{{ task.task_id }}" name="dismiss_{{ task.task_id }}" class="task_checkbox" type="checkbox" />
 {% endif %}
     </td>
   </tr>
 {% endfor %}
+
+{% if dismissable_tasks %}
+  <tr>
+    <td colspan="4">
+    </td>
+    <td>
+<a id="select-all" href="#" class="btn btn-primary btn-xs">Select All</a>
+<a id="unselect-all" href="#" class="btn btn-primary btn-xs">Unselect All</a>
+    </td>
+  </tr>
+
+  <tr>
+    <td colspan="4">
+    </td>
+    <td>
+<button type="submit" class="btn btn-primary">Dismiss selected tasks</button>
+    </td>
+  </tr>
+{% endif %}{# dismissable_tasks #}
+
 </form>
 </table>
+
+{% else %}
+
+<p class="text-muted">
+No pending tasks.
+</p>
+{% if form.next.value %}
+<a href="{{ form.next.value }}" class="btn btn-default btn-default">
+  &laquo; Back
+</a>
+{% endif %}
+
+{% endif %}{# celery_tasks #}
 
     </div><!-- .span12 -->
   </div><!-- .row-fluid -->
 
 {% endblock content %}
+
+
+{% block javascript %}{{ block.super }}
+<script>
+  $(function () {
+    /* (un)select-all tasks */
+    $("#unselect-all").hide();
+    $("#select-all").click(function() {
+      $(".task_checkbox").prop('checked', true);
+      $("#select-all").hide();
+      $("#unselect-all").show();
+    });
+    $("#unselect-all").click(function() {
+      $(".task_checkbox").prop('checked', false);
+      $("#unselect-all").hide();
+      $("#select-all").show();
+    });
+  })
+</script>
+{% endblock javascript %}
