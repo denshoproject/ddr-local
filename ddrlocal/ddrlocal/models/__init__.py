@@ -458,6 +458,22 @@ class DDRLocalEntity( DDREntity ):
         # just do nothing
         return None
     
+    def _addfile_log_path( self ):
+        """Generates path to collection addfiles.log.
+        
+        Previously each entity had its own addfile.log.
+        Going forward each collection will have a single log file.
+            /STORE/log/REPO-ORG-CID-addfile.log
+        
+        @returns: absolute path to logfile
+        """
+        logpath = os.path.join(os.path.dirname(self.parent_path), 'log',
+                               self.parent_uid,
+                               '%s-addfile.log' % self.id)
+        if not os.path.exists(os.path.dirname(logpath)):
+            os.makedirs(os.path.dirname(logpath))
+        return logpath
+    
     def files_log( self, ok=None, msg=None ):
         """Returns log of add_files activity; adds an entry if status,msg given.
         
@@ -465,7 +481,7 @@ class DDRLocalEntity( DDREntity ):
         @param msg: Text message.
         @returns log: A text file.
         """
-        logpath = os.path.join(self.path, 'addfile.log')
+        logpath = self._addfile_log_path()
         if ok and msg:
             if ok: ok = 'ok'
             else:  ok = 'not ok'
