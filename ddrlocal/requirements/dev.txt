@@ -6,10 +6,10 @@
 # include base
 -r _base.txt
 
-                # LICENSE    Python3
+                # LICENSE  DEBIAN PKG (WHEEZY)           (JESSIE)                             Python3
 
-bpython         # MIT        y
-coverage        # BSD        y
-nose            # LGPL       y
-snakefood       # GPL        ???
-sphinx          # BSD        y
+bpython         # MIT      bpython (0.11-1)              bpython (0.12-1.2)                   y
+coverage        # BSD      python-coverage (3.4-3)       python-coverage (3.7.1+dfsg.1-1+b1)  y
+nose            # LGPL     python-nose (1.1.2-3)         python-nose (1.3.3-1)                y
+snakefood       # GPL      snakefood (1.4.1)             snakefood (1.4.1)                    ???
+sphinx          # BSD      python-sphinx (1.1.3+dfsg-4)  python-sphinx (1.2.2+dfsg-2)         y
