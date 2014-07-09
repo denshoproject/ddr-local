@@ -115,8 +115,11 @@ def add_media_symlink(base_path):
 
 def rm_media_symlink():
     """Remove the media symlink (see add_media_symlink).
+    
+    Removes normal symlinks (codes='111') as well as symlinks that point
+    to nonexistent targets, such as when a USB drive is linked-to but the
+    drive goes away when a VM is shut down (codes='010').
     """
-    logger.debug('rm_media_symlink()')
     link = settings.MEDIA_BASE
     s = []
     if os.path.exists(link):     s.append('1') 
@@ -125,9 +128,12 @@ def rm_media_symlink():
     else:                        s.append('0')
     if os.access(link, os.W_OK): s.append('1') 
     else:                        s.append('0')
-    if ''.join(s) == '111':
-        logger.debug('removing %s' % link)
+    codes = ''.join(s)
+    if codes in ['111', '010']:
+        logger.debug('removing %s (-> %s): %s' % (link, os.path.realpath(link), codes))
         os.remove(link)
+    else:
+        logger.debug('could not remove %s (-> %s): %s' % (link, os.path.realpath(link), codes))
 
 def mount( request, devicefile, label ):
     """Mounts requested device, adds /var/www/ddr/media symlink, gives feedback.
