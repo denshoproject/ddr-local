@@ -20,19 +20,14 @@ TEMPLATE_DEBUG = DEBUG
 import ConfigParser
 import logging
 
-os.environ['USER'] = 'ddr'
+from DDR import CONFIG_FILES, NoConfigError
 
-class NoConfigError(Exception):
-    def __init__(self, value):
-        self.value = value
-    def __str__(self):
-        return repr(self.value)
-
-CONFIG_FILE = '/etc/ddr/ddr.cfg'
-if not os.path.exists(CONFIG_FILE):
-    raise NoConfigError('No config file!')
 config = ConfigParser.ConfigParser()
-config.read(CONFIG_FILE)
+configs_read = config.read(CONFIG_FILES)
+if not configs_read:
+    raise NoConfigError('No config file!')
+
+os.environ['USER'] = 'ddr'
 
 AGENT = 'ddr-local'
 
