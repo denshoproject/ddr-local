@@ -60,6 +60,9 @@ form td { padding-bottom:20px; }
 #edit-alert { padding:10px; padding-top:0px; padding-bottom:0px; }
 
 #delete.btn { float:right; }
+
+.debuginfo { text-align:right; }
+.debuginfo .content { display:none; }
 </style>
 
 {% block pagecss %}{% endblock %}
@@ -169,9 +172,19 @@ form td { padding-bottom:20px; }
 
 
   <div id="footer">
-{% block footer %}{% endblock footer %}
-  </div><!-- #footer -->
 
+{% block footer %}{% endblock footer %}
+
+<p class="debuginfo small text-muted">
+<span class="icon">&pi;</span>&nbsp;
+<span class="content">
+Rendered at {{ time }} by PID {{ pid }} on {{ host }}
+<br/>
+{{ commit }}
+</span>
+</p>
+
+  </div><!-- #footer -->
 
 
 </div><!-- .container-fluid -->
@@ -187,6 +200,10 @@ form td { padding-bottom:20px; }
     $('#storage-space').tooltip({'placement':'bottom'});
     $('#storage-status').tooltip({'placement':'bottom'});
   })
+  /* show debuginfo on icon mouseover */
+  $(".debuginfo, .debuginfo.content").click(function() {
+    $(".debuginfo .content").toggle();
+  });
 </script>
 {% if not hide_celery_tasks %}
 <script>
@@ -202,9 +219,6 @@ form td { padding-bottom:20px; }
 {% endif %}
 
 {% block javascript %}{% endblock %}
-
-
-<!-- Rendered at {{ time }} by {{ pid }} on {{ host }} running {{ commit }}. -->
 
 </body>
 </html>
