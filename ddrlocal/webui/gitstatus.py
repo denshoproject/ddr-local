@@ -391,18 +391,14 @@ def queue_mark_updated( queue, collection_id, interval, margin ):
     @param margin: int Margin of error around interval
     @returns: queue
     """
-    print('collection_id %s' % collection_id)
     timestamp = next_time(interval, margin)
     present = False
     for line in queue['collections']:
         ts,cid = line
-        print('    cid %s' % cid)
         if cid == collection_id:
-            print('    YES')
             line[0] = timestamp
             present = True
     if not present:
-        print('adding')
         queue['collections'].append([timestamp, collection_id])
     return queue
 
