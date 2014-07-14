@@ -20,6 +20,16 @@ The UI gets status info from these files rather than running
 git-status/git-annex-status directly.  Cache files hang around until
 they are replaced.  The user is informed when the files were last
 updated and (TODO) can request an update if they want.
+
+
+Queue file
+
+List of collection_ids and timestamps, arranged in timestamp order (ASCENDING)
+Collections that have not been updated are timestamped with past date (epoch)
+First line contains date of last queue_generate().
+Timestamps represent next earliest update datetime.
+After running gitstatus on collection, next update time is scheduled.
+Time is slightly randomized so updates gradually spread out.
 """
 
 from datetime import datetime, timedelta
@@ -27,6 +37,8 @@ import json
 import logging
 logger = logging.getLogger(__name__)
 import os
+import random
+import re
 
 from django.conf import settings
 from django.core.cache import cache
@@ -46,32 +58,39 @@ def log(msg):
     with open(settings.GITSTATUS_LOG, 'a') as f:
         f.write(entry)
 
-def tmp_dir():
-    path = os.path.join(settings.MEDIA_BASE, 'tmp')
+def tmp_dir( base_dir ):
+    path = os.path.join(base_dir, 'tmp')
     if not os.path.exists(path):
         os.makedirs(path)
     return path
     
-def queue_path():
+def queue_path( base_dir ):
     return os.path.join(
-        tmp_dir(),
+        tmp_dir(base_dir),
         'gitstatus-queue'
     )
     
-def lock_path():
+def lock_path( base_dir ):
     return os.path.join(
-        tmp_dir(),
+        tmp_dir(base_dir),
         'gitstatus-lock'
     )
 
-def path( collection_path ):
+def path( base_dir, collection_path ):
     """
     - STORE/status/ddr-test-123.status
     """
     return os.path.join(
-        tmp_dir(),
+        tmp_dir(base_dir),
         '%s.status' % os.path.basename(collection_path)
     )
+
+def status_paths( base_dir ):
+    """Returns list of collection_ids for which there are gitstatus files.
+    """
+    pattern = re.compile('\w+-\w+-\d+.status')
+    statuses = [os.path.join(tmp_dir(base_dir), f) for f in os.listdir(base_dir) if pattern.match(f)]
+    return statuses
 
 def dumps( timestamp, elapsed, status, annex_status, syncstatus ):
     """Formats git-status,git-annex-status,sync-status and timestamp as text
@@ -125,19 +144,19 @@ def loads( text ):
         'sync_status': syncstatus,
     }
 
-def write( collection_path, timestamp, elapsed, status, annex_status, syncstatus ):
+def write( base_dir, collection_path, timestamp, elapsed, status, annex_status, syncstatus ):
     """Writes .gitstatus for the collection; see format.
     """
     text = dumps(timestamp, elapsed, status, annex_status, syncstatus) + '\n'
-    with open(path(collection_path), 'w') as f:
+    with open(path(base_dir, collection_path), 'w') as f:
         f.write(text)
     return text
 
-def read( collection_path ):
+def read( base_dir, collection_path ):
     """Reads .gitstatus for the collection and returns parsed data.
     """
-    if os.path.exists(path(collection_path)):
-        with open(path(collection_path), 'r') as f:
+    if os.path.exists(path(base_dir, collection_path)):
+        with open(path(base_dir, collection_path), 'r') as f:
             text = f.read()
         data = loads(text)
         return data
@@ -181,7 +200,7 @@ def sync_status( collection_path, git_status, timestamp, cache_set=False, force=
         cache.set(key, data, COLLECTION_STATUS_TIMEOUT)
     return data
 
-def update( collection_path ):
+def update( base_dir, collection_id ):
     """Gets a bunch of status info for the collection; refreshes if forced
     
     timestamp, elapsed, status, annex_status, syncstatus
@@ -190,15 +209,18 @@ def update( collection_path ):
     @returns: dict
     """
     start = datetime.now()
+    collection_path = os.path.join(base_dir, collection_id)
     status = dvcs.repo_status(collection_path, short=True)
     annex_status = dvcs.annex_status(collection_path)
     timestamp = datetime.now()
     syncstatus = sync_status(collection_path, git_status=status, timestamp=timestamp, force=True)
     elapsed = timestamp - start
-    text = write(collection_path, timestamp, elapsed, status, annex_status, syncstatus)
+    text = write(base_dir, collection_path, timestamp, elapsed, status, annex_status, syncstatus)
     return loads(text)
 
-def lock( task_id ):
+
+
+def lock( base_dir, task_id ):
     """Sets a lock to prevent update_store from running
     
     Multiple locks can be set. Locks are added to the lockfile
@@ -215,7 +237,7 @@ def lock( task_id ):
     """
     ts = datetime.now().strftime(settings.TIMESTAMP_FORMAT)
     text = '%s %s' % (ts, task_id)
-    LOCK = lock_path()
+    LOCK = lock_path(base_dir)
     locks = []
     if os.path.exists(LOCK):
         with open(LOCK, 'r') as f:
@@ -235,13 +257,13 @@ def lock( task_id ):
         f.write(lockfile_text)
     return lockfile_text
 
-def unlock( task_id ):
+def unlock( base_dir, task_id ):
     """Removes specified lock and allows update_store to run again
     
     @param task_id: Unique identifier for task.
     @returns: Complete text of lockfile
     """
-    LOCK = lock_path()
+    LOCK = lock_path(base_dir)
     locks = []
     if os.path.exists(LOCK):
         with open(LOCK, 'r') as f:
@@ -258,116 +280,176 @@ def unlock( task_id ):
         f.write(lockfile_text)
     return lockfile_text
 
-def locked():
+def locked_global( base_dir ):
+    """Indicates whether gitstatus global lock is in effect.
+    @returns: True, False
     """
-    """
-    LOCK = lock_path()
+    LOCK = lock_path(base_dir)
     if os.path.exists(LOCK):
         with open(LOCK, 'r') as f:
             locks = f.readlines()
         return locks
     return False
 
-def next_repo():
+def queue_loads( text ):
+    """Load queue from string
+    
+    >>> queue_read()
+    {
+        'generated': datetime(2014-07-10T10:19:00),
+        'collections': [
+            [datetime(1969,12,31,23,59,59), 'ddr-test-231'],
+            [datetime(1969,12,31,23,59,59), 'ddr-test-123'],
+            [datetime(2014,07,10,10,19,00), 'ddr-test-231'],
+            [datetime(2014,07,10,10,19,01), 'ddr-test-124'],
+        ]
+    }
+    """
+    lines = text.strip().split('\n')
+    generated = datetime.strptime(lines.pop(0).strip().split()[1], settings.TIMESTAMP_FORMAT)
+    queue = {'generated':generated, 'collections':[]}
+    for line in lines:
+        ts,collection_id = line.split()
+        timestamp = datetime.strptime(ts, settings.TIMESTAMP_FORMAT)
+        queue['collections'].append( [timestamp,collection_id] )
+    return queue
+
+def queue_dumps( queue ):
+    """Write queue to text; lines are ordered in ascending date order
+     
+    Sample file:
+        generated 2014-07-10T10:19:00
+        1969-12-31T23:59:59 ddr-test-231   <
+        1969-12-31T23:59:59 ddr-test-123   < These have not been done yet.
+        2014-07-10T10:19:00 ddr-test-231   < These have.
+        2014-07-10T10:19:01 ddr-test-124   <
+    """
+    lines = []
+    for c in queue['collections']:
+        lines.append(' '.join([
+            c[0].strftime(settings.TIMESTAMP_FORMAT),
+            c[1],
+        ]))
+    lines.sort()
+    lines.insert(0, 'generated %s' % queue['generated'].strftime(settings.TIMESTAMP_FORMAT))
+    return '\n'.join(lines) + '\n'
+
+def queue_read( base_dir ):
+    """Read queue from file.
+    """
+    path = queue_path(base_dir)
+    assert os.path.exists(path)
+    with open(path, 'r') as f:
+        text = f.read()
+    return queue_loads(text)
+
+def queue_write( base_dir, queue ):
+    """Write queue to file.
+    if queue timestamp too old, queue_generate()
+    """
+    path = queue_path(base_dir)
+    text = queue_dumps(queue)
+    with open(path, 'w') as f:
+        f.write(text)
+
+def queue_generate( base_dir, repos_orgs ):
+    """Generates a new queue file
+    
+    @param base_dir: Absolute path to Store dir
+    @param repos_orgs: Output of webui.get_repos_orgs.
+    @returns: queue understandable by queue_loads,  queue_dumps
+    """
+    queue = {'collections': []}
+    cids = []
+    # gitstatuses
+    for path in status_paths(base_dir):
+        collection_id = path.replace(base_dir, '').replace('/','').replace('.status', '')
+        status = read(cid)  # read timestamp from .status file
+        timestamp = datetime.strptime(status['timestamp'], settings.TIMESTAMP_FORMAT)
+        cids.append(collection_id)
+        queue['collections'].append( (timestamp,collection_id) )
+    # collections without gitstatuses
+    epoch = datetime.fromtimestamp(0)
+    for o in repos_orgs:
+        repo,org = o.split('-')
+        for path in Collection.collection_paths(base_dir, repo, org):
+            collection_id = os.path.basename(path)
+            if not collection_id in cids:
+                cids.append(collection_id)
+                queue['collections'].append( (epoch,collection_id) )
+    queue['generated'] = datetime.now()
+    return queue
+
+def queue_mark_updated( queue, collection_id, interval, margin ):
+    """Resets or adds collection timestamp and returns queue
+    
+    Timestamp is INTERVAL plus MARGIN seconds from now.
+    
+    @param queue
+    @param collection_id
+    @param interval: int Number of seconds
+    @param margin: int Margin of error around interval
+    @returns: queue
+    """
+    print('collection_id %s' % collection_id)
+    timestamp = next_time(interval, margin)
+    present = False
+    for line in queue['collections']:
+        ts,cid = line
+        print('    cid %s' % cid)
+        if cid == collection_id:
+            print('    YES')
+            line[0] = timestamp
+            present = True
+    if not present:
+        print('adding')
+        queue['collections'].append([timestamp, collection_id])
+    return queue
+
+def next_time( interval, margin ):
+    delta = interval + random.randint(0, margin)
+    timestamp = datetime.now() + timedelta(seconds=delta)
+    return timestamp
+    
+def its_ready( timestamp, interval ):
+    return datetime.now() > timestamp
+
+def next_repo( queue, interval, local=False ):
     """Gets next collection_path or time til next ready to be updated
-    
-    Each line of GITSTATUS_QUEUE_PATH contains a collection_path and
-    a timestamp of the last time git-status was done on the collection.
-    Timestamps come from .gitstatus files in the collection repos.
-    If a repo has no .gitstatus file then date in past is used (e.g. update now).
-    The first collection with a timestamp more than GITSTATUS_INTERVAL
-    in the past is returned.
-    If there are collections but they are too recent a 'notready'
-    message is returned along with the time til next is available.
-    
-    Sample file 0:
-        [empty]
-    
-    Sample file 1:
-        /var/www/media/base/ddr-densho-252 2014-06-24T1503:22-07:00
-        /var/www/media/base/ddr-densho-255 2014-06-24T1503:22-07:00
-        /var/www/media/base/ddr-densho-282 2014-06-24T1503:22-07:00
-    
+        
+    @param queue: 
+    @param interval: 
+    @param local: Boolean Use local per-collection locks or global lock.
     @returns: collection_path or (msg,timedelta)
     """
-    # load existing queue; populate queue if empty
-    contents = ''
-    if os.path.exists(queue_path()):
-        with open(queue_path(), 'r') as f:
-            contents = f.read()
-    lines = []
-    for line in contents.strip().split('\n'):
-        line = line.strip()
-        if line:
-            lines.append(line)
-    if not lines:
-        # refresh
-        for o in get_repos_orgs():
-            repo,org = o.split('-')
-            paths = Collection.collection_paths(settings.MEDIA_BASE, repository=repo, organization=org)
-            for path in paths:
-                # get time repo gitstatus last update
-                # if no gitstatus file, make immediately updatable
-                gs = read(path)
-                if gs:
-                    ts = gs['timestamp'].strftime(settings.TIMESTAMP_FORMAT)
-                else:
-                    ts = datetime.fromtimestamp(0).strftime(settings.TIMESTAMP_FORMAT)
-                line = ' '.join([path, ts])
-                lines.append(line)
-#    # if backoff leave the queue file as is
-#    gitstatus_backoff = timedelta(seconds=settings.GITSTATUS_BACKOFF)
-#    for n,line in enumerate(lines):
-#        if 'backoff' in line:
-#            msg,ts = line.split(' ')
-#            timestamp = datetime.strptime(ts, settings.TIMESTAMP_FORMAT)
-#            elapsed = datetime.now() - timestamp
-#            if elapsed < gitstatus_backoff:
-#                # not enough time elapsed: die
-#                delay = gitstatus_backoff - elapsed
-#                return 'backoff',delay
-#            else:
-#                # enough time has passed: rm the backoff
-#                lines.remove(line)
-    # any eligible collections?
-    eligible = []
-    gitstatus_interval = timedelta(seconds=settings.GITSTATUS_INTERVAL)
-    delay = gitstatus_interval
-    for line in lines:
-        path,ts = line.split(' ')
-        timestamp = datetime.strptime(ts, settings.TIMESTAMP_FORMAT)
-        elapsed = datetime.now() - timestamp
-        if elapsed > gitstatus_interval:
-            eligible.append(line)
-        else:
-            # report smallest interval (e.g. next possible update time)
-            wait = gitstatus_interval - elapsed
-            if wait < delay:
-               delay = wait
-    # we have collections
-    if lines:
-        if eligible:
-            # eligible collections - pop the first one off the queue
-            for line in lines:
-                if line == eligible[0]:
-                    lines.remove(line)
-            text = '\n'.join(lines) + '\n'
-            with open(queue_path(), 'w') as f1:
-                f1.write(text)
-            collection_path,ts = eligible[0].split(' ')
-            return collection_path
-        else:
-#            # collections but none eligible: back off!
-#            timestamp = datetime.now()
-#            backoff = 'backoff %s' % timestamp.strftime(settings.TIMESTAMP_FORMAT)
-#            lines.insert(0, backoff)
-            text = '\n'.join(lines) + '\n'
-            with open(queue_path(), 'w') as f1:
-                f1.write(text)
-            return 'notready',delay
-    return None
+    collection_path = None
+    message = None
+    next_available = None
+    # NOTE collections should be in ascending order
+    # now choose
+    if local:
+        # per-collection lock
+        for timestamp,cid in queue['collections']:
+            if its_ready(timestamp, interval):
+                cpath = os.path.join(settings.MEDIA_BASE, cid)
+                collection = Collection.from_json(cpath)
+                if not collection.locked():
+                    collection_path = cpath
+                    break
+            if (not next_available) or (timestamp < next_available):
+                next_available = timestamp
+    else:
+        # global lock - just take the first one!
+        for timestamp,cid in queue['collections']:
+            if its_ready(timestamp, interval):
+                collection_path = os.path.join(settings.MEDIA_BASE, cid)
+            if (not next_available) or (timestamp < next_available):
+                next_available = timestamp
+    if collection_path:
+        return collection_path
+    return ('notready',next_available)
 
-def update_store():
+def update_store( base_dir, interval, margin, local=False ):
     """
     
     - Ensures only one gitstatus_update task running at a time
@@ -380,6 +462,8 @@ def update_store():
     Reference: Ensuring only one gitstatus_update runs at a time
     http://docs.celeryproject.org/en/latest/tutorials/task-cookbook.html#cookbook-task-serial
     
+    @param base_dir: 
+    @param local: boolean Use per-collection locks
     @returns: success/fail message
     """
     log('update_store() ---------------------')
@@ -388,33 +472,44 @@ def update_store():
     acquire_lock = lambda: cache.add(GITSTATUS_LOCK_ID, 'true', GITSTATUS_LOCK_EXPIRE)
     release_lock = lambda: cache.delete(GITSTATUS_LOCK_ID)
     #logger.debug('git status: %s', collection_path)
-    message = None
+    messages = []
     if acquire_lock():
         log('celery lock acquired')
         try:
-            writable = is_writable(settings.MEDIA_BASE)
-            lockd = locked()
-            if lockd:
-                message = 'locked: %s' % lockd
-                log(message)
-            elif writable:
-                response = next_repo()
+            writable = is_writable(base_dir)
+            if not writable:
+                log('base_dir not writable: %s' % base_dir)
+                messages.append('base_dir not writable: %s' % base_dir)
+            
+            locked = None
+            if not local:
+                messages.append('using global lockfile')
+                locked = locked_global(base_dir)
+            if locked:
+                messages.append('locked: %s' % locked)
+            
+            if writable and not locked:
+                collection_path = None
+                queue = queue_read(base_dir)
+                response = next_repo( queue, interval, local=local )
                 log(response)
                 if isinstance(response, list) or isinstance(response, tuple):
-                    message = str(response)
-                else:
+                    messages.append('next_repo %s' % str(response))
+                elif isinstance(response, basestring) and os.path.exists(response):
                     collection_path = response
-                    timestamp,elapsed,status,annex_status,syncstatus = update(collection_path)
-                    message = '%s updated' % (collection_path)
-            else:
-                log('MEDIA_BASE not writable!')
-                message = 'MEDIA_BASE not writable!'
+                if collection_path:
+                    timestamp,elapsed,status,annex_status,syncstatus = update(base_dir, collection_path)
+                    collection_id = os.path.basename(collection_path)
+                    queue = queue_mark_updated(queue, collection_id, interval, margin)
+                    queue_write(base_dir, queue)
+                    messages.append('%s updated' % (collection_path))
+            
         finally:
             release_lock()
             log('celery lock released')
     else:
         log("couldn't get celery lock")
-        message = "couldn't get celery lock"
+        messages.append("couldn't get celery lock")
         #logger.debug('git-status: another worker already running')
     #return 'git-status: another worker already running'
-    return message
+    return messages

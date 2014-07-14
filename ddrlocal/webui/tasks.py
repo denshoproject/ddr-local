@@ -162,11 +162,15 @@ class GitStatusTask(Task):
 
 @task(base=GitStatusTask, name='webui.tasks.gitstatus_update')
 def gitstatus_update( collection_path ):
-    return gitstatus.update(collection_path)
+    return gitstatus.update(settings.MEDIA_BASE, collection_path)
 
 @task(base=GitStatusTask, name='webui.tasks.gitstatus_update_store')
 def gitstatus_update_store():
-    return gitstatus.update_store()
+    return gitstatus.update_store(
+        settings.MEDIA_BASE,
+        settings.GITSTATUS_INTERVAL,
+        settings.GITSTATUS_INTERVAL * 0.10
+    )
 
 
 class FileAddDebugTask(Task):

@@ -21,19 +21,13 @@ import ConfigParser
 from datetime import timedelta
 import logging
 
-os.environ['USER'] = 'ddr'
-
-class NoConfigError(Exception):
-    def __init__(self, value):
-        self.value = value
-    def __str__(self):
-        return repr(self.value)
-
-CONFIG_FILE = '/etc/ddr/ddr.cfg'
-if not os.path.exists(CONFIG_FILE):
-    raise NoConfigError('No config file!')
+from DDR import CONFIG_FILES, NoConfigError
 config = ConfigParser.ConfigParser()
-config.read(CONFIG_FILE)
+configs_read = config.read(CONFIG_FILES)
+if not configs_read:
+    raise NoConfigError('no configs!!!')
+
+os.environ['USER'] = 'ddr'
 
 AGENT = 'ddr-local'
 
@@ -127,9 +121,27 @@ GITSTATUS_QUEUE_PATH = os.path.join(MEDIA_BASE, '.gitstatus-queue')
 # write something to this file (doesn't matter what) and remove the file
 # when they are finished.
 GITSTATUS_LOCK_PATH = os.path.join(MEDIA_BASE, '.gitstatus-stop')
+# Normally a global lockfile allows only a single gitstatus process at a time.
+# To allow multiple processes (e.g. multiple VMs using a shared storage device),
+# add the following setting to /etc/ddr/local.cfg:
+#     gitstatus_use_global_lock=0
+GITSTATUS_USE_GLOBAL_LOCK = True
+if config.has_option('local', 'gitstatus_use_global_lock'):
+    GITSTATUS_USE_GLOBAL_LOCK = config.get('local', 'gitstatus_use_global_lock')
 # Minimum interval between git-status updates per collection repository.
 GITSTATUS_INTERVAL = 60*60*1
 GITSTATUS_BACKOFF = 30
+# Indicates whether or not gitstatus_update_store periodic task is active.
+# This should be True for most single-user workstations.
+# See CELERYBEAT_SCHEDULE below.
+# IMPORTANT: If disabling GITSTATUS, also remove the celerybeat config file
+# and restart supervisord:
+#   $ sudo supervisorctl stop celerybeat
+#   $ sudo rm /etc/supervisor/conf.d/celerybeat.conf
+#   $ sudo supervisorctl reload
+GITSTATUS_BACKGROUND_ACTIVE = True
+if config.has_option('local', 'gitstatus_background_active'):
+    GITSTATUS_BACKGROUND_ACTIVE = config.get('local', 'gitstatus_background_active')
 
 # ----------------------------------------------------------------------
 
@@ -194,14 +206,16 @@ BROKER_URL            = 'redis://%s:%s/%s' % (REDIS_HOST, REDIS_PORT, REDIS_DB_C
 BROKER_TRANSPORT_OPTIONS = {'visibility_timeout': 60 * 60}  # 1 hour
 CELERYD_HIJACK_ROOT_LOGGER = False
 CELERY_ACCEPT_CONTENT = ['pickle', 'json', 'msgpack', 'yaml']
-CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
-CELERYBEAT_PIDFILE = '/tmp/celerybeat.pid'
-CELERYBEAT_SCHEDULE = {
-    'webui-git-status-update-store': {
+CELERYBEAT_SCHEDULER = None
+CELERYBEAT_PIDFILE = None
+CELERYBEAT_SCHEDULE = {}
+if GITSTATUS_BACKGROUND_ACTIVE:
+    CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
+    CELERYBEAT_PIDFILE = '/tmp/celerybeat.pid'
+    CELERYBEAT_SCHEDULE['webui-git-status-update-store'] = {
         'task': 'webui.tasks.gitstatus_update_store',
         'schedule': timedelta(seconds=60),
-    },
-}
+    }
 
 # ElasticSearch
 DOCSTORE_HOSTS = [
