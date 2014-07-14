@@ -16,7 +16,7 @@ from django.core.urlresolvers import reverse
 
 from migration.densho import export_entities, export_files, export_csv_path
 from webui.models import Collection, Entity, DDRFile
-from webui import gitstatus
+from webui import gitstatus, get_repos_orgs
 
 from DDR import docstore, models
 from DDR.commands import entity_destroy, file_destroy
@@ -162,10 +162,22 @@ class GitStatusTask(Task):
 
 @task(base=GitStatusTask, name='webui.tasks.gitstatus_update')
 def gitstatus_update( collection_path ):
+    if not os.path.exists(gitstatus.queue_path(settings.MEDIA_BASE)):
+        queue = gitstatus.queue_generate(
+            settings.MEDIA_BASE,
+            get_repos_orgs()
+        )
+        gitstatus.queue_write(settings.MEDIA_BASE, queue)
     return gitstatus.update(settings.MEDIA_BASE, collection_path)
 
 @task(base=GitStatusTask, name='webui.tasks.gitstatus_update_store')
 def gitstatus_update_store():
+    if not os.path.exists(gitstatus.queue_path(settings.MEDIA_BASE)):
+        queue = gitstatus.queue_generate(
+            settings.MEDIA_BASE,
+            get_repos_orgs()
+        )
+        gitstatus.queue_write(settings.MEDIA_BASE, queue)
     return gitstatus.update_store(
         settings.MEDIA_BASE,
         settings.GITSTATUS_INTERVAL,
