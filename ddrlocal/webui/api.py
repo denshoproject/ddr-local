@@ -36,6 +36,19 @@ def _get_csrf_token( request, url ):
             return c.value
     raise IOError('No CSRF token in response (%s)' % (url))
 
+def _needs_login( soup ):
+    """Returns True if page is a login page.
+    
+    @param soup: a BeautifulSoup object containing page HTML
+    @returns: Boolean
+    """
+    title = None
+    if soup.find('title'):
+        title = soup.find('title').contents[0].lower()
+    if title and ('log in' in title):
+        return True
+    return False
+
 def logout():
     """Logs out of the workbench server.
     @returns string: 'ok' or error message
@@ -116,6 +129,8 @@ def collections_latest( request, repo, org, num_collections=1 ):
     url = '{}/kiroku/{}-{}/'.format(settings.WORKBENCH_URL, repo, org)
     r = s.get(url)
     soup = BeautifulSoup(r.text)
+    if _needs_login(soup):
+        raise Exception('Could not get collection IDs. Please log out, log in, and try again.')
     cids = []
     for c in soup.find_all('a','collection'):
         cids.append(c.string)
@@ -150,6 +165,8 @@ def collections_next( request, repo, org, num_collections=1 ):
         raise IOError('Could not get new collection ID(s) (%s:%s on %s)' % (
             r.status_code, r.reason, new_cid_url))
     soup = BeautifulSoup(r.text)
+    if _needs_login(soup):
+        raise Exception('Could not get collection IDs. Please log out, log in, and try again.')
     cids = [c.string for c in soup.find_all('a','collection')]
     if not cids:
         raise Exception('Could not get collection IDs (not found in page %s)' % new_cid_url)
@@ -186,6 +203,8 @@ def entities_next( request, repo, org, cid, num_entities=1 ):
         raise IOError('Could not get new object ID(s) (%s:%s on %s)' % (
             r.status_code, r.reason, new_eid_url))
     soup = BeautifulSoup(r.text)
+    if _needs_login(soup):
+        raise Exception('Could not get object IDs. Please log out, log in, and try again.')
     eids = [e.string.strip() for e in soup.find_all('td','eid')]
     if not eids:
         raise Exception('Could not get object IDs (not found in page %s)' % new_eid_url)
