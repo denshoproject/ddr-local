@@ -89,7 +89,9 @@ def status_paths( base_dir ):
     """Returns list of collection_ids for which there are gitstatus files.
     """
     pattern = re.compile('\w+-\w+-\d+.status')
-    statuses = [os.path.join(tmp_dir(base_dir), f) for f in os.listdir(base_dir) if pattern.match(f)]
+    workdir = tmp_dir(base_dir)
+    statuses = [os.path.join(workdir, f) for f in os.listdir(workdir) if pattern.match(f)]
+    statuses.sort()
     return statuses
 
 def dumps( timestamp, elapsed, status, annex_status, syncstatus ):
@@ -230,6 +232,31 @@ def lock( base_dir, task_id ):
     - Task B unlocks, removing lockfile.
     - gitstatus.update_store() thinks it's okay to run.
     
+    >>> basedir = '/tmp/gitstatus'
+    >>> lockpath = lock_path(basedir)
+    >>> os.path.exists(lockpath)
+    False
+    >>> locked_global(basedir)
+    False
+    >>> lock(basedir, '1234')
+    '2014-07-15T15:17:15:254884 1234'
+    >>> os.path.exists(lockpath)
+    True
+    >>> locked_global(basedir)
+    '2014-07-15T15:17:15:254884 1234'
+    >>> lock(basedir, '1248')
+    '2014-07-15T15:17:15:254884 1234\n2014-07-15T15:17:15:254907 1248'
+    >>> locked_global(basedir)
+    '2014-07-15T15:17:15:254884 1234\n2014-07-15T15:17:15:254907 1248'
+    >>> unlock(basedir, '1234')
+    '2014-07-15T15:17:15:254907 1248'
+    >>> lock(basedir, '1248')
+    ''
+    >>> os.path.exists(lockpath)
+    False
+    >>> locked_global(basedir)
+    False
+    
     TODO Other parts of the app may want to do this too
     
     @param task_id: Unique identifier for task.
@@ -260,6 +287,8 @@ def lock( base_dir, task_id ):
 def unlock( base_dir, task_id ):
     """Removes specified lock and allows update_store to run again
     
+    See docs for lock().
+    
     @param task_id: Unique identifier for task.
     @returns: Complete text of lockfile
     """
@@ -276,12 +305,19 @@ def unlock( base_dir, task_id ):
             if not task_id == tsk:
                 remaining.append(lock)
     lockfile_text = '\n'.join(remaining)
-    with open(LOCK, 'w') as f:
-        f.write(lockfile_text)
+    if lockfile_text:
+        with open(LOCK, 'w') as f:
+            f.write(lockfile_text)
+    else:
+        if os.path.exists(LOCK):
+            os.remove(LOCK)
     return lockfile_text
 
 def locked_global( base_dir ):
     """Indicates whether gitstatus global lock is in effect.
+    
+    See docs for lock().
+    
     @returns: True, False
     """
     LOCK = lock_path(base_dir)
