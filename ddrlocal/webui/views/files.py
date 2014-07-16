@@ -146,6 +146,7 @@ def new( request, repo, org, cid, eid, role='master' ):
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+    collection.repo_fetch()
     if collection.repo_behind():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
