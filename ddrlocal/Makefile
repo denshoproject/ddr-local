@@ -128,9 +128,9 @@ install-elasticsearch:
 	/etc/init.d/elasticsearch restart
 
 
-install-ddr: install-ddr-cmdln install-ddr-local
+install-ddr: install-ddr-cmdln install-ddr-local install-ddr-manual
 
-update-ddr: update-ddr-cmdln update-ddr-local cp-configs
+update-ddr: update-ddr-cmdln update-ddr-local update-ddr-manual cp-configs
 
 
 install-ddr-cmdln:
@@ -299,3 +299,19 @@ git-status:
 	cd /usr/local/src/ddr-cmdln && git status
 	@echo "------------------------------------------------------------------------"
 	cd /usr/local/src/ddr-local && git status
+
+
+install-ddr-manual:
+	@echo ""
+	@echo "ddr-manual --------------------------------------------------------------"
+	if test -d /usr/local/src/ddr-manual; \
+	then cd /usr/local/src/ddr-manual && git pull; \
+	else cd /usr/local/src && git clone https://github.com/densho/ddr-manual.git; \
+	fi
+	cd /usr/local/src/ddr-manual && make html
+
+update-ddr-manual:
+	@echo ""
+	@echo "ddr-manual --------------------------------------------------------------"
+	cd /usr/local/src/ddr-manual && git fetch && git pull
+	cd /usr/local/src/ddr-manual && make html
