@@ -220,7 +220,7 @@ class Collection( DDRLocalCollection ):
         in collection base template and thus on pretty much every page.
         If Collection.gitstatus() is available it's a lot faster.
         """
-        gs = gitstatus.read(self.path)
+        gs = gitstatus.read(settings.MEDIA_BASE, self.path)
         if gs and gs.get('status',None):
             if   function_name == 'synced': return dvcs.synced(gs['status'])
             elif function_name == 'ahead': return dvcs.ahead(gs['status'])
@@ -248,7 +248,7 @@ class Collection( DDRLocalCollection ):
         return reverse('webui-collection-sync-status-ajax',args=(self.repo,self.org,self.cid))
     
     def gitstatus( self, force=False ):
-        return gitstatus.read(self.path)
+        return gitstatus.read(settings.MEDIA_BASE, self.path)
 
     def selected_inheritables(self, cleaned_data ):
         return _selected_inheritables(self.inheritable_fields(), cleaned_data)
