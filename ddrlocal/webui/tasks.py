@@ -89,7 +89,7 @@ class ElasticsearchTask(Task):
         logger.debug('ElasticsearchTask.on_success(%s, %s, %s, %s)' % (retval, task_id, args, kwargs))
     
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
-        gitstatus.unlock('reindex')
+        gitstatus.unlock(settings.MEDIA_BASE, 'reindex')
         logger.debug('ElasticsearchTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
 
 @task(base=ElasticsearchTask, name='webui-search-reindex')
@@ -97,7 +97,7 @@ def reindex( index ):
     """
     @param index: Name of index to create or update
     """
-    gitstatus.lock('reindex')
+    gitstatus.lock(settings.MEDIA_BASE, 'reindex')
     logger.debug('------------------------------------------------------------------------')
     logger.debug('webui.tasks.reindex(%s)' % index)
     statuses = []
@@ -212,8 +212,8 @@ class FileAddDebugTask(Task):
         collection_path = Collection.collection_path(None,entity.repo,entity.org,entity.cid)
         collection = Collection.from_json(collection_path)
         collection.cache_delete()
-        gitstatus.update(collection_path)
-        gitstatus.unlock('entity_add_file')
+        gitstatus.update(settings.MEDIA_BASE, collection_path)
+        gitstatus.unlock(settings.MEDIA_BASE, 'entity_add_file')
 
 @task(base=FileAddDebugTask, name='entity-add-file')
 def entity_add_file( git_name, git_mail, entity, src_path, role, data, agent='' ):
@@ -226,7 +226,7 @@ def entity_add_file( git_name, git_mail, entity, src_path, role, data, agent='' 
     @param git_mail: Email of git committer.
     @param agent: (optional) Name of software making the change.
     """
-    gitstatus.lock('entity_add_file')
+    gitstatus.lock(settings.MEDIA_BASE, 'entity_add_file')
     return entity.add_file(git_name, git_mail, src_path, role, data, agent)
 
 @task(base=FileAddDebugTask, name='entity-add-access')
@@ -239,7 +239,7 @@ def entity_add_access( git_name, git_mail, entity, ddrfile, agent='' ):
     @param git_mail: Email of git committer.
     @param agent: (optional) Name of software making the change.
     """
-    gitstatus.lock('entity_add_access')
+    gitstatus.lock(settings.MEDIA_BASE, 'entity_add_access')
     return entity.add_access(git_name, git_mail, ddrfile, agent)
 
 
@@ -287,8 +287,8 @@ class DeleteEntityTask(Task):
         collection_path = args[2]
         collection = Collection.from_json(collection_path)
         lockstatus = collection.unlock(task_id)
-        gitstatus.update(collection_path)
-        gitstatus.unlock('delete_entity')
+        gitstatus.update(settings.MEDIA_BASE, collection_path)
+        gitstatus.unlock(settings.MEDIA_BASE, 'delete_entity')
 
 @task(base=DeleteEntityTask, name='webui-entity-delete')
 def delete_entity( git_name, git_mail, collection_path, entity_id, agent='' ):
@@ -299,7 +299,7 @@ def delete_entity( git_name, git_mail, collection_path, entity_id, agent='' ):
     @param git_mail: Email of git committer.
     @param agent: (optional) Name of software making the change.
     """
-    gitstatus.lock('delete_entity')
+    gitstatus.lock(settings.MEDIA_BASE, 'delete_entity')
     logger.debug('collection_delete_entity(%s,%s,%s,%s,%s)' % (git_name, git_mail, collection_path, entity_id, agent))
     status,message = entity_destroy(git_name, git_mail, collection_path, entity_id, agent)
     return status,message,collection_path,entity_id
@@ -349,8 +349,8 @@ class DeleteFileTask(Task):
         collection_path = args[2]
         collection = Collection.from_json(collection_path)
         lockstatus = collection.unlock(task_id)
-        gitstatus.update(collection_path)
-        gitstatus.unlock('delete_file')
+        gitstatus.update(settings.MEDIA_BASE, collection_path)
+        gitstatus.unlock(settings.MEDIA_BASE, 'delete_file')
 
 @task(base=DeleteFileTask, name='webui-file-delete')
 def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, agent='' ):
@@ -363,7 +363,7 @@ def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, 
     @param agent: (optional) Name of software making the change.
     """
     logger.debug('delete_file(%s,%s,%s,%s,%s,%s)' % (git_name, git_mail, collection_path, entity_id, file_basename, agent))
-    gitstatus.lock('delete_file')
+    gitstatus.lock(settings.MEDIA_BASE, 'delete_file')
     # TODO rm_files list should come from the File model
     file_id = os.path.splitext(file_basename)[0]
     repo,org,cid,eid,role,sha1 = file_id.split('-')
@@ -400,8 +400,8 @@ class CollectionSyncDebugTask(Task):
         #       starts in webui.views.collections.sync
         collection.unlock(task_id)
         collection.cache_delete()
-        gitstatus.update(collection_path)
-        gitstatus.unlock('collection_sync')
+        gitstatus.update(settings.MEDIA_BASE, collection_path)
+        gitstatus.unlock(settings.MEDIA_BASE, 'collection_sync')
 
 @task(base=CollectionSyncDebugTask, name='collection-sync')
 def collection_sync( git_name, git_mail, collection_path ):
@@ -412,7 +412,7 @@ def collection_sync( git_name, git_mail, collection_path ):
     @param git_mail: Email of git committer.
     @return collection_path: Absolute path to collection.
     """
-    gitstatus.lock('collection_sync')
+    gitstatus.lock(settings.MEDIA_BASE, 'collection_sync')
     exit,status = sync(git_name, git_mail, collection_path)
     # update search index
     path = os.path.join(collection_path, 'collection.json')
