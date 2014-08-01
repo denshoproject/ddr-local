@@ -597,13 +597,10 @@ class DDRLocalEntity( DDREntity ):
         """
         # keep copy of the list for detect_file_duplicates()
         self._files = [f for f in self.files]
-        try:
-            self.files = []
-            for f in self._files:
-                path_abs = os.path.join(self.files_path, f['path_rel'])
-                self.files.append(DDRLocalFile(path_abs))
-        except:
-            pass
+        self.files = []
+        for f in self._files:
+            path_abs = os.path.join(self.files_path, f['path_rel'])
+            self.files.append(DDRLocalFile(path_abs=path_abs))
     
     def load_json(self, path):
         """Populate Entity data from .json file.
@@ -1066,6 +1063,10 @@ class DDRLocalFile( object ):
     
     def __init__(self, *args, **kwargs):
         """
+        IMPORTANT: If at all possible, use the "path_abs" kwarg!!
+        You *can* just pass in an absolute path. It will *appear* to work.
+        This horrible function will attempt to infer the path but will
+        probably get it wrong and fail silently!
         TODO refactor and simplify this horrible code!
         """
         # accept either path_abs or path_rel
@@ -1076,8 +1077,8 @@ class DDRLocalFile( object ):
         else:
             if args and args[0]:
                 s = os.path.splitext(args[0])
-                if os.path.exists(args[0]):
-                    self.path_abs = args[0]
+                if os.path.exists(args[0]):  # <<< Causes problems with missing git-annex files
+                    self.path_abs = args[0]  #     Use path_abs arg!!!
                 elif (len(s) == 2) and s[0] and s[1]:
                     self.path_rel = args[0]
         if self.path_abs:
