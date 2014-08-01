@@ -188,7 +188,7 @@ def gitstatus_update_store():
 class FileAddDebugTask(Task):
     abstract = True
         
-    def on_failure(self, exception, task_id, args, kwargs, einfo):
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
         entity = args[2]
         entity.files_log(0,'DDRTask.ON_FAILURE')
     
@@ -387,7 +387,7 @@ def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, 
 class CollectionSyncDebugTask(Task):
     abstract = True
     
-    def on_failure(self, exc, task_id, args, kwargs):
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
         pass
     
     def on_success(self, retval, task_id, args, kwargs):
@@ -434,7 +434,7 @@ TASK_STATUS_MESSAGES['webui-csv-export-model'] = {
 
 class CSVExportDebugTask(Task):
     abstract = True
-    def on_failure(self, exc, task_id, args, kwargs):
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
         pass
     def on_success(self, retval, task_id, args, kwargs):
         pass
