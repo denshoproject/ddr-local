@@ -995,6 +995,32 @@ class DDRLocalEntity( DDREntity ):
             
         self.files_log(1, 'ddrlocal.models.DDRLocalEntity.add_access: FINISHED')
         return f.__dict__
+    
+    def checksums( self, algo ):
+        """Calculates hash checksums for the Entity's files.
+        
+        Gets hashes from FILE.json metadata if the file(s) are absent
+        from the filesystem (i.e. git-annex file symlinks).
+        Overrides DDR.models.Entity.checksums.
+        """
+        checksums = []
+        if algo not in self.checksum_algorithms():
+            raise Error('BAD ALGORITHM CHOICE: {}'.format(algo))
+        for f in self.file_paths():
+            cs = None
+            fpath = os.path.join(self.files_path, f)
+            # git-annex files are present
+            if os.path.exists(fpath) and not os.path.islink(fpath):
+                cs = file_hash(fpath, algo)
+            # git-annex files NOT present - get checksum from entity._files
+            # WARNING: THIS MODULE SHOULD NOT KNOW ANYTHING ABOUT HIGHER-LEVEL CODE!
+            elif os.path.islink(fpath) and hasattr(self, '_files'):
+                for fdict in self._files:
+                    if os.path.basename(fdict['path_rel']) == os.path.basename(fpath):
+                        cs = fdict[algo]
+            if cs:
+                checksums.append( (cs, fpath) )
+        return checksums
 
 
 
