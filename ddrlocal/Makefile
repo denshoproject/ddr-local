@@ -163,7 +163,7 @@ install-ddr-local:
 	pip install -U --download-cache=$(PIP_CACHE_DIR) -r /usr/local/src/ddr-local/ddrlocal/requirements/production.txt
 	-mkdir /var/log/ddr
 	-mkdir /var/lib/ddr
-	cd /usr/local/src/ddr-local/ddrlocal && ./manage.py syncdb
+	cd /usr/local/src/ddr-local/ddrlocal && ./manage.py syncdb --noinput
 	chown -R ddr.root /var/lib/ddr
 	chmod -R 755 /var/lib/ddr
 
@@ -172,7 +172,7 @@ update-ddr-local:
 	@echo "ddr-local --------------------------------------------------------------"
 	git fetch && git pull
 	pip install -U --download-cache=$(PIP_CACHE_DIR) -r /usr/local/src/ddr-local/ddrlocal/requirements/production.txt
-	cd /usr/local/src/ddr-local/ddrlocal && ./manage.py syncdb
+	cd /usr/local/src/ddr-local/ddrlocal && ./manage.py syncdb --noinput
 	chown -R ddr.root /var/lib/ddr
 	chmod -R 755 /var/lib/ddr
 
