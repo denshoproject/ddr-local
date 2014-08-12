@@ -80,7 +80,7 @@ update: update-ddr
 clean: clean-static
 
 
-install-prep: apt-update install-core git-config install-misc-tools
+install-prep: apt-update install-core ddr-user git-config install-misc-tools
 
 apt-update:
 	@echo ""
@@ -89,6 +89,10 @@ apt-update:
 
 install-core:
 	apt-get --assume-yes install bzip2 curl gdebi-core git-core logrotate p7zip-full wget
+
+ddr-user:
+	addgroup ddr plugdev
+	addgroup ddr vboxsf
 
 git-config:
 	git config --global alias.st status
