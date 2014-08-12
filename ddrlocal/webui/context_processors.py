@@ -25,7 +25,7 @@ def sitewide(request):
         'time': datetime.now().isoformat(),
         'pid': os.getpid(),
         'host': os.uname()[1],
-        'commit': COMMIT[:7],
+        'commit': COMMIT,
         # user info
         'username': request.session.get('username', None),
         'git_name': request.session.get('git_name', None),

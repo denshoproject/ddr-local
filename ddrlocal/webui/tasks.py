@@ -7,6 +7,10 @@ from celery import Task
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
+from celery import states
+from celery.result import AsyncResult
+from celery.utils.encoding import safe_repr
+from celery.utils import get_full_cls_name
 import requests
 
 from django.conf import settings
@@ -466,6 +470,8 @@ def session_tasks( request ):
     @param request: A Django request object
     @return tasks: a dict with task_id for key
     """
+    # basic tasks info from session:
+    # task_id, action ('name' argument of @task), start time, args
     tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
     # add entity URLs
     for task_id in tasks.keys():
@@ -481,17 +487,18 @@ def session_tasks( request ):
     # TODO Don't create a new ctask/task dict here!!! >:-O
     traceback = None
     for task_id in tasks.keys():
-        # hit the celery API for each task
-        url = 'http://127.0.0.1%s' % reverse('celery-task_status', args=[task_id])
-        r = requests.get(url)
-        # if there's a traceback, save for later (see below)
-        try:
-            data = r.json()
-            if data.get('task', None) and data['task'].get('traceback', None):
-                traceback = data['task']['traceback']
-            task = data['task']
-        except:
-            task = None
+        # Skip the HTTP and get directly from Celery API
+        # djcelery.views.task_status
+        result = AsyncResult(task_id)
+        state, retval = result.state, result.result
+        response_data = {'id': task_id, 'status': state, 'result': retval}
+        if state in states.EXCEPTION_STATES:
+            traceback = result.traceback
+            response_data.update({'result': safe_repr(retval),
+                                  'exc': get_full_cls_name(retval.__class__),
+                                  'traceback': traceback})
+        # end djcelery.views.task_status
+        task = response_data
         # construct collection/entity/file urls if possible
         if task:
             ctask = tasks[task['id']]

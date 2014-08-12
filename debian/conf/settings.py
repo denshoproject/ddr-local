@@ -25,7 +25,7 @@ from DDR import CONFIG_FILES, NoConfigError
 config = ConfigParser.ConfigParser()
 configs_read = config.read(CONFIG_FILES)
 if not configs_read:
-    raise NoConfigError('no configs!!!')
+    raise NoConfigError('No config file!')
 
 os.environ['USER'] = 'ddr'
 
