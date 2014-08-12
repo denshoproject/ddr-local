@@ -316,6 +316,7 @@ git-status:
 install-ddr-manual:
 	@echo ""
 	@echo "ddr-manual --------------------------------------------------------------"
+	pip install -U --download-cache=$(PIP_CACHE_DIR) sphinx
 	if test -d /usr/local/src/ddr-manual; \
 	then cd /usr/local/src/ddr-manual && git pull; \
 	else cd /usr/local/src && git clone https://github.com/densho/ddr-manual.git; \
