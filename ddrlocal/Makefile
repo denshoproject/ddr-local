@@ -266,6 +266,9 @@ enable-bkgnd:
 	cp /usr/local/src/ddr-local/debian/conf/celerybeat.conf /etc/supervisor/conf.d/
 	chown root.root /etc/supervisor/conf.d/celerybeat.conf
 	chmod 644 /etc/supervisor/conf.d/celerybeat.conf
+	cd /usr/local/src/ddr-local/ddrlocal && ./manage.py syncdb --noinput
+	chown -R ddr.root /var/lib/ddr
+	chmod -R 755 /var/lib/ddr
 
 disable-bkgnd:
 	-rm /etc/supervisor/conf.d/celerybeat.conf
