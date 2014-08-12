@@ -150,6 +150,9 @@ install-ddr-cmdln:
 	-mkdir /var/log/ddr
 	chown -R ddr.root /var/log/ddr
 	chmod -R 755 /var/log/ddr
+	-mkdir /var/www/media
+	chown -R ddr.root /var/www/media
+	chmod -R 755 /var/www/media
 
 update-ddr-cmdln:
 	@echo ""
@@ -166,6 +169,11 @@ install-ddr-local:
 	git pull
 	pip install -U --download-cache=$(PIP_CACHE_DIR) -r /usr/local/src/ddr-local/ddrlocal/requirements/production.txt
 	-mkdir /var/log/ddr
+	chown -R ddr.root /var/log/ddr
+	chmod -R 755 /var/log/ddr
+	-mkdir /var/www/media
+	chown -R ddr.root /var/www/media
+	chmod -R 755 /var/www/media
 
 update-ddr-local:
 	@echo ""
