@@ -150,7 +150,7 @@ install-ddr-cmdln:
 	-mkdir /var/log/ddr
 	chown -R ddr.root /var/log/ddr
 	chmod -R 755 /var/log/ddr
-	-mkdir /var/www/media
+	-mkdir -p /var/www/media
 	chown -R ddr.root /var/www/media
 	chmod -R 755 /var/www/media
 
@@ -171,7 +171,7 @@ install-ddr-local:
 	-mkdir /var/log/ddr
 	chown -R ddr.root /var/log/ddr
 	chmod -R 755 /var/log/ddr
-	-mkdir /var/www/media
+	-mkdir -p /var/www/media
 	chown -R ddr.root /var/www/media
 	chmod -R 755 /var/www/media
 
