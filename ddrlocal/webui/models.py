@@ -287,13 +287,10 @@ class Entity( DDRLocalEntity ):
         """
         # keep copy of the list for detect_file_duplicates()
         self._files = [f for f in self.files]
-        try:
-            self.files = []
-            for f in self._files:
-                path_abs = os.path.join(self.files_path, f['path_rel'])
-                self.files.append(DDRFile(path_abs))
-        except:
-            pass
+        self.files = []
+        for f in self._files:
+            path_abs = os.path.join(self.files_path, f['path_rel'])
+            self.files.append(DDRFile(path_abs=path_abs))
 
 
 
