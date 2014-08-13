@@ -33,7 +33,7 @@ from webui.decorators import ddrview, search_index
 from webui.forms import DDRForm
 from webui.forms.collections import NewCollectionForm, UpdateForm, SyncConfirmForm
 from webui.models import Collection, COLLECTION_STATUS_CACHE_KEY, COLLECTION_STATUS_TIMEOUT
-from webui.tasks import collection_sync, csv_export_model, export_csv_path
+from webui.tasks import collection_sync, csv_export_model, export_csv_path, gitstatus_update
 from webui.views.decorators import login_required
 from xmlforms.models import XMLModel
 
@@ -68,7 +68,10 @@ def collections( request ):
                 repo,org,cid = c[0],c[1],c[2]
                 collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
                 colls.append(collection)
-                if not collection.sync_status():
+                gitstatus = collection.gitstatus()
+                if gitstatus and gitstatus.get('sync_status'):
+                    collection.sync_status = gitstatus['sync_status']
+                else:
                     collection_status_urls.append( "'%s'" % collection.sync_status_url())
         collections.append( (o,repo,org,colls) )
     # load statuses in random order
@@ -138,24 +141,29 @@ def collection_json( request, repo, org, cid ):
 @storage_required
 def sync_status_ajax( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
-    data = collection.sync_status(cache_set=True)
-    return HttpResponse(json.dumps(data), mimetype="application/json")
+    gitstatus = collection.gitstatus()
+    if gitstatus:
+        sync_status = gitstatus['sync_status']
+        if sync_status.get('timestamp',None):
+            sync_status['timestamp'] = sync_status['timestamp'].strftime(settings.TIMESTAMP_FORMAT)
+        return HttpResponse(json.dumps(sync_status), mimetype="application/json")
+    raise Http404
 
 @ddrview
 @storage_required
 def git_status( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     alert_if_conflicted(request, collection)
-    status = collection.repo_status()
-    astatus = collection.repo_annex_status()
+    gitstatus = collection.gitstatus()
     return render_to_response(
         'webui/collections/git-status.html',
         {'repo': repo,
          'org': org,
          'cid': cid,
          'collection': collection,
-         'status': status,
-         'astatus': astatus,
+         'status': gitstatus['status'],
+         'astatus': gitstatus['annex_status'],
+         'timestamp': gitstatus['timestamp'],
          },
         context_instance=RequestContext(request, processors=[])
     )
@@ -255,6 +263,7 @@ def new( request, repo, org ):
         with open(json_path, 'r') as f:
             document = json.loads(f.read())
         docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+        gitstatus_update.apply_async((collection_path,), countdown=2)
         # positive feedback
         return HttpResponseRedirect( reverse('webui-collection-edit', args=[repo,org,cid]) )
     # something happened...
@@ -308,6 +317,7 @@ def edit( request, repo, org, cid ):
                 with open(collection.json_path, 'r') as f:
                     document = json.loads(f.read())
                 docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+                gitstatus_update.apply_async((collection.path,), countdown=2)
                 # positive feedback
                 messages.success(request, success_msg)
                 return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )

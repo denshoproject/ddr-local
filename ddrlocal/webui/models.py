@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 import logging
 logger = logging.getLogger(__name__)
@@ -11,19 +12,22 @@ from django.core.cache import cache
 from django.core.urlresolvers import reverse
 from django.db import models
 
+from DDR import dvcs
+
 from ddrlocal.models import DDRLocalCollection, DDRLocalEntity, DDRLocalFile
 from ddrlocal.models import COLLECTION_FILES_PREFIX, ENTITY_FILES_PREFIX
 from ddrlocal.models import collection as collectionmodule
 from ddrlocal.models import entity as entitymodule
 from ddrlocal.models import files as filemodule
 
-COLLECTION_FETCH_CACHE_KEY = 'webui:collection:%s:fetch'
-COLLECTION_STATUS_CACHE_KEY = 'webui:collection:%s:status'
-COLLECTION_ANNEX_STATUS_CACHE_KEY = 'webui:collection:%s:annex_status'
+from webui import gitstatus
 
-COLLECTION_FETCH_TIMEOUT = 0
-COLLECTION_STATUS_TIMEOUT = 60 * 10
-COLLECTION_ANNEX_STATUS_TIMEOUT = 60 * 10
+from webui import COLLECTION_FETCH_CACHE_KEY
+from webui import COLLECTION_STATUS_CACHE_KEY
+from webui import COLLECTION_ANNEX_STATUS_CACHE_KEY
+from webui import COLLECTION_FETCH_TIMEOUT
+from webui import COLLECTION_STATUS_TIMEOUT
+from webui import COLLECTION_ANNEX_STATUS_TIMEOUT
 
 
 
@@ -91,40 +95,6 @@ def _load_object( json_path ):
     elif basename == 'collection.json':
         return Collection.from_json(dirname)
     return None
-
-COLLECTION_SYNC_STATUS_CACHE_KEY = 'webui:collection:%s:sync-status'
-
-def _sync_status( repo, org, cid, collection=None, cache_set=False ):
-    """Cache collection repo sync status info for collections list page.
-    Used in both .collections() and .sync_status_ajax().
-    
-    @param repo: 
-    @param org: 
-    @param cid: 
-    @param collection: 
-    @param cache_set: Run git-status if data is not cached
-    """
-    collection_id = '-'.join([repo, org, cid])
-    key = COLLECTION_SYNC_STATUS_CACHE_KEY % collection_id
-    data = cache.get(key)
-    if not data and cache_set:
-        if not collection:
-            collection = Collection.from_json(Collection.collection_path(None,repo,org,cid))
-        status = 'unknown'
-        btn = 'muted'
-        if   collection.repo_ahead(): status = 'ahead'; btn = 'warning'
-        elif collection.repo_behind(): status = 'behind'; btn = 'warning'
-        elif collection.repo_conflicted(): status = 'conflicted'; btn = 'danger'
-        elif collection.locked(): status = 'locked'; btn = 'warning'
-        elif collection.repo_synced(): status = 'synced'; btn = 'success'
-        data = {
-            'row': '#%s' % collection.id,
-            'color': btn,
-            'cell': '#%s td.status' % collection.id,
-            'status': status,
-        }
-        cache.set(key, data, COLLECTION_STATUS_TIMEOUT)
-    return data
     
 def _update_inheritables( parent_object, objecttype, inheritables, cleaned_data ):
     """Update specified inheritable fields of child objects using form data.
@@ -170,6 +140,14 @@ class Collection( DDRLocalCollection ):
         '/var/www/media/base/ddr-testing-123'
         """
         return os.path.join(settings.MEDIA_BASE, '{}-{}-{}'.format(repo, org, cid))
+    
+    def gitstatus_path( self ):
+        """Returns absolute path to collection .gitstatus cache file.
+        
+        >>> DDRLocalCollection.collection_path(None, 'ddr', 'testing', 123)
+        '/var/www/media/base/ddr-test-123/.gitstatus'
+        """
+        return gitstatus.path(self.path)
     
     def url( self ):
         """Returns relative URL in context of webui app.
@@ -218,10 +196,10 @@ class Collection( DDRLocalCollection ):
             cache.set(key, data, COLLECTION_FETCH_TIMEOUT)
         return data
     
-    def repo_status( self ):
+    def repo_status( self, force=False ):
         key = COLLECTION_STATUS_CACHE_KEY % self.id
         data = cache.get(key)
-        if not data:
+        if force or (not data):
             data = super(Collection, self).repo_status()
             cache.set(key, data, COLLECTION_STATUS_TIMEOUT)
         return data
@@ -234,11 +212,43 @@ class Collection( DDRLocalCollection ):
             cache.set(key, data, COLLECTION_ANNEX_STATUS_TIMEOUT)
         return data
     
-    def sync_status( self, cache_set=False ):
-        return _sync_status( self.repo, self.org, self.cid, self, cache_set )
+    def _repo_state( self, function_name ):
+        """Use Collection.gitstatus if present (faster)
+        
+        Collection.repo_FUNCTION() required a git-status call so status
+        could be passed to dvcs.FUNCTION().  These functions are called
+        in collection base template and thus on pretty much every page.
+        If Collection.gitstatus() is available it's a lot faster.
+        """
+        gs = gitstatus.read(settings.MEDIA_BASE, self.path)
+        if gs and gs.get('status',None):
+            if   function_name == 'synced': return dvcs.synced(gs['status'])
+            elif function_name == 'ahead': return dvcs.ahead(gs['status'])
+            elif function_name == 'behind': return dvcs.behind(gs['status'])
+            elif function_name == 'diverged': return dvcs.diverged(gs['status'])
+            elif function_name == 'conflicted': return dvcs.conflicted(gs['status'])
+        else:
+            if   function_name == 'synced': return super(Collection, self).repo_synced()
+            elif function_name == 'ahead': return super(Collection, self).repo_ahead()
+            elif function_name == 'behind': return super(Collection, self).repo_behind()
+            elif function_name == 'diverged': return super(Collection, self).repo_diverged()
+            elif function_name == 'conflicted': return super(Collection, self).repo_conflicted()
+        return None
+
+    def repo_synced( self ): return self._repo_state('synced')
+    def repo_ahead( self ): return self._repo_state('ahead')
+    def repo_behind( self ): return self._repo_state('behind')
+    def repo_diverged( self ): return self._repo_state('diverged')
+    def repo_conflicted( self ): return self._repo_state('conflicted')
+        
+    def sync_status( self, git_status, timestamp, cache_set=False, force=False ):
+        return gitstatus.sync_status( self, git_status, timestamp, cache_set, force )
     
     def sync_status_url( self ):
         return reverse('webui-collection-sync-status-ajax',args=(self.repo,self.org,self.cid))
+    
+    def gitstatus( self, force=False ):
+        return gitstatus.read(settings.MEDIA_BASE, self.path)
 
     def selected_inheritables(self, cleaned_data ):
         return _selected_inheritables(self.inheritable_fields(), cleaned_data)

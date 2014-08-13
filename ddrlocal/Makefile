@@ -168,9 +168,16 @@ install-ddr-local:
 	apt-get --assume-yes install imagemagick libexempi3 libssl-dev python-dev libxml2 libxml2-dev libxslt1-dev supervisor
 	git pull
 	pip install -U --download-cache=$(PIP_CACHE_DIR) -r /usr/local/src/ddr-local/ddrlocal/requirements/production.txt
+# logs dir
 	-mkdir /var/log/ddr
 	chown -R ddr.root /var/log/ddr
 	chmod -R 755 /var/log/ddr
+# sqlite db dir
+	-mkdir /var/lib/ddr
+	cd /usr/local/src/ddr-local/ddrlocal && ./manage.py syncdb --noinput
+	chown -R ddr.root /var/lib/ddr
+	chmod -R 755 /var/lib/ddr
+# media dir
 	-mkdir -p /var/www/media
 	chown -R ddr.root /var/www/media
 	chmod -R 755 /var/www/media
@@ -180,6 +187,9 @@ update-ddr-local:
 	@echo "ddr-local --------------------------------------------------------------"
 	git fetch && git pull
 	pip install -U --download-cache=$(PIP_CACHE_DIR) -r /usr/local/src/ddr-local/ddrlocal/requirements/production.txt
+	cd /usr/local/src/ddr-local/ddrlocal && ./manage.py syncdb --noinput
+	chown -R ddr.root /var/lib/ddr
+	chmod -R 755 /var/lib/ddr
 
 
 install-static: install-modernizr install-bootstrap install-jquery install-tagmanager install-typeahead
@@ -271,6 +281,9 @@ enable-bkgnd:
 	cp /usr/local/src/ddr-local/debian/conf/celerybeat.conf /etc/supervisor/conf.d/
 	chown root.root /etc/supervisor/conf.d/celerybeat.conf
 	chmod 644 /etc/supervisor/conf.d/celerybeat.conf
+	cd /usr/local/src/ddr-local/ddrlocal && ./manage.py syncdb --noinput
+	chown -R ddr.root /var/lib/ddr
+	chmod -R 755 /var/lib/ddr
 
 disable-bkgnd:
 	-rm /etc/supervisor/conf.d/celerybeat.conf

@@ -6,7 +6,7 @@
                          # LICENSE  DEBIAN PKG (WHEEZY)              (JESSIE)                         Python3
 
 django                   # MIT      python-django (1.4.5-1+deb7u7)   python-django (1.6.5-1)          y
-gunicorn<=0.15           # MIT      gunicorn (0.14.5-3+deb7u1)       gunicorn (18.0-3)                y
+gunicorn                 # MIT      gunicorn (0.14.5-3+deb7u1)       gunicorn (18.0-3)                y
 
 # cache, sessions, celery broker
 redis                    # MIT      python-redis (2.4.13-1)          python-redis (2.9.1-3)           y

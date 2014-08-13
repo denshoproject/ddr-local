@@ -59,10 +59,10 @@ def base_path(request=None):
         if request:
             mount_path = request.session.get('storage_mount_path', None)
         if mount_path:
-            logger.debug('mount_path: %s' % mount_path)
+            #logger.debug('mount_path: %s' % mount_path)
             if not (os.path.basename(mount_path) == settings.DDR_USBHDD_BASE_DIR):
                 path = os.path.join(mount_path, settings.DDR_USBHDD_BASE_DIR)
-            logger.debug('caching: %s' % path)
+            #logger.debug('caching: %s' % path)
             cache.set(key, path, BASE_PATH_TIMEOUT)
     return path
 

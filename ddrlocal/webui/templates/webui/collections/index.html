@@ -30,8 +30,8 @@
     <td class="id-title">
       <a href="{{ c.url }}">{{ c.id }}</a> {% if c.title %}&mdash; <a href="{{ c.url }}">{{ c.title }}{% endif %}</a>
     </td>
-    <td class="status muted">
-      {% if c.sync_status %}{{ c.sync_status.status }}{% else %}...{% endif %}
+    <td class="status text-muted">
+      {% if c.sync_status %}{{ c.sync_status.status }} ({{c.sync_status.timestamp }}){% else %}...{% endif %}
     </td>
   </tr>
 {% endfor %}

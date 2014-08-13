@@ -10,6 +10,15 @@ from DDR.dvcs import gitolite_info, gitolite_orgs
 from storage import base_path
 
 
+COLLECTION_FETCH_CACHE_KEY = 'webui:collection:%s:fetch'
+COLLECTION_STATUS_CACHE_KEY = 'webui:collection:%s:status'
+COLLECTION_ANNEX_STATUS_CACHE_KEY = 'webui:collection:%s:annex_status'
+
+COLLECTION_FETCH_TIMEOUT = 0
+COLLECTION_STATUS_TIMEOUT = 60 * 10
+COLLECTION_ANNEX_STATUS_TIMEOUT = 60 * 10
+
+
 WEBUI_MESSAGES = {
     
     # webui.api
