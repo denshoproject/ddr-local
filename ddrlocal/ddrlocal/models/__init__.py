@@ -776,6 +776,8 @@ class DDRLocalEntity( DDREntity ):
         if not os.access(dest_dir, os.W_OK): crash('dest_dir not writable')
         
         self.files_log(1, 'Copying to work dir')
+        size = os.path.getsize(src_path)
+        self.files_log(1, 'size: %s' % size)
         tmp_path = os.path.join(tmp_dir, src_basename)
         self.files_log(1, 'cp %s %s' % (src_path, tmp_path))
         shutil.copy(src_path, tmp_path)
@@ -826,6 +828,7 @@ class DDRLocalEntity( DDREntity ):
         f.basename_orig = src_basename
         self.files_log(1, 'Created DDRLocalFile: %s' % f)
         self.files_log(1, 'f.path_abs: %s' % f.path_abs)
+        f.size = size
         f.sha1 = sha1
         f.md5 = md5
         f.sha256 = sha256
