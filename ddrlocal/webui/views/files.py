@@ -211,6 +211,7 @@ def new( request, repo, org, cid, eid, role='master' ):
          'org': entity.org,
          'cid': entity.cid,
          'eid': entity.eid,
+         'role': role,
          'collection_uid': collection.id,
          'collection': collection,
          'entity': entity,

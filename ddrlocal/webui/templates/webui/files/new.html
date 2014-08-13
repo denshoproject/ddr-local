@@ -4,6 +4,7 @@
 {% block title %}{{ entity.title }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
+<li><a href="{% url "webui-entity-files" repo org cid eid role %}">{{ role }}</a></li>
 <li class="active">Add file</li>
 {% endblock breadcrumbs %}
 
