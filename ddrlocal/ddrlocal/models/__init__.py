@@ -468,9 +468,8 @@ class DDRLocalEntity( DDREntity ):
         
         @returns: absolute path to logfile
         """
-        logpath = os.path.join(os.path.dirname(self.parent_path), 'log',
-                               self.parent_uid,
-                               '%s-addfile.log' % self.id)
+        logpath = os.path.join(
+            settings.LOG_DIR, 'addfile', self.parent_uid, '%s.log' % self.id)
         if not os.path.exists(os.path.dirname(logpath)):
             os.makedirs(os.path.dirname(logpath))
         return logpath
