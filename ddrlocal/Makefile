@@ -29,6 +29,8 @@ help:
 	@echo ""
 	@echo "update  - Updates ddr-cmd and ddr-local and re-copies config files."
 	@echo ""
+	@echo "syncdb  - Initialize or update Django app's database tables."
+	@echo ""
 	@echo "reload  - Reloads supervisord and nginx configs"
 	@echo "reload-nginx"
 	@echo "reload-supervisors"
@@ -71,6 +73,8 @@ howto-install:
 	@echo "- git clone https://github.com/densho/ddr-local.git /usr/local/src/ddr-local"
 	@echo "- cd /usr/local/src/ddr-local/ddrlocal"
 	@echo "- make install"
+	@echo "- make enable-bkgnd"
+	@echo "- make syncdb"
 
 
 install: install-prep install-daemons install-ddr install-static cp-configs
@@ -174,7 +178,6 @@ install-ddr-local:
 	chmod -R 755 /var/log/ddr
 # sqlite db dir
 	-mkdir /var/lib/ddr
-	cd /usr/local/src/ddr-local/ddrlocal && ./manage.py syncdb --noinput
 	chown -R ddr.root /var/lib/ddr
 	chmod -R 755 /var/lib/ddr
 # media dir
@@ -187,6 +190,8 @@ update-ddr-local:
 	@echo "ddr-local --------------------------------------------------------------"
 	git fetch && git pull
 	pip install -U --download-cache=$(PIP_CACHE_DIR) -r /usr/local/src/ddr-local/ddrlocal/requirements/production.txt
+
+syncdb:
 	cd /usr/local/src/ddr-local/ddrlocal && ./manage.py syncdb --noinput
 	chown -R ddr.root /var/lib/ddr
 	chmod -R 755 /var/lib/ddr
@@ -281,9 +286,6 @@ enable-bkgnd:
 	cp /usr/local/src/ddr-local/debian/conf/celerybeat.conf /etc/supervisor/conf.d/
 	chown root.root /etc/supervisor/conf.d/celerybeat.conf
 	chmod 644 /etc/supervisor/conf.d/celerybeat.conf
-	cd /usr/local/src/ddr-local/ddrlocal && ./manage.py syncdb --noinput
-	chown -R ddr.root /var/lib/ddr
-	chmod -R 755 /var/lib/ddr
 
 disable-bkgnd:
 	-rm /etc/supervisor/conf.d/celerybeat.conf
