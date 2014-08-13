@@ -815,9 +815,11 @@ class DDRLocalEntity( DDREntity ):
             settings.ACCESS_FILE_OPTIONS)
         self.files_log(1, 'tmp_access_path: %s' % tmp_access_path)
         if status:
-            self.files_log(0, 'access file FAIL: %s' % tmp_access_path)
+            self.files_log(0, 'access file FAIL')
+            self.files_log(0, 'status: %s' % status)
+            self.files_log(0, 'tmp_access_path: %s' % tmp_access_path)
         if tmp_access_path and not os.path.exists(tmp_access_path):
-            crash('tmp_access_path should exist but does not: %s' % tmp_access_path)
+            self.files_log(0, 'Failed to make an access file from %s' % tmp_path_renamed)
         
         # file object
         dest_path = os.path.join(dest_dir, dest_basename)
@@ -829,7 +831,7 @@ class DDRLocalEntity( DDREntity ):
         f.md5 = md5
         f.sha256 = sha256
         f.role = role
-        if tmp_access_path:
+        if tmp_access_path and os.path.exists(tmp_access_path):
             self.files_log(1, 'Attaching access file')
             #dest_access_path = os.path.join('files', os.path.basename(tmp_access_path))
             #self.files_log(1, 'dest_access_path: %s' % dest_access_path)
@@ -865,7 +867,7 @@ class DDRLocalEntity( DDREntity ):
         
         self.files_log(1, 'Moving files to dest_dir')
         new_files = []
-        if tmp_access_path:
+        if tmp_access_path and os.path.exists(tmp_access_path):
             new_files.append([tmp_access_path, f.access_abs])
         new_files.append([tmp_path_renamed, f.path_abs])
         new_files.append([tmp_file_json, f.json_path])
