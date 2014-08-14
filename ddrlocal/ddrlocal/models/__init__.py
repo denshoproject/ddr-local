@@ -949,8 +949,8 @@ class DDRLocalEntity( DDREntity ):
         @param ddrfile: DDRLocalFile
         @param git_name: Username of git committer.
         @param git_mail: Email of git committer.
-        @return file_ DDRLocalFile object
         @param agent: (optional) Name of software making the change.
+        @return file_ DDRLocalFile object
         """
         f = ddrfile
         src_path = f.path_abs
@@ -964,12 +964,12 @@ class DDRLocalEntity( DDREntity ):
         src_readable      = os.access(src_path, os.R_OK)
         if not os.path.exists(self.files_path):
             os.mkdir(self.files_path)
-        dest_dir          = self.files_path
-        dest_dir_exists   = os.path.exists(dest_dir)
-        dest_dir_writable = os.access(dest_dir, os.W_OK)
         access_filename = DDRLocalFile.access_file_name(os.path.splitext(src_path)[0],
                                                    settings.ACCESS_FILE_APPEND,
                                                    'jpg') # see DDRLocalFile.make_access_file
+        dest_dir          = self.files_path
+        dest_dir_exists   = os.path.exists(dest_dir)
+        dest_dir_writable = os.access(dest_dir, os.W_OK)
         dest_basename     = os.path.basename(access_filename)
         dest_path         = os.path.join(dest_dir, dest_basename)
         dest_path_exists  = os.path.exists(dest_path)
@@ -992,8 +992,6 @@ class DDRLocalEntity( DDREntity ):
             self.files_log(1, 'Source file exists; is readable.  Destination dir exists, is writable.')
             src_dest_ok = True
             
-        access_file = None
-        apath = None
         if f and src_dest_ok:
             # task: make access file
             self.files_log(1, 'Making access file...')
@@ -1003,60 +1001,36 @@ class DDRLocalEntity( DDREntity ):
                                                      settings.ACCESS_FILE_GEOMETRY,
                                                      settings.ACCESS_FILE_OPTIONS)
             if status:
-                self.files_log(0, 'status: %s' % status)
-                self.files_log(0, 'result: %s' % result)
                 self.files_log(0, 'access file FAIL: %s' % result)
                 f.access_rel = None
             else:
-                self.files_log(1, 'status: %s' % status)
-                self.files_log(1, 'result: %s' % result)
                 access_rel = result
                 f.set_access(access_rel, self)
                 self.files_log(1, 'access_rel: %s' % f.access_rel)
                 self.files_log(1, 'access_abs: %s' % f.access_abs)
         
+        # dump metadata, commit
         if f and src_dest_ok and f.access_rel:
-            self.files_log(1, 'Adding %s to self...' % f)
-            # We have to write self.json again so that access file gets recorded there.
-            self.files_log(1, 'Writing %s' % self.json_path)
+            self.files_log(1, 'Adding %s to %s...' % (f.access_rel, f))
             self.dump_json()
             f.dump_json()
-            self.files_log(1, 'done')
-            # file JSON
-            try:
-                self.files_log(1, 'entity_update(%s, %s, %s, %s, %s)' % (
-                    git_name, git_mail,
-                    self.parent_path, self.id,
-                    f.json_path))
-                exit,status = commands.entity_update(
-                    git_name, git_mail,
-                    self.parent_path, self.id,
-                    [f.json_path,],
-                    agent=agent)
-                self.files_log(1, 'entity_update: exit: %s' % exit)
-                self.files_log(1, 'entity_update: status: %s' % status)
-            except:
-                # TODO would be nice to know why entity_annex_add failed
-                self.files_log(0, 'entity_update: ERROR')
+            
+            git_files = [self.json_path_rel, f.json_path_rel]
+            annex_files = []
             if f.access_rel:
-                access_basename = os.path.basename(f.access_rel)
-                self.files_log(1, 'access file: %s' % access_basename)
-                try:
-                    # self.json gets written as part of this
-                    self.files_log(1, 'entity_annex_add(%s, %s, %s, %s, %s)' % (
-                        git_name, git_mail,
-                        self.parent_path,
-                        self.id, access_basename))
-                    exit,status = commands.entity_annex_add(
-                        git_name, git_mail,
-                        self.parent_path,
-                        self.id, access_basename,
-                        agent=agent)
-                    self.files_log(1, 'entity_annex_add: exit: %s' % exit)
-                    self.files_log(1, 'entity_annex_add: status: %s' % status)
-                except:
-                    # TODO would be nice to know why entity_annex_add failed
-                    self.files_log(0, 'entity_annex_add: ERROR')
+                annex_files.append(os.path.basename(f.access_rel))
+            
+            self.files_log(1, 'entity_annex_add(%s, %s, %s, %s, %s, %s, %s)' % (
+                git_name, git_mail,
+                self.parent_path, self.id,
+                git_files, annex_files,
+                agent))
+            exit,status = commands.entity_annex_add(
+                git_name, git_mail,
+                self.parent_path, self.id, git_files, annex_files,
+                agent=agent)
+            self.files_log(1, 'entity_annex_add: exit: %s' % exit)
+            self.files_log(1, 'entity_annex_add: status: %s' % status)
             
         self.files_log(1, 'ddrlocal.models.DDRLocalEntity.add_access: FINISHED')
         return f.__dict__
