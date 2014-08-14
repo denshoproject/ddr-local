@@ -395,15 +395,15 @@ def queue_generate( base_dir, repos_orgs ):
     @param repos_orgs: Output of webui.get_repos_orgs.
     @returns: queue understandable by queue_loads,  queue_dumps
     """
+    log('regenerating gitstatus queue')
     queue = {'collections': []}
     cids = []
     # gitstatuses
     for path in status_paths(base_dir):
-        collection_id = path.replace(base_dir, '').replace('/','').replace('.status', '')
-        status = read(cid)  # read timestamp from .status file
-        timestamp = datetime.strptime(status['timestamp'], settings.TIMESTAMP_FORMAT)
+        collection_id = path.replace(tmp_dir(base_dir), '').replace('/','').replace('.status', '')
+        status = read(base_dir, collection_id)  # read timestamp from .status file
+        queue['collections'].append( (status['timestamp'],collection_id) )
         cids.append(collection_id)
-        queue['collections'].append( (timestamp,collection_id) )
     # collections without gitstatuses
     epoch = datetime.fromtimestamp(0)
     for o in repos_orgs:
