@@ -510,7 +510,6 @@ def update_store( base_dir, delta, minimum, local=False ):
     @param local: boolean Use per-collection locks
     @returns: success/fail message
     """
-    log('update_store() ---------------------')
     GITSTATUS_LOCK_ID = 'gitstatus-update-lock'
     GITSTATUS_LOCK_EXPIRE = 60 * 5
     acquire_lock = lambda: cache.add(GITSTATUS_LOCK_ID, 'true', GITSTATUS_LOCK_EXPIRE)
@@ -518,7 +517,6 @@ def update_store( base_dir, delta, minimum, local=False ):
     #logger.debug('git status: %s', collection_path)
     messages = []
     if acquire_lock():
-        log('celery lock acquired')
         try:
             writable = is_writable(base_dir)
             if not writable:
@@ -549,7 +547,6 @@ def update_store( base_dir, delta, minimum, local=False ):
             
         finally:
             release_lock()
-            log('celery lock released')
     else:
         log("couldn't get celery lock")
         messages.append("couldn't get celery lock")

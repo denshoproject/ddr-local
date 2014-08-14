@@ -153,12 +153,10 @@ class GitStatusTask(Task):
     abstract = True
         
     def on_failure(self, exc, task_id, args, kwargs, einfo):
-        logger.debug('GitStatusTask.on_failure(%s, %s, %s, %s, %s)' % (exc, task_id, args, kwargs, einfo))
-        gitstatus.log('GitStatusTask.on_failure(%s, %s, %s, %s, %s)' % (exc, task_id, args, kwargs, einfo))
+        pass
     
     def on_success(self, retval, task_id, args, kwargs):
-        logger.debug('GitStatusTask.on_success(%s, %s, %s, %s)' % (retval, task_id, args, kwargs))
-        gitstatus.log('GitStatusTask.on_success(%s, %s, %s, %s)' % (retval, task_id, args, kwargs))
+        pass
     
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
         logger.debug('GitStatusTask.after_return(%s, %s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs, einfo))
