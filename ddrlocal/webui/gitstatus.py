@@ -457,39 +457,38 @@ def next_time( queue, delta, minimum ):
         timestamp = earliest
     return timestamp
 
-def next_repo( queue, interval, local=False ):
+def next_repo( queue, local=False ):
     """Gets next collection_path or time til next ready to be updated
         
     @param queue: 
-    @param interval: 
     @param local: Boolean Use local per-collection locks or global lock.
     @returns: collection_path or (msg,timedelta)
     """
     collection_path = None
     message = None
     next_available = None
-    # NOTE collections should be in ascending order
+    # sorts collections in ascending order by timestamp
+    collections = sorted(queue['collections'])
     # now choose
     if local:
-        # per-collection lock
-        for timestamp,cid in queue['collections']:
-            if its_ready(timestamp, interval):
+        # choose first collection that is not locked
+        for timestamp,cid in collections:
+            if datetime.now() > timestamp:
                 cpath = os.path.join(settings.MEDIA_BASE, cid)
                 collection = Collection.from_json(cpath)
                 if not collection.locked():
                     collection_path = cpath
-                    break
+                    return collection_path
             if (not next_available) or (timestamp < next_available):
                 next_available = timestamp
     else:
-        # global lock - just take the first one!
-        for timestamp,cid in queue['collections']:
-            if its_ready(timestamp, interval):
+        # global lock - just take the first collection
+        for timestamp,cid in collections:
+            if datetime.now() > timestamp:
                 collection_path = os.path.join(settings.MEDIA_BASE, cid)
+                return collection_path
             if (not next_available) or (timestamp < next_available):
                 next_available = timestamp
-    if collection_path:
-        return collection_path
     return ('notready',next_available)
 
 def update_store( base_dir, delta, minimum, local=False ):
@@ -536,8 +535,7 @@ def update_store( base_dir, delta, minimum, local=False ):
             if writable and not locked:
                 collection_path = None
                 queue = queue_read(base_dir)
-                response = next_repo( queue, interval, local=local )
-                log(response)
+                response = next_repo(queue, local=local)
                 if isinstance(response, list) or isinstance(response, tuple):
                     messages.append('next_repo %s' % str(response))
                 elif isinstance(response, basestring) and os.path.exists(response):
