@@ -416,18 +416,16 @@ def queue_generate( base_dir, repos_orgs ):
     queue['generated'] = datetime.now()
     return queue
 
-def queue_mark_updated( queue, collection_id, interval, margin ):
+def queue_mark_updated( queue, collection_id, delta, minimum ):
     """Resets or adds collection timestamp and returns queue
-    
-    Timestamp is INTERVAL plus MARGIN seconds from now.
     
     @param queue
     @param collection_id
-    @param interval: int Number of seconds
-    @param margin: int Margin of error around interval
-    @returns: queue
+    @param delta: int (seconds) Delta added to highest available timestamp
+    @param minimum: int (seconds) Minimum delta
+    @returns: queue with updated collection timestamp
     """
-    timestamp = next_time(interval, margin)
+    timestamp = next_time(queue, delta, minimum)
     present = False
     for line in queue['collections']:
         ts,cid = line
@@ -438,13 +436,26 @@ def queue_mark_updated( queue, collection_id, interval, margin ):
         queue['collections'].append([timestamp, collection_id])
     return queue
 
-def next_time( interval, margin ):
-    delta = interval + random.randint(0, margin)
-    timestamp = datetime.now() + timedelta(seconds=delta)
-    return timestamp
+def next_time( queue, delta, minimum ):
+    """Chooses the next earliest time a repo can be updated
     
-def its_ready( timestamp, interval ):
-    return datetime.now() > timestamp
+    Chooses highest timestamp in queue plus ${delta},
+    or at least ${now} + ${minimum}.
+    
+    @param queue
+    @param delta: int (seconds) Delta added to highest available timestamp
+    @param minimum: int (seconds) Minimum delta
+    @returns: datetime
+    """
+    latest = None
+    for ts,cid in sorted(queue['collections']):
+        if (not latest) or (ts > latest):
+            latest = ts
+    timestamp = latest + timedelta(seconds=delta)
+    earliest = datetime.now() + timedelta(seconds=minimum)
+    if timestamp < earliest:
+        timestamp = earliest
+    return timestamp
 
 def next_repo( queue, interval, local=False ):
     """Gets next collection_path or time til next ready to be updated
@@ -481,7 +492,7 @@ def next_repo( queue, interval, local=False ):
         return collection_path
     return ('notready',next_available)
 
-def update_store( base_dir, interval, margin, local=False ):
+def update_store( base_dir, delta, minimum, local=False ):
     """
     
     - Ensures only one gitstatus_update task running at a time
@@ -495,6 +506,8 @@ def update_store( base_dir, interval, margin, local=False ):
     http://docs.celeryproject.org/en/latest/tutorials/task-cookbook.html#cookbook-task-serial
     
     @param base_dir: 
+    @param delta: int (seconds) Delta added to highest available timestamp
+    @param minimum: int (seconds) Minimum delta
     @param local: boolean Use per-collection locks
     @returns: success/fail message
     """
@@ -532,7 +545,7 @@ def update_store( base_dir, interval, margin, local=False ):
                 if collection_path:
                     timestamp,elapsed,status,annex_status,syncstatus = update(base_dir, collection_path)
                     collection_id = os.path.basename(collection_path)
-                    queue = queue_mark_updated(queue, collection_id, interval, margin)
+                    queue = queue_mark_updated(queue, collection_id, delta, minimum)
                     queue_write(base_dir, queue)
                     messages.append('%s updated' % (collection_path))
             

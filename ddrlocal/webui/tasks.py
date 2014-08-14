@@ -183,9 +183,9 @@ def gitstatus_update_store():
         )
         gitstatus.queue_write(settings.MEDIA_BASE, queue)
     return gitstatus.update_store(
-        settings.MEDIA_BASE,
-        settings.GITSTATUS_INTERVAL,
-        settings.GITSTATUS_INTERVAL * 0.10
+        base_dir=settings.MEDIA_BASE,
+        delta=60,
+        minimum=settings.GITSTATUS_INTERVAL,
     )
 
 
