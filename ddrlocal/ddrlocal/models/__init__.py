@@ -951,87 +951,139 @@ class DDRLocalEntity( DDREntity ):
         @param agent: (optional) Name of software making the change.
         @return file_ DDRLocalFile object
         """
-        f = ddrfile
-        src_path = f.path_abs
+        def crash(msg):
+            """Write to addfile log and raise an exception."""
+            self.files_log(0, msg)
+            raise Exception(msg)
         
+        src_path = ddrfile.path_abs
         self.files_log(1, 'ddrlocal.models.DDRLocalEntity.add_access: START')
         self.files_log(1, 'entity: %s' % self.id)
-        self.files_log(1, 'src: %s' % f.path_rel)
+        self.files_log(1, 'src_path: %s' % src_path)
+
+        self.files_log(1, 'Checking files/dirs')
+        # source file
+        self.files_log(1, 'src_path: %s' % src_path)
+        if not os.path.exists(src_path): crash('src_path does not exist')
+        if not os.access(src_path, os.R_OK): crash('src_path not readable')
+        src_basename = os.path.basename(src_path)
+        self.files_log(1, 'src_basename: %s' % src_basename)
+        # temporary working dir
+        tmp_dir = os.path.join(
+            settings.MEDIA_BASE, 'tmp', 'file-add',
+            self.parent_uid, self.id)
+        self.files_log(1, 'tmp_dir: %s' % tmp_dir)
+        if not os.path.exists(tmp_dir):
+            os.makedirs(tmp_dir)
+        if not os.path.exists(tmp_dir): crash('tmp_dir does not exist')
+        if not os.access(tmp_dir, os.W_OK): crash('tmp_dir not writable')
+        # destination dir in repo-entity
+        dest_dir = self.files_path
+        self.files_log(1, 'dest_dir: %s' % dest_dir)
+        if not os.path.exists(dest_dir):
+            os.makedirs(dest_dir)
+        if not os.path.exists(dest_dir): crash('dest_dir does not exist')
+        if not os.access(dest_dir, os.W_OK): crash('dest_dir not writable')
         
-        src_basename      = os.path.basename(src_path)
-        src_exists        = os.path.exists(src_path)
-        src_readable      = os.access(src_path, os.R_OK)
-        if not os.path.exists(self.files_path):
-            os.mkdir(self.files_path)
-        access_filename = DDRLocalFile.access_file_name(os.path.splitext(src_path)[0],
-                                                   settings.ACCESS_FILE_APPEND,
-                                                   'jpg') # see DDRLocalFile.make_access_file
-        dest_dir          = self.files_path
-        dest_dir_exists   = os.path.exists(dest_dir)
-        dest_dir_writable = os.access(dest_dir, os.W_OK)
-        dest_basename     = os.path.basename(access_filename)
-        dest_path         = os.path.join(dest_dir, dest_basename)
-        dest_path_exists  = os.path.exists(dest_path)
-        s = []
-        if src_exists:         s.append('ok')
-        else:                  self.files_log(0, 'Source file does not exist: {}'.format(src_path))
-        if src_readable:       s.append('ok')
-        else:                  self.files_log(0, 'Source file not readable: {}'.format(src_path))
-        if dest_dir_exists:    s.append('ok')
-        else:                  self.files_log(0, 'Destination directory does not exist: {}'.format(dest_dir))
-        if dest_dir_writable:  s.append('ok')
-        else:                  self.files_log(0, 'Destination directory not writable: {}'.format(dest_dir))
-        #if not dest_path_exists: s.append('ok')
-        #else:                  self.files_log(0, 'Destination file already exists!: {}'.format(dest_path))
-        preparations = ','.join(s)
+        self.files_log(1, 'Making access file')
+        access_filename = DDRLocalFile.access_filename(src_path)
+        tmp_access_path = imaging.thumbnail(
+            src_path,
+            os.path.join(tmp_dir, os.path.basename(access_filename)),
+            geometry=settings.ACCESS_FILE_GEOMETRY)
+        self.files_log(1, 'tmp_access_path: %s' % tmp_access_path)
+        # unlike add_file, it's a fail if there's no access file
+        if (not tmp_access_path) or (not os.path.exists(tmp_access_path)):
+            crash('Failed to make an access file from %s' % src_path)
         
-        # do, or do not
-        src_dest_ok = False
-        if preparations == 'ok,ok,ok,ok':  # ,ok
-            self.files_log(1, 'Source file exists; is readable.  Destination dir exists, is writable.')
-            src_dest_ok = True
-            
-        if f and src_dest_ok:
-            # task: make access file
-            self.files_log(1, 'Making access file...')
-            # NOTE: do this before entity_annex_add so don't have to lock/unlock
-            status,result = DDRLocalFile.make_access_file(f.path_abs,
-                                                     settings.ACCESS_FILE_APPEND,
-                                                     settings.ACCESS_FILE_GEOMETRY,
-                                                     settings.ACCESS_FILE_OPTIONS)
-            if status:
-                self.files_log(0, 'access file FAIL: %s' % result)
-                f.access_rel = None
-            else:
-                access_rel = result
-                f.set_access(access_rel, self)
-                self.files_log(1, 'access_rel: %s' % f.access_rel)
-                self.files_log(1, 'access_abs: %s' % f.access_abs)
+        # file object
+        f = ddrfile
+        self.files_log(1, 'Attaching access file')
+        f.set_access(tmp_access_path, self)
+        self.files_log(1, 'f.access_rel: %s' % f.access_rel)
+        self.files_log(1, 'f.access_abs: %s' % f.access_abs)
         
-        # dump metadata, commit
-        if f and src_dest_ok and f.access_rel:
-            self.files_log(1, 'Adding %s to %s...' % (f.access_rel, f))
-            self.dump_json()
-            f.dump_json()
-            
-            git_files = [self.json_path_rel, f.json_path_rel]
-            annex_files = []
-            if f.access_rel:
-                annex_files.append(os.path.basename(f.access_rel))
-            
-            self.files_log(1, 'entity_annex_add(%s, %s, %s, %s, %s, %s, %s)' % (
-                git_name, git_mail,
-                self.parent_path, self.id,
-                git_files, annex_files,
-                agent))
+        self.files_log(1, 'Writing file metadata')
+        tmp_file_json = os.path.join(tmp_dir, os.path.basename(f.json_path))
+        self.files_log(1, tmp_file_json)
+        f.dump_json(path=tmp_file_json)
+        if not os.path.exists(tmp_file_json):
+            crash('Could not write file metadata %s' % tmp_file_json)
+        # grab copy of file metadata in case something goes wrong
+        self.files_log(1, 'Backing up file metadata')
+        file_json_backup = '%s.orig' % tmp_file_json
+        shutil.copy(f.json_path, file_json_backup)
+        if not os.path.exists(file_json_backup):
+            crash('Could not back up file metadata %s' % file_json_backup)
+        
+        self.files_log(1, 'Moving files to dest_dir')
+        new_files = []
+        new_files.append([tmp_access_path, f.access_abs])
+        failures = []
+        for tmp,dest in new_files:
+            self.files_log(1, 'mv %s %s' % (tmp,dest))
+            os.rename(tmp,dest)
+            if not os.path.exists(dest):
+                self.files_log(0, 'FAIL')
+                failures.append(tmp)
+                break
+        # one of new_files failed to copy, so move all back to tmp
+        if failures:
+            self.files_log(0, '%s failures: %s' % (len(failures), failures))
+            self.files_log(0, 'moving files back to tmp_dir')
+            try:
+                for tmp,dest in new_files:
+                    self.files_log(1, 'mv %s %s' % (dest,tmp))
+                    os.rename(dest,tmp)
+                    if not os.path.exists(tmp) and not os.path.exists(dest):
+                        self.files_log(0, 'FAIL')
+            except:
+                msg = "Unexpected error:", sys.exc_info()[0]
+                self.files_log(0, msg)
+                raise
+            finally:
+                crash('Failed to place one or more files to destination repo')
+        # file metadata will only be copied if everything else was moved
+        self.files_log(1, 'mv %s %s' % (tmp_file_json, f.json_path))
+        os.rename(tmp_file_json, f.json_path)
+        if not os.path.exists(f.json_path):
+            crash('Failed to place file metadata in destination repo')
+        
+        # commit
+        git_files = [
+            f.json_path_rel
+        ]
+        annex_files = [
+            f.access_rel
+        ]
+        self.files_log(1, 'entity_annex_add(%s, %s, %s, %s, %s, %s, %s, %s)' % (
+            git_name, git_mail,
+            self.parent_path, self.id,
+            git_files, annex_files,
+            agent, self))
+        try:
             exit,status = commands.entity_annex_add(
                 git_name, git_mail,
                 self.parent_path, self.id, git_files, annex_files,
-                agent=agent)
-            self.files_log(1, 'entity_annex_add: exit: %s' % exit)
-            self.files_log(1, 'entity_annex_add: status: %s' % status)
-            
-        self.files_log(1, 'ddrlocal.models.DDRLocalEntity.add_access: FINISHED')
+                agent=agent, entity=self)
+            self.files_log(1, 'status: %s' % status)
+            self.files_log(1, 'ddrlocal.models.DDRLocalEntity.add_file: FINISHED')
+        except:
+            # COMMIT FAILED! try to pick up the pieces
+            # print traceback to addfile log
+            with open(self._addfile_log_path(), 'a') as f:
+                traceback.print_exc(file=f)
+            # mv files back to tmp_dir
+            self.files_log(0, 'status: %s' % status)
+            self.files_log(0, 'Cleaning up...')
+            for tmp,dest in new_files:
+                self.files_log(0, 'mv %s %s' % (dest,tmp))
+                os.rename(dest,tmp)
+            # restore backup of original file metadata
+            self.files_log(0, 'cp %s %s' % (file_json_backup, f.json_path))
+            shutil.copy(file_json_backup, f.json_path)
+            self.files_log(0, 'finished cleanup. good luck...')
+            raise
         return f.__dict__
     
     def checksums( self, algo ):
