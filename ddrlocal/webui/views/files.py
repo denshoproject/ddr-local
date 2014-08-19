@@ -270,6 +270,7 @@ def new_access( request, repo, org, cid, eid, role, sha1 ):
             task = {'task_id': result.task_id,
                     'action': 'webui-file-new-access',
                     'filename': os.path.basename(src_path),
+                    'file_url': file_.url(),
                     'entity_id': entity.id,
                     'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
             celery_tasks[result.task_id] = task
