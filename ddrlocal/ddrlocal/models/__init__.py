@@ -930,7 +930,6 @@ class DDRLocalEntity( DDREntity ):
             with open(self._addfile_log_path(), 'a') as f:
                 traceback.print_exc(file=f)
             # mv files back to tmp_dir
-            self.files_log(0, 'status: %s' % status)
             self.files_log(0, 'Cleaning up...')
             for tmp,dest in new_files:
                 self.files_log(0, 'mv %s %s' % (dest,tmp))
