@@ -808,7 +808,7 @@ class DDRLocalEntity( DDREntity ):
             crash('File rename failed: %s -> %s' % (tmp_path, tmp_path_renamed))
         
         self.files_log(1, 'Making access file')
-        access_filename = DDRLocalFile.access_filename(src_path)
+        access_filename = DDRLocalFile.access_filename(tmp_path_renamed)
         # Access file fails should not stop the process but we want
         # to capture tracebacks in the log
         try:
