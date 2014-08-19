@@ -859,12 +859,12 @@ class DDRLocalEntity( DDREntity ):
         self.dump_json(path=tmp_entity_json)
         if not os.path.exists(tmp_entity_json):
             crash('Could not write entity metadata %s' % tmp_entity_json)
-        # grab copy of original entity.json in case something goes wrong
-        self.files_log(1, 'Backing up entity.json')
+        # grab copy of original entity metadata in case something goes wrong
+        self.files_log(1, 'Backing up entity metadata')
         entity_json_backup = os.path.join(tmp_dir, 'entity.json.orig')
         shutil.copy(self.json_path, entity_json_backup)
         if not os.path.exists(entity_json_backup):
-            crash('Could not backup entity.json %s' % entity_json_backup)
+            crash('Could not backup entity metadata %s' % entity_json_backup)
         
         self.files_log(1, 'Moving files to dest_dir')
         new_files = []
@@ -896,17 +896,22 @@ class DDRLocalEntity( DDREntity ):
                 raise
             finally:
                 crash('Failed to place one or more files to destination repo')
-        # entity.json will only be copied if everything else was moved
+        # entity metadata will only be copied if everything else was moved
         self.files_log(1, 'mv %s %s' % (tmp_entity_json, self.json_path))
         os.rename(tmp_entity_json, self.json_path)
         if not os.path.exists(self.json_path):
             crash('Failed to place entity.json in destination repo')
         
         # commit
-        annex_files = [f.basename]
+        git_files = [
+            self.json_path_rel,
+            f.json_path_rel
+        ]
+        annex_files = [
+            f.basename
+        ]
         if f.access_rel:
             annex_files.append(f.access_rel)
-        git_files = [self.json_path_rel, f.json_path_rel]
         self.files_log(1, 'entity_annex_add(%s, %s, %s, %s, %s, %s, %s, %s)' % (
             git_name, git_mail,
             self.parent_path, self.id,
@@ -930,7 +935,7 @@ class DDRLocalEntity( DDREntity ):
             for tmp,dest in new_files:
                 self.files_log(0, 'mv %s %s' % (dest,tmp))
                 os.rename(dest,tmp)
-            # restore backup of original entity.json
+            # restore backup of original entity metadata
             self.files_log(0, 'cp %s %s' % (entity_json_backup, self.json_path))
             shutil.copy(entity_json_backup, self.json_path)
             self.files_log(0, 'finished cleanup. good luck...')
