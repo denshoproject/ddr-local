@@ -27,11 +27,11 @@ from ddrlocal.models.collection import COLLECTION_FIELDS
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
-from webui import get_repos_orgs
 from webui import api
 from webui.decorators import ddrview, search_index
 from webui.forms import DDRForm
 from webui.forms.collections import NewCollectionForm, UpdateForm, SyncConfirmForm
+from webui import gitolite
 from webui.models import Collection, COLLECTION_STATUS_CACHE_KEY, COLLECTION_STATUS_TIMEOUT
 from webui.tasks import collection_sync, csv_export_model, export_csv_path, gitstatus_update
 from webui.views.decorators import login_required
@@ -58,7 +58,7 @@ def collections( request ):
     """
     collections = []
     collection_status_urls = []
-    for o in get_repos_orgs():
+    for o in gitolite.get_repos_orgs():
         repo,org = o.split('-')
         colls = []
         for coll in commands.collections_local(settings.MEDIA_BASE, repo, org):
