@@ -21,15 +21,20 @@ import ConfigParser
 from datetime import timedelta
 import logging
 
+os.environ['USER'] = 'ddr'
+
+AGENT = 'ddr-local'
+
 from DDR import CONFIG_FILES, NoConfigError
 config = ConfigParser.ConfigParser()
 configs_read = config.read(CONFIG_FILES)
 if not configs_read:
     raise NoConfigError('No config file!')
 
-os.environ['USER'] = 'ddr'
-
-AGENT = 'ddr-local'
+# The following settings are in debian/config/ddr.cfg.
+# See that file for comments on the settings.
+# ddr.cfg is installed in /etc/ddr/ddr.cfg.
+# Settings in /etc/ddr/ddr.cfg may be overridden in /etc/ddr/local.cfg.
 
 SECRET_KEY           = config.get('local','secret_key')
 LANGUAGE_CODE        = config.get('local','language_code')
@@ -62,8 +67,12 @@ LOG_FILE             = config.get('local', 'log_file')
 LOG_LEVEL            = config.get('local', 'log_level')
 VOCAB_TERMS_URL      = config.get('local', 'vocab_terms_url')
 CSV_TMPDIR           = '/tmp/ddr/csv'
+GITOLITE_INFO_CACHE_TIMEOUT = int(config.get('local', 'gitolite_info_cache_timeout'))
+GITOLITE_INFO_CACHE_CUTOFF  = int(config.get('local', 'gitolite_info_cache_cutoff'))
+GITOLITE_INFO_CHECK_PERIOD  = int(config.get('local', 'gitolite_info_check_period'))
 
 GITOLITE             = config.get('workbench','gitolite')
+GITOLITE_TIMEOUT     = config.get('workbench','gitolite_timeout')
 CGIT_URL             = config.get('workbench','cgit_url')
 GIT_REMOTE_NAME      = config.get('workbench','remote')
 WORKBENCH_URL        = config.get('workbench','workbench_url')
@@ -209,7 +218,12 @@ CELERYD_HIJACK_ROOT_LOGGER = False
 CELERY_ACCEPT_CONTENT = ['pickle', 'json', 'msgpack', 'yaml']
 CELERYBEAT_SCHEDULER = None
 CELERYBEAT_PIDFILE = None
-CELERYBEAT_SCHEDULE = {}
+CELERYBEAT_SCHEDULE = {
+    'webui-gitolite-info-refresh': {
+        'task': 'webui.tasks.gitolite_info_refresh',
+        'schedule': timedelta(seconds=GITOLITE_INFO_CHECK_PERIOD),
+    }
+}
 if GITSTATUS_BACKGROUND_ACTIVE:
     CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
     CELERYBEAT_PIDFILE = '/tmp/celerybeat.pid'

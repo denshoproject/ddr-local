@@ -19,10 +19,12 @@ from django.core.cache import cache
 from django.core.urlresolvers import reverse
 
 from migration.densho import export_entities, export_files, export_csv_path
+from webui import GITOLITE_INFO_CACHE_KEY
+from webui import gitolite
+from webui import gitstatus
 from webui.models import Collection, Entity, DDRFile
-from webui import gitstatus, get_repos_orgs
 
-from DDR import docstore, models
+from DDR import docstore, dvcs, models
 from DDR.commands import entity_destroy, file_destroy
 from DDR.commands import sync
 
@@ -149,6 +151,17 @@ def reindex_and_notify( index ):
 
 
 
+@task(base=DebugTask, name='webui.tasks.gitolite_info_refresh')
+def gitolite_info_refresh():
+    """
+    Check the cached value of DDR.dvcs.gitolite_info().
+    If it is stale (e.g. timestamp is older than cutoff)
+    then hit the Gitolite server for an update and re-cache.
+    """
+    return gitolite.refresh()
+
+
+
 class GitStatusTask(Task):
     abstract = True
         
@@ -167,7 +180,7 @@ def gitstatus_update( collection_path ):
     if not os.path.exists(gitstatus.queue_path(settings.MEDIA_BASE)):
         queue = gitstatus.queue_generate(
             settings.MEDIA_BASE,
-            get_repos_orgs()
+            gitolite.get_repos_orgs()
         )
         gitstatus.queue_write(settings.MEDIA_BASE, queue)
     return gitstatus.update(settings.MEDIA_BASE, collection_path)
@@ -177,7 +190,7 @@ def gitstatus_update_store():
     if not os.path.exists(gitstatus.queue_path(settings.MEDIA_BASE)):
         queue = gitstatus.queue_generate(
             settings.MEDIA_BASE,
-            get_repos_orgs()
+            gitolite.get_repos_orgs()
         )
         gitstatus.queue_write(settings.MEDIA_BASE, queue)
     return gitstatus.update_store(

@@ -47,8 +47,8 @@ from DDR import dvcs
 from DDR.storage import is_writable
 from DDR.models import id_from_path
 from ddrlocal.models import DDRLocalCollection as Collection
-from webui import get_repos_orgs
 from webui import COLLECTION_STATUS_TIMEOUT
+from webui import gitolite
 
 
 def log(msg):
@@ -392,7 +392,7 @@ def queue_generate( base_dir, repos_orgs ):
     """Generates a new queue file
     
     @param base_dir: Absolute path to Store dir
-    @param repos_orgs: Output of webui.get_repos_orgs.
+    @param repos_orgs: Output of gitolite.get_repos_orgs.
     @returns: queue understandable by queue_loads,  queue_dumps
     """
     log('regenerating gitstatus queue')
