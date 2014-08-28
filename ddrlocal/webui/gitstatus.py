@@ -516,6 +516,8 @@ def update_store( base_dir, delta, minimum, local=False ):
     @param local: boolean Use per-collection locks
     @returns: success/fail message
     """
+    if not os.path.exists(base_dir):
+        raise Exception('base_dir does not exist. No Store mounted?: %s' % base_dir)
     GITSTATUS_LOCK_ID = 'gitstatus-update-lock'
     GITSTATUS_LOCK_EXPIRE = 60 * 5
     acquire_lock = lambda: cache.add(GITSTATUS_LOCK_ID, 'true', GITSTATUS_LOCK_EXPIRE)
