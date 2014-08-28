@@ -59,8 +59,14 @@ def log(msg):
         f.write(entry)
 
 def tmp_dir( base_dir ):
+    """Returns path to tmp dir; creates dir under certain conditions
+    
+    The tmp/ directory is added only if
+    - the base directory is present (i.e. a Store is mounted) and
+    - tmp/ is missing from the base directory.
+    """
     path = os.path.join(base_dir, 'tmp')
-    if not os.path.exists(path):
+    if os.path.exists(base_dir) and (not os.path.exists(path)):
         os.makedirs(path)
     return path
     
