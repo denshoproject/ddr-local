@@ -54,9 +54,11 @@ def vocab_terms( fieldname ):
     if not data:
         url = settings.VOCAB_TERMS_URL % fieldname
         r = requests.get(url)
-        if r.status_code == 200:
-            data = json.loads(r.text)
-            cache.set(key, data, timeout)
+        if r.status_code != 200:
+            raise Exception(
+                '%s vocabulary file missing: %s' % (fieldname.capitalize(), url))
+        data = json.loads(r.text)
+        cache.set(key, data, timeout)
     return data
 
 def tagmanager_terms( fieldname ):
