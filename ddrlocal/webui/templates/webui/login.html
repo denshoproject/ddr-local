@@ -29,3 +29,12 @@
   </div><!-- .row-fluid -->
 
 {% endblock content %}
+
+
+{% block javascript %}
+<script type="text/javascript">
+  $(function() {
+    $("#id_username").focus();
+  });
+</script>
+{% endblock javascript %}
