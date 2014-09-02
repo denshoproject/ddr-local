@@ -95,8 +95,8 @@ install-core:
 	apt-get --assume-yes install bzip2 curl gdebi-core git-core logrotate p7zip-full wget
 
 ddr-user:
-	addgroup ddr plugdev
-	addgroup ddr vboxsf
+	-addgroup ddr plugdev
+	-addgroup ddr vboxsf
 
 git-config:
 	git config --global alias.st status
