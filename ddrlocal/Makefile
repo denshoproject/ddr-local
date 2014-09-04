@@ -92,7 +92,7 @@ apt-update:
 	apt-get --assume-yes update
 
 install-core:
-	apt-get --assume-yes install bzip2 curl gdebi-core git-core logrotate p7zip-full wget
+	apt-get --assume-yes install bzip2 curl gdebi-core git-core logrotate ntp p7zip-full wget
 
 ddr-user:
 	-addgroup ddr plugdev

@@ -86,7 +86,7 @@ pip install -U --download-cache=$PIP_CACHE_DIR -r /usr/local/src/ddr-cmdln/ddr/r
 adduser ddr plugdev
 
 echo "${bldgrn}ddr-local${txtrst}"
-apt-get --assume-yes install imagemagick libexempi3 libssl-dev python-dev libxml2 libxml2-dev libxslt1-dev supervisor
+apt-get --assume-yes install imagemagick libexempi3 libssl-dev ntp python-dev libxml2 libxml2-dev libxslt1-dev supervisor
 cd /usr/local/src
 git clone https://github.com/densho/ddr-local.git
 cd /usr/local/src/ddr-local/ddrlocal
