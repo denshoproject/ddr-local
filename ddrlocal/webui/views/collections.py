@@ -4,6 +4,7 @@ import logging
 logger = logging.getLogger(__name__)
 import os
 import random
+import sys
 
 from bs4 import BeautifulSoup
 
@@ -23,7 +24,9 @@ from DDR import commands
 from DDR import docstore
 from DDR.models import make_object_id, id_from_path
 
-from ddrlocal.models.collection import COLLECTION_FIELDS
+if settings.REPO_MODELS_PATH not in sys.path:
+    sys.path.append(settings.REPO_MODELS_PATH)
+from repo_models.collection import COLLECTION_FIELDS
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES

@@ -1,11 +1,14 @@
 import logging
 logger = logging.getLogger(__name__)
 import os
+import sys
 
 from django import forms
 from django.conf import settings
 
-from ddrlocal.models.files import PERMISSIONS_CHOICES, RIGHTS_CHOICES
+if settings.REPO_MODELS_PATH not in sys.path:
+    sys.path.append(settings.REPO_MODELS_PATH)
+from repo_models.files import PERMISSIONS_CHOICES, RIGHTS_CHOICES
 
 def shared_folder_files():
     d = settings.VIRTUALBOX_SHARED_FOLDER

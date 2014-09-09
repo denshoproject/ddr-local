@@ -3,6 +3,7 @@ import json
 import logging
 logger = logging.getLogger(__name__)
 import os
+import sys
 
 from bs4 import BeautifulSoup
 
@@ -17,7 +18,10 @@ from django.template import RequestContext
 
 from DDR import commands
 from DDR import docstore
-from ddrlocal.models.files import FILE_FIELDS
+
+if settings.REPO_MODELS_PATH not in sys.path:
+    sys.path.append(settings.REPO_MODELS_PATH)
+from repo_models.files import FILE_FIELDS
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES

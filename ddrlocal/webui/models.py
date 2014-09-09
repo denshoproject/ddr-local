@@ -3,6 +3,7 @@ import json
 import logging
 logger = logging.getLogger(__name__)
 import os
+import sys
 
 import envoy
 import requests
@@ -16,9 +17,12 @@ from DDR import dvcs
 
 from ddrlocal.models import DDRLocalCollection, DDRLocalEntity, DDRLocalFile
 from ddrlocal.models import COLLECTION_FILES_PREFIX, ENTITY_FILES_PREFIX
-from ddrlocal.models import collection as collectionmodule
-from ddrlocal.models import entity as entitymodule
-from ddrlocal.models import files as filemodule
+
+if settings.REPO_MODELS_PATH not in sys.path:
+    sys.path.append(settings.REPO_MODELS_PATH)
+from repo_models import collection as collectionmodule
+from repo_models import entity as entitymodule
+from repo_models import files as filemodule
 
 from webui import gitstatus
 

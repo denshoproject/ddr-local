@@ -100,6 +100,9 @@ DDR_USBHDD_BASE_DIR = 'ddr'
 
 MEDIA_BASE = os.path.join(MEDIA_ROOT, 'base')
 
+# Location of Repository 'ddr' repo, which should contain repo_models
+# for the Repository.
+REPO_MODELS_PATH = os.path.join(MEDIA_BASE, 'ddr')
 
 ENTITY_FILE_ROLES = (
     ('master','master'),

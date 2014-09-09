@@ -4,6 +4,7 @@ import logging
 logger = logging.getLogger(__name__)
 import os
 import re
+import sys
 
 from bs4 import BeautifulSoup
 import requests
@@ -22,7 +23,9 @@ from django.template import RequestContext
 from DDR import commands
 from DDR import docstore
 
-from ddrlocal.models.entity import ENTITY_FIELDS
+if settings.REPO_MODELS_PATH not in sys.path:
+    sys.path.append(settings.REPO_MODELS_PATH)
+from repo_models.entity import ENTITY_FIELDS
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES

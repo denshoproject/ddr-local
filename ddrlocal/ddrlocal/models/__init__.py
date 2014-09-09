@@ -23,11 +23,15 @@ from DDR.models import Collection as DDRCollection, Entity as DDREntity
 from DDR.models import dissect_path, file_hash, _inheritable_fields, _inherit
 from DDR.models import module_function, module_xml_function, write_json
 from ddrlocal import VERSION, COMMIT
-from ddrlocal.models import collection as collectionmodule
-from ddrlocal.models import entity as entitymodule
-from ddrlocal.models import files as filemodule
 from ddrlocal.models.meta import CollectionJSON, EntityJSON, read_json
 from ddrlocal.models.xml import EAD, METS
+
+if settings.REPO_MODELS_PATH not in sys.path:
+    sys.path.append(settings.REPO_MODELS_PATH)
+from repo_models import collection as collectionmodule
+from repo_models import entity as entitymodule
+from repo_models import files as filemodule
+
 
 COLLECTION_FILES_PREFIX = 'files'
 ENTITY_FILES_PREFIX = 'files'

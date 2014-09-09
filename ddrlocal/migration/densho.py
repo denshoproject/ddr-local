@@ -120,12 +120,16 @@ from DDR.models import metadata_files
 from webui.models import Collection, Entity
 from ddrlocal.models import module_function
 from ddrlocal.models import DDRLocalEntity, DDRLocalFile
-from ddrlocal.models import entity as entitymodule
-from ddrlocal.models import files as filemodule
-from ddrlocal.models.entity import ENTITY_FIELDS
-from ddrlocal.models.entity import STATUS_CHOICES, PERMISSIONS_CHOICES, RIGHTS_CHOICES
-from ddrlocal.models.entity import LANGUAGE_CHOICES, GENRE_CHOICES, FORMAT_CHOICES
-from ddrlocal.models.files import FILE_FIELDS
+
+if settings.REPO_MODELS_PATH not in sys.path:
+    sys.path.append(settings.REPO_MODELS_PATH)
+from repo_models import collection as collectionmodule
+from repo_models import entity as entitymodule
+from repo_models import files as filemodule
+from repo_models.entity import ENTITY_FIELDS
+from repo_models.entity import STATUS_CHOICES, PERMISSIONS_CHOICES, RIGHTS_CHOICES
+from repo_models.entity import LANGUAGE_CHOICES, GENRE_CHOICES, FORMAT_CHOICES
+from repo_models.files import FILE_FIELDS
 #def add_file( git_name, git_mail, entity, src_path, role, data ):
 #    print('add_file(%s, %s, %s, %s, %s, %s)' % (git_name, git_mail, entity, src_path, role, data))
 
