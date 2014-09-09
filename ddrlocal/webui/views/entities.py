@@ -25,7 +25,10 @@ from DDR import docstore
 
 if settings.REPO_MODELS_PATH not in sys.path:
     sys.path.append(settings.REPO_MODELS_PATH)
-from repo_models.entity import ENTITY_FIELDS
+try:
+    from repo_models.entity import ENTITY_FIELDS
+except ImportError:
+    from ddrlocal.models.entity import ENTITY_FIELDS
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES

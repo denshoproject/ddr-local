@@ -8,7 +8,11 @@ from django.conf import settings
 
 if settings.REPO_MODELS_PATH not in sys.path:
     sys.path.append(settings.REPO_MODELS_PATH)
-from repo_models.files import PERMISSIONS_CHOICES, RIGHTS_CHOICES
+try:
+    # TODO This module should not have to import these!
+    from repo_models.files import PERMISSIONS_CHOICES, RIGHTS_CHOICES
+except ImportError:
+    from ddrlocal.models.files import PERMISSIONS_CHOICES, RIGHTS_CHOICES
 
 def shared_folder_files():
     d = settings.VIRTUALBOX_SHARED_FOLDER

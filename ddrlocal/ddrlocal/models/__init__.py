@@ -28,9 +28,14 @@ from ddrlocal.models.xml import EAD, METS
 
 if settings.REPO_MODELS_PATH not in sys.path:
     sys.path.append(settings.REPO_MODELS_PATH)
-from repo_models import collection as collectionmodule
-from repo_models import entity as entitymodule
-from repo_models import files as filemodule
+try:
+    from repo_models import collection as collectionmodule
+    from repo_models import entity as entitymodule
+    from repo_models import files as filemodule
+except ImportError:
+    from ddrlocal.models import collection as collectionmodule
+    from ddrlocal.models import entity as entitymodule
+    from ddrlocal.models import files as filemodule
 
 
 COLLECTION_FILES_PREFIX = 'files'

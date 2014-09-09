@@ -1,0 +1,9 @@
+ENTITY_FIELDS = []
+
+# TODO ddrlocal should not be importing these!
+STATUS_CHOICES = []
+PERMISSIONS_CHOICES = []
+RIGHTS_CHOICES = []
+LANGUAGE_CHOICES = []
+GENRE_CHOICES = []
+FORMAT_CHOICES = []

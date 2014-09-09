@@ -26,7 +26,10 @@ from DDR.models import make_object_id, id_from_path
 
 if settings.REPO_MODELS_PATH not in sys.path:
     sys.path.append(settings.REPO_MODELS_PATH)
-from repo_models.collection import COLLECTION_FIELDS
+try:
+    from repo_models.collection import COLLECTION_FIELDS
+except ImportError:
+    from ddrlocal.models.collection import COLLECTION_FIELDS
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
