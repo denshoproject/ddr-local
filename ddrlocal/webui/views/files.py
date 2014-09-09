@@ -22,15 +22,15 @@ from DDR import docstore
 if settings.REPO_MODELS_PATH not in sys.path:
     sys.path.append(settings.REPO_MODELS_PATH)
 try:
-    from repo_models.files import FILE_FIELDS
+    from repo_models.files import FILE_FIELDS, FILE_FIELDS_NEW
 except ImportError:
-    from ddrlocal.models.files import FILE_FIELDS
+    from ddrlocal.models.files import FILE_FIELDS, FILE_FIELDS_NEW
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
 from webui.decorators import ddrview
 from webui.forms import DDRForm
-from webui.forms.files import NewFileForm, NewAccessFileForm, DeleteFileForm
+from webui.forms.files import NewFileDDRForm, NewAccessFileForm, DeleteFileForm
 from webui.forms.files import shared_folder_files
 from webui.models import Collection, Entity
 from webui.tasks import entity_add_file, entity_add_access, entity_delete_file, gitstatus_update
@@ -51,6 +51,25 @@ def handle_uploaded_file(f, dest_dir):
     print('destination {}'.format(destination))
     return dest_path_abs
 
+def prep_newfile_form_fields(FILE_FIELDS):
+    """
+    - path field is needed even though it's not in the model
+    """
+    path = {
+        'name':       'path',
+        'group':      '',
+        'model_type': str,
+        'form_type':  'CharField',
+        'form': {
+            'max_length': 255,
+            'widget':     'HiddenInput',
+            'initial':    '',
+            'required':   True,
+        },
+        'default':    '',
+    }
+    FIELDS.insert(0, path)
+    return FIELDS
 
 
 # views ----------------------------------------------------------------
@@ -161,12 +180,12 @@ def new( request, repo, org, cid, eid, role='master' ):
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     #
     path = request.GET.get('path', None)
+    FIELDS = prep_newfile_form_fields(FILE_FIELDS_NEW)
     if request.method == 'POST':
-        form = NewFileForm(request.POST, path_choices=shared_folder_files())
+        form = NewFileDDRForm(request.POST, fields=FIELDS, path_choices=shared_folder_files())
         if form.is_valid():
             data = form.cleaned_data
-            src_path = data.pop('path')
-            role = data.pop('role')
+            src_path = path
             # inheritable fields
             inherited = []
             for field in entity.inheritable_fields():
@@ -211,7 +230,7 @@ def new( request, repo, org, cid, eid, role='master' ):
         # inheritable fields
         for field in entity.inheritable_fields():
             data[field] = getattr(entity, field)
-        form = NewFileForm(data, path_choices=shared_folder_files())
+        form = NewFileDDRForm(data, fields=FIELDS, path_choices=shared_folder_files())
     return render_to_response(
         'webui/files/new.html',
         {'repo': entity.repo,
