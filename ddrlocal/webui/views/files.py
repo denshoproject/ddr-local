@@ -30,7 +30,7 @@ from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
 from webui.decorators import ddrview
 from webui.forms import DDRForm
-from webui.forms.files import NewFileForm, EditFileForm, NewAccessFileForm, DeleteFileForm
+from webui.forms.files import NewFileForm, NewAccessFileForm, DeleteFileForm
 from webui.forms.files import shared_folder_files
 from webui.models import Collection, Entity
 from webui.tasks import entity_add_file, entity_add_access, entity_delete_file, gitstatus_update
@@ -373,77 +373,6 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
          'file': file_,
          'form': form,
          },
-        context_instance=RequestContext(request, processors=[])
-    )
-
-@ddrview
-@login_required
-@storage_required
-def edit_old( request, repo, org, cid, eid, role, sha1 ):
-    """Edit file metadata
-    """
-    git_name = request.session.get('git_name')
-    git_mail = request.session.get('git_mail')
-    if not git_name and git_mail:
-        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
-    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
-    f = entity.file(repo, org, cid, eid, role, sha1)
-    if collection.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-        return HttpResponseRedirect( f.url() )
-    collection.repo_fetch()
-    if collection.repo_behind():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
-        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
-    if entity.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_FILES_PARENT_LOCKED'])
-        return HttpResponseRedirect( f.url() )
-    if request.method == 'POST':
-        form = EditFileForm(request.POST, request.FILES)
-        if form.is_valid():
-            #f.status = form.cleaned_data['status']
-            #f.public = form.cleaned_data['public']
-            f.sort = form.cleaned_data['sort']
-            f.label = form.cleaned_data['label']
-            f.xmp = form.cleaned_data['xmp']
-            result = entity.file(repo, org, cid, eid, role, sha1, f)
-            if result in ['added','updated']:
-                entity.dump_json()
-                entity.dump_mets()
-                exit,status = commands.entity_update(git_name, git_mail,
-                                                     entity.parent_path, entity.id,
-                                                     [entity.json_path, entity.mets_path,],
-                                                     agent=settings.AGENT)
-                if exit:
-                    messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
-                else:
-                    messages.success(request, WEBUI_MESSAGES['VIEWS_FILES_UPDATED'])
-                    return HttpResponseRedirect( reverse('webui-file', args=[repo,org,cid,eid,role,sha1]) )
-            # something went wrong
-            assert False
-    else:
-        data = {
-            #'status': f.status,
-            #'public': f.public,
-            'sort': f.sort,
-            'label': f.label,
-            'xmp': f.xmp,
-            }
-        form = EditFileForm(data)
-    return render_to_response(
-        'webui/files/edit.html',
-        {'repo': entity.repo,
-         'org': entity.org,
-         'cid': entity.cid,
-         'eid': entity.eid,
-         'role': file_.role,
-         'sha1': file_.sha1,
-         'collection_uid': collection.id,
-         'collection': collection,
-         'entity': entity,
-         'file': f,
-         'form': form,},
         context_instance=RequestContext(request, processors=[])
     )
 
