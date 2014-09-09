@@ -1,6 +1,4 @@
 from django.conf.urls import patterns, include, url
-from django.contrib import admin
-admin.autodiscover()
 from django.views.generic import TemplateView
 
 from djcelery import urls as djcelery_urls
