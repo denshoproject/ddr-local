@@ -138,8 +138,8 @@ except ImportError:
     from ddrlocal.models import files as filemodule
     from ddrlocal.models.entity import ENTITY_FIELDS
     from ddrlocal.models.files import FILE_FIELDS
-    from ddrlocal.models.entity import STATUS_CHOICES, PERMISSIONS_CHOICES, RIGHTS_CHOICES
-    from ddrlocal.models.entity import LANGUAGE_CHOICES, GENRE_CHOICES, FORMAT_CHOICES
+    STATUS_CHOICES = PERMISSIONS_CHOICES = RIGHTS_CHOICES = []
+    LANGUAGE_CHOICES = GENRE_CHOICES = FORMAT_CHOICES = []
 #def add_file( git_name, git_mail, entity, src_path, role, data ):
 #    print('add_file(%s, %s, %s, %s, %s, %s)' % (git_name, git_mail, entity, src_path, role, data))
 
