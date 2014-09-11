@@ -3,7 +3,7 @@ logger = logging.getLogger(__name__)
 
 from django.conf import settings
 
-from DDR.docstore import make_index_name, index_exists
+from DDR.docstore import make_index_name, index_exists, target_index
 
 
 COLLECTION_FETCH_CACHE_KEY = 'webui:collection:%s:fetch'
@@ -74,6 +74,8 @@ def set_docstore_index( request ):
     docstore_index = None
     docstore_index_exists = None
     storage_label = request.session.get('storage_label', None)
+    if not storage_label:
+        storage_label = target_index(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
     if storage_label:
         docstore_index = make_index_name(storage_label)
         if docstore_index:
