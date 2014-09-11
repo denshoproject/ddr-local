@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import os
 
@@ -15,12 +15,16 @@ import requests
 
 from django.conf import settings
 from django.contrib import messages
+from django.core.cache import cache
 from django.core.urlresolvers import reverse
 
 from migration.densho import export_entities, export_files, export_csv_path
+from webui import GITOLITE_INFO_CACHE_KEY
+from webui import gitolite
+from webui import gitstatus
 from webui.models import Collection, Entity, DDRFile
 
-from DDR import docstore, models
+from DDR import docstore, dvcs, models
 from DDR.commands import entity_destroy, file_destroy
 from DDR.commands import sync
 
@@ -45,7 +49,7 @@ TASK_STATUS_MESSAGES = {
         #'STARTED': '',
         'PENDING': 'Uploading <b>{filename}</b> to <a href="{entity_url}">{entity_id}</a>.',
         'SUCCESS': 'Uploaded <a href="{file_url}">{filename}</a> to <a href="{entity_url}">{entity_id}</a>.',
-        'FAILURE': 'Could not upload <a href="{file_url}">{filename}</a> to <a href="{entity_url}">{entity_id}</a>.',
+        'FAILURE': 'Could not upload <b>{filename}</b> to <a href="{entity_url}">{entity_id}</a>.<br/>{result}',
         #'RETRY': '',
         #'REVOKED': '',
         },
@@ -91,6 +95,7 @@ class ElasticsearchTask(Task):
         logger.debug('ElasticsearchTask.on_success(%s, %s, %s, %s)' % (retval, task_id, args, kwargs))
     
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
+        gitstatus.unlock(settings.MEDIA_BASE, 'reindex')
         logger.debug('ElasticsearchTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
 
 @task(base=ElasticsearchTask, name='webui-search-reindex')
@@ -98,6 +103,7 @@ def reindex( index ):
     """
     @param index: Name of index to create or update
     """
+    gitstatus.lock(settings.MEDIA_BASE, 'reindex')
     logger.debug('------------------------------------------------------------------------')
     logger.debug('webui.tasks.reindex(%s)' % index)
     statuses = []
@@ -145,10 +151,63 @@ def reindex_and_notify( index ):
 
 
 
+@task(base=DebugTask, name='webui.tasks.gitolite_info_refresh')
+def gitolite_info_refresh():
+    """
+    Check the cached value of DDR.dvcs.gitolite_info().
+    If it is stale (e.g. timestamp is older than cutoff)
+    then hit the Gitolite server for an update and re-cache.
+    """
+    return gitolite.refresh()
+
+
+
+class GitStatusTask(Task):
+    abstract = True
+        
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
+        pass
+    
+    def on_success(self, retval, task_id, args, kwargs):
+        pass
+    
+    def after_return(self, status, retval, task_id, args, kwargs, einfo):
+        logger.debug('GitStatusTask.after_return(%s, %s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs, einfo))
+        gitstatus.log('GitStatusTask.after_return(%s, %s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs, einfo))
+
+@task(base=GitStatusTask, name='webui.tasks.gitstatus_update')
+def gitstatus_update( collection_path ):
+    if not os.path.exists(settings.MEDIA_BASE):
+        raise Exception('base_dir does not exist. No Store mounted?: %s' % settings.MEDIA_BASE)
+    if not os.path.exists(gitstatus.queue_path(settings.MEDIA_BASE)):
+        queue = gitstatus.queue_generate(
+            settings.MEDIA_BASE,
+            gitolite.get_repos_orgs()
+        )
+        gitstatus.queue_write(settings.MEDIA_BASE, queue)
+    return gitstatus.update(settings.MEDIA_BASE, collection_path)
+
+@task(base=GitStatusTask, name='webui.tasks.gitstatus_update_store')
+def gitstatus_update_store():
+    if not os.path.exists(settings.MEDIA_BASE):
+        raise Exception('base_dir does not exist. No Store mounted?: %s' % settings.MEDIA_BASE)
+    if not os.path.exists(gitstatus.queue_path(settings.MEDIA_BASE)):
+        queue = gitstatus.queue_generate(
+            settings.MEDIA_BASE,
+            gitolite.get_repos_orgs()
+        )
+        gitstatus.queue_write(settings.MEDIA_BASE, queue)
+    return gitstatus.update_store(
+        base_dir=settings.MEDIA_BASE,
+        delta=60,
+        minimum=settings.GITSTATUS_INTERVAL,
+    )
+
+
 class FileAddDebugTask(Task):
     abstract = True
         
-    def on_failure(self, exception, task_id, args, kwargs, einfo):
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
         entity = args[2]
         entity.files_log(0,'DDRTask.ON_FAILURE')
     
@@ -169,8 +228,11 @@ class FileAddDebugTask(Task):
         else:
             entity.files_log(0,lockstatus)
         entity.files_log(1, 'END task_id %s\n' % task_id)
-        collection = Collection.from_json(Collection.collection_path(None,entity.repo,entity.org,entity.cid))
+        collection_path = Collection.collection_path(None,entity.repo,entity.org,entity.cid)
+        collection = Collection.from_json(collection_path)
         collection.cache_delete()
+        gitstatus.update(settings.MEDIA_BASE, collection_path)
+        gitstatus.unlock(settings.MEDIA_BASE, 'entity_add_file')
 
 @task(base=FileAddDebugTask, name='entity-add-file')
 def entity_add_file( git_name, git_mail, entity, src_path, role, data, agent='' ):
@@ -183,6 +245,7 @@ def entity_add_file( git_name, git_mail, entity, src_path, role, data, agent='' 
     @param git_mail: Email of git committer.
     @param agent: (optional) Name of software making the change.
     """
+    gitstatus.lock(settings.MEDIA_BASE, 'entity_add_file')
     return entity.add_file(git_name, git_mail, src_path, role, data, agent)
 
 @task(base=FileAddDebugTask, name='entity-add-access')
@@ -195,6 +258,7 @@ def entity_add_access( git_name, git_mail, entity, ddrfile, agent='' ):
     @param git_mail: Email of git committer.
     @param agent: (optional) Name of software making the change.
     """
+    gitstatus.lock(settings.MEDIA_BASE, 'entity_add_access')
     return entity.add_access(git_name, git_mail, ddrfile, agent)
 
 
@@ -242,6 +306,8 @@ class DeleteEntityTask(Task):
         collection_path = args[2]
         collection = Collection.from_json(collection_path)
         lockstatus = collection.unlock(task_id)
+        gitstatus.update(settings.MEDIA_BASE, collection_path)
+        gitstatus.unlock(settings.MEDIA_BASE, 'delete_entity')
 
 @task(base=DeleteEntityTask, name='webui-entity-delete')
 def delete_entity( git_name, git_mail, collection_path, entity_id, agent='' ):
@@ -252,6 +318,7 @@ def delete_entity( git_name, git_mail, collection_path, entity_id, agent='' ):
     @param git_mail: Email of git committer.
     @param agent: (optional) Name of software making the change.
     """
+    gitstatus.lock(settings.MEDIA_BASE, 'delete_entity')
     logger.debug('collection_delete_entity(%s,%s,%s,%s,%s)' % (git_name, git_mail, collection_path, entity_id, agent))
     status,message = entity_destroy(git_name, git_mail, collection_path, entity_id, agent)
     return status,message,collection_path,entity_id
@@ -301,6 +368,8 @@ class DeleteFileTask(Task):
         collection_path = args[2]
         collection = Collection.from_json(collection_path)
         lockstatus = collection.unlock(task_id)
+        gitstatus.update(settings.MEDIA_BASE, collection_path)
+        gitstatus.unlock(settings.MEDIA_BASE, 'delete_file')
 
 @task(base=DeleteFileTask, name='webui-file-delete')
 def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, agent='' ):
@@ -313,6 +382,7 @@ def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, 
     @param agent: (optional) Name of software making the change.
     """
     logger.debug('delete_file(%s,%s,%s,%s,%s,%s)' % (git_name, git_mail, collection_path, entity_id, file_basename, agent))
+    gitstatus.lock(settings.MEDIA_BASE, 'delete_file')
     # TODO rm_files list should come from the File model
     file_id = os.path.splitext(file_basename)[0]
     repo,org,cid,eid,role,sha1 = file_id.split('-')
@@ -336,7 +406,7 @@ def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, 
 class CollectionSyncDebugTask(Task):
     abstract = True
     
-    def on_failure(self, exc, task_id, args, kwargs):
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
         pass
     
     def on_success(self, retval, task_id, args, kwargs):
@@ -349,6 +419,8 @@ class CollectionSyncDebugTask(Task):
         #       starts in webui.views.collections.sync
         collection.unlock(task_id)
         collection.cache_delete()
+        gitstatus.update(settings.MEDIA_BASE, collection_path)
+        gitstatus.unlock(settings.MEDIA_BASE, 'collection_sync')
 
 @task(base=CollectionSyncDebugTask, name='collection-sync')
 def collection_sync( git_name, git_mail, collection_path ):
@@ -359,6 +431,7 @@ def collection_sync( git_name, git_mail, collection_path ):
     @param git_mail: Email of git committer.
     @return collection_path: Absolute path to collection.
     """
+    gitstatus.lock(settings.MEDIA_BASE, 'collection_sync')
     exit,status = sync(git_name, git_mail, collection_path)
     # update search index
     path = os.path.join(collection_path, 'collection.json')
@@ -380,7 +453,7 @@ TASK_STATUS_MESSAGES['webui-csv-export-model'] = {
 
 class CSVExportDebugTask(Task):
     abstract = True
-    def on_failure(self, exc, task_id, args, kwargs):
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
         pass
     def on_success(self, retval, task_id, args, kwargs):
         pass

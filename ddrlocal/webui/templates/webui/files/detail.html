@@ -5,7 +5,8 @@
 {% block title %}{{ entity.title }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li class="active">{{ file.role }}-{{ file.sha1|slice:":10" }}</li>
+<li><a href="{% url "webui-entity-files" repo org cid eid role %}">{{ role }}</a></li>
+<li>{{ file.sha1|slice:":10" }}</li>
 {% endblock breadcrumbs %}
 
 

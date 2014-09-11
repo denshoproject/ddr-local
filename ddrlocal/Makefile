@@ -29,6 +29,8 @@ help:
 	@echo ""
 	@echo "update  - Updates ddr-cmd and ddr-local and re-copies config files."
 	@echo ""
+	@echo "syncdb  - Initialize or update Django app's database tables."
+	@echo ""
 	@echo "reload  - Reloads supervisord and nginx configs"
 	@echo "reload-nginx"
 	@echo "reload-supervisors"
@@ -71,6 +73,8 @@ howto-install:
 	@echo "- git clone https://github.com/densho/ddr-local.git /usr/local/src/ddr-local"
 	@echo "- cd /usr/local/src/ddr-local/ddrlocal"
 	@echo "- make install"
+	@echo "- make enable-bkgnd"
+	@echo "- make syncdb"
 
 
 install: install-prep install-daemons install-ddr install-static cp-configs
@@ -80,7 +84,7 @@ update: update-ddr
 clean: clean-static
 
 
-install-prep: apt-update install-core git-config install-misc-tools
+install-prep: apt-update install-core ddr-user git-config install-misc-tools
 
 apt-update:
 	@echo ""
@@ -88,7 +92,11 @@ apt-update:
 	apt-get --assume-yes update
 
 install-core:
-	apt-get --assume-yes install bzip2 curl gdebi-core git-core logrotate p7zip-full wget
+	apt-get --assume-yes install bzip2 curl gdebi-core git-core logrotate ntp p7zip-full wget
+
+ddr-user:
+	-addgroup ddr plugdev
+	-addgroup ddr vboxsf
 
 git-config:
 	git config --global alias.st status
@@ -146,6 +154,9 @@ install-ddr-cmdln:
 	-mkdir /var/log/ddr
 	chown -R ddr.root /var/log/ddr
 	chmod -R 755 /var/log/ddr
+	-mkdir -p /var/www/media
+	chown -R ddr.root /var/www/media
+	chmod -R 755 /var/www/media
 
 update-ddr-cmdln:
 	@echo ""
@@ -161,13 +172,29 @@ install-ddr-local:
 	apt-get --assume-yes install imagemagick libexempi3 libssl-dev python-dev libxml2 libxml2-dev libxslt1-dev supervisor
 	git pull
 	pip install -U --download-cache=$(PIP_CACHE_DIR) -r /usr/local/src/ddr-local/ddrlocal/requirements/production.txt
+# logs dir
 	-mkdir /var/log/ddr
+	chown -R ddr.root /var/log/ddr
+	chmod -R 755 /var/log/ddr
+# sqlite db dir
+	-mkdir /var/lib/ddr
+	chown -R ddr.root /var/lib/ddr
+	chmod -R 755 /var/lib/ddr
+# media dir
+	-mkdir -p /var/www/media
+	chown -R ddr.root /var/www/media
+	chmod -R 755 /var/www/media
 
 update-ddr-local:
 	@echo ""
 	@echo "ddr-local --------------------------------------------------------------"
 	git fetch && git pull
 	pip install -U --download-cache=$(PIP_CACHE_DIR) -r /usr/local/src/ddr-local/ddrlocal/requirements/production.txt
+
+syncdb:
+	cd /usr/local/src/ddr-local/ddrlocal && ./manage.py syncdb --noinput
+	chown -R ddr.root /var/lib/ddr
+	chmod -R 755 /var/lib/ddr
 
 
 install-static: install-modernizr install-bootstrap install-jquery install-tagmanager install-typeahead
@@ -304,6 +331,7 @@ git-status:
 install-ddr-manual:
 	@echo ""
 	@echo "ddr-manual --------------------------------------------------------------"
+	pip install -U --download-cache=$(PIP_CACHE_DIR) sphinx
 	if test -d /usr/local/src/ddr-manual; \
 	then cd /usr/local/src/ddr-manual && git pull; \
 	else cd /usr/local/src && git clone https://github.com/densho/ddr-manual.git; \

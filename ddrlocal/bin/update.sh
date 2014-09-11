@@ -71,6 +71,7 @@ cp /usr/local/src/ddr-local/debian/conf/supervisord.conf /etc/supervisor/
 
 echo "/etc/supervisor/conf.d/celeryd.conf"
 cp /usr/local/src/ddr-local/debian/conf/celeryd.conf /etc/supervisor/conf.d/
+cp /usr/local/src/ddr-local/debian/conf/celerybeat.conf /etc/supervisor/conf.d/
 
 echo "/etc/supervisor/conf.d/gunicorn_ddrlocal.conf"
 cp /usr/local/src/ddr-local/debian/conf/gunicorn_ddrlocal.conf /etc/supervisor/conf.d/

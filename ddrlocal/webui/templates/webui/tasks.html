@@ -26,6 +26,20 @@
 <form name="task-dismiss" action="" method="post">{% csrf_token %}
   <input type='hidden' name='next' value='{{ form.next.value }}' />
 
+{% if dismissable_tasks %}
+  <tr>
+    <td colspan="3">
+    </td>
+    <td align="right">
+<a id="select-all" href="#" class="btn btn-primary btn-xs">Select All</a>
+<a id="unselect-all" href="#" class="btn btn-primary btn-xs">Unselect All</a>
+    </td>
+    <td>
+<button type="submit" class="btn btn-primary">Dismiss selected tasks</button>
+    </td>
+  </tr>
+{% endif %}{# dismissable_tasks #}
+
 {% for task in celery_tasks %}
   <tr>
     <td class="status {{ task.status }}">
@@ -59,25 +73,6 @@ more&nbsp;info
     </td>
   </tr>
 {% endfor %}
-
-{% if dismissable_tasks %}
-  <tr>
-    <td colspan="4">
-    </td>
-    <td>
-<a id="select-all" href="#" class="btn btn-primary btn-xs">Select All</a>
-<a id="unselect-all" href="#" class="btn btn-primary btn-xs">Unselect All</a>
-    </td>
-  </tr>
-
-  <tr>
-    <td colspan="4">
-    </td>
-    <td>
-<button type="submit" class="btn btn-primary">Dismiss selected tasks</button>
-    </td>
-  </tr>
-{% endif %}{# dismissable_tasks #}
 
 </form>
 </table>

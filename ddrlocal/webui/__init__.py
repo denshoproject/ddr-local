@@ -2,12 +2,18 @@ import logging
 logger = logging.getLogger(__name__)
 
 from django.conf import settings
-from django.core.cache import cache
 
-from DDR import commands
-from DDR.docstore import make_index_name, index_exists
-from DDR.dvcs import gitolite_info, gitolite_orgs
-from storage import base_path
+from DDR.docstore import make_index_name, index_exists, target_index
+
+
+COLLECTION_FETCH_CACHE_KEY = 'webui:collection:%s:fetch'
+COLLECTION_STATUS_CACHE_KEY = 'webui:collection:%s:status'
+COLLECTION_ANNEX_STATUS_CACHE_KEY = 'webui:collection:%s:annex_status'
+GITOLITE_INFO_CACHE_KEY = 'ddrlocal:gitolite_info'
+
+COLLECTION_FETCH_TIMEOUT = 0
+COLLECTION_STATUS_TIMEOUT = 60 * 10
+COLLECTION_ANNEX_STATUS_TIMEOUT = 60 * 10
 
 
 WEBUI_MESSAGES = {
@@ -50,30 +56,6 @@ WEBUI_MESSAGES = {
     
 }
 
-
-def get_repos_orgs():
-    """Returns list of repo-orgs that the current SSH key gives access to.
-    
-    Hits up Gitolite for the info.
-    
-    If no repos/orgs are returned it probably means that the ddr user's
-    SSH keys are missing or invalid.  The repos_orgs value is still cached
-    for 1 minute to prevent flapping.
-    """
-    key = 'ddrlocal:gitolite_repos_orgs'
-    repos_orgs = cache.get(key)
-    if not repos_orgs:
-        status,lines = gitolite_info(settings.GITOLITE)
-        if status and not lines:
-            logging.error('commands.gitolite_info() status:%s, lines:%s' % (status,lines))
-            logging.error('| Is ddr missing its SSH keys?')
-        repos_orgs = gitolite_orgs(lines)
-        if repos_orgs:
-            cache.set(key, repos_orgs, settings.REPOS_ORGS_TIMEOUT)
-        else:
-            cache.set(key, repos_orgs, 60*1) # 1 minute
-    return repos_orgs
-
 def set_docstore_index( request ):
     """Ensure active Elasticsearch index matches active storage; complain if not.
     
@@ -92,6 +74,8 @@ def set_docstore_index( request ):
     docstore_index = None
     docstore_index_exists = None
     storage_label = request.session.get('storage_label', None)
+    if not storage_label:
+        storage_label = target_index(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
     if storage_label:
         docstore_index = make_index_name(storage_label)
         if docstore_index:

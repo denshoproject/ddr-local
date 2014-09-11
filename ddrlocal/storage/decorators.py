@@ -13,7 +13,7 @@ from DDR import commands
 
 from storage import STORAGE_MESSAGES
 from storage import base_path
-from webui import get_repos_orgs
+from webui import gitolite
 
 
 
@@ -41,7 +41,7 @@ def storage_required(func):
         if not (os.path.exists(basepath) and os.listdir(basepath)):
             messages.error(request, 'ERROR: Base path does not exist or is not listable.')
             return HttpResponseRedirect(reverse('storage-required'))
-        repos_orgs = get_repos_orgs()
+        repos_orgs = gitolite.get_repos_orgs()
         if repos_orgs:
             # propagate error
             if (type(repos_orgs) == type('')) and ('error' in repos_orgs):

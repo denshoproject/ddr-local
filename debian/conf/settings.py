@@ -18,18 +18,23 @@ DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
 import ConfigParser
+from datetime import timedelta
 import logging
 
-from DDR import CONFIG_FILES, NoConfigError
+os.environ['USER'] = 'ddr'
 
+AGENT = 'ddr-local'
+
+from DDR import CONFIG_FILES, NoConfigError
 config = ConfigParser.ConfigParser()
 configs_read = config.read(CONFIG_FILES)
 if not configs_read:
     raise NoConfigError('No config file!')
 
-os.environ['USER'] = 'ddr'
-
-AGENT = 'ddr-local'
+# The following settings are in debian/config/ddr.cfg.
+# See that file for comments on the settings.
+# ddr.cfg is installed in /etc/ddr/ddr.cfg.
+# Settings in /etc/ddr/ddr.cfg may be overridden in /etc/ddr/local.cfg.
 
 SECRET_KEY           = config.get('local','secret_key')
 LANGUAGE_CODE        = config.get('local','language_code')
@@ -57,12 +62,17 @@ THUMBNAIL_OPTIONS    = config.get('local','thumbnail_options')
 DEFAULT_PERMISSION_COLLECTION = config.get('local','default_permission_collection')
 DEFAULT_PERMISSION_ENTITY     = config.get('local','default_permission_entity')
 DEFAULT_PERMISSION_FILE       = config.get('local','default_permission_file')
+LOG_DIR              = config.get('local', 'log_dir')
 LOG_FILE             = config.get('local', 'log_file')
 LOG_LEVEL            = config.get('local', 'log_level')
 VOCAB_TERMS_URL      = config.get('local', 'vocab_terms_url')
 CSV_TMPDIR           = '/tmp/ddr/csv'
+GITOLITE_INFO_CACHE_TIMEOUT = int(config.get('local', 'gitolite_info_cache_timeout'))
+GITOLITE_INFO_CACHE_CUTOFF  = int(config.get('local', 'gitolite_info_cache_cutoff'))
+GITOLITE_INFO_CHECK_PERIOD  = int(config.get('local', 'gitolite_info_check_period'))
 
 GITOLITE             = config.get('workbench','gitolite')
+GITOLITE_TIMEOUT     = config.get('workbench','gitolite_timeout')
 CGIT_URL             = config.get('workbench','cgit_url')
 GIT_REMOTE_NAME      = config.get('workbench','remote')
 WORKBENCH_URL        = config.get('workbench','workbench_url')
@@ -112,9 +122,36 @@ PRETTY_DATETIME_FORMAT = '%d %B %Y, %I:%M %p'
 # when redirected to either login or storage remount page
 REDIRECT_URL_SESSION_KEY = 'remount_redirect_uri'
 
-CELERY_TASKS_SESSION_KEY = 'celery-tasks'
-
 REPOS_ORGS_TIMEOUT = 60*30 # 30min
+
+GITSTATUS_LOG = '/var/log/ddr/gitstatus.log'
+# File used to manage queue for gitstatus-update
+GITSTATUS_QUEUE_PATH = os.path.join(MEDIA_BASE, '.gitstatus-queue')
+# Processes that should not be interrupted by gitstatus-update should
+# write something to this file (doesn't matter what) and remove the file
+# when they are finished.
+GITSTATUS_LOCK_PATH = os.path.join(MEDIA_BASE, '.gitstatus-stop')
+# Normally a global lockfile allows only a single gitstatus process at a time.
+# To allow multiple processes (e.g. multiple VMs using a shared storage device),
+# add the following setting to /etc/ddr/local.cfg:
+#     gitstatus_use_global_lock=0
+GITSTATUS_USE_GLOBAL_LOCK = True
+if config.has_option('local', 'gitstatus_use_global_lock'):
+    GITSTATUS_USE_GLOBAL_LOCK = config.get('local', 'gitstatus_use_global_lock')
+# Minimum interval between git-status updates per collection repository.
+GITSTATUS_INTERVAL = 60*60*1
+GITSTATUS_BACKOFF = 30
+# Indicates whether or not gitstatus_update_store periodic task is active.
+# This should be True for most single-user workstations.
+# See CELERYBEAT_SCHEDULE below.
+# IMPORTANT: If disabling GITSTATUS, also remove the celerybeat config file
+# and restart supervisord:
+#   $ sudo supervisorctl stop celerybeat
+#   $ sudo rm /etc/supervisor/conf.d/celerybeat.conf
+#   $ sudo supervisorctl reload
+GITSTATUS_BACKGROUND_ACTIVE = True
+if config.has_option('local', 'gitstatus_background_active'):
+    GITSTATUS_BACKGROUND_ACTIVE = config.get('local', 'gitstatus_background_active')
 
 # ----------------------------------------------------------------------
 
@@ -140,6 +177,7 @@ INSTALLED_APPS = (
     #
     'bootstrap_pagination',
     'djcelery',
+    'gunicorn',
     'sorl.thumbnail',
     #
     'ddrlocal',
@@ -171,11 +209,28 @@ CACHES = {
     }
 }
 
-# Celery
-BROKER_URL            = 'redis://%s:%s/%s' % (REDIS_HOST, REDIS_PORT, REDIS_DB_CELERY_BROKER)
+# celery
+CELERY_TASKS_SESSION_KEY = 'celery-tasks'
 CELERY_RESULT_BACKEND = 'redis://%s:%s/%s' % (REDIS_HOST, REDIS_PORT, REDIS_DB_CELERY_RESULT)
+BROKER_URL            = 'redis://%s:%s/%s' % (REDIS_HOST, REDIS_PORT, REDIS_DB_CELERY_BROKER)
 BROKER_TRANSPORT_OPTIONS = {'visibility_timeout': 60 * 60}  # 1 hour
 CELERYD_HIJACK_ROOT_LOGGER = False
+CELERY_ACCEPT_CONTENT = ['pickle', 'json', 'msgpack', 'yaml']
+CELERYBEAT_SCHEDULER = None
+CELERYBEAT_PIDFILE = None
+CELERYBEAT_SCHEDULE = {
+    'webui-gitolite-info-refresh': {
+        'task': 'webui.tasks.gitolite_info_refresh',
+        'schedule': timedelta(seconds=GITOLITE_INFO_CHECK_PERIOD),
+    }
+}
+if GITSTATUS_BACKGROUND_ACTIVE:
+    CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
+    CELERYBEAT_PIDFILE = '/tmp/celerybeat.pid'
+    CELERYBEAT_SCHEDULE['webui-git-status-update-store'] = {
+        'task': 'webui.tasks.gitstatus_update_store',
+        'schedule': timedelta(seconds=60),
+    }
 
 # ElasticSearch
 DOCSTORE_HOSTS = [

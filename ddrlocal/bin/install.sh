@@ -74,7 +74,7 @@ cd /usr/local/src
 git clone https://github.com/densho/ddr-lint.git
 cd /usr/local/src/ddr-lint/ddrlint
 python setup.py install
-pip install --download-cache=$PIP_CACHE_DIR -r /usr/local/src/ddr-cmdln/ddr/requirements/production.txt
+pip install -U --download-cache=$PIP_CACHE_DIR -r /usr/local/src/ddr-cmdln/ddr/requirements/production.txt
 
 echo "${bldgrn}ddr-cmdln${txtrst}"
 apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev pmount udisks python-dev python-pip
@@ -82,22 +82,22 @@ cd /usr/local/src
 git clone https://github.com/densho/ddr-cmdln.git
 cd /usr/local/src/ddr-cmdln/ddr
 python setup.py install
-pip install --download-cache=$PIP_CACHE_DIR -r /usr/local/src/ddr-cmdln/ddr/requirements/production.txt
+pip install -U --download-cache=$PIP_CACHE_DIR -r /usr/local/src/ddr-cmdln/ddr/requirements/production.txt
 adduser ddr plugdev
 
 echo "${bldgrn}ddr-local${txtrst}"
-apt-get --assume-yes install imagemagick libexempi3 libssl-dev python-dev libxml2 libxml2-dev libxslt1-dev supervisor
+apt-get --assume-yes install imagemagick libexempi3 libssl-dev ntp python-dev libxml2 libxml2-dev libxslt1-dev supervisor
 cd /usr/local/src
 git clone https://github.com/densho/ddr-local.git
 cd /usr/local/src/ddr-local/ddrlocal
-pip install --download-cache=$PIP_CACHE_DIR -r /usr/local/src/ddr-local/ddrlocal/requirements/production.txt
+pip install -U --download-cache=$PIP_CACHE_DIR -r /usr/local/src/ddr-local/ddrlocal/requirements/production.txt
 
 #echo "${bldgrn}ddr-public${txtrst}"
 #apt-get --assume-yes install imagemagick supervisor
 #cd /usr/local/src
 #git clone https://github.com/densho/ddr-public.git
 #cd /usr/local/src/ddr-public/ddrpublic
-#pip install --download-cache=$PIP_CACHE_DIR -U -r /usr/local/src/ddr-public/ddrpublic/requirements/production.txt
+#pip install -U --download-cache=$PIP_CACHE_DIR -U -r /usr/local/src/ddr-public/ddrpublic/requirements/production.txt
 #chown -R root.ddr /usr/local/src/ddr-public
 #chmod +x /usr/local/src/ddr-public/ddrpublic/manage.py
 
@@ -157,10 +157,13 @@ chmod 644 /usr/local/src/ddr-local/ddrlocal/ddrlocal/settings.py
 echo "${bldgrn}restarting supervisord${txtrst}"
 cp /usr/local/src/ddr-local/debian/conf/supervisord.conf /etc/supervisor/
 cp /usr/local/src/ddr-local/debian/conf/celeryd.conf /etc/supervisor/conf.d/
+cp /usr/local/src/ddr-local/debian/conf/celerybeat.conf /etc/supervisor/conf.d/
 cp /usr/local/src/ddr-local/debian/conf/gunicorn_ddrlocal.conf /etc/supervisor/conf.d/
 chown root.root /etc/supervisor/conf.d/celeryd.conf
+chown root.root /etc/supervisor/conf.d/celerybeat.conf
 chown root.root /etc/supervisor/conf.d/gunicorn_ddrlocal.conf
 chmod 644 /etc/supervisor/conf.d/celeryd.conf
+chmod 644 /etc/supervisor/conf.d/celerybeat.conf
 chmod 644 /etc/supervisor/conf.d/gunicorn_ddrlocal.conf
 /etc/init.d/supervisor restart
 echo ""  # supervisord status doesn't print the \n itself

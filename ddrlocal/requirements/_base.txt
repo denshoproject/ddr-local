@@ -1,12 +1,12 @@
 # dependencies used in all environments
 
 # Non-Python dependencies
-# sudo apt-get install libexempi3, libssl-dev, redis-server, python2.7, supervisor, imagemagick
+# sudo apt-get install libssl-dev redis-server python2.7 supervisor
 
                          # LICENSE  DEBIAN PKG (WHEEZY)              (JESSIE)                         Python3
 
 django                   # MIT      python-django (1.4.5-1+deb7u7)   python-django (1.6.5-1)          y
-gunicorn<=0.15           # MIT      gunicorn (0.14.5-3+deb7u1)       gunicorn (18.0-3)                y
+gunicorn                 # MIT      gunicorn (0.14.5-3+deb7u1)       gunicorn (18.0-3)                y
 
 # cache, sessions, celery broker
 redis                    # MIT      python-redis (2.4.13-1)          python-redis (2.9.1-3)           y
@@ -24,7 +24,6 @@ django-bootstrap-pagination # MIT
 python-dateutil          # BSD      python-dateutil (1.5+dfsg-0.1)   python-dateutil (1.5+dfsg-1)     y
 envoy                    # MIT      n/a                              n/a                              y
 lxml                     # BSD      python-lxml (2.3.2-1+deb7u1)     python-lxml (3.3.5-1+b1)         y
-python-xmp-toolkit       # New BSD  n/a                              (sid) python-libxmp (v?)         y
 pytz                     # MIT      python-tz (2012c-1)              python-tz (2012c-1)              y
 requests                 # Apache   python-requests (0.12.1-1)       python-requests (2.3.0-1)        y
 sorl-thumbnail           # BSD      python-sorl-thumbnail (11.12-4)  python-sorl-thumbnail (11.12-6)  y
