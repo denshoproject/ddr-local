@@ -15,6 +15,7 @@ from django.core.urlresolvers import reverse
 from django.db import models
 
 from DDR import dvcs
+from DDR.models import module_is_valid
 from DDR.storage import storage_status
 
 from storage import base_path
@@ -43,33 +44,27 @@ from webui import COLLECTION_STATUS_TIMEOUT
 from webui import COLLECTION_ANNEX_STATUS_TIMEOUT
 
 
-def check_repo_models(request):
+def repo_models_valid(request):
     """Displays alerts if repo_models are absent or undefined
     """
+    valid = True
     NOIMPORT_MSG = 'Error: Could not import model definitions!'
-    UNDEFINED_MSG = 'Error: One or more models are undefined!'
+    UNDEFINED_MSG = 'Error: One or more models improperly defined.'
     # don't check again if messages already added
     added = False
     for m in messages.get_messages(request):
         if (NOIMPORT_MSG in m.message) or (UNDEFINED_MSG in m.message):
             added = True
-    if not added:
-        # ddr repo not available or doesn't contain repo_models
-        if not 'ddr/repo_models' in collectionmodule.__file__:
-            # collection.__file__ == absolute path to the module
-            messages.error(request, NOIMPORT_MSG)
-        # repo_models may be present but no models defined
-        undefined = []
-        if (not collectionmodule.COLLECTION_FIELDS):
-            undefined.append('Collection')
-        if (not entitymodule.ENTITY_FIELDS):
-            undefined.append('Entity')
-        if (not filemodule.FILE_FIELDS):
-            undefined.append('File')
-        if undefined:
-            models = ', '.join(undefined)
-            messages.error(request, UNDEFINED_MSG + ' [%s]' % models)
-
+    if added:
+        valid = False
+    else:
+        cvalid,cmsg = module_is_valid(collectionmodule)
+        evalid,emsg = module_is_valid(entitymodule)
+        fvalid,fmsg = module_is_valid(filemodule)
+        if not (cvalid and evalid and fvalid):
+            valid = False
+            messages.error(request, UNDEFINED_MSG)
+    return valid
 
 
 # functions relating to inheritance ------------------------------------

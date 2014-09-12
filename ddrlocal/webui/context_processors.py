@@ -7,14 +7,13 @@ from django.conf import settings
 from django.core.urlresolvers import reverse
 
 from ddrlocal import COMMIT
-from webui.models import check_repo_models
+from webui.models import repo_models_valid
 from webui.tasks import session_tasks_list
 
 
 def sitewide(request):
     """Variables that need to be inserted into all templates.
     """
-    check_repo_models(request)
     # logout redirect - chop off edit/new/batch URLs if present
     logout_next = '?'.join([request.META['PATH_INFO'], request.META['QUERY_STRING']])
     if logout_next.find('edit') > -1:    logout_next = logout_next.split('edit')[0]
@@ -27,6 +26,7 @@ def sitewide(request):
         'pid': os.getpid(),
         'host': os.uname()[1],
         'commit': COMMIT,
+        'models_valid': repo_models_valid(request),
         # user info
         'username': request.session.get('username', None),
         'git_name': request.session.get('git_name', None),
