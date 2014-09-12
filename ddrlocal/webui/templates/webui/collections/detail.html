@@ -27,7 +27,7 @@
 
 <div id="overview">
 
-{% if username %}
+{% if username and models_valid %}
 {% if collection.locked or collection.repo_behind or collection.repo_conflicted %}
 <p>
 <button class="btn btn-mini" title="This collection is locked"><span class="glyphicon glyphicon-lock"></span> Edit [locked]</button>

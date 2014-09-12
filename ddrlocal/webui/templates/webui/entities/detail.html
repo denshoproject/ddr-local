@@ -28,7 +28,7 @@
 
 <div id="overview">
 
-{% if username %}
+{% if username and models_valid %}
 {% if entity.locked or collection.locked or collection.repo_behind or collection.repo_conflicted %}
 <p>
 <button id="delete" class="btn btn-mini disabled" title="This object is locked"><span class="glyphicon glyphicon-lock"></span> delete</button>
