@@ -321,7 +321,8 @@ class DDRLocalCollection( DDRCollection ):
         collection = [{'application': 'https://github.com/densho/ddr-local.git',
                        'commit': COMMIT,
                        'release': VERSION,
-                       'git': dvcs.git_version(self.path),}]
+                       'git': dvcs.git_version(self.path),
+                       'models': dvcs.latest_commit(collectionmodule.__file__),}]
         template_passthru = ['id', 'record_created', 'record_lastmod']
         for ff in collectionmodule.COLLECTION_FIELDS:
             item = {}
@@ -658,7 +659,8 @@ class DDRLocalEntity( DDREntity ):
         entity = [{'application': 'https://github.com/densho/ddr-local.git',
                    'commit': COMMIT,
                    'release': VERSION,
-                   'git': dvcs.git_version(self.parent_path),}]
+                   'git': dvcs.git_version(self.parent_path),
+                   'models': dvcs.latest_commit(entitymodule.__file__),}]
         exceptions = ['files', 'filemeta']
         template_passthru = ['id', 'record_created', 'record_lastmod']
         for ff in entitymodule.ENTITY_FIELDS:
@@ -1405,7 +1407,8 @@ class DDRLocalFile( object ):
         file_ = [{'application': 'https://github.com/densho/ddr-local.git',
                   'commit': COMMIT,
                   'release': VERSION,
-                  'git': dvcs.git_version(self.collection_path),},
+                  'git': dvcs.git_version(self.collection_path),
+                  'models': dvcs.latest_commit(filemodule.__file__),},
                  {'path_rel': self.path_rel},]
         for ff in filemodule.FILE_FIELDS:
             item = {}
