@@ -38,8 +38,15 @@ def storage_required(func):
         readable = False
         # if we can get list of collections, storage must be readable
         basepath = settings.MEDIA_BASE
-        if not (os.path.exists(basepath) and os.listdir(basepath)):
-            messages.error(request, 'ERROR: Base path does not exist or is not listable.')
+        if not os.path.exists(basepath):
+            messages.error(request, 'ERROR: Base path does not exist.')
+            return HttpResponseRedirect(reverse('storage-required'))
+        try:
+            basepath_listdir = os.listdir(basepath)
+        except OSError:
+            basepath_listdir = []
+        if not basepath_listdir:
+            messages.error(request, 'ERROR: Base path exists but is not listable (probably the drive is not mounted).')
             return HttpResponseRedirect(reverse('storage-required'))
         repos_orgs = gitolite.get_repos_orgs()
         if repos_orgs:
