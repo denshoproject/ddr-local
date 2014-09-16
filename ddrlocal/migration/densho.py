@@ -127,8 +127,8 @@ try:
     from repo_models import collection as collectionmodule
     from repo_models import entity as entitymodule
     from repo_models import files as filemodule
-    from repo_models.entity import ENTITY_FIELDS
-    from repo_models.files import FILE_FIELDS
+    from repo_models.entity import FIELDS as ENTITY_FIELDS
+    from repo_models.files import FIELDS as FILE_FIELDS
     # TODO This module should not have to import these!
     from repo_models.entity import STATUS_CHOICES, PERMISSIONS_CHOICES, RIGHTS_CHOICES
     from repo_models.entity import LANGUAGE_CHOICES, GENRE_CHOICES, FORMAT_CHOICES
@@ -136,8 +136,8 @@ except ImportError:
     from ddrlocal.models import collection as collectionmodule
     from ddrlocal.models import entity as entitymodule
     from ddrlocal.models import files as filemodule
-    from ddrlocal.models.entity import ENTITY_FIELDS
-    from ddrlocal.models.files import FILE_FIELDS
+    from ddrlocal.models.entity import FIELDS as ENTITY_FIELDS
+    from ddrlocal.models.files import FIELDS as FILE_FIELDS
     STATUS_CHOICES = PERMISSIONS_CHOICES = RIGHTS_CHOICES = []
     LANGUAGE_CHOICES = GENRE_CHOICES = FORMAT_CHOICES = []
 #def add_file( git_name, git_mail, entity, src_path, role, data ):

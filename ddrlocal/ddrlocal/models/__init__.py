@@ -134,7 +134,7 @@ class DDRLocalCollection( DDRCollection ):
         @returns: Collection object
         """
         collection = DDRLocalCollection(path)
-        for f in collectionmodule.COLLECTION_FIELDS:
+        for f in collectionmodule.FIELDS:
             if hasattr(f, 'name') and hasattr(f, 'initial'):
                 setattr(collection, f['name'], f['initial'])
         return collection
@@ -189,7 +189,7 @@ class DDRLocalCollection( DDRCollection ):
         >>> c.inheritable_fields()
         ['status', 'public', 'rights']
         """
-        return _inheritable_fields(collectionmodule.COLLECTION_FIELDS )
+        return _inheritable_fields(collectionmodule.FIELDS )
     
     def labels_values(self):
         """Apply display_{field} functions to prep object data for the UI.
@@ -202,7 +202,7 @@ class DDRLocalCollection( DDRCollection ):
         module the contents of the field will be passed to it
         """
         lv = []
-        for f in collectionmodule.COLLECTION_FIELDS:
+        for f in collectionmodule.FIELDS:
             if hasattr(self, f['name']) and f.get('form',None):
                 key = f['name']
                 label = f['form']['label']
@@ -226,7 +226,7 @@ class DDRLocalCollection( DDRCollection ):
         @returns data: dict object as used by Django Form object.
         """
         data = {}
-        for f in collectionmodule.COLLECTION_FIELDS:
+        for f in collectionmodule.FIELDS:
             if hasattr(self, f['name']) and f.get('form',None):
                 key = f['name']
                 # run formprep_* functions on field data if present
@@ -247,7 +247,7 @@ class DDRLocalCollection( DDRCollection ):
         
         @param form
         """
-        for f in collectionmodule.COLLECTION_FIELDS:
+        for f in collectionmodule.FIELDS:
             if hasattr(self, f['name']) and f.get('form',None):
                 key = f['name']
                 # run formpost_* functions on field data if present
@@ -282,15 +282,15 @@ class DDRLocalCollection( DDRCollection ):
         return collection
     
     def load_json(self, path):
-        """Populate Collection data from .json file and COLLECTION_FIELDS.
+        """Populate Collection data from .json file and FIELDS.
         
-        Loads the JSON datafile then goes through COLLECTION_FIELDS,
+        Loads the JSON datafile then goes through FIELDS,
         turning data in the JSON file into attributes of the object.
         
         @param path: Absolute path to collection directory
         """
         json_data = self.json().data
-        for ff in collectionmodule.COLLECTION_FIELDS:
+        for ff in collectionmodule.FIELDS:
             for f in json_data:
                 if hasattr(f, 'keys') and (f.keys()[0] == ff['name']):
                     setattr(self, f.keys()[0], f.values()[0])
@@ -304,9 +304,9 @@ class DDRLocalCollection( DDRCollection ):
         else:
             self.record_lastmod = datetime.now()
         # end special cases
-        # Ensure that every field in collectionmodule.COLLECTION_FIELDS is represented
+        # Ensure that every field in collectionmodule.FIELDS is represented
         # even if not present in json_data.
-        for ff in collectionmodule.COLLECTION_FIELDS:
+        for ff in collectionmodule.FIELDS:
             if not hasattr(self, ff['name']):
                 setattr(self, ff['name'], ff.get('default',None))
     
@@ -324,7 +324,7 @@ class DDRLocalCollection( DDRCollection ):
                        'git': dvcs.git_version(self.path),
                        'models': dvcs.latest_commit(collectionmodule.__file__),}]
         template_passthru = ['id', 'record_created', 'record_lastmod']
-        for ff in collectionmodule.COLLECTION_FIELDS:
+        for ff in collectionmodule.FIELDS:
             item = {}
             key = ff['name']
             val = ''
@@ -362,7 +362,7 @@ class DDRLocalCollection( DDRCollection ):
         """
         NAMESPACES = None
         tree = etree.fromstring(self.ead().xml)
-        for f in collectionmodule.COLLECTION_FIELDS:
+        for f in collectionmodule.FIELDS:
             key = f['name']
             value = ''
             if hasattr(self, f['name']):
@@ -510,7 +510,7 @@ class DDRLocalEntity( DDREntity ):
         @param path: Absolute path to entity; must end in valid DDR entity id.
         """
         entity = Entity(path)
-        for f in entitymodule.ENTITY_FIELDS:
+        for f in entitymodule.FIELDS:
             if hasattr(f, 'name') and hasattr(f, 'initial'):
                 setattr(entity, f['name'], f['initial'])
         return entity
@@ -519,7 +519,7 @@ class DDRLocalEntity( DDREntity ):
         _inherit( parent, self )
 
     def inheritable_fields( self ):
-        return _inheritable_fields(entitymodule.ENTITY_FIELDS)
+        return _inheritable_fields(entitymodule.FIELDS)
     
     def labels_values(self):
         """Generic display
@@ -529,7 +529,7 @@ class DDRLocalEntity( DDREntity ):
         module it will be executed.
         """
         lv = []
-        for f in entitymodule.ENTITY_FIELDS:
+        for f in entitymodule.FIELDS:
             if hasattr(self, f['name']) and f.get('form',None):
                 key = f['name']
                 label = f['form']['label']
@@ -550,7 +550,7 @@ class DDRLocalEntity( DDREntity ):
         @returns data: dict object as used by Django Form object.
         """
         data = {}
-        for f in entitymodule.ENTITY_FIELDS:
+        for f in entitymodule.FIELDS:
             if hasattr(self, f['name']) and f.get('form',None):
                 key = f['name']
                 # run formprep_* functions on field data if present
@@ -573,7 +573,7 @@ class DDRLocalEntity( DDREntity ):
         
         @param form
         """
-        for f in entitymodule.ENTITY_FIELDS:
+        for f in entitymodule.FIELDS:
             if hasattr(self, f['name']) and f.get('form',None):
                 key = f['name']
                 # run formpost_* functions on field data if present
@@ -618,7 +618,7 @@ class DDRLocalEntity( DDREntity ):
         """
         json_data = self.json().data
         
-        for ff in entitymodule.ENTITY_FIELDS:
+        for ff in entitymodule.FIELDS:
             for f in json_data:
                 if hasattr(f, 'keys') and (f.keys()[0] == ff['name']):
                     setattr(self, f.keys()[0], f.values()[0])
@@ -639,9 +639,9 @@ class DDRLocalEntity( DDREntity ):
         if hasattr(self, 'record_lastmod') and self.record_lastmod: self.record_lastmod = parsedt(self.record_lastmod)
         # end special cases
         
-        # Ensure that every field in entitymodule.ENTITY_FIELDS is represented
+        # Ensure that every field in entitymodule.FIELDS is represented
         # even if not present in json_data.
-        for ff in entitymodule.ENTITY_FIELDS:
+        for ff in entitymodule.FIELDS:
             if not hasattr(self, ff['name']):
                 setattr(self, ff['name'], ff.get('default',None))
         
@@ -663,7 +663,7 @@ class DDRLocalEntity( DDREntity ):
                    'models': dvcs.latest_commit(entitymodule.__file__),}]
         exceptions = ['files', 'filemeta']
         template_passthru = ['id', 'record_created', 'record_lastmod']
-        for ff in entitymodule.ENTITY_FIELDS:
+        for ff in entitymodule.FIELDS:
             item = {}
             key = ff['name']
             val = ''
@@ -723,7 +723,7 @@ class DDRLocalEntity( DDREntity ):
         NS = NAMESPACES_TAGPREFIX
         ns = NAMESPACES_XPATH
         tree = etree.parse(StringIO(self.mets().xml))
-        for f in entitymodule.ENTITY_FIELDS:
+        for f in entitymodule.FIELDS:
             key = f['name']
             value = ''
             if hasattr(self, f['name']):
@@ -1313,7 +1313,7 @@ class DDRLocalFile( object ):
         module it will be executed.
         """
         lv = []
-        for f in filemodule.FILE_FIELDS:
+        for f in filemodule.FIELDS:
             if hasattr(self, f['name']) and f.get('form',None):
                 key = f['name']
                 label = f['form']['label']
@@ -1334,7 +1334,7 @@ class DDRLocalFile( object ):
         @returns data: dict object as used by Django Form object.
         """
         data = {}
-        for f in filemodule.FILE_FIELDS:
+        for f in filemodule.FIELDS:
             if hasattr(self, f['name']) and f.get('form',None):
                 key = f['name']
                 # run formprep_* functions on field data if present
@@ -1353,7 +1353,7 @@ class DDRLocalFile( object ):
         
         @param form
         """
-        for f in filemodule.FILE_FIELDS:
+        for f in filemodule.FIELDS:
             if hasattr(self, f['name']) and f.get('form',None):
                 key = f['name']
                 # run formpost_* functions on field data if present
@@ -1389,7 +1389,7 @@ class DDRLocalFile( object ):
         if os.path.exists(self.json_path):
             data = read_json(self.json_path)
             # everything else
-            for ff in filemodule.FILE_FIELDS:
+            for ff in filemodule.FIELDS:
                 for f in data:
                     if hasattr(f, 'keys') and (f.keys()[0] == ff['name']):
                         setattr(self, f.keys()[0], f.values()[0])
@@ -1410,7 +1410,7 @@ class DDRLocalFile( object ):
                   'git': dvcs.git_version(self.collection_path),
                   'models': dvcs.latest_commit(filemodule.__file__),},
                  {'path_rel': self.path_rel},]
-        for ff in filemodule.FILE_FIELDS:
+        for ff in filemodule.FIELDS:
             item = {}
             key = ff['name']
             val = ''

@@ -1,2 +1,2 @@
-ENTITY_FIELDS = []
+FIELDS = []
 UNDEFINED = True

@@ -27,9 +27,9 @@ from DDR.models import make_object_id, id_from_path
 if settings.REPO_MODELS_PATH not in sys.path:
     sys.path.append(settings.REPO_MODELS_PATH)
 try:
-    from repo_models.collection import COLLECTION_FIELDS
+    from repo_models import collection as collectionmodule
 except ImportError:
-    from ddrlocal.models.collection import COLLECTION_FIELDS
+    from ddrlocal.models import collection as collectionmodule
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
@@ -294,7 +294,7 @@ def edit( request, repo, org, cid ):
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
     if request.method == 'POST':
-        form = DDRForm(request.POST, fields=COLLECTION_FIELDS)
+        form = DDRForm(request.POST, fields=collectionmodule.FIELDS)
         if form.is_valid():
             collection.form_post(form)
             collection.dump_json()
@@ -328,7 +328,7 @@ def edit( request, repo, org, cid ):
                 messages.success(request, success_msg)
                 return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
     else:
-        form = DDRForm(collection.form_prep(), fields=COLLECTION_FIELDS)
+        form = DDRForm(collection.form_prep(), fields=collectionmodule.FIELDS)
     return render_to_response(
         'webui/collections/edit-json.html',
         {'repo': repo,

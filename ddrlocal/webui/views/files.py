@@ -22,9 +22,9 @@ from DDR import docstore
 if settings.REPO_MODELS_PATH not in sys.path:
     sys.path.append(settings.REPO_MODELS_PATH)
 try:
-    from repo_models.files import FILE_FIELDS, FILE_FIELDS_NEW
+    from repo_models import files as filemodule
 except ImportError:
-    from ddrlocal.models.files import FILE_FIELDS, FILE_FIELDS_NEW
+    from ddrlocal.models import files as filemodule
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
@@ -51,7 +51,7 @@ def handle_uploaded_file(f, dest_dir):
     print('destination {}'.format(destination))
     return dest_path_abs
 
-def prep_newfile_form_fields(FILE_FIELDS):
+def prep_newfile_form_fields(FIELDS):
     """
     - path field is needed even though it's not in the model
     """
@@ -180,7 +180,7 @@ def new( request, repo, org, cid, eid, role='master' ):
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     #
     path = request.GET.get('path', None)
-    FIELDS = prep_newfile_form_fields(FILE_FIELDS_NEW)
+    FIELDS = prep_newfile_form_fields(filemodule.FIELDS_NEW)
     if request.method == 'POST':
         form = NewFileDDRForm(request.POST, fields=FIELDS, path_choices=shared_folder_files())
         if form.is_valid():
@@ -355,7 +355,7 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
     file_ = entity.file(repo, org, cid, eid, role, sha1)
     #
     if request.method == 'POST':
-        form = DDRForm(request.POST, fields=FILE_FIELDS)
+        form = DDRForm(request.POST, fields=filemodule.FIELDS)
         if form.is_valid():
             file_.form_post(form)
             file_.dump_json()
@@ -378,7 +378,7 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
             # something went wrong
             assert False
     else:
-        form = DDRForm(file_.form_prep(), fields=FILE_FIELDS)
+        form = DDRForm(file_.form_prep(), fields=filemodule.FIELDS)
     return render_to_response(
         'webui/files/edit-json.html',
         {'repo': file_.repo,

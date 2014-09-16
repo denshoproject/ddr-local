@@ -1,3 +1,3 @@
-FILE_FIELDS = []
-FILE_FIELDS_NEW = []
+FIELDS = []
+FIELDS_NEW = []
 UNDEFINED = True

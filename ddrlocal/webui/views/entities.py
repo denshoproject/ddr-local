@@ -26,9 +26,9 @@ from DDR import docstore
 if settings.REPO_MODELS_PATH not in sys.path:
     sys.path.append(settings.REPO_MODELS_PATH)
 try:
-    from repo_models.entity import ENTITY_FIELDS
+    from repo_models import entity as entitymodule
 except ImportError:
-    from ddrlocal.models.entity import ENTITY_FIELDS
+    from ddrlocal.models import entity as entitymodule
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
@@ -394,7 +394,7 @@ def edit( request, repo, org, cid, eid ):
     topics_terms = tagmanager_terms('topics')
     facility_terms = tagmanager_terms('facility')
     if request.method == 'POST':
-        form = DDRForm(request.POST, fields=ENTITY_FIELDS)
+        form = DDRForm(request.POST, fields=entitymodule.FIELDS)
         if form.is_valid():
             
             # clean up after TagManager
@@ -438,7 +438,7 @@ def edit( request, repo, org, cid, eid ):
                 messages.success(request, success_msg)
                 return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     else:
-        form = DDRForm(entity.form_prep(), fields=ENTITY_FIELDS)
+        form = DDRForm(entity.form_prep(), fields=entitymodule.FIELDS)
     
     topics_prefilled = tagmanager_prefilled_terms(entity.topics, topics_terms)
     facility_prefilled = tagmanager_prefilled_terms(entity.facility, facility_terms)
