@@ -42,6 +42,89 @@ COLLECTION_FILES_PREFIX = 'files'
 ENTITY_FILES_PREFIX = 'files'
 
 
+def labels_values(document, module):
+    """Apply display_{field} functions to prep object data for the UI.
+    
+    TODO Move to webui.models
+    
+    Certain fields require special processing.  For example, structured data
+    may be rendered in a template to generate an HTML <ul> list.
+    If a "display_{field}" function is present in the ddrlocal.models.collection
+    module the contents of the field will be passed to it
+    
+    @param document: Collection, Entity, File document object
+    @param module: collection, entity, files model definitions module
+    @returns: list
+    """
+    lv = []
+    for f in module.FIELDS:
+        if hasattr(document, f['name']) and f.get('form',None):
+            key = f['name']
+            label = f['form']['label']
+            # run display_* functions on field data if present
+            value = module_function(
+                module,
+                'display_%s' % key,
+                getattr(document, f['name'])
+            )
+            lv.append( {'label':label, 'value':value,} )
+    return lv
+
+def form_prep(document, module):
+    """Apply formprep_{field} functions to prep data dict to pass into DDRForm object.
+    
+    TODO Move to webui.models
+    
+    Certain fields require special processing.  Data may need to be massaged
+    and prepared for insertion into particular Django form objects.
+    If a "formprep_{field}" function is present in the ddrlocal.models.collection
+    module it will be executed.
+    
+    @param document: Collection, Entity, File document object
+    @param module: collection, entity, files model definitions module
+    @returns data: dict object as used by Django Form object.
+    """
+    data = {}
+    for f in module.FIELDS:
+        if hasattr(document, f['name']) and f.get('form',None):
+            key = f['name']
+            # run formprep_* functions on field data if present
+            value = module_function(
+                module,
+                'formprep_%s' % key,
+                getattr(document, f['name'])
+            )
+            data[key] = value
+    return data
+    
+def form_post(document, module, form):
+    """Apply formpost_{field} functions to process cleaned_data from CollectionForm
+    
+    TODO Move to webui.models
+    
+    Certain fields require special processing.
+    If a "formpost_{field}" function is present in the ddrlocal.models.entity
+    module it will be executed.
+    
+    @param document: Collection, Entity, File document object
+    @param module: collection, entity, files model definitions module
+    @param form: DDRForm object
+    """
+    for f in module.FIELDS:
+        if hasattr(document, f['name']) and f.get('form',None):
+            key = f['name']
+            # run formpost_* functions on field data if present
+            cleaned_data = module_function(
+                module,
+                'formpost_%s' % key,
+                form.cleaned_data[key]
+            )
+            setattr(document, key, cleaned_data)
+    # update record_lastmod
+    if hasattr(document, 'record_lastmod'):
+        document.record_lastmod = datetime.now()
+
+
 
 class DDRLocalCollection( DDRCollection ):
     """
@@ -171,70 +254,23 @@ class DDRLocalCollection( DDRCollection ):
     
     def labels_values(self):
         """Apply display_{field} functions to prep object data for the UI.
-        
-        TODO Move to webui.models
-        
-        Certain fields require special processing.  For example, structured data
-        may be rendered in a template to generate an HTML <ul> list.
-        If a "display_{field}" function is present in the ddrlocal.models.collection
-        module the contents of the field will be passed to it
         """
-        lv = []
-        for f in collectionmodule.FIELDS:
-            if hasattr(self, f['name']) and f.get('form',None):
-                key = f['name']
-                label = f['form']['label']
-                # run display_* functions on field data if present
-                value = module_function(collectionmodule,
-                                        'display_%s' % key,
-                                        getattr(self, f['name']))
-                lv.append( {'label':label, 'value':value,} )
-        return lv
+        return labels_values(self, collectionmodule)
     
     def form_prep(self):
-        """Apply formprep_{field} functions to prep data dict to pass into CollectionForm object.
-        
-        TODO Move to webui.models
-        
-        Certain fields require special processing.  Data may need to be massaged
-        and prepared for insertion into particular Django form objects.
-        If a "formprep_{field}" function is present in the ddrlocal.models.collection
-        module it will be executed.
+        """Apply formprep_{field} functions to prep data dict to pass into DDRForm object.
         
         @returns data: dict object as used by Django Form object.
         """
-        data = {}
-        for f in collectionmodule.FIELDS:
-            if hasattr(self, f['name']) and f.get('form',None):
-                key = f['name']
-                # run formprep_* functions on field data if present
-                value = module_function(collectionmodule,
-                                        'formprep_%s' % key,
-                                        getattr(self, f['name']))
-                data[key] = value
+        data = form_prep(self, collectionmodule)
         return data
     
     def form_post(self, form):
-        """Apply formpost_{field} functions to process cleaned_data from CollectionForm
+        """Apply formpost_{field} functions to process cleaned_data from DDRForm
         
-        TODO Move to webui.models
-        
-        Certain fields require special processing.
-        If a "formpost_{field}" function is present in the ddrlocal.models.entity
-        module it will be executed.
-        
-        @param form
+        @param form: DDRForm object
         """
-        for f in collectionmodule.FIELDS:
-            if hasattr(self, f['name']) and f.get('form',None):
-                key = f['name']
-                # run formpost_* functions on field data if present
-                cleaned_data = module_function(collectionmodule,
-                                               'formpost_%s' % key,
-                                               form.cleaned_data[key])
-                setattr(self, key, cleaned_data)
-        # update record_lastmod
-        self.record_lastmod = datetime.now()
+        form_post(self, collectionmodule, form)
     
     def json( self ):
         """Returns a ddrlocal.models.meta.CollectionJSON object
@@ -500,42 +536,16 @@ class DDRLocalEntity( DDREntity ):
         return _inheritable_fields(entitymodule.FIELDS)
     
     def labels_values(self):
-        """Generic display
-        
-        Certain fields require special processing.
-        If a "display_{field}" function is present in the ddrlocal.models.entity
-        module it will be executed.
+        """Apply display_{field} functions to prep object data for the UI.
         """
-        lv = []
-        for f in entitymodule.FIELDS:
-            if hasattr(self, f['name']) and f.get('form',None):
-                key = f['name']
-                label = f['form']['label']
-                # run display_* functions on field data if present
-                value = module_function(entitymodule,
-                                        'display_%s' % key,
-                                        getattr(self, f['name']))
-                lv.append( {'label':label, 'value':value,} )
-        return lv
+        return labels_values(self, entitymodule)
     
     def form_prep(self):
-        """Prep data dict to pass into EntityForm object.
-        
-        Certain fields require special processing.
-        If a "formprep_{field}" function is present in the ddrlocal.models.entity
-        module it will be executed.
+        """Apply formprep_{field} functions to prep data dict to pass into DDRForm object.
         
         @returns data: dict object as used by Django Form object.
         """
-        data = {}
-        for f in entitymodule.FIELDS:
-            if hasattr(self, f['name']) and f.get('form',None):
-                key = f['name']
-                # run formprep_* functions on field data if present
-                value = module_function(entitymodule,
-                                        'formprep_%s' % key,
-                                        getattr(self, f['name']))
-                data[key] = value
+        data = form_prep(self, entitymodule)
         if not data.get('record_created', None):
             data['record_created'] = datetime.now()
         if not data.get('record_lastmod', None):
@@ -543,24 +553,11 @@ class DDRLocalEntity( DDREntity ):
         return data
     
     def form_post(self, form):
-        """Process cleaned_data coming from EntityForm
+        """Apply formpost_{field} functions to process cleaned_data from DDRForm
         
-        Certain fields require special processing.
-        If a "formpost_{field}" function is present in the ddrlocal.models.entity
-        module it will be executed.
-        
-        @param form
+        @param form: DDRForm object
         """
-        for f in entitymodule.FIELDS:
-            if hasattr(self, f['name']) and f.get('form',None):
-                key = f['name']
-                # run formpost_* functions on field data if present
-                cleaned_data = module_function(entitymodule,
-                                               'formpost_%s' % key,
-                                               form.cleaned_data[key])
-                setattr(self, key, cleaned_data)
-        # update record_lastmod
-        self.record_lastmod = datetime.now()
+        form_post(self, entitymodule, form)
     
     def json( self ):
         if not os.path.exists(self.json_path):
@@ -1284,61 +1281,24 @@ class DDRLocalFile( object ):
         _inherit( parent, self )
     
     def labels_values(self):
-        """Generic display
-        
-        Certain fields require special processing.
-        If a "display_{field}" function is present in the ddrlocal.models.files
-        module it will be executed.
+        """Apply display_{field} functions to prep object data for the UI.
         """
-        lv = []
-        for f in filemodule.FIELDS:
-            if hasattr(self, f['name']) and f.get('form',None):
-                key = f['name']
-                label = f['form']['label']
-                # run display_* functions on field data if present
-                value = module_function(filemodule,
-                                        'display_%s' % key,
-                                        getattr(self, f['name']))
-                lv.append( {'label':label, 'value':value,} )
-        return lv
+        return labels_values(self, filemodule)
     
     def form_prep(self):
-        """Prep data dict to pass into FileForm object.
-        
-        Certain fields require special processing.
-        If a "formprep_{field}" function is present in the ddrlocal.models.files
-        module it will be executed.
+        """Apply formprep_{field} functions to prep data dict to pass into DDRForm object.
         
         @returns data: dict object as used by Django Form object.
         """
-        data = {}
-        for f in filemodule.FIELDS:
-            if hasattr(self, f['name']) and f.get('form',None):
-                key = f['name']
-                # run formprep_* functions on field data if present
-                value = module_function(filemodule,
-                                        'formprep_%s' % key,
-                                        getattr(self, f['name']))
-                data[key] = value
+        data = form_prep(self, filemodule)
         return data
     
     def form_post(self, form):
-        """Process cleaned_data coming from FileForm
+        """Apply formpost_{field} functions to process cleaned_data from DDRForm
         
-        Certain fields require special processing.
-        If a "formpost_{field}" function is present in the ddrlocal.models.files
-        module it will be executed.
-        
-        @param form
+        @param form: DDRForm object
         """
-        for f in filemodule.FIELDS:
-            if hasattr(self, f['name']) and f.get('form',None):
-                key = f['name']
-                # run formpost_* functions on field data if present
-                cleaned_data = module_function(filemodule,
-                                               'formpost_%s' % key,
-                                               form.cleaned_data[key])
-                setattr(self, key, cleaned_data)
+        form_post(self, filemodule, form)
     
     @staticmethod
     def from_json(file_json):
