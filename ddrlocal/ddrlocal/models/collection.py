@@ -1,3 +1,5 @@
+MODEL = 'collection'
+
 # FIELDS = [
 #     {
 #         'name':       '',       # The field name.
