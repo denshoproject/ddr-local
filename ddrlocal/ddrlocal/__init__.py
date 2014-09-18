@@ -6,5 +6,5 @@ from .celery import app as celery_app
 
 from DDR.dvcs import latest_commit
 
-VERSION = '0.9-beta'
+VERSION = '0.9.1-beta'
 COMMIT = latest_commit()
