@@ -29,6 +29,8 @@ help:
 	@echo ""
 	@echo "update  - Updates ddr-cmd and ddr-local and re-copies config files."
 	@echo ""
+	@echo "branch BRANCH=$branch - Switches both ddr-local and ddr-cmdln repos to $branch."
+	@echo ""
 	@echo "syncdb  - Initialize or update Django app's database tables."
 	@echo ""
 	@echo "reload  - Reloads supervisord and nginx configs"
@@ -195,6 +197,10 @@ syncdb:
 	cd /usr/local/src/ddr-local/ddrlocal && ./manage.py syncdb --noinput
 	chown -R ddr.root /var/lib/ddr
 	chmod -R 755 /var/lib/ddr
+
+
+branch:
+	cd /usr/local/src/ddr-local/ddrlocal; python ./bin/git-checkout-branch.py $(BRANCH)
 
 
 install-static: install-modernizr install-bootstrap install-jquery install-tagmanager install-typeahead
