@@ -27,11 +27,14 @@ help:
 	@echo "          IMPORTANT: Run 'adduser ddr' first to install ddr user and group."
 	@echo "          Installation instructions: make howto-install"
 	@echo ""
+	@echo "enable-bkgnd  - Enable background processes. (Run make reload on completion)"
+	@echo "disable-bkgnd - Disablebackground processes. (Run make reload on completion)"
+	@echo ""
+	@echo "syncdb  - Initialize or update Django app's database tables."
+	@echo ""
 	@echo "update  - Updates ddr-cmd and ddr-local and re-copies config files."
 	@echo ""
 	@echo "branch BRANCH=$branch - Switches both ddr-local and ddr-cmdln repos to $branch."
-	@echo ""
-	@echo "syncdb  - Initialize or update Django app's database tables."
 	@echo ""
 	@echo "reload  - Reloads supervisord and nginx configs"
 	@echo "reload-nginx"
@@ -45,8 +48,8 @@ help:
 	@echo ""
 	@echo "status  - Server status"
 	@echo ""
-	@echo "enable-bkgnd  - Enable background processes. (Run make reload on completion)"
-	@echo "disable-bkgnd - Disablebackground processes. (Run make reload on completion)"
+	@echo "uninstall - Deletes 'compiled' Python files. Leaves build dirs and configs."
+	@echo "clean   - Deletes files created by building the program. Leaves configs."
 
 help-all:
 	@echo "install - Do a fresh install"
@@ -57,32 +60,36 @@ help-all:
 	@echo "update  - Do an update"
 	@echo "restart - Restart servers"
 	@echo "status  - Server status"
-	@echo "cp-configs - "
+	@echo "install-configs - "
 	@echo "update-ddr - "
-	@echo "clean-static - "
+	@echo "uninstall - "
+	@echo "clean - "
 
 howto-install:
 	@echo "HOWTO INSTALL"
 	@echo "- Basic Debian netinstall"
 	@echo "- edit /etc/network/interfaces"
 	@echo "- reboot"
-	@echo "- adduser ddr"
-	@echo "- apt-get install fail2ban git-core make openssh ufw"
+	@echo "- apt-get install openssh fail2ban ufw"
 	@echo "- ufw allow 22/tcp"
 	@echo "- ufw allow 80/tcp"
 	@echo "- ufw enable"
+	@echo "- apt-get install make"
+	@echo "- adduser ddr"
 	@echo "- git clone https://github.com/densho/ddr-local.git /usr/local/src/ddr-local"
 	@echo "- cd /usr/local/src/ddr-local/ddrlocal"
-	@echo "- make install | tee /tmp/ddrlocal-install-`date +%Y%m%d-%H%M`.log"
-	@echo "- [make enable-bkgnd]"
+	@echo "- make install"
+	@echo "- make enable-bkgnd"
 	@echo "- make syncdb"
 
 
-install: install-prep install-daemons install-ddr install-static cp-configs
+install: install-prep install-daemons install-ddr install-static install-configs
 
 update: update-ddr
 
-clean: clean-static
+uninstall: uninstall-ddr
+
+clean: clean-ddr
 
 
 install-prep: apt-update install-core ddr-user git-config install-misc-tools
@@ -139,7 +146,11 @@ install-elasticsearch:
 
 install-ddr: install-ddr-cmdln install-ddr-local install-ddr-manual
 
-update-ddr: update-ddr-cmdln update-ddr-local update-ddr-manual cp-configs
+update-ddr: update-ddr-cmdln update-ddr-local update-ddr-manual install-configs
+
+uninstall-ddr: uninstall-ddr-cmdln uninstall-ddr-local uninstall-ddr-manual
+
+clean-ddr: clean-ddr-cmdln clean-ddr-local clean-ddr-manual
 
 
 install-ddr-cmdln:
@@ -165,6 +176,21 @@ update-ddr-cmdln:
 	cd /usr/local/src/ddr-cmdln && git fetch && git pull
 	cd /usr/local/src/ddr-cmdln/ddr && python setup.py install
 	cd /usr/local/src/ddr-cmdln/ddr && pip install -U --download-cache=$(PIP_CACHE_DIR) -r /usr/local/src/ddr-cmdln/ddr/requirements/production.txt
+
+uninstall-ddr-cmdln:
+	cd /usr/local/src/ddr-cmdln/ddr
+	-pip uninstall -r /usr/local/src/ddr-cmdln/ddr/requirements/production.txt
+	-rm /usr/local/bin/ddrindex
+	-rm /usr/local/bin/ddrdensho255fix
+	-rm /usr/local/bin/ddrmassupdate
+	-rm /usr/local/bin/ddrfilter
+	-rm /usr/local/bin/ddrpubcopy
+	-rm /usr/local/bin/ddr
+	-rm -Rf /usr/local/lib/python2.7/dist-packages/DDR
+	-rm -Rf /usr/local/lib/python2.7/dist-packages/ddr-*
+
+clean-ddr-cmdln:
+	-rm -Rf /usr/local/src/ddr-cmdln/ddr/build
 
 
 install-ddr-local:
@@ -192,6 +218,19 @@ update-ddr-local:
 	git fetch && git pull
 	pip install -U --download-cache=$(PIP_CACHE_DIR) -r /usr/local/src/ddr-local/ddrlocal/requirements/production.txt
 
+uninstall-ddr-local:
+	cd /usr/local/src/ddr-local/ddrlocal
+	-pip uninstall -r /usr/local/src/ddr-local/ddrlocal/requirements/production.txt
+	-rm /usr/local/lib/python2.7/dist-packages/ddrlocal-*
+	-rm -Rf /usr/local/lib/python2.7/dist-packages/ddrlocal
+
+clean-ddr-local:
+	-rm -Rf /usr/local/src/ddr-local/ddrlocal/src
+
+clean-pip:
+	-rm -Rf $(PIP_CACHE_DIR)/*
+
+
 syncdb:
 	cd /usr/local/src/ddr-local/ddrlocal && ./manage.py syncdb --noinput
 	chown -R ddr.root /var/lib/ddr
@@ -205,6 +244,7 @@ branch:
 install-static: install-modernizr install-bootstrap install-jquery install-tagmanager install-typeahead
 
 clean-static: clean-modernizr clean-bootstrap clean-jquery clean-tagmanager clean-typeahead
+
 
 install-modernizr:
 	@echo ""
@@ -259,7 +299,7 @@ clean-typeahead:
 	-rm /var/www/static/js/typeahead
 
 
-cp-configs:
+install-configs:
 	@echo ""
 	@echo "configuring ddr-local --------------------------------------------------"
 # base settings file
@@ -285,6 +325,14 @@ cp-configs:
 	chown root.root /etc/supervisor/conf.d/gunicorn_ddrlocal.conf
 	chmod 644 /etc/supervisor/conf.d/celeryd.conf
 	chmod 644 /etc/supervisor/conf.d/gunicorn_ddrlocal.conf
+
+uninstall-configs:
+	-rm /etc/nginx/sites-available/ddrlocal.conf
+	-rm /etc/nginx/sites-enabled/ddrlocal.conf
+	-rm /etc/supervisor/conf.d/celeryd.conf
+	-rm /etc/supervisor/conf.d/gunicorn_ddrlocal.conf
+	-rm /usr/local/src/ddr-local/ddrlocal/ddrlocal/settings.py
+	-rm /etc/ddr/ddr.cfg
 
 
 enable-bkgnd:
@@ -348,3 +396,9 @@ update-ddr-manual:
 	@echo "ddr-manual --------------------------------------------------------------"
 	cd /usr/local/src/ddr-manual && git fetch && git pull
 	cd /usr/local/src/ddr-manual && make html
+
+uninstall-ddr-manual:
+	-pip uninstall sphinx
+
+clean-ddr-manual:
+	-rm -Rf /usr/local/src/ddr-manual/build
