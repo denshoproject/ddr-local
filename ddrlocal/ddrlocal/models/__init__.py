@@ -169,6 +169,53 @@ def load_json(document, module, raw_json, special_cases=None):
         if not hasattr(document, ff['name']):
             setattr(document, ff['name'], ff.get('default',None))
 
+def document_metadata(module, document_repo_path):
+    """Metadata for the ddrlocal/ddrcmdln and models definitions used.
+    
+    @param module: collection, entity, files model definitions module
+    @param document_repo_path: Absolute path to root of document's repo
+    @returns: dict
+    """
+    data = {
+        'application': 'https://github.com/densho/ddr-local.git',
+        'app_commit': COMMIT,
+        'app_release': VERSION,
+        'models_commit': dvcs.latest_commit(module.__file__),
+        'git_version': dvcs.git_version(document_repo_path),
+    }
+    return data
+
+def prep_json_data(document, module, field_exceptions=[], template=False):
+    """Prepare document data for serialization to JSON.
+    
+    @param document: Collection, Entity, File document object
+    @param module: collection, entity, files model definitions module
+    @param field_exceptions: list of fields not to include
+    @param template: Boolean True if this is a blank document from a template.
+    """
+    data = []
+    template_passthru = ['id', 'record_created', 'record_lastmod']
+    for ff in module.FIELDS:
+        key = ff['name']
+        # skip fields that calling function wants to handle itself
+        if field_exceptions and (key in field_exceptions):
+            continue
+        val = ''
+        if template and (key not in template_passthru):
+            # write default values
+            val = ff['form']['initial']
+        elif hasattr(document, key):
+            # write object's values
+            val = getattr(document, key)
+            # JSON requires dates to be represented as strings
+            try:
+                val = val.strftime(settings.DATETIME_FORMAT)
+            except AttributeError:
+                pass
+        item = {key: val}
+        data.append(item)
+    return data
+
 
 class DDRLocalCollection( DDRCollection ):
     """
@@ -360,32 +407,11 @@ class DDRLocalCollection( DDRCollection ):
         @param path: [optional] Alternate file path.
         @param template: [optional] Boolean. If true, write default values for fields.
         """
-        collection = [{'application': 'https://github.com/densho/ddr-local.git',
-                       'commit': COMMIT,
-                       'release': VERSION,
-                       'git': dvcs.git_version(self.path),
-                       'models': dvcs.latest_commit(collectionmodule.__file__),}]
-        template_passthru = ['id', 'record_created', 'record_lastmod']
-        for ff in collectionmodule.FIELDS:
-            item = {}
-            key = ff['name']
-            val = ''
-            if template and (key not in template_passthru):
-                # write default values
-                val = ff['form']['initial']
-            elif hasattr(self, ff['name']):
-                # write object's values
-                val = getattr(self, ff['name'])
-                # special cases
-                if key in ['record_created', 'record_lastmod']:
-                    # JSON requires dates to be represented as strings
-                    val = val.strftime(settings.DATETIME_FORMAT)
-                # end special cases
-            item[key] = val
-            collection.append(item)
+        data = prep_json_data(self, collectionmodule, template=template)
+        data.insert(0, document_metadata(collectionmodule, self.path))
         if not path:
             path = self.json_path
-        write_json(collection, path)
+        write_json(data, path)
     
     def ead( self ):
         """Returns a ddrlocal.models.xml.EAD object for the collection.
@@ -635,6 +661,16 @@ class DDRLocalEntity( DDREntity ):
         # replace list of file paths with list of DDRLocalFile objects
         self._load_file_objects()
     
+    def prep_file_metadata(self):
+        data = []
+        for f in self.files:
+            fd = {}
+            for key in ENTITY_FILE_KEYS:
+                if hasattr(f, key):
+                    fd[key] = getattr(f, key, None)
+            data.append(fd)
+        return data
+    
     def dump_json(self, path=None, template=False):
         """Dump Entity data to .json file.
         
@@ -643,45 +679,18 @@ class DDRLocalEntity( DDREntity ):
         @param path: [optional] Alternate file path.
         @param template: [optional] Boolean. If true, write default values for fields.
         """
-        entity = [{'application': 'https://github.com/densho/ddr-local.git',
-                   'commit': COMMIT,
-                   'release': VERSION,
-                   'git': dvcs.git_version(self.parent_path),
-                   'models': dvcs.latest_commit(entitymodule.__file__),}]
-        exceptions = ['files', 'filemeta']
-        template_passthru = ['id', 'record_created', 'record_lastmod']
-        for ff in entitymodule.FIELDS:
-            item = {}
-            key = ff['name']
-            val = ''
-            dt = datetime(1970,1,1)
-            d = date(1970,1,1)
-            if template and (key not in template_passthru) and hasattr(ff,'form'):
-                # write default values
-                val = ff['form']['initial']
-            elif hasattr(self, ff['name']):
-                # write object's values
-                val = getattr(self, ff['name'])
-                # special cases
-                if val:
-                    if (type(val) == type(dt)) or (type(val) == type(d)):
-                        val = val.strftime(settings.DATETIME_FORMAT)
-                # end special cases
-            item[key] = val
-            if (key not in exceptions):
-                entity.append(item)
-        files = []
-        if not template:
-            for f in self.files:
-                fd = {}
-                for key in ENTITY_FILE_KEYS:
-                    if hasattr(f, key):
-                        fd[key] = getattr(f, key, None)
-                files.append(fd)
-        entity.append( {'files':files} )
+        data = prep_json_data(self, entitymodule,
+                              field_exceptions=['files', 'filemeta'],
+                              template=template)
+        data.insert(0, document_metadata(entitymodule, self.parent_path))
+        if template:
+            files = {}
+        else:
+            files = self.prep_file_metadata()
+        data.append({ 'files': files })
         if not path:
             path = self.json_path
-        write_json(entity, path)
+        write_json(data, path)
     
     def mets( self ):
         if not os.path.exists(self.mets_path):
@@ -1349,24 +1358,13 @@ class DDRLocalFile( object ):
         
         @param path: Absolute path to .json file.
         """
+        data = prep_json_data(self, filemodule)
+        data.insert(0, document_metadata(filemodule, self.collection_path))
+        data.insert(1, {'path_rel': self.path_rel})
         if not path:
             path = self.json_path
-        # TODO DUMP FILE AND FILEMETA PROPERLY!!!
-        file_ = [{'application': 'https://github.com/densho/ddr-local.git',
-                  'commit': COMMIT,
-                  'release': VERSION,
-                  'git': dvcs.git_version(self.collection_path),
-                  'models': dvcs.latest_commit(filemodule.__file__),},
-                 {'path_rel': self.path_rel},]
-        for ff in filemodule.FIELDS:
-            item = {}
-            key = ff['name']
-            val = ''
-            if hasattr(self, ff['name']):
-                val = getattr(self, ff['name'])
-            item[key] = val
-            file_.append(item)
-        write_json(file_, path)
+        write_json(data, path)
+
     
     @staticmethod
     def file_name( entity, path_abs, role, sha1=None ):
