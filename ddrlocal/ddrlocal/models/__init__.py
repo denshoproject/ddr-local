@@ -124,6 +124,50 @@ def form_post(document, module, form):
     if hasattr(document, 'record_lastmod'):
         document.record_lastmod = datetime.now()
 
+def from_json(model, path):
+    """
+    @param model: DDRLocalCollection, DDRLocalEntity, or DDRLocalFile
+    @param path: absolute path to the object(not the JSON file)
+    """
+    document = None
+    if os.path.exists(path):
+        document = model(path)
+        document_uid = document.id  # save this just in case
+        document.load_json()
+        if not document.id:
+            # id gets overwritten if document.json is blank
+            document.id = document_uid
+    return document
+
+def load_json(document, module, raw_json, special_cases=None):
+    """Populate document data from .json file and FIELDS.
+    
+    Loads the JSON datafile then goes through FIELDS,
+    turning data in the JSON file into attributes of the object.
+    
+    special_cases is an optional function that takes document
+    as an arg and performs operations on fields that are unique
+    to a particular model or operation.
+    
+    @param document: Collection, Entity, File document object
+    @param module: collection, entity, files model definitions module
+    @param raw_json: Raw contents of *.json file
+    @param special_cases: (optional) special_cases() function
+    """
+    data = json.loads(raw_json)
+    if data:
+        setattr(document, 'json_metadata', data[0])
+    for ff in module.FIELDS:
+        for f in data:
+            if hasattr(f, 'keys') and (f.keys()[0] == ff['name']):
+                setattr(document, f.keys()[0], f.values()[0])
+    if special_cases:
+        special_cases(document)
+    # Ensure that every field in collectionmodule.FIELDS is represented
+    # even if not present in data.
+    for ff in module.FIELDS:
+        if not hasattr(document, ff['name']):
+            setattr(document, ff['name'], ff.get('default',None))
 
 
 class DDRLocalCollection( DDRCollection ):
@@ -287,42 +331,26 @@ class DDRLocalCollection( DDRCollection ):
         
         >>> c = DDRLocalCollection.from_json('/tmp/ddr-testing-123')
         """
-        collection = DDRLocalCollection(collection_abs)
-        collection_uid = collection.id  # save this just in case
-        collection.load_json(collection.json_path)
-        if not collection.id:
-            # id gets overwritten if collection.json is blank
-            collection.id = collection_uid
-        return collection
+        return from_json(DDRLocalCollection, collection_abs)
     
-    def load_json(self, path):
+    def load_json(self):
         """Populate Collection data from .json file and FIELDS.
-        
-        Loads the JSON datafile then goes through FIELDS,
-        turning data in the JSON file into attributes of the object.
-        
-        @param path: Absolute path to collection directory
         """
-        json_data = self.json().data
-        for ff in collectionmodule.FIELDS:
-            for f in json_data:
-                if hasattr(f, 'keys') and (f.keys()[0] == ff['name']):
-                    setattr(self, f.keys()[0], f.values()[0])
-        # special cases
-        if hasattr(self, 'record_created') and self.record_created:
-            self.record_created = datetime.strptime(self.record_created, settings.DATETIME_FORMAT)
-        else:
-            self.record_created = datetime.now()
-        if hasattr(self, 'record_lastmod') and self.record_lastmod:
-            self.record_lastmod = datetime.strptime(self.record_lastmod, settings.DATETIME_FORMAT)
-        else:
-            self.record_lastmod = datetime.now()
-        # end special cases
-        # Ensure that every field in collectionmodule.FIELDS is represented
-        # even if not present in json_data.
-        for ff in collectionmodule.FIELDS:
-            if not hasattr(self, ff['name']):
-                setattr(self, ff['name'], ff.get('default',None))
+        def special_cases(document):
+            if hasattr(document, 'record_created') and document.record_created:
+                document.record_created = datetime.strptime(document.record_created, settings.DATETIME_FORMAT)
+            else:
+                document.record_created = datetime.now()
+            if hasattr(document, 'record_lastmod') and document.record_lastmod:
+                document.record_lastmod = datetime.strptime(document.record_lastmod, settings.DATETIME_FORMAT)
+            else:
+                document.record_lastmod = datetime.now()
+        
+        if not os.path.exists(self.json_path):
+            raise IOError('File not found: %s' % self.json_path)
+        with open(self.json_path, 'r') as f:
+            raw_json = f.read()
+        load_json(self, collectionmodule, raw_json, special_cases)
     
     def dump_json(self, path=None, template=False):
         """Dump Collection data to .json file.
@@ -566,14 +594,7 @@ class DDRLocalEntity( DDREntity ):
 
     @staticmethod
     def from_json(entity_abs):
-        entity = None
-        if os.path.exists(entity_abs):
-            entity = DDRLocalEntity(entity_abs)
-            entity_uid = entity.id
-            entity.load_json(entity.json_path)
-            if not entity.id:
-                entity.id = entity_uid  # might get overwritten if entity.json is blank
-        return entity
+        return from_json(DDRLocalEntity, entity_abs)
     
     def _load_file_objects( self ):
         """Replaces list of file info dicts with list of DDRLocalFile objects
@@ -587,39 +608,30 @@ class DDRLocalEntity( DDREntity ):
             path_abs = os.path.join(self.files_path, f['path_rel'])
             self.files.append(DDRLocalFile(path_abs=path_abs))
     
-    def load_json(self, path):
+    def load_json(self):
         """Populate Entity data from .json file.
-        @param path: Absolute path to entity
         """
-        json_data = self.json().data
-        
-        for ff in entitymodule.FIELDS:
-            for f in json_data:
-                if hasattr(f, 'keys') and (f.keys()[0] == ff['name']):
-                    setattr(self, f.keys()[0], f.values()[0])
-        
-        def parsedt(txt):
-            d = datetime.now()
-            try:
-                d = datetime.strptime(txt, settings.DATETIME_FORMAT)
-            except:
+        def special_cases(document):
+            def parsedt(txt):
+                d = datetime.now()
                 try:
-                    d = datetime.strptime(txt, settings.TIME_FORMAT)
+                    d = datetime.strptime(txt, settings.DATETIME_FORMAT)
                 except:
-                    pass
-            return d
-            
-        # special cases
-        if hasattr(self, 'record_created') and self.record_created: self.record_created = parsedt(self.record_created)
-        if hasattr(self, 'record_lastmod') and self.record_lastmod: self.record_lastmod = parsedt(self.record_lastmod)
-        # end special cases
+                    try:
+                        d = datetime.strptime(txt, settings.TIME_FORMAT)
+                    except:
+                        pass
+                return d
+            if hasattr(document, 'record_created') and document.record_created:
+                document.record_created = parsedt(document.record_created)
+            if hasattr(document, 'record_lastmod') and document.record_lastmod:
+                document.record_lastmod = parsedt(document.record_lastmod)
         
-        # Ensure that every field in entitymodule.FIELDS is represented
-        # even if not present in json_data.
-        for ff in entitymodule.FIELDS:
-            if not hasattr(self, ff['name']):
-                setattr(self, ff['name'], ff.get('default',None))
-        
+        if not os.path.exists(self.json_path):
+            raise IOError('File not found: %s' % self.json_path)
+        with open(self.json_path, 'r') as f:
+            raw_json = f.read()
+        load_json(self, entitymodule, raw_json, special_cases)
         # replace list of file paths with list of DDRLocalFile objects
         self._load_file_objects()
     
@@ -1227,7 +1239,8 @@ class DDRLocalFile( object ):
             self.json_path_rel = self.json_path.replace(self.collection_path, '')
             if self.json_path_rel[0] == '/':
                 self.json_path_rel = self.json_path_rel[1:]
-            self.load_json()
+            if self.path_abs and os.path.exists(self.path_abs):
+                self.load_json()
             access_abs = None
             if self.access_rel and self.entity_path:
                 access_abs = os.path.join(self.entity_files_path, self.access_rel)
@@ -1322,15 +1335,12 @@ class DDRLocalFile( object ):
     
     def load_json(self):
         """Populate File data from .json file.
-        @param path: Absolute path to file
         """
-        if os.path.exists(self.json_path):
-            data = read_json(self.json_path)
-            # everything else
-            for ff in filemodule.FIELDS:
-                for f in data:
-                    if hasattr(f, 'keys') and (f.keys()[0] == ff['name']):
-                        setattr(self, f.keys()[0], f.values()[0])
+        if not os.path.exists(self.json_path):
+            raise IOError('File not found: %s' % self.json_path)
+        with open(self.json_path, 'r') as f:
+            raw_json = f.read()
+        load_json(self, filemodule, raw_json)
     
     def dump_json(self, path=None):
         """Dump File data to .json file.

@@ -218,7 +218,7 @@ class Collection( DDRLocalCollection ):
         """
         collection = Collection(collection_abs)
         collection_uid = collection.id  # save this just in case
-        collection.load_json(collection.json_path)
+        collection.load_json()
         if not collection.id:
             # id gets overwritten if collection.json is blank
             collection.id = collection_uid
@@ -313,7 +313,7 @@ class Entity( DDRLocalEntity ):
         if os.path.exists(entity_abs):
             entity = Entity(entity_abs)
             entity_uid = entity.id
-            entity.load_json(entity.json_path)
+            entity.load_json()
             if not entity.id:
                 entity.id = entity_uid  # might get overwritten if entity.json is blank
         return entity
