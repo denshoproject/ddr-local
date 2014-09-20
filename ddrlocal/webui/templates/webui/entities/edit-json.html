@@ -21,6 +21,26 @@
 Edit
 </h1>
 
+
+{% if entity.model_def_fields_removed %}
+  <div class="alert alert-danger">
+    {{ entity.model_def_fields_removed_msg }}
+  </div>
+{% endif %}
+
+{% if entity.model_def_fields_added %}
+  <div class="alert alert-info">
+    {{ entity.model_def_fields_added_msg }}
+  </div>
+{% endif %}
+
+{% if entity.model_def_commits_msg %}
+  <div class="alert alert-{{ entity.model_def_commits_alert }}">
+    {{ entity.model_def_commits_msg }}
+  </div>
+{% endif %}
+
+
 <form name="edit" action="" method="POST">{% csrf_token %}
 <table>
   <tr>

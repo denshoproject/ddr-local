@@ -185,6 +185,49 @@ def document_metadata(module, document_repo_path):
     }
     return data
 
+def cmp_model_definition_commits(document, module):
+    """Indicate document's model defs are newer or older than module's.
+    
+    Prepares repository and document/module commits to be compared
+    by DDR.dvcs.cmp_commits.  See that function for how to interpret
+    the results.
+    Note: if a document has no defs commit it is considered older
+    than the module.
+    
+    @param document: A Collection, Entity, or File object.
+    @param module: A collection, entity, or files module.
+    @returns: int
+    """
+    def parse(txt):
+        return txt.strip().split(' ')[0]
+    module_path = module.__file__.replace('.pcy', '.py')
+    module_defs_commit = parse(dvcs.latest_commit(module_path))
+    if not module_defs_commit:
+        return 128
+    document_defs_commit = parse(document.json_metadata.get('model_definitions',''))
+    if not document_defs_commit:
+        return -1
+    if document.model == 'collection': repo = dvcs.repository(document_object.path)
+    elif document.model == 'entity': repo = dvcs.repository(document_object.parent_path)
+    elif document.model == 'file': repo = dvcs.repository(document_object.collection_path)
+    return dvcs.cmp_commits(repo, document_defs_commit, module_defs_commit)
+
+def cmp_model_definition_fields(document_json, module):
+    """Indicate whether module adds or removes fields from document
+    
+    @param document_json: Raw contents of document *.json file
+    @param module: A collection, entity, or files module.
+    @returns: list,list Lists of added,removed field names.
+    """
+    # First item in list is document metadata, everything else is a field.
+    document_fields = [field.keys()[0] for field in json.loads(document_json)[1:]]
+    module_fields = [field['name'] for field in getattr(module, 'FIELDS')]
+    # models.load_json() uses MODULE.FIELDS, so get list of fields
+    # directly from the JSON document.
+    added = [field for field in module_fields if field not in document_fields]
+    removed = [field for field in document_fields if field not in module_fields]
+    return added,removed
+
 def prep_json_data(document, module, field_exceptions=[], template=False):
     """Prepare document data for serialization to JSON.
     
@@ -290,6 +333,14 @@ class DDRLocalCollection( DDRCollection ):
             if hasattr(f, 'name') and hasattr(f, 'initial'):
                 setattr(collection, f['name'], f['initial'])
         return collection
+    
+    def model_def_commits( self ):
+        return cmp_model_definition_commits(self, collectionmodule)
+    
+    def model_def_fields( self ):
+        with open(self.json_path, 'r') as f:
+            text = f.read()
+        return cmp_model_definition_fields(text, collectionmodule)
     
     def entities( self, quick=None ):
         """Returns list of the Collection's Entity objects.
@@ -477,6 +528,14 @@ class DDRLocalEntity( DDREntity ):
     
     def __repr__(self):
         return "<DDRLocalEntity %s>" % (self.id)
+    
+    def model_def_commits( self ):
+        return cmp_model_definition_commits(self, entitymodule)
+    
+    def model_def_fields( self ):
+        with open(self.json_path, 'r') as f:
+            text = f.read()
+        return cmp_model_definition_fields(text, entitymodule)
     
     def files_master( self ):
         files = [f for f in self.files if hasattr(f,'role') and (f.role == 'master')]
@@ -1267,6 +1326,14 @@ class DDRLocalFile( object ):
     # create(path)
     
     # entities/files/???
+    
+    def model_def_commits( self ):
+        return cmp_model_definition_commits(self, filemodule)
+    
+    def model_def_fields( self ):
+        with open(self.json_path, 'r') as f:
+            text = f.read()
+        return cmp_model_definition_fields(text, filemodule)
     
     def files_rel( self, collection_path ):
         """Returns list of the file, its metadata JSON, and access file, relative to collection.

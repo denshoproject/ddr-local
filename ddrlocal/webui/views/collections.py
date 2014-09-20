@@ -92,6 +92,8 @@ def collections( request ):
 @storage_required
 def detail( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    collection.model_def_commits()
+    collection.model_def_fields()
     alert_if_conflicted(request, collection)
     return render_to_response(
         'webui/collections/detail.html',
@@ -286,6 +288,8 @@ def edit( request, repo, org, cid ):
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    collection.model_def_commits()
+    collection.model_def_fields()
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )

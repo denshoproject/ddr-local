@@ -35,7 +35,7 @@ except ImportError:
     from ddrlocal.models import files as filemodule
 
 from webui import gitstatus
-
+from webui import WEBUI_MESSAGES
 from webui import COLLECTION_FETCH_CACHE_KEY
 from webui import COLLECTION_STATUS_CACHE_KEY
 from webui import COLLECTION_ANNEX_STATUS_CACHE_KEY
@@ -65,6 +65,19 @@ def repo_models_valid(request):
             valid = False
             messages.error(request, UNDEFINED_MSG)
     return valid
+
+def model_def_commits(document, module):
+    status = super(module, document).model_def_commits()
+    alert,msg = WEBUI_MESSAGES['MODEL_DEF_COMMITS_STATUS_%s' % status]
+    document.model_def_commits_alert = alert
+    document.model_def_commits_msg = msg
+
+def model_def_fields(document, module):
+    added,removed = super(module, document).model_def_fields()
+    document.model_def_fields_added = added
+    document.model_def_fields_removed = removed
+    document.model_def_fields_added_msg = WEBUI_MESSAGES['MODEL_DEF_FIELDS_ADDED'] % added
+    document.model_def_fields_removed_msg = WEBUI_MESSAGES['MODEL_DEF_FIELDS_REMOVED'] % removed
 
 
 # functions relating to inheritance ------------------------------------
@@ -291,8 +304,27 @@ class Collection( DDRLocalCollection ):
     
     def update_inheritables( self, inheritables, cleaned_data ):
         return _update_inheritables(self, 'collection', inheritables, cleaned_data)
-
-
+    
+    def model_def_commits(self):
+        """Assesses document's relation to model defs in 'ddr' repo.
+        
+        Adds the following fields:
+        .model_def_commits_alert
+        .model_def_commits_msg
+        """
+        model_def_commits(self, Collection)
+    
+    def model_def_fields(self):
+        """From POV of document, indicates fields added/removed in model defs
+        
+        Adds the following fields:
+        .model_def_fields_added
+        .model_def_fields_removed
+        .model_def_fields_added_msg
+        .model_def_fields_removed_msg
+        """
+        model_def_fields(self, Collection)
+    
 
 class Entity( DDRLocalEntity ):
 
@@ -337,7 +369,26 @@ class Entity( DDRLocalEntity ):
         for f in self._files:
             path_abs = os.path.join(self.files_path, f['path_rel'])
             self.files.append(DDRFile(path_abs=path_abs))
-
+    
+    def model_def_commits(self):
+        """Assesses document's relation to model defs in 'ddr' repo.
+        
+        Adds the following fields:
+        .model_def_commits_alert
+        .model_def_commits_msg
+        """
+        model_def_commits(self, Entity)
+    
+    def model_def_fields(self):
+        """From POV of document, indicates fields added/removed in model defs
+        
+        Adds the following fields:
+        .model_def_fields_added
+        .model_def_fields_removed
+        .model_def_fields_added_msg
+        .model_def_fields_removed_msg
+        """
+        model_def_fields(self, Entity)
 
 
 class DDRFile( DDRLocalFile ):
@@ -360,3 +411,23 @@ class DDRFile( DDRLocalFile ):
     @staticmethod
     def file_path(request, repo, org, cid, eid, role, sha1):
         return os.path.join(settings.MEDIA_BASE, '{}-{}-{}-{}-{}-{}'.format(repo, org, cid, eid, role, sha1))
+    
+    def model_def_commits(self):
+        """Assesses document's relation to model defs in 'ddr' repo.
+        
+        Adds the following fields:
+        .model_def_commits_alert
+        .model_def_commits_msg
+        """
+        model_def_commits(self, DDRFile)
+    
+    def model_def_fields(self):
+        """From POV of document, indicates fields added/removed in model defs
+        
+        Adds the following fields:
+        .model_def_fields_added
+        .model_def_fields_removed
+        .model_def_fields_added_msg
+        .model_def_fields_removed_msg
+        """
+        model_def_fields(self, DDRFile)

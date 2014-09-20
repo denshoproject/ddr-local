@@ -1,3 +1,5 @@
+import json
+
 from ddrlocal import models
 from ddrlocal.models import test as testmodule
 
@@ -79,6 +81,22 @@ def test_load_json():
 
 def test_document_metadata():
     pass
+
+# cmp_model_definition_commits
+
+def test_cmp_model_definition_fields():
+    document = json.loads(TEST_DOCUMENT)
+    assert models.cmp_model_definition_fields(
+        json.dumps(document), testmodule) == ([],[])
+    
+    document.append( {'new': 'new field'} )
+    assert models.cmp_model_definition_fields(
+        json.dumps(document), testmodule) == (['new'],[])
+    
+    document.pop()
+    document.pop()
+    assert models.cmp_model_definition_fields(
+        json.dumps(document), testmodule) == ([],['description'])
 
 def test_prep_json_data():
     document = Document()

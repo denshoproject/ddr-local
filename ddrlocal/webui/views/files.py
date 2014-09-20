@@ -81,6 +81,8 @@ def detail( request, repo, org, cid, eid, role, sha1 ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
     file_ = entity.file(repo, org, cid, eid, role, sha1)
+    file_.model_def_commits()
+    file_.model_def_fields()
     formdata = {'path':file_.path_rel}
     return render_to_response(
         'webui/files/detail.html',
@@ -353,6 +355,8 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
         messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     file_ = entity.file(repo, org, cid, eid, role, sha1)
+    file_.model_def_commits()
+    file_.model_def_fields()
     #
     if request.method == 'POST':
         form = DDRForm(request.POST, fields=filemodule.FIELDS)

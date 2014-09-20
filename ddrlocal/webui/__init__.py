@@ -52,8 +52,18 @@ WEBUI_MESSAGES = {
     'VIEWS_FILES_UPLOADING': 'Uploading <b>%s</b> (%s)', # filename, original filename
     'VIEWS_FILES_PARENT_LOCKED': "This file's parent object is locked.",
     'VIEWS_FILES_UPDATED': 'File metadata updated',
-    'VIEWS_FILES_NEWACCESS': 'Generating access file for <strong>%s</strong>.' # filename
+    'VIEWS_FILES_NEWACCESS': 'Generating access file for <strong>%s</strong>.', # filename
     
+    # webui.models.model_def_commits
+    'MODEL_DEF_COMMITS_STATUS_128': ('warning', "Module model definitions not committed."),
+    'MODEL_DEF_COMMITS_STATUS_-1':  ('info', "Document model definitions OLDER than module's."),
+    'MODEL_DEF_COMMITS_STATUS_0':   ('info', "Document model definitions SAME as module's."),
+    'MODEL_DEF_COMMITS_STATUS_1':   ('info', "Document model definitions NEWER than module's."),
+    
+    # webui.models.model_def_fields
+    'MODEL_DEF_FIELDS_ADDED': "The following fields will be added to this docment the next time you edit. {}",
+    'MODEL_DEF_FIELDS_REMOVED': "The following fields in this document are absent from the repository's model definitions. If you edit this document these fields and their data will disappear! {}",
+
 }
 
 def set_docstore_index( request ):

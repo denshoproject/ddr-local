@@ -19,6 +19,24 @@
 {{ file.basename }}
 </h1>
 
+{% if file.model_def_fields_removed %}
+  <div class="alert alert-danger">
+    {{ file.model_def_fields_removed_msg }}
+  </div>
+{% endif %}
+
+{% if file.model_def_fields_added %}
+  <div class="alert alert-info">
+    {{ file.model_def_fields_added_msg }}
+  </div>
+{% endif %}
+
+{% if file.model_def_commits_msg %}
+  <div class="alert alert-{{ file.model_def_commits_alert }}">
+    {{ file.model_def_commits_msg }}
+  </div>
+{% endif %}
+
 {% if username and models_valid %}
 {% if entity.locked or collection.locked or collection.repo_behind or collection.repo_conflicted %}
 <p>

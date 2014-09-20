@@ -199,6 +199,8 @@ def detail( request, repo, org, cid, eid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     epath = Entity.entity_path(request,repo,org,cid,eid)
     entity = Entity.from_json(epath)
+    entity.model_def_commits()
+    entity.model_def_fields()
     tasks = request.session.get('celery-tasks', [])
     return render_to_response(
         'webui/entities/detail.html',
@@ -393,6 +395,8 @@ def edit( request, repo, org, cid, eid ):
     # TODO This should be baked into models somehow.
     topics_terms = tagmanager_terms('topics')
     facility_terms = tagmanager_terms('facility')
+    entity.model_def_commits()
+    entity.model_def_fields()
     if request.method == 'POST':
         form = DDRForm(request.POST, fields=entitymodule.FIELDS)
         if form.is_valid():
