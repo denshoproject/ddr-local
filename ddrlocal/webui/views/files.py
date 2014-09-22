@@ -107,7 +107,7 @@ def file_json( request, repo, org, cid, eid, role, sha1 ):
     if file_.json_path and os.path.exists(file_.json_path):
         with open(file_.json_path, 'r') as f:
             json = f.read()
-        return HttpResponse(json, mimetype="application/json")
+        return HttpResponse(json, content_type="application/json")
     messages.success(request, 'no JSON file. sorry.')
     return HttpResponseRedirect( reverse('webui-file', args=[repo,org,cid,eid,role,sha1]) )
 
