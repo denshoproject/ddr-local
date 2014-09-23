@@ -218,7 +218,9 @@ def cmp_model_definition_commits(document, module):
     module_defs_commit = parse(module_commit_raw)
     if not module_defs_commit:
         return 128
-    document_defs_commit = parse(document.json_metadata.get('model_definitions',''))
+    doc_metadata = getattr(document, 'json_metadata', {})
+    document_commit_raw = doc_metadata.get('model_definitions','')
+    document_defs_commit = parse(document_commit_raw)
     if not document_defs_commit:
         return -1
     if document.model == 'collection': repo = dvcs.repository(document_object.path)
