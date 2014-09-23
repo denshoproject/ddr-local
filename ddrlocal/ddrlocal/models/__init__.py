@@ -213,8 +213,9 @@ def cmp_model_definition_commits(document, module):
     """
     def parse(txt):
         return txt.strip().split(' ')[0]
-    module_path = module.__file__.replace('.pcy', '.py')
-    module_defs_commit = parse(dvcs.latest_commit(module_path))
+    module_path = module.__file__.replace('.pyc', '.py')
+    module_commit_raw = dvcs.latest_commit(module_path)
+    module_defs_commit = parse(module_commit_raw)
     if not module_defs_commit:
         return 128
     document_defs_commit = parse(document.json_metadata.get('model_definitions',''))
