@@ -1,12 +1,19 @@
+import ConfigParser
 import logging
 logger = logging.getLogger(__name__)
 import os
 
 from lxml import etree
 
-from django.conf import settings
+from DDR import CONFIG_FILES, NoConfigError
 
+config = ConfigParser.ConfigParser()
+configs_read = config.read(CONFIG_FILES)
+if not configs_read:
+    raise NoConfigError('No config file!')
 
+TEMPLATE_EAD = config.get('local','template_ead')
+TEMPLATE_METS = config.get('local','template_mets')
 
 NAMESPACES = {
     'mets':  'http://www.loc.gov/standards/mets/mets.xsd',
@@ -54,7 +61,7 @@ class EAD( object ):
     @staticmethod
     def create( path ):
         logger.debug('    EAD.create({})'.format(path))
-        t = load_template(settings.TEMPLATE_EAD)
+        t = load_template(TEMPLATE_EAD)
         with open(path, 'w') as f:
             f.write(t)
     
@@ -126,7 +133,7 @@ class METS( object ):
     @staticmethod
     def create( path ):
         logger.debug('    METS.create({})'.format(path))
-        t = load_template(settings.TEMPLATE_METS)
+        t = load_template(TEMPLATE_METS)
         with open(path, 'w') as f:
             f.write(t)
     

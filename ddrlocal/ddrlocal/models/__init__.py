@@ -1,3 +1,4 @@
+import ConfigParser
 from datetime import datetime, date
 import hashlib
 import json
@@ -13,8 +14,7 @@ import traceback
 import envoy
 from lxml import etree
 
-from django.conf import settings
-
+from DDR import CONFIG_FILES, NoConfigError
 from DDR import commands
 from DDR import dvcs
 from DDR import imaging
@@ -22,12 +22,19 @@ from DDR import natural_order_string, natural_sort
 from DDR.models import Collection as DDRCollection, Entity as DDREntity
 from DDR.models import dissect_path, file_hash, _inheritable_fields, _inherit
 from DDR.models import module_function, module_xml_function, write_json
-from ddrlocal import VERSION, COMMIT
+from ddrlocal import VERSION
 from ddrlocal.models.meta import CollectionJSON, EntityJSON, read_json
 from ddrlocal.models.xml import EAD, METS
 
-if settings.REPO_MODELS_PATH not in sys.path:
-    sys.path.append(settings.REPO_MODELS_PATH)
+config = ConfigParser.ConfigParser()
+configs_read = config.read(CONFIG_FILES)
+if not configs_read:
+    raise NoConfigError('No config file!')
+
+REPO_MODELS_PATH = config.get('cmdln','repo_models_path')
+
+if REPO_MODELS_PATH not in sys.path:
+    sys.path.append(REPO_MODELS_PATH)
 try:
     from repo_models import collection as collectionmodule
     from repo_models import entity as entitymodule
@@ -37,6 +44,12 @@ except ImportError:
     from ddrlocal.models import entity as entitymodule
     from ddrlocal.models import files as filemodule
 
+MEDIA_BASE = config.get('cmdln','media_base')
+LOG_DIR = config.get('local', 'log_dir')
+TIME_FORMAT = config.get('cmdln','time_format')
+DATETIME_FORMAT = config.get('cmdln','datetime_format')
+ACCESS_FILE_GEOMETRY = config.get('local','access_file_geometry')
+ACCESS_FILE_APPEND = config.get('local','access_file_append')
 
 COLLECTION_FILES_PREFIX = 'files'
 ENTITY_FILES_PREFIX = 'files'
@@ -178,7 +191,7 @@ def document_metadata(module, document_repo_path):
     """
     data = {
         'application': 'https://github.com/densho/ddr-local.git',
-        'app_commit': COMMIT,
+        'app_commit': dvcs.latest_commit(os.path.dirname(__file__)),
         'app_release': VERSION,
         'models_commit': dvcs.latest_commit(module.__file__),
         'git_version': dvcs.git_version(document_repo_path),
@@ -252,7 +265,7 @@ def prep_json_data(document, module, field_exceptions=[], template=False):
             val = getattr(document, key)
             # JSON requires dates to be represented as strings
             try:
-                val = val.strftime(settings.DATETIME_FORMAT)
+                val = val.strftime(DATETIME_FORMAT)
             except AttributeError:
                 pass
         item = {key: val}
@@ -436,11 +449,11 @@ class DDRLocalCollection( DDRCollection ):
         """
         def special_cases(document):
             if hasattr(document, 'record_created') and document.record_created:
-                document.record_created = datetime.strptime(document.record_created, settings.DATETIME_FORMAT)
+                document.record_created = datetime.strptime(document.record_created, DATETIME_FORMAT)
             else:
                 document.record_created = datetime.now()
             if hasattr(document, 'record_lastmod') and document.record_lastmod:
-                document.record_lastmod = datetime.strptime(document.record_lastmod, settings.DATETIME_FORMAT)
+                document.record_lastmod = datetime.strptime(document.record_lastmod, DATETIME_FORMAT)
             else:
                 document.record_lastmod = datetime.now()
         
@@ -605,7 +618,7 @@ class DDRLocalEntity( DDREntity ):
         @returns: absolute path to logfile
         """
         logpath = os.path.join(
-            settings.LOG_DIR, 'addfile', self.parent_uid, '%s.log' % self.id)
+            LOG_DIR, 'addfile', self.parent_uid, '%s.log' % self.id)
         if not os.path.exists(os.path.dirname(logpath)):
             os.makedirs(os.path.dirname(logpath))
         return logpath
@@ -700,10 +713,10 @@ class DDRLocalEntity( DDREntity ):
             def parsedt(txt):
                 d = datetime.now()
                 try:
-                    d = datetime.strptime(txt, settings.DATETIME_FORMAT)
+                    d = datetime.strptime(txt, DATETIME_FORMAT)
                 except:
                     try:
-                        d = datetime.strptime(txt, settings.TIME_FORMAT)
+                        d = datetime.strptime(txt, TIME_FORMAT)
                     except:
                         pass
                 return d
@@ -825,7 +838,7 @@ class DDRLocalEntity( DDREntity ):
         self.files_log(1, 'src_basename: %s' % src_basename)
         # temporary working dir
         tmp_dir = os.path.join(
-            settings.MEDIA_BASE, 'tmp', 'file-add',
+            MEDIA_BASE, 'tmp', 'file-add',
             self.parent_uid, self.id)
         self.files_log(1, 'tmp_dir: %s' % tmp_dir)
         if not os.path.exists(tmp_dir):
@@ -881,7 +894,7 @@ class DDRLocalEntity( DDREntity ):
             tmp_access_path = imaging.thumbnail(
                 src_path,
                 os.path.join(tmp_dir, os.path.basename(access_filename)),
-                geometry=settings.ACCESS_FILE_GEOMETRY)
+                geometry=ACCESS_FILE_GEOMETRY)
         except:
             tmp_access_path = None
             self.files_log(0, traceback.format_exc().strip())
@@ -1040,7 +1053,7 @@ class DDRLocalEntity( DDREntity ):
         self.files_log(1, 'src_basename: %s' % src_basename)
         # temporary working dir
         tmp_dir = os.path.join(
-            settings.MEDIA_BASE, 'tmp', 'file-add',
+            MEDIA_BASE, 'tmp', 'file-add',
             self.parent_uid, self.id)
         self.files_log(1, 'tmp_dir: %s' % tmp_dir)
         if not os.path.exists(tmp_dir):
@@ -1060,7 +1073,7 @@ class DDRLocalEntity( DDREntity ):
         tmp_access_path = imaging.thumbnail(
             src_path,
             os.path.join(tmp_dir, os.path.basename(access_filename)),
-            geometry=settings.ACCESS_FILE_GEOMETRY)
+            geometry=ACCESS_FILE_GEOMETRY)
         self.files_log(1, 'tmp_access_path: %s' % tmp_access_path)
         # unlike add_file, it's a fail if there's no access file
         if (not tmp_access_path) or (not os.path.exists(tmp_access_path)):
@@ -1513,7 +1526,7 @@ class DDRLocalFile( object ):
         """
         return '%s%s.%s' % (
             os.path.splitext(src_abs)[0],
-            settings.ACCESS_FILE_APPEND,
+            ACCESS_FILE_APPEND,
             'jpg')
     
     def links_incoming( self ):
