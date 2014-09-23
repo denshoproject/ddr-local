@@ -74,6 +74,13 @@ def model_def_commits(document, module):
 
 def model_def_fields(document, module):
     added,removed = super(module, document).model_def_fields()
+    # 'File.path_rel' is created when instantiating Files,
+    # is not part of model definitions.
+    def rm_path_rel(fields):
+        if 'path_rel' in fields:
+            fields.remove('path_rel')
+    rm_path_rel(added)
+    rm_path_rel(removed)
     document.model_def_fields_added = added
     document.model_def_fields_removed = removed
     document.model_def_fields_added_msg = WEBUI_MESSAGES['MODEL_DEF_FIELDS_ADDED'] % added
