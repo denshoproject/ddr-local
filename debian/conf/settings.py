@@ -68,6 +68,8 @@ ACCESS_FILE_EXTENSION = config.get('cmdln','access_file_extension')
 ACCESS_FILE_GEOMETRY = config.get('cmdln','access_file_geometry')
 ACCESS_FILE_OPTIONS  = config.get('cmdln','access_file_options')
 
+SUPERVISORD_URL      = config.get('local','supervisord_url')
+SUPERVISORD_PROCS    = ['ddrlocal', 'celery']
 SECRET_KEY           = config.get('local','secret_key')
 LANGUAGE_CODE        = config.get('local','language_code')
 TIME_ZONE            = config.get('local','time_zone')
@@ -153,6 +155,7 @@ GITSTATUS_BACKOFF = 30
 GITSTATUS_BACKGROUND_ACTIVE = True
 if config.has_option('local', 'gitstatus_background_active'):
     GITSTATUS_BACKGROUND_ACTIVE = config.get('local', 'gitstatus_background_active')
+    SUPERVISORD_PROCS.append('celerybeat')
 
 # ----------------------------------------------------------------------
 

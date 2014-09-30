@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+
+{% block title %}Restarting{% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+<li class="active">Restarting</li>
+{% endblock breadcrumbs %}
+
+
+{% block content %}
+
+  <div class="row-fluid">
+    <div class="span12">
+
+<h1>Restarting</h1>
+
+<div id="procinfo">
+  <div id="ddrlocal" class="alert alert-warning">ddrlocal &mdash; RESTARTING</div>
+  <div id="celery" class="alert alert-warning">celery &mdash; RESTARTING</div>
+  <div id="celerybeat" class="alert alert-warning">celerybeat &mdash; RESTARTING</div>
+</div>
+
+    </div><!-- .span12 -->
+  </div><!-- .row-fluid -->
+
+{% endblock content %}
+
+
+{% block javascript %}
+<script>
+  $(function(){
+
+    /* hit the restart button */
+    jQuery.get("/ui/supervisord/restart/");
+
+    /* display updates in browser */
+    window.setInterval(function(){
+        $("#procinfo").load("/ui/supervisord/procinfo.html");
+    },3000);
+
+    /* redirect when everything is back up */
+    window.setInterval(function(){
+        jQuery.getJSON("/ui/supervisord/procinfo.json", function(data) {
+            var running = [];
+            var procs = data["procs"];
+            procs.forEach(function(proc, index) {
+                if (data[proc]["statename"] == 'RUNNING') {
+                    running.push(proc);
+                }
+            });
+            if (running.length == procs.length) {
+                window.location.href = '/ui/';
+            }
+        });
+    },3000);
+
+  });
+</script>
+{% endblock javascript %}
