@@ -139,4 +139,4 @@ def task_status( request ):
 def task_dismiss( request, task_id ):
     dismiss_session_task(request, task_id)
     data = {'status':'ok'}
-    return HttpResponse(json.dumps(data), mimetype="application/json")
+    return HttpResponse(json.dumps(data), content_type="application/json")
