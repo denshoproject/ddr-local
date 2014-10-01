@@ -253,14 +253,23 @@ FIELD_NAMES = {
 
 # helper functions -----------------------------------------------------
 
-def dtfmt(dt): return dt.strftime('%Y-%m-%dT%H:%M:%S.%f')
+def dtfmt(dt):
+    """Format dates in consistent format.
+    
+    @param dt: datetime
+    @returns: str
+    """
+    return dt.strftime('%Y-%m-%dT%H:%M:%S.%f')
 
 def make_tmpdir():
+    """Make tmp dir if doesn't exist.
+    """
     if not os.path.exists(settings.CSV_TMPDIR):
         os.makedirs(settings.CSV_TMPDIR)
     
 def make_csv_reader( csvfile ):
-    """
+    """Get a csv.reader object for the file.
+    
     @param csvfile: A file object.
     """
     reader = csv.reader(
@@ -272,7 +281,8 @@ def make_csv_reader( csvfile ):
     return reader
 
 def make_csv_writer( csvfile ):
-    """
+    """Get a csv.writer object for the file.
+    
     @param csvfile: A file object.
     """
     writer = csv.writer(
@@ -284,7 +294,8 @@ def make_csv_writer( csvfile ):
     return writer
 
 def read_csv( path ):
-    """
+    """Read specified file, return list of rows.
+    
     @param path: Absolute path to CSV file
     @returns list of rows
     """
@@ -297,6 +308,7 @@ def read_csv( path ):
 
 def get_required_fields( object_class, fields ):
     """Picks out the required fields.
+    
     @param fields: COLLECTION_FIELDS, ENTITY_FIELDS, FILE_FIELDS
     @return list of field names
     """
@@ -322,7 +334,8 @@ def make_row_dict( headers, row ):
     return d
 
 def row_missing_required_fields( required_fields, row ):
-    """
+    """Return list of missing required fields from the row.
+    
     @param required_fields: List of required field names
     @param row: A single row (list of fields, not dict)
     @returns False (nothing missing) or a list of fieldnames
@@ -337,7 +350,8 @@ def row_missing_required_fields( required_fields, row ):
     return missing
 
 def valid_choice_values( choices ):
-    """
+    """Return list of valid values for list of tuples.
+    
     @param choices: List of value:descriptor tuples from MODEL_FIELDS doc.
     @returns list of values
     """
@@ -362,7 +376,8 @@ def choice_is_valid( valid_choices, choice ):
     return False
 
 def invalid_headers( object_class, headers ):
-    """
+    """Analyzes headers and complains of problems.
+    
     @param object_class: 'entity' or 'file'
     @param headers: List of field names
     @returns True if everything's OK, False if not; prints errors to console
@@ -390,7 +405,8 @@ def invalid_headers( object_class, headers ):
     return 0
 
 def invalid_values( object_class, headers, rowd ):
-    """
+    """Analyzes values and complains of problems.
+    
     @param headers: List of field names
     @param rowd: A single row (dict, not list of fields)
     @returns False (nothing missing) or a list of fieldnames
@@ -416,7 +432,8 @@ def invalid_values( object_class, headers, rowd ):
     return invalid
 
 def all_rows_valid( object_class, headers, required_fields, rows ):
-    """
+    """Analyzes rows and complains of problems.
+    
     @param headers: List of field names
     @param required_fields: List of required field names
     @param rows: List of rows (each with list of fields, not dict)
@@ -441,7 +458,11 @@ def all_rows_valid( object_class, headers, required_fields, rows ):
     return rows_bad
 
 def test_entities( headers, rows ):
-    """Test-loads Entities mentioned in rows; will crash if any are missing.
+    """Test-loads Entities mentioned in rows; crashes if any are missing.
+    
+    @param headers: List of field names
+    @param rows: List of rows (each with list of fields, not dict)
+    @returns list of invalid entities
     """
     bad_entities = []
     for row in rows:
@@ -459,6 +480,11 @@ def test_entities( headers, rows ):
 
 def find_missing_files( csv_dir, headers, rows ):
     """checks for missing files
+    
+    @param csv_dir: Absolute path to dir
+    @param headers: List of field names
+    @param rows: List of rows (each with list of fields, not dict)
+    @returns list of missing files
     """
     missing_files = []
     for row in rows:
@@ -469,7 +495,12 @@ def find_missing_files( csv_dir, headers, rows ):
     return missing_files
 
 def find_unreadable_files( csv_dir, headers, rows ):
-    """checks for missing files
+    """checks for unreadable files
+    
+    @param csv_dir: Absolute path to dir
+    @param headers: List of field names
+    @param rows: List of rows (each with list of fields, not dict)
+    @returns list of unreadable files
     """
     unreadable_files = []
     for row in rows:
@@ -505,6 +536,10 @@ def humanize_bytes(bytes, precision=1):
     '1.3 GB'
     
     source: http://code.activestate.com/recipes/577081-humanized-representation-of-a-number-of-bytes/
+    
+    @param bytes: int Raw number of bytes
+    @param precision: int
+    @returns: str
     """
     abbrevs = (
         (1<<50L, 'PB'),
@@ -523,6 +558,11 @@ def humanize_bytes(bytes, precision=1):
 
 def replace_variant_headers( object_class, headers ):
     """Tries to replace variant headers with official values
+    
+    @param object_class: 'entity' or 'file'
+    @param headers: List of field names
+    @param rows: List of rows (each with list of fields, not dict)
+    @returns: list of headers
     """
     if   object_class == 'entity': index = ENTITY_HEADER_FIELDS_ALT_INDEX
     elif object_class == 'file': index = FILE_HEADER_FIELDS_ALT_INDEX
@@ -534,6 +574,11 @@ def replace_variant_headers( object_class, headers ):
 
 def replace_variant_cv_field_values( object_class, headers, rows ):
     """Tries to replace variants of controlled-vocab with official values
+    
+    @param object_class: 'entity' or 'file'
+    @param headers: List of field names
+    @param rows: List of rows (each with list of fields, not dict)
+    @returns: list rows
     """
     def replace(fieldname, row, headers, rowd, index):
         """This does the actual work.
