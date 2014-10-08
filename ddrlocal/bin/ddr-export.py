@@ -98,6 +98,8 @@ def read_id_file(path):
 def json_paths(collection_path, model, ids):
     """Get metadata paths for the specified IDs.
     
+    TODO Does not actually use the 'ids' arg
+    
     @param model: str 'entity' or 'file'
     @param ids: list
     @returns: list of absolute paths
@@ -152,14 +154,24 @@ def main():
         ids = parse_ids(args.ids)
     elif args.file:
         ids = read_id_file(args.file)
-    if not ids:
-        raise Exception('ERROR: No IDs matched')
+#    if not ids:
+#        raise Exception('ERROR: No IDs matched')
     
+    start = datetime.now()
+    print('%s Gathering entity paths...' % start)
     paths = json_paths(args.collection, model, ids)
-    if not paths:
+    if paths:
+        print('%s ok %s paths' % (datetime.now(), len(paths)))
+    else:
         raise Exception('ERROR: Could not find metadata paths.')
     
+    print('%s Exporting' % datetime.now())
     batch.export(paths, class_, module, args.csv)
+    finish = datetime.now()
+    elapsed = finish - start
+    print('%s done' % finish)
+    print('%s elapsed' % elapsed)
+    
     
 
 if __name__ == '__main__':
