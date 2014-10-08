@@ -32,6 +32,8 @@ if not configs_read:
     raise NoConfigError('No config file!')
 
 REPO_MODELS_PATH = config.get('cmdln','repo_models_path')
+VOCABS_PATH = os.path.join(REPO_MODELS_PATH, 'vocab')
+
 if REPO_MODELS_PATH not in sys.path:
     sys.path.append(REPO_MODELS_PATH)
 try:
@@ -42,117 +44,9 @@ except ImportError:
     # No Store mounted, no 'ddr' repository, or no valid repo_models in 'ddr'.
     raise Exception('Could not load repo_models.')
 
-
-# These are lists of alternative forms of controlled-vocabulary terms.
-# From these indexes are build that will be used to replace variant terms with the official term.
-ENTITY_HEADER_FIELDS_ALT = {
-    'facility': ['facilities',],
-}
-FILE_HEADER_FIELDS_ALT = {
-    'basename_orig': ['file',],
-}
-STATUS_CHOICES_ALT = {
-    'inprocess': ['In Process', 'In Progress', 'inprogress',],
-    'completed': ['Completed', 'complete', 'Complete',],
-}
-PERMISSIONS_CHOICES_ALT = {
-    '1': ['public', 'Public',],
-    '0': ['private', 'Private',],
-}
-LANGUAGE_CHOICES_ALT = {
-    'eng': ['english', 'English', 'eng:English',],
-    'jpn': ['japanese', 'Japanese', 'jpn:Japanese',],
-    'chi': ['chinese', 'Chinese', 'chi:Chinese',],
-    'fre': ['french', 'French', 'fre:French',],
-    'ger': ['german', 'German', 'ger:German',], 
-    'ita': ['italian', 'Italian', 'ita:Italian',],
-    'kor': ['korean', 'Korean', 'kor:Korean',],
-    'por': ['portuguese', 'Portuguese', 'por:Portuguese',],
-    'rus': ['russian', 'Russian', 'rus:Russian',],
-    'spa': ['spanish', 'Spanish', 'spa:Spanish',],
-    'tgl': ['tagalog', 'Tagalog', 'tgl:Tagalog',],
-}
-GENRE_CHOICES_ALT = {
-    'advertisement': ['Advertisements', 'Advertisement',],
-    'album': ['Albums', 'Album',],
-    'architecture': ['Architecture',],
-    'baseball_card': ['Baseball Cards', 'Baseball Card',],
-    'blank_form': ['Blank Forms', 'Blank Form',],
-    'book': ['Books', 'Book',],
-    'broadside': ['Broadsides', 'Broadside',],
-    'cartoon': ['Cartoons (Commentary)', 'Cartoon (Commentary)',],
-    'catalog': ['Catalogs', 'Catalog',],
-    'cityscape': ['Cityscapes', 'Cityscape',],
-    'clipping': ['Clippings', 'Clipping',],
-    'correspondence': ['Correspondence',],
-    'diary': ['Diaries', 'Diary',],
-    'drawing': ['Drawings', 'Drawing',],
-    'ephemera': ['Ephemera',],
-    'essay': ['Essays', 'Essay',],
-    'ethnography': ['Ethnographies', 'Ethnography',],
-    'fieldnotes': ['Fieldnotes', 'Fieldnote',],
-    'illustration': ['Illustrations', 'Illustration',],
-    'interview': ['Interviews', 'Interview',],
-    'landscape': ['Landscapes', 'Landscape',],
-    'leaflet': ['Leaflets', 'Leaflet',],
-    'manuscript': ['Manuscripts', 'Manuscript',],
-    'map': ['Maps', 'Map',],
-    'misc_document': ['Miscellaneous Documents', 'Miscellaneous Document',],
-    'motion_picture': ['Motion Pictures', 'Motion Picture',],
-    'music': ['Music',],
-    'narrative': ['Narratives', 'Narrative',],
-    'painting': ['Paintings', 'Painting',],
-    'pamphlet': ['Pamphlets', 'Pamphlet',],
-    'periodical': ['Periodicals', 'Periodical',],
-    'petition': ['Petitions', 'Petition',],
-    'photograph': ['Photographs', 'Photograph',],
-    'physical_object': ['Physical Objects', 'Physical Object',],
-    'poetry': ['Poetry',],
-    'portrait': ['Portraits', 'Portrait',],
-    'postcard': ['Postcards', 'Postcard',],
-    'poster': ['Posters', 'Poster',],
-    'print': ['Prints', 'Print',],
-    'program': ['Programs', 'Program',],
-    'rec_log': ['Recording Logs', 'Recording Log',],
-    'score': ['Scores', 'Score',],
-    'sheet_music': ['Sheet Music',],
-    'timetable': ['Timetables', 'Timetable',],
-    'transcription': ['Transcriptions', 'Transcription',],
-}
-FORMAT_CHOICES_ALT = {
-    'av': ['Audio/Visual',],
-    'ds': ['Datasets', 'Dataset',],
-    'doc': ['Documents', 'Document',],
-    'img': ['Still Images', 'Still Image',],
-    'vh': ['Oral Histories', 'Oral History',],
-}
-
-def make_choices_alt_index(choices_alt):
-    """Make index from *_CHOICES_ALT dict
-    """
-    index = {}
-    for key,value in choices_alt.iteritems():
-        for v in value:
-            index[v] = key
-    return index
-ENTITY_HEADER_FIELDS_ALT_INDEX = make_choices_alt_index(ENTITY_HEADER_FIELDS_ALT)
-FILE_HEADER_FIELDS_ALT_INDEX = make_choices_alt_index(FILE_HEADER_FIELDS_ALT)
-STATUS_CHOICES_ALT_INDEX = make_choices_alt_index(STATUS_CHOICES_ALT)
-PERMISSIONS_CHOICES_ALT_INDEX = make_choices_alt_index(PERMISSIONS_CHOICES_ALT)
-LANGUAGE_CHOICES_ALT_INDEX = make_choices_alt_index(LANGUAGE_CHOICES_ALT)
-GENRE_CHOICES_ALT_INDEX = make_choices_alt_index(GENRE_CHOICES_ALT)
-FORMAT_CHOICES_ALT_INDEX = make_choices_alt_index(FORMAT_CHOICES_ALT)
-
-ALT_INDEXES = {
-    'status': STATUS_CHOICES_ALT_INDEX,
-    'permissions': PERMISSIONS_CHOICES_ALT_INDEX,
-    'language': LANGUAGE_CHOICES_ALT_INDEX,
-    'genre': GENRE_CHOICES_ALT_INDEX,
-    'format': FORMAT_CHOICES_ALT_INDEX,
-}
-
-CHOICES_VALUES = {
-}
+ENTITY_MODULE_NAMES = ['entity', 'entities', 'file', 'files']
+FILE_MODULE_NAMES = ['entity', 'entities', 'file', 'files']
+MODULE_NAMES = ENTITY_MODULE_NAMES + FILE_MODULE_NAMES
 
 
 def main():
@@ -163,6 +57,7 @@ def main():
     parser.add_argument('collection', help='Absolute path to Collection.')
     parser.add_argument('-u', '--user', required=True, help='User name')
     parser.add_argument('-m', '--mail', required=True, help='User e-mail address')
+    parser.add_argument('-M', '--module', required=True, help="Module: 'entity' or 'file'.")
     args = parser.parse_args()
     
     # check args
@@ -176,7 +71,26 @@ def main():
         print('ddr-export: Collection does not exist.')
         sys.exit(1)
     
-    batch.import_entities(args.csv, args.collection, args.user, args.mail)
+    model = None
+    class_ = None
+    module = None
+    if args.module in ENTITY_MODULE_NAMES:
+        model = 'entity'
+        class_ = DDRLocalEntity
+        module = entitymodule
+    elif args.module in FILE_MODULE_NAMES:
+        model = 'file'
+        class_ = DDRLocalFile
+        module = filesmodule
+    if not (class_ and module):
+        raise Exception('ERROR: Could not decide on a class/module.')
+    
+    batch.import_entities(
+        args.csv,
+        args.collection,
+        class_, module, VOCABS_PATH,
+        args.user, args.mail
+    )
 
 if __name__ == '__main__':
     main()
