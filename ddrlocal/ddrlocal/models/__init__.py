@@ -581,6 +581,9 @@ class DDRLocalEntity( DDREntity ):
 
     @staticmethod
     def from_json(entity_abs):
+        """
+        TODO Should accept JSON data, not call .load_json itself
+        """
         entity = None
         if os.path.exists(entity_abs):
             entity = DDRLocalEntity(entity_abs)
@@ -593,7 +596,7 @@ class DDRLocalEntity( DDREntity ):
     def _load_file_objects( self ):
         """Replaces list of file info dicts with list of DDRLocalFile objects
         
-        IMPORTANT: original 
+        TODO Causes all file .JSONs to be loaded so don't call automatically!
         """
         # keep copy of the list for detect_file_duplicates()
         self._files = [f for f in self.files]
@@ -604,6 +607,11 @@ class DDRLocalEntity( DDREntity ):
     
     def load_json(self, path):
         """Populate Entity data from .json file.
+        
+        TODO Should not open() the file: should accept JSON-formatted text.
+        TODO entity._load_file_objects() should be separate.(?)
+        TODO Only call entity._load_file_objects() if files list requested
+        
         @param path: Absolute path to entity
         """
         json_data = self.json().data
@@ -1241,6 +1249,7 @@ class DDRLocalFile( object ):
             self.json_path_rel = self.json_path.replace(self.collection_path, '')
             if self.json_path_rel[0] == '/':
                 self.json_path_rel = self.json_path_rel[1:]
+            # TODO seriously, do we need this?
             self.load_json()
             access_abs = None
             if self.access_rel and self.entity_path:
