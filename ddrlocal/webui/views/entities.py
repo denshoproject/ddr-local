@@ -321,7 +321,8 @@ def new( request, repo, org, cid ):
     entity_uid = '{}-{}-{}-{}'.format(repo,org,cid,eid)
     entity_path = Entity.entity_path(request, repo, org, cid, eid)
     # write entity.json template to entity location
-    Entity(entity_path).dump_json(path=settings.TEMPLATE_EJSON, template=True)
+    with open(settings.TEMPLATE_EJSON, 'w') as f:
+        f.write(Entity(entity_path).dump_json(template=True))
     # commit files
     exit,status = commands.entity_create(git_name, git_mail,
                                          collection.path, entity_uid,
@@ -332,7 +333,8 @@ def new( request, repo, org, cid ):
     # load Entity object, inherit values from parent, write back to file
     entity = Entity.from_json(entity_path)
     entity.inherit(collection)
-    entity.dump_json()
+    with open(entity.json_path, 'w') as f:
+        f.write(entity.dump_json())
     updated_files = [entity.json_path]
     exit,status = commands.entity_update(git_name, git_mail,
                                          entity.parent_path, entity.id,
@@ -400,7 +402,8 @@ def edit( request, repo, org, cid, eid ):
                 form.cleaned_data['facility'] = tagmanager_process_tags(hidden_facility)
             
             entity.form_post(form)
-            entity.dump_json()
+            with open(entity.json_path, 'w') as j:
+                j.write(entity.dump_json())
             entity.dump_mets()
             updated_files = [entity.json_path, entity.mets_path,]
             success_msg = WEBUI_MESSAGES['VIEWS_ENT_UPDATED']
@@ -601,7 +604,8 @@ def files_dedupe( request, repo, org, cid, eid ):
             # remove duplicates
             entity.rm_file_duplicates()
             # update metadata files
-            entity.dump_json()
+            with open(entity.json_path, 'w') as j:
+                j.write(entity.dump_json())
             entity.dump_mets()
             updated_files = [entity.json_path, entity.mets_path,]
             success_msg = WEBUI_MESSAGES['VIEWS_ENT_UPDATED']

@@ -18,10 +18,10 @@ from django.conf import settings
 from DDR import commands
 from DDR import dvcs
 from DDR import imaging
-from DDR import natural_order_string, natural_sort
+from DDR import format_json, natural_order_string, natural_sort
 from DDR.models import Collection as DDRCollection, Entity as DDREntity
 from DDR.models import dissect_path, file_hash, _inheritable_fields, _inherit
-from DDR.models import module_function, module_xml_function, write_json
+from DDR.models import module_function, module_xml_function
 from ddrlocal import VERSION, COMMIT
 from ddrlocal.models import collection as collectionmodule
 from ddrlocal.models import entity as entitymodule
@@ -260,27 +260,29 @@ class DDRLocalCollection( DDRCollection ):
     
     @staticmethod
     def from_json(collection_abs):
-        """Instantiates a DDRLocalCollection object, loads data from collection.json.
+        """Creates a DDRLocalCollection and populates with data from JSON file.
         
-        >>> c = DDRLocalCollection.from_json('/tmp/ddr-testing-123')
+        @param collection_abs: Absolute path to collection directory.
+        @returns: DDRLocalCollection
         """
         collection = DDRLocalCollection(collection_abs)
         collection_uid = collection.id  # save this just in case
-        collection.load_json(collection.json_path)
+        with open(collection.json_path, 'r') as f:
+            collection.load_json(f.read())
         if not collection.id:
             # id gets overwritten if collection.json is blank
             collection.id = collection_uid
         return collection
     
-    def load_json(self, path):
-        """Populate Collection data from .json file and COLLECTION_FIELDS.
+    def load_json(self, json_text):
+        """Populates Collection from JSON-formatted text.
         
-        Loads the JSON datafile then goes through COLLECTION_FIELDS,
-        turning data in the JSON file into attributes of the object.
+        Goes through COLLECTION_FIELDS, turning data in the JSON file into
+        object attributes.
         
-        @param path: Absolute path to collection directory
+        @param json_text: JSON-formatted text
         """
-        json_data = self.json().data
+        json_data = json.loads(json_text)
         for ff in collectionmodule.COLLECTION_FIELDS:
             for f in json_data:
                 if hasattr(f, 'keys') and (f.keys()[0] == ff['name']):
@@ -301,13 +303,11 @@ class DDRLocalCollection( DDRCollection ):
             if not hasattr(self, ff['name']):
                 setattr(self, ff['name'], ff.get('default',None))
     
-    def dump_json(self, path=None, template=False):
-        """Dump Collection data to .json file.
+    def dump_json(self, template=False):
+        """Dump Collection data to JSON-formatted text.
         
-        TODO This should not actually write the JSON! It should return JSON to the code that calls it.
-        
-        @param path: [optional] Alternate file path.
         @param template: [optional] Boolean. If true, write default values for fields.
+        @returns: JSON-formatted text
         """
         collection = [{'application': 'https://github.com/densho/ddr-local.git',
                        'commit': COMMIT,
@@ -331,9 +331,7 @@ class DDRLocalCollection( DDRCollection ):
                 # end special cases
             item[key] = val
             collection.append(item)
-        if not path:
-            path = self.json_path
-        write_json(collection, path)
+        return format_json(collection)
     
     def ead( self ):
         """Returns a ddrlocal.models.xml.EAD object for the collection.
@@ -379,6 +377,7 @@ class DDRLocalEntity( DDREntity ):
     cid = None
     eid = None
     _files = []
+    _file_objects_loaded = 0
     json_path = None
     mets_path = None
     json_path_rel = None
@@ -401,10 +400,12 @@ class DDRLocalEntity( DDREntity ):
         return "<DDRLocalEntity %s>" % (self.id)
     
     def files_master( self ):
+        self.load_file_objects()
         files = [f for f in self.files if hasattr(f,'role') and (f.role == 'master')]
         return sorted(files, key=lambda f: f.sort)
     
     def files_mezzanine( self ):
+        self.load_file_objects()
         files = [f for f in self.files if hasattr(f,'role') and (f.role == 'mezzanine')]
         return sorted(files, key=lambda f: f.sort)
     
@@ -434,7 +435,7 @@ class DDRLocalEntity( DDREntity ):
                 new_files.append(f)
         self.files = new_files
         # reload objects
-        self._load_file_objects()
+        self.load_file_objects()
     
     def file( self, repo, org, cid, eid, role, sha1, newfile=None ):
         """Given a SHA1 hash, get the corresponding file dict.
@@ -443,6 +444,7 @@ class DDRLocalEntity( DDREntity ):
         @param newfile (optional) If present, updates existing file or appends new one.
         @returns 'added', 'updated', DDRLocalFile, or None
         """
+        self.load_file_objects()
         # update existing file or append
         if sha1 and newfile:
             for f in self.files:
@@ -581,46 +583,49 @@ class DDRLocalEntity( DDREntity ):
 
     @staticmethod
     def from_json(entity_abs):
-        """
-        TODO Should accept JSON data, not call .load_json itself
+        """Creates a DDRLocalEntity and populates with data from JSON file.
+        
+        @param entity_abs: Absolute path to entity dir.
+        @returns: DDRLocalEntity
         """
         entity = None
         if os.path.exists(entity_abs):
             entity = DDRLocalEntity(entity_abs)
             entity_uid = entity.id
-            entity.load_json(entity.json_path)
+            with open(entity.json_path, 'r') as f:
+                entity.load_json(f.read())
             if not entity.id:
                 entity.id = entity_uid  # might get overwritten if entity.json is blank
         return entity
-    
-    def _load_file_objects( self ):
+        
+    def load_file_objects( self ):
         """Replaces list of file info dicts with list of DDRLocalFile objects
         
-        TODO Causes all file .JSONs to be loaded so don't call automatically!
+        TODO Don't call in loop - causes all file .JSONs to be loaded!
         """
         # keep copy of the list for detect_file_duplicates()
         self._files = [f for f in self.files]
         self.files = []
         for f in self._files:
             path_abs = os.path.join(self.files_path, f['path_rel'])
-            self.files.append(DDRLocalFile(path_abs=path_abs))
+            file_ = DDRLocalFile(path_abs=path_abs)
+            with open(file_.json_path, 'r') as j:
+                file_.load_json(j.read())
+            self.files.append(file_)
+        # keep track of how many times this gets loaded...
+        self._file_objects_loaded = self._file_objects_loaded + 1
     
-    def load_json(self, path):
-        """Populate Entity data from .json file.
+    def load_json(self, json_text):
+        """Populate Entity data from JSON-formatted text.
         
-        TODO Should not open() the file: should accept JSON-formatted text.
-        TODO entity._load_file_objects() should be separate.(?)
-        TODO Only call entity._load_file_objects() if files list requested
-        
-        @param path: Absolute path to entity
+        @param json_text: JSON-formatted text
         """
-        json_data = self.json().data
-        
+        json_data = json.loads(json_text)
         for ff in entitymodule.ENTITY_FIELDS:
             for f in json_data:
                 if hasattr(f, 'keys') and (f.keys()[0] == ff['name']):
                     setattr(self, f.keys()[0], f.values()[0])
-        
+        # special cases
         def parsedt(txt):
             d = datetime.now()
             try:
@@ -631,28 +636,20 @@ class DDRLocalEntity( DDREntity ):
                 except:
                     pass
             return d
-            
-        # special cases
         if hasattr(self, 'record_created') and self.record_created: self.record_created = parsedt(self.record_created)
         if hasattr(self, 'record_lastmod') and self.record_lastmod: self.record_lastmod = parsedt(self.record_lastmod)
         # end special cases
-        
         # Ensure that every field in entitymodule.ENTITY_FIELDS is represented
         # even if not present in json_data.
         for ff in entitymodule.ENTITY_FIELDS:
             if not hasattr(self, ff['name']):
                 setattr(self, ff['name'], ff.get('default',None))
-        
-        # replace list of file paths with list of DDRLocalFile objects
-        self._load_file_objects()
     
-    def dump_json(self, path=None, template=False):
-        """Dump Entity data to .json file.
+    def dump_json(self, template=False):
+        """Dump Entity data to JSON-formatted text.
         
-        TODO This should not actually write the JSON! It should return JSON to the code that calls it.
-        
-        @param path: [optional] Alternate file path.
         @param template: [optional] Boolean. If true, write default values for fields.
+        @returns: JSON-formatted text
         """
         entity = [{'application': 'https://github.com/densho/ddr-local.git',
                    'commit': COMMIT,
@@ -689,9 +686,7 @@ class DDRLocalEntity( DDREntity ):
                         fd[key] = getattr(f, key, None)
                 files.append(fd)
         entity.append( {'files':files} )
-        if not path:
-            path = self.json_path
-        write_json(entity, path)
+        return format_json(entity)
     
     def mets( self ):
         if not os.path.exists(self.mets_path):
@@ -860,11 +855,13 @@ class DDRLocalEntity( DDREntity ):
         tmp_file_json = os.path.join(tmp_dir, os.path.basename(f.json_path))
         tmp_entity_json = os.path.join(tmp_dir, os.path.basename(self.json_path))
         self.files_log(1, tmp_file_json)
-        f.dump_json(path=tmp_file_json)
+        with open(tmp_file_json, 'w') as j:
+            j.write(f.dump_json())
         if not os.path.exists(tmp_file_json):
             crash('Could not write file metadata %s' % tmp_file_json)
         self.files_log(1, tmp_entity_json)
-        self.dump_json(path=tmp_entity_json)
+        with open(tmp_entity_json, 'w') as j:
+            j.write(self.dump_json())
         if not os.path.exists(tmp_entity_json):
             crash('Could not write entity metadata %s' % tmp_entity_json)
         # grab copy of original entity metadata in case something goes wrong
@@ -1018,7 +1015,8 @@ class DDRLocalEntity( DDREntity ):
         self.files_log(1, 'Writing file metadata')
         tmp_file_json = os.path.join(tmp_dir, os.path.basename(f.json_path))
         self.files_log(1, tmp_file_json)
-        f.dump_json(path=tmp_file_json)
+        with open(tmp_file_json, 'w') as j:
+            j.write(f.dump_json())
         if not os.path.exists(tmp_file_json):
             crash('Could not write file metadata %s' % tmp_file_json)
         # grab copy of file metadata in case something goes wrong
@@ -1249,8 +1247,9 @@ class DDRLocalFile( object ):
             self.json_path_rel = self.json_path.replace(self.collection_path, '')
             if self.json_path_rel[0] == '/':
                 self.json_path_rel = self.json_path_rel[1:]
-            # TODO seriously, do we need this?
-            self.load_json()
+            ## TODO seriously, do we need this?
+            #with open(self.json_path, 'r') as f:
+            #    self.load_json(f.read())
             access_abs = None
             if self.access_rel and self.entity_path:
                 access_abs = os.path.join(self.entity_files_path, self.access_rel)
@@ -1362,8 +1361,10 @@ class DDRLocalFile( object ):
     
     @staticmethod
     def from_json(file_json):
-        """
-        @param file_json: Absolute path to the JSON metadata file
+        """Creates a DDRLocalFile and populates with data from JSON file.
+        
+        @param file_json: Absolute path to JSON file.
+        @returns: DDRLocalFile
         """
         # This is complicated: The file object has to be created with
         # the path to the file to which the JSON metadata file refers.
@@ -1377,30 +1378,31 @@ class DDRLocalFile( object ):
         file_ = None
         if os.path.exists(file_abs) or os.path.islink(file_abs):
             file_ = DDRLocalFile(file_abs)
-            file_.load_json()
+            with open(file_.json_path, 'r') as f:
+                file_.load_json(f.read())
         return file_
     
-    def load_json(self):
-        """Populate File data from .json file.
-        @param path: Absolute path to file
+    def load_json(self, json_text):
+        """Populate File data from JSON-formatted text.
+        
+        @param json_text: JSON-formatted text
         """
-        if os.path.exists(self.json_path):
-            data = read_json(self.json_path)
-            # everything else
-            for ff in filemodule.FILE_FIELDS:
-                for f in data:
-                    if hasattr(f, 'keys') and (f.keys()[0] == ff['name']):
-                        setattr(self, f.keys()[0], f.values()[0])
+        json_data = json.loads(json_text)
+        # everything else
+        for ff in filemodule.FILE_FIELDS:
+            for f in json_data:
+                if hasattr(f, 'keys') and (f.keys()[0] == ff['name']):
+                    setattr(self, f.keys()[0], f.values()[0])
+        # fill in the blanks
+        access_abs = os.path.join(self.entity_files_path, self.access_rel)
+        if os.path.exists(access_abs):
+            self.access_abs = access_abs
     
-    def dump_json(self, path=None):
-        """Dump File data to .json file.
+    def dump_json(self):
+        """Dump File data to JSON-formatted text.
         
-        TODO This should not actually write the JSON! It should return JSON to the code that calls it.
-        
-        @param path: Absolute path to .json file.
+        @returns: JSON-formatted text
         """
-        if not path:
-            path = self.json_path
         # TODO DUMP FILE AND FILEMETA PROPERLY!!!
         file_ = [{'application': 'https://github.com/densho/ddr-local.git',
                   'commit': COMMIT,
@@ -1415,7 +1417,7 @@ class DDRLocalFile( object ):
                 val = getattr(self, ff['name'])
             item[key] = val
             file_.append(item)
-        write_json(file_, path)
+        return format_json(file_)
     
     @staticmethod
     def file_name( entity, path_abs, role, sha1=None ):

@@ -248,7 +248,8 @@ def new( request, repo, org ):
     # create the new collection repo
     collection_path = Collection.collection_path(request,repo,org,cid)
     # collection.json template
-    Collection(collection_path).dump_json(path=settings.TEMPLATE_CJSON, template=True)
+    with open(settings.TEMPLATE_CJSON, 'w') as f:
+        f.write(Collection(collection_path).dump_json(template=True))
     exit,status = commands.create(git_name, git_mail,
                                   collection_path,
                                   [settings.TEMPLATE_CJSON, settings.TEMPLATE_EAD],
@@ -291,7 +292,8 @@ def edit( request, repo, org, cid ):
         form = DDRForm(request.POST, fields=COLLECTION_FIELDS)
         if form.is_valid():
             collection.form_post(form)
-            collection.dump_json()
+            with open(collection.json_path, 'w') as f:
+                f.write(collection.dump_json())
             collection.dump_ead()
             updated_files = [collection.json_path, collection.ead_path,]
             success_msg = WEBUI_MESSAGES['VIEWS_COLL_UPDATED']

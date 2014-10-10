@@ -122,7 +122,8 @@ def _update_inheritables( parent_object, objecttype, inheritables, cleaned_data 
                             changed = True
                 # write json and add to list of changed IDs/files
                 if changed:
-                    child.dump_json()
+                    with open(child.json_path, 'w') as f:
+                        f.write(child.dump_json())
                     if hasattr(child, 'id'):         child_ids.append(child.id)
                     elif hasattr(child, 'basename'): child_ids.append(child.basename)
                     changed_files.append(child_json)
@@ -182,7 +183,8 @@ class Collection( DDRLocalCollection ):
         """
         collection = Collection(collection_abs)
         collection_uid = collection.id  # save this just in case
-        collection.load_json(collection.json_path)
+        with open(collection.json_path, 'r') as f:
+            collection.load_json(f.read())
         if not collection.id:
             # id gets overwritten if collection.json is blank
             collection.id = collection_uid
@@ -277,7 +279,8 @@ class Entity( DDRLocalEntity ):
         if os.path.exists(entity_abs):
             entity = Entity(entity_abs)
             entity_uid = entity.id
-            entity.load_json(entity.json_path)
+            with open(entity.json_path, 'r') as f:
+                entity.load_json(f.read())
             if not entity.id:
                 entity.id = entity_uid  # might get overwritten if entity.json is blank
         return entity
@@ -288,7 +291,7 @@ class Entity( DDRLocalEntity ):
     def update_inheritables( self, inheritables, cleaned_data ):
         return _update_inheritables(self, 'entity', inheritables, cleaned_data)
     
-    def _load_file_objects( self ):
+    def load_file_objects( self ):
         """Replaces list of file info dicts with list of DDRFile objects
         
         Overrides the function in ddrlocal.models.DDRLocalEntity, which
@@ -296,11 +299,17 @@ class Entity( DDRLocalEntity ):
         DDRFile.
         """
         # keep copy of the list for detect_file_duplicates()
+        self_files = self.files
         self._files = [f for f in self.files]
         self.files = []
         for f in self._files:
             path_abs = os.path.join(self.files_path, f['path_rel'])
-            self.files.append(DDRFile(path_abs=path_abs))
+            file_ = DDRFile(path_abs=path_abs)
+            with open(file_.json_path, 'r') as j:
+                file_.load_json(j.read())
+            self.files.append(file_)
+        # keep track of how many times this gets loaded...
+        self._file_objects_loaded = self._file_objects_loaded + 1
 
 
 
