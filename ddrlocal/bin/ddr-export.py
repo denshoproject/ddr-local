@@ -108,7 +108,7 @@ def json_paths(collection_path, model, ids):
     for path in models.metadata_files(basedir=collection_path, recursive=True):
         if (model == 'entity') and (os.path.basename(path) == 'entity.json'):
             paths.append(path)
-        elif (model == 'file') and ('master' in path) or ('mezzanine' in path):
+        elif (model == 'file') and (('master' in path) or ('mezzanine' in path)):
             paths.append(path)
     return paths
 
