@@ -278,14 +278,14 @@ def entity_json( request, repo, org, cid, eid ):
     entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
     with open(entity.json_path, 'r') as f:
         json = f.read()
-    return HttpResponse(json, mimetype="application/json")
+    return HttpResponse(json, content_type="application/json")
 
 @storage_required
 def mets_xml( request, repo, org, cid, eid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
     soup = BeautifulSoup(entity.mets().xml, 'xml')
-    return HttpResponse(soup.prettify(), mimetype="application/xml")
+    return HttpResponse(soup.prettify(), content_type="application/xml")
 
 @ddrview
 @login_required
