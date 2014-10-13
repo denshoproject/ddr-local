@@ -497,6 +497,8 @@ COLLECTION_FIELDS = [
 
 ]
 
+FIELDS = COLLECTION_FIELDS
+
 
 
 # display_* --- Display functions --------------------------------------

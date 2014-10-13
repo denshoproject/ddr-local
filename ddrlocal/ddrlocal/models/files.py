@@ -234,6 +234,8 @@ FILE_FIELDS = [
     },
 ]
 
+FIELDS = FILE_FIELDS
+
 
 
 # display_* --- Display functions --------------------------------------

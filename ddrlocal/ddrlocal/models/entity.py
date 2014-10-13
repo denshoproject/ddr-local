@@ -544,6 +544,8 @@ ENTITY_FIELDS = [
     },
 ]
 
+FIELDS = ENTITY_FIELDS
+
 
 
 # display_* --- Display functions --------------------------------------
