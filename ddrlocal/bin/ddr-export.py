@@ -23,6 +23,7 @@ import logging
 import os
 import sys
 
+from DDR import natural_sort
 from DDR import batch
 from DDR import models
 
@@ -95,23 +96,6 @@ def read_id_file(path):
     ids = [line.strip() for line in text.split('\n')]
     return ids
 
-def json_paths(collection_path, model, ids):
-    """Get metadata paths for the specified IDs.
-    
-    TODO Does not actually use the 'ids' arg
-    
-    @param model: str 'entity' or 'file'
-    @param ids: list
-    @returns: list of absolute paths
-    """
-    paths = []
-    for path in models.metadata_files(basedir=collection_path, recursive=True):
-        if (model == 'entity') and (os.path.basename(path) == 'entity.json'):
-            paths.append(path)
-        elif (model == 'file') and (('master' in path) or ('mezzanine' in path)):
-            paths.append(path)
-    return paths
-
 
 def main():
 
@@ -159,7 +143,11 @@ def main():
     
     start = datetime.now()
     print('%s Gathering entity paths...' % start)
-    paths = json_paths(args.collection, model, ids)
+    paths = [
+        path for path in models.metadata_files(
+            basedir=args.collection, model=model, recursive=True
+        )
+    ]
     if paths:
         print('%s ok %s paths' % (datetime.now(), len(paths)))
     else:
