@@ -1402,7 +1402,7 @@ class DDRLocalFile( object ):
         # Now load the object
         file_ = None
         if os.path.exists(file_abs) or os.path.islink(file_abs):
-            file_ = DDRLocalFile(file_abs)
+            file_ = DDRLocalFile(path_abs=file_abs)
             with open(file_.json_path, 'r') as f:
                 file_.load_json(f.read())
         return file_
