@@ -1170,6 +1170,7 @@ FILE_KEYS = ['path_rel',
              'xmp',]
 
 class DDRLocalFile( object ):
+    id = 'whatever'
     # path relative to /
     # (ex: /var/www/media/base/ddr-testing-71/files/ddr-testing-71-6/files/ddr-testing-71-6-dd9ec4305d.jpg)
     # not saved; constructed on instantiation
@@ -1251,6 +1252,7 @@ class DDRLocalFile( object ):
             # NOTE: we get role from filename and also from JSON data, if available
             self.role = parts[4]
             self.sha1 = parts[5]
+            self.id = '-'.join([self.repo,self.org,self.cid,self.eid,self.role,self.sha1])
         # get one path if the other not present
         if self.entity_path and self.path_rel and not self.path_abs:
             self.path_abs = os.path.join(self.entity_files_path, self.path_rel)
