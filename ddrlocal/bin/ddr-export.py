@@ -21,6 +21,7 @@ from datetime import datetime
 import json
 import logging
 import os
+import re
 import sys
 
 from DDR import natural_sort
@@ -93,8 +94,44 @@ def read_id_file(path):
     """
     with open(path, 'r') as f:
         text = f.read()
-    ids = [line.strip() for line in text.split('\n')]
+    ids = [line.strip() for line in text.strip().split('\n')]
     return ids
+
+def make_paths(collection_path, model, ids):
+    print('make_paths')
+    basedir = os.path.dirname(collection_path)
+    if model == 'entity':
+        fmt = '%s/entity.json'
+    elif model == 'file':
+        fmt = '%s.json'
+    paths = [fmt % models.path_from_id(object_id, basedir) for object_id in ids]
+    return paths
+
+def filter_paths(collection_path, model, pattern):
+    """Get metadata paths containing a regex.
+    
+    @param collection_path:
+    @param model: str 'entity' or 'file'
+    @param pattern: str A regular expression
+    @returns: list of absolute paths
+    """
+    print('filter_paths')
+    paths = []
+    prog = re.compile(pattern)
+    allpaths = models.metadata_files(basedir=collection_path, model=model, recursive=True)
+    while allpaths:
+        path = allpaths.pop()
+        print(path)
+        if prog.search(path):
+            print('YES')
+            paths.append(path)
+    return paths
+
+def all_paths(collection_path, model):
+    print('all_paths')
+    paths = models.metadata_files(
+        basedir=collection_path, model=model, recursive=True)
+    return paths
 
 
 def main():
@@ -133,21 +170,16 @@ def main():
     if not (class_ and module):
         raise Exception('ERROR: Could not decide on a class/module.')
     
-    ids = []
-    if args.ids:
-        ids = parse_ids(args.ids)
-    elif args.file:
-        ids = read_id_file(args.file)
-#    if not ids:
-#        raise Exception('ERROR: No IDs matched')
-    
     start = datetime.now()
     print('%s Gathering entity paths...' % start)
-    paths = [
-        path for path in models.metadata_files(
-            basedir=args.collection, model=model, recursive=True
-        )
-    ]
+    
+    paths = []
+    if args.file:  # file containing list of IDs
+        paths = make_paths(args.collection, model, read_id_file(args.file))
+    elif args.ids:  # ID pattern
+        paths = filter_paths(args.collection, model, args.ids)
+    else:  # just get everything
+        paths = all_paths(args.collection, model)
     if paths:
         print('%s ok %s paths' % (datetime.now(), len(paths)))
     else:
