@@ -44,8 +44,8 @@ except ImportError:
     # No Store mounted, no 'ddr' repository, or no valid repo_models in 'ddr'.
     raise Exception('Could not load repo_models.')
 
-ENTITY_MODULE_NAMES = ['entity', 'entities', 'file', 'files']
-FILE_MODULE_NAMES = ['entity', 'entities', 'file', 'files']
+ENTITY_MODULE_NAMES = ['entity', 'entities']
+FILE_MODULE_NAMES = ['file', 'files']
 MODULE_NAMES = ENTITY_MODULE_NAMES + FILE_MODULE_NAMES
 
 
@@ -81,7 +81,8 @@ def main():
     elif args.module in FILE_MODULE_NAMES:
         model = 'file'
         class_ = DDRLocalFile
-        module = filesmodule
+        module = filemodule
+
     if not (class_ and module):
         raise Exception('ERROR: Could not decide on a class/module.')
     
