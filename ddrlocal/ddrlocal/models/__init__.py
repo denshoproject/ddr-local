@@ -1,3 +1,4 @@
+import ConfigParser
 from datetime import datetime, date
 import hashlib
 import json
@@ -13,8 +14,7 @@ import traceback
 import envoy
 from lxml import etree
 
-from django.conf import settings
-
+from DDR import CONFIG_FILES, NoConfigError
 from DDR import commands
 from DDR import dvcs
 from DDR import imaging
@@ -22,38 +22,258 @@ from DDR import natural_order_string, natural_sort
 from DDR.models import Collection as DDRCollection, Entity as DDREntity
 from DDR.models import dissect_path, file_hash, _inheritable_fields, _inherit
 from DDR.models import module_function, module_xml_function, write_json
-from ddrlocal import VERSION, COMMIT
-from ddrlocal.models import collection as collectionmodule
-from ddrlocal.models import entity as entitymodule
-from ddrlocal.models import files as filemodule
+from ddrlocal import VERSION
 from ddrlocal.models.meta import CollectionJSON, EntityJSON, read_json
 from ddrlocal.models.xml import EAD, METS
+
+config = ConfigParser.ConfigParser()
+configs_read = config.read(CONFIG_FILES)
+if not configs_read:
+    raise NoConfigError('No config file!')
+
+REPO_MODELS_PATH = config.get('cmdln','repo_models_path')
+
+if REPO_MODELS_PATH not in sys.path:
+    sys.path.append(REPO_MODELS_PATH)
+try:
+    from repo_models import collection as collectionmodule
+    from repo_models import entity as entitymodule
+    from repo_models import files as filemodule
+except ImportError:
+    from ddrlocal.models import collection as collectionmodule
+    from ddrlocal.models import entity as entitymodule
+    from ddrlocal.models import files as filemodule
+
+MEDIA_BASE = config.get('cmdln','media_base')
+LOG_DIR = config.get('local', 'log_dir')
+TIME_FORMAT = config.get('cmdln','time_format')
+DATETIME_FORMAT = config.get('cmdln','datetime_format')
+ACCESS_FILE_GEOMETRY = config.get('local','access_file_geometry')
+ACCESS_FILE_APPEND = config.get('local','access_file_append')
 
 COLLECTION_FILES_PREFIX = 'files'
 ENTITY_FILES_PREFIX = 'files'
 
-MODEL_FIELDS = [
-    {
-        'name':       '',       # The field name.
-        'model_type': str,      # Python data type for the field.
-        'default':    '',       # Default value.
-        'inheritable': '',      # Whether or not the field is inheritable.
-        
-        'form_type':  '',       # Name of Django forms.Field object.
-        'form': {               # Kwargs to be passed to the forms.Field object.
-                                # See Django forms documentation.
-            'label':     '',    # Pretty, human-readable name of the field.
-                                # Note: label is also used in the UI outside of forms.
-            'help_text': '',    # Help for hapless users.
-            'widget':    '',    # Name of Django forms.Widget object.
-            'initial':   '',    # Initial value of field in a form.
-        },
-        
-        'xpath':      "",       # XPath to where field value resides in EAD/METS.
-        'xpath_dup':  [],       # Secondary XPath(s). We really should just have one xpath list.
-    },
-]
 
+def labels_values(document, module):
+    """Apply display_{field} functions to prep object data for the UI.
+    
+    TODO Move to webui.models
+    
+    Certain fields require special processing.  For example, structured data
+    may be rendered in a template to generate an HTML <ul> list.
+    If a "display_{field}" function is present in the ddrlocal.models.collection
+    module the contents of the field will be passed to it
+    
+    @param document: Collection, Entity, File document object
+    @param module: collection, entity, files model definitions module
+    @returns: list
+    """
+    lv = []
+    for f in module.FIELDS:
+        if hasattr(document, f['name']) and f.get('form',None):
+            key = f['name']
+            label = f['form']['label']
+            # run display_* functions on field data if present
+            value = module_function(
+                module,
+                'display_%s' % key,
+                getattr(document, f['name'])
+            )
+            lv.append( {'label':label, 'value':value,} )
+    return lv
+
+def form_prep(document, module):
+    """Apply formprep_{field} functions to prep data dict to pass into DDRForm object.
+    
+    TODO Move to webui.models
+    
+    Certain fields require special processing.  Data may need to be massaged
+    and prepared for insertion into particular Django form objects.
+    If a "formprep_{field}" function is present in the ddrlocal.models.collection
+    module it will be executed.
+    
+    @param document: Collection, Entity, File document object
+    @param module: collection, entity, files model definitions module
+    @returns data: dict object as used by Django Form object.
+    """
+    data = {}
+    for f in module.FIELDS:
+        if hasattr(document, f['name']) and f.get('form',None):
+            key = f['name']
+            # run formprep_* functions on field data if present
+            value = module_function(
+                module,
+                'formprep_%s' % key,
+                getattr(document, f['name'])
+            )
+            data[key] = value
+    return data
+    
+def form_post(document, module, form):
+    """Apply formpost_{field} functions to process cleaned_data from CollectionForm
+    
+    TODO Move to webui.models
+    
+    Certain fields require special processing.
+    If a "formpost_{field}" function is present in the ddrlocal.models.entity
+    module it will be executed.
+    
+    @param document: Collection, Entity, File document object
+    @param module: collection, entity, files model definitions module
+    @param form: DDRForm object
+    """
+    for f in module.FIELDS:
+        if hasattr(document, f['name']) and f.get('form',None):
+            key = f['name']
+            # run formpost_* functions on field data if present
+            cleaned_data = module_function(
+                module,
+                'formpost_%s' % key,
+                form.cleaned_data[key]
+            )
+            setattr(document, key, cleaned_data)
+    # update record_lastmod
+    if hasattr(document, 'record_lastmod'):
+        document.record_lastmod = datetime.now()
+
+def from_json(model, path):
+    """
+    @param model: DDRLocalCollection, DDRLocalEntity, or DDRLocalFile
+    @param path: absolute path to the object(not the JSON file)
+    """
+    document = None
+    if os.path.exists(path):
+        document = model(path)
+        document_uid = document.id  # save this just in case
+        document.load_json()
+        if not document.id:
+            # id gets overwritten if document.json is blank
+            document.id = document_uid
+    return document
+
+def load_json(document, module, raw_json, special_cases=None):
+    """Populate document data from .json file and FIELDS.
+    
+    Loads the JSON datafile then goes through FIELDS,
+    turning data in the JSON file into attributes of the object.
+    
+    special_cases is an optional function that takes document
+    as an arg and performs operations on fields that are unique
+    to a particular model or operation.
+    
+    @param document: Collection, Entity, File document object
+    @param module: collection, entity, files model definitions module
+    @param raw_json: Raw contents of *.json file
+    @param special_cases: (optional) special_cases() function
+    """
+    data = json.loads(raw_json)
+    if data:
+        setattr(document, 'json_metadata', data[0])
+    for ff in module.FIELDS:
+        for f in data:
+            if hasattr(f, 'keys') and (f.keys()[0] == ff['name']):
+                setattr(document, f.keys()[0], f.values()[0])
+    if special_cases:
+        special_cases(document)
+    # Ensure that every field in collectionmodule.FIELDS is represented
+    # even if not present in data.
+    for ff in module.FIELDS:
+        if not hasattr(document, ff['name']):
+            setattr(document, ff['name'], ff.get('default',None))
+
+def document_metadata(module, document_repo_path):
+    """Metadata for the ddrlocal/ddrcmdln and models definitions used.
+    
+    @param module: collection, entity, files model definitions module
+    @param document_repo_path: Absolute path to root of document's repo
+    @returns: dict
+    """
+    data = {
+        'application': 'https://github.com/densho/ddr-local.git',
+        'app_commit': dvcs.latest_commit(os.path.dirname(__file__)),
+        'app_release': VERSION,
+        'models_commit': dvcs.latest_commit(module.__file__),
+        'git_version': dvcs.git_version(document_repo_path),
+    }
+    return data
+
+def cmp_model_definition_commits(document, module):
+    """Indicate document's model defs are newer or older than module's.
+    
+    Prepares repository and document/module commits to be compared
+    by DDR.dvcs.cmp_commits.  See that function for how to interpret
+    the results.
+    Note: if a document has no defs commit it is considered older
+    than the module.
+    
+    @param document: A Collection, Entity, or File object.
+    @param module: A collection, entity, or files module.
+    @returns: int
+    """
+    def parse(txt):
+        return txt.strip().split(' ')[0]
+    module_path = module.__file__.replace('.pyc', '.py')
+    module_commit_raw = dvcs.latest_commit(module_path)
+    module_defs_commit = parse(module_commit_raw)
+    if not module_defs_commit:
+        return 128
+    doc_metadata = getattr(document, 'json_metadata', {})
+    document_commit_raw = doc_metadata.get('model_definitions','')
+    document_defs_commit = parse(document_commit_raw)
+    if not document_defs_commit:
+        return -1
+    if document.model == 'collection': repo = dvcs.repository(document_object.path)
+    elif document.model == 'entity': repo = dvcs.repository(document_object.parent_path)
+    elif document.model == 'file': repo = dvcs.repository(document_object.collection_path)
+    return dvcs.cmp_commits(repo, document_defs_commit, module_defs_commit)
+
+def cmp_model_definition_fields(document_json, module):
+    """Indicate whether module adds or removes fields from document
+    
+    @param document_json: Raw contents of document *.json file
+    @param module: A collection, entity, or files module.
+    @returns: list,list Lists of added,removed field names.
+    """
+    # First item in list is document metadata, everything else is a field.
+    document_fields = [field.keys()[0] for field in json.loads(document_json)[1:]]
+    module_fields = [field['name'] for field in getattr(module, 'FIELDS')]
+    # models.load_json() uses MODULE.FIELDS, so get list of fields
+    # directly from the JSON document.
+    added = [field for field in module_fields if field not in document_fields]
+    removed = [field for field in document_fields if field not in module_fields]
+    return added,removed
+
+def prep_json_data(document, module, field_exceptions=[], template=False):
+    """Prepare document data for serialization to JSON.
+    
+    @param document: Collection, Entity, File document object
+    @param module: collection, entity, files model definitions module
+    @param field_exceptions: list of fields not to include
+    @param template: Boolean True if this is a blank document from a template.
+    """
+    data = []
+    template_passthru = ['id', 'record_created', 'record_lastmod']
+    for ff in module.FIELDS:
+        key = ff['name']
+        # skip fields that calling function wants to handle itself
+        if field_exceptions and (key in field_exceptions):
+            continue
+        val = ''
+        if template and (key not in template_passthru):
+            # write default values
+            val = ff['form']['initial']
+        elif hasattr(document, key):
+            # write object's values
+            val = getattr(document, key)
+            # JSON requires dates to be represented as strings
+            try:
+                val = val.strftime(DATETIME_FORMAT)
+            except AttributeError:
+                pass
+        item = {key: val}
+        data.append(item)
+    return data
 
 
 class DDRLocalCollection( DDRCollection ):
@@ -125,10 +345,18 @@ class DDRLocalCollection( DDRCollection ):
         @returns: Collection object
         """
         collection = DDRLocalCollection(path)
-        for f in collectionmodule.COLLECTION_FIELDS:
+        for f in collectionmodule.FIELDS:
             if hasattr(f, 'name') and hasattr(f, 'initial'):
                 setattr(collection, f['name'], f['initial'])
         return collection
+    
+    def model_def_commits( self ):
+        return cmp_model_definition_commits(self, collectionmodule)
+    
+    def model_def_fields( self ):
+        with open(self.json_path, 'r') as f:
+            text = f.read()
+        return cmp_model_definition_fields(text, collectionmodule)
     
     def entities( self, quick=None ):
         """Returns list of the Collection's Entity objects.
@@ -180,74 +408,27 @@ class DDRLocalCollection( DDRCollection ):
         >>> c.inheritable_fields()
         ['status', 'public', 'rights']
         """
-        return _inheritable_fields(collectionmodule.COLLECTION_FIELDS )
+        return _inheritable_fields(collectionmodule.FIELDS )
     
     def labels_values(self):
         """Apply display_{field} functions to prep object data for the UI.
-        
-        TODO Move to webui.models
-        
-        Certain fields require special processing.  For example, structured data
-        may be rendered in a template to generate an HTML <ul> list.
-        If a "display_{field}" function is present in the ddrlocal.models.collection
-        module the contents of the field will be passed to it
         """
-        lv = []
-        for f in collectionmodule.COLLECTION_FIELDS:
-            if hasattr(self, f['name']) and f.get('form',None):
-                key = f['name']
-                label = f['form']['label']
-                # run display_* functions on field data if present
-                value = module_function(collectionmodule,
-                                        'display_%s' % key,
-                                        getattr(self, f['name']))
-                lv.append( {'label':label, 'value':value,} )
-        return lv
+        return labels_values(self, collectionmodule)
     
     def form_prep(self):
-        """Apply formprep_{field} functions to prep data dict to pass into CollectionForm object.
-        
-        TODO Move to webui.models
-        
-        Certain fields require special processing.  Data may need to be massaged
-        and prepared for insertion into particular Django form objects.
-        If a "formprep_{field}" function is present in the ddrlocal.models.collection
-        module it will be executed.
+        """Apply formprep_{field} functions to prep data dict to pass into DDRForm object.
         
         @returns data: dict object as used by Django Form object.
         """
-        data = {}
-        for f in collectionmodule.COLLECTION_FIELDS:
-            if hasattr(self, f['name']) and f.get('form',None):
-                key = f['name']
-                # run formprep_* functions on field data if present
-                value = module_function(collectionmodule,
-                                        'formprep_%s' % key,
-                                        getattr(self, f['name']))
-                data[key] = value
+        data = form_prep(self, collectionmodule)
         return data
     
     def form_post(self, form):
-        """Apply formpost_{field} functions to process cleaned_data from CollectionForm
+        """Apply formpost_{field} functions to process cleaned_data from DDRForm
         
-        TODO Move to webui.models
-        
-        Certain fields require special processing.
-        If a "formpost_{field}" function is present in the ddrlocal.models.entity
-        module it will be executed.
-        
-        @param form
+        @param form: DDRForm object
         """
-        for f in collectionmodule.COLLECTION_FIELDS:
-            if hasattr(self, f['name']) and f.get('form',None):
-                key = f['name']
-                # run formpost_* functions on field data if present
-                cleaned_data = module_function(collectionmodule,
-                                               'formpost_%s' % key,
-                                               form.cleaned_data[key])
-                setattr(self, key, cleaned_data)
-        # update record_lastmod
-        self.record_lastmod = datetime.now()
+        form_post(self, collectionmodule, form)
     
     def json( self ):
         """Returns a ddrlocal.models.meta.CollectionJSON object
@@ -264,42 +445,26 @@ class DDRLocalCollection( DDRCollection ):
         
         >>> c = DDRLocalCollection.from_json('/tmp/ddr-testing-123')
         """
-        collection = DDRLocalCollection(collection_abs)
-        collection_uid = collection.id  # save this just in case
-        collection.load_json(collection.json_path)
-        if not collection.id:
-            # id gets overwritten if collection.json is blank
-            collection.id = collection_uid
-        return collection
+        return from_json(DDRLocalCollection, collection_abs)
     
-    def load_json(self, path):
-        """Populate Collection data from .json file and COLLECTION_FIELDS.
-        
-        Loads the JSON datafile then goes through COLLECTION_FIELDS,
-        turning data in the JSON file into attributes of the object.
-        
-        @param path: Absolute path to collection directory
+    def load_json(self):
+        """Populate Collection data from .json file and FIELDS.
         """
-        json_data = self.json().data
-        for ff in collectionmodule.COLLECTION_FIELDS:
-            for f in json_data:
-                if hasattr(f, 'keys') and (f.keys()[0] == ff['name']):
-                    setattr(self, f.keys()[0], f.values()[0])
-        # special cases
-        if hasattr(self, 'record_created') and self.record_created:
-            self.record_created = datetime.strptime(self.record_created, settings.DATETIME_FORMAT)
-        else:
-            self.record_created = datetime.now()
-        if hasattr(self, 'record_lastmod') and self.record_lastmod:
-            self.record_lastmod = datetime.strptime(self.record_lastmod, settings.DATETIME_FORMAT)
-        else:
-            self.record_lastmod = datetime.now()
-        # end special cases
-        # Ensure that every field in collectionmodule.COLLECTION_FIELDS is represented
-        # even if not present in json_data.
-        for ff in collectionmodule.COLLECTION_FIELDS:
-            if not hasattr(self, ff['name']):
-                setattr(self, ff['name'], ff.get('default',None))
+        def special_cases(document):
+            if hasattr(document, 'record_created') and document.record_created:
+                document.record_created = datetime.strptime(document.record_created, DATETIME_FORMAT)
+            else:
+                document.record_created = datetime.now()
+            if hasattr(document, 'record_lastmod') and document.record_lastmod:
+                document.record_lastmod = datetime.strptime(document.record_lastmod, DATETIME_FORMAT)
+            else:
+                document.record_lastmod = datetime.now()
+        
+        if not os.path.exists(self.json_path):
+            raise IOError('File not found: %s' % self.json_path)
+        with open(self.json_path, 'r') as f:
+            raw_json = f.read()
+        load_json(self, collectionmodule, raw_json, special_cases)
     
     def dump_json(self, path=None, template=False):
         """Dump Collection data to .json file.
@@ -309,31 +474,11 @@ class DDRLocalCollection( DDRCollection ):
         @param path: [optional] Alternate file path.
         @param template: [optional] Boolean. If true, write default values for fields.
         """
-        collection = [{'application': 'https://github.com/densho/ddr-local.git',
-                       'commit': COMMIT,
-                       'release': VERSION,
-                       'git': dvcs.git_version(self.path),}]
-        template_passthru = ['id', 'record_created', 'record_lastmod']
-        for ff in collectionmodule.COLLECTION_FIELDS:
-            item = {}
-            key = ff['name']
-            val = ''
-            if template and (key not in template_passthru):
-                # write default values
-                val = ff['form']['initial']
-            elif hasattr(self, ff['name']):
-                # write object's values
-                val = getattr(self, ff['name'])
-                # special cases
-                if key in ['record_created', 'record_lastmod']:
-                    # JSON requires dates to be represented as strings
-                    val = val.strftime(settings.DATETIME_FORMAT)
-                # end special cases
-            item[key] = val
-            collection.append(item)
+        data = prep_json_data(self, collectionmodule, template=template)
+        data.insert(0, document_metadata(collectionmodule, self.path))
         if not path:
             path = self.json_path
-        write_json(collection, path)
+        write_json(data, path)
     
     def ead( self ):
         """Returns a ddrlocal.models.xml.EAD object for the collection.
@@ -352,7 +497,7 @@ class DDRLocalCollection( DDRCollection ):
         """
         NAMESPACES = None
         tree = etree.fromstring(self.ead().xml)
-        for f in collectionmodule.COLLECTION_FIELDS:
+        for f in collectionmodule.FIELDS:
             key = f['name']
             value = ''
             if hasattr(self, f['name']):
@@ -399,6 +544,14 @@ class DDRLocalEntity( DDREntity ):
     
     def __repr__(self):
         return "<DDRLocalEntity %s>" % (self.id)
+    
+    def model_def_commits( self ):
+        return cmp_model_definition_commits(self, entitymodule)
+    
+    def model_def_fields( self ):
+        with open(self.json_path, 'r') as f:
+            text = f.read()
+        return cmp_model_definition_fields(text, entitymodule)
     
     def files_master( self ):
         files = [f for f in self.files if hasattr(f,'role') and (f.role == 'master')]
@@ -468,7 +621,7 @@ class DDRLocalEntity( DDREntity ):
         @returns: absolute path to logfile
         """
         logpath = os.path.join(
-            settings.LOG_DIR, 'addfile', self.parent_uid, '%s.log' % self.id)
+            LOG_DIR, 'addfile', self.parent_uid, '%s.log' % self.id)
         if not os.path.exists(os.path.dirname(logpath)):
             os.makedirs(os.path.dirname(logpath))
         return logpath
@@ -500,7 +653,7 @@ class DDRLocalEntity( DDREntity ):
         @param path: Absolute path to entity; must end in valid DDR entity id.
         """
         entity = Entity(path)
-        for f in entitymodule.ENTITY_FIELDS:
+        for f in entitymodule.FIELDS:
             if hasattr(f, 'name') and hasattr(f, 'initial'):
                 setattr(entity, f['name'], f['initial'])
         return entity
@@ -509,45 +662,19 @@ class DDRLocalEntity( DDREntity ):
         _inherit( parent, self )
 
     def inheritable_fields( self ):
-        return _inheritable_fields(entitymodule.ENTITY_FIELDS)
+        return _inheritable_fields(entitymodule.FIELDS)
     
     def labels_values(self):
-        """Generic display
-        
-        Certain fields require special processing.
-        If a "display_{field}" function is present in the ddrlocal.models.entity
-        module it will be executed.
+        """Apply display_{field} functions to prep object data for the UI.
         """
-        lv = []
-        for f in entitymodule.ENTITY_FIELDS:
-            if hasattr(self, f['name']) and f.get('form',None):
-                key = f['name']
-                label = f['form']['label']
-                # run display_* functions on field data if present
-                value = module_function(entitymodule,
-                                        'display_%s' % key,
-                                        getattr(self, f['name']))
-                lv.append( {'label':label, 'value':value,} )
-        return lv
+        return labels_values(self, entitymodule)
     
     def form_prep(self):
-        """Prep data dict to pass into EntityForm object.
-        
-        Certain fields require special processing.
-        If a "formprep_{field}" function is present in the ddrlocal.models.entity
-        module it will be executed.
+        """Apply formprep_{field} functions to prep data dict to pass into DDRForm object.
         
         @returns data: dict object as used by Django Form object.
         """
-        data = {}
-        for f in entitymodule.ENTITY_FIELDS:
-            if hasattr(self, f['name']) and f.get('form',None):
-                key = f['name']
-                # run formprep_* functions on field data if present
-                value = module_function(entitymodule,
-                                        'formprep_%s' % key,
-                                        getattr(self, f['name']))
-                data[key] = value
+        data = form_prep(self, entitymodule)
         if not data.get('record_created', None):
             data['record_created'] = datetime.now()
         if not data.get('record_lastmod', None):
@@ -555,24 +682,11 @@ class DDRLocalEntity( DDREntity ):
         return data
     
     def form_post(self, form):
-        """Process cleaned_data coming from EntityForm
+        """Apply formpost_{field} functions to process cleaned_data from DDRForm
         
-        Certain fields require special processing.
-        If a "formpost_{field}" function is present in the ddrlocal.models.entity
-        module it will be executed.
-        
-        @param form
+        @param form: DDRForm object
         """
-        for f in entitymodule.ENTITY_FIELDS:
-            if hasattr(self, f['name']) and f.get('form',None):
-                key = f['name']
-                # run formpost_* functions on field data if present
-                cleaned_data = module_function(entitymodule,
-                                               'formpost_%s' % key,
-                                               form.cleaned_data[key])
-                setattr(self, key, cleaned_data)
-        # update record_lastmod
-        self.record_lastmod = datetime.now()
+        form_post(self, entitymodule, form)
     
     def json( self ):
         if not os.path.exists(self.json_path):
@@ -581,14 +695,7 @@ class DDRLocalEntity( DDREntity ):
 
     @staticmethod
     def from_json(entity_abs):
-        entity = None
-        if os.path.exists(entity_abs):
-            entity = DDRLocalEntity(entity_abs)
-            entity_uid = entity.id
-            entity.load_json(entity.json_path)
-            if not entity.id:
-                entity.id = entity_uid  # might get overwritten if entity.json is blank
-        return entity
+        return from_json(DDRLocalEntity, entity_abs)
     
     def _load_file_objects( self ):
         """Replaces list of file info dicts with list of DDRLocalFile objects
@@ -602,41 +709,42 @@ class DDRLocalEntity( DDREntity ):
             path_abs = os.path.join(self.files_path, f['path_rel'])
             self.files.append(DDRLocalFile(path_abs=path_abs))
     
-    def load_json(self, path):
+    def load_json(self):
         """Populate Entity data from .json file.
-        @param path: Absolute path to entity
         """
-        json_data = self.json().data
-        
-        for ff in entitymodule.ENTITY_FIELDS:
-            for f in json_data:
-                if hasattr(f, 'keys') and (f.keys()[0] == ff['name']):
-                    setattr(self, f.keys()[0], f.values()[0])
-        
-        def parsedt(txt):
-            d = datetime.now()
-            try:
-                d = datetime.strptime(txt, settings.DATETIME_FORMAT)
-            except:
+        def special_cases(document):
+            def parsedt(txt):
+                d = datetime.now()
                 try:
-                    d = datetime.strptime(txt, settings.TIME_FORMAT)
+                    d = datetime.strptime(txt, DATETIME_FORMAT)
                 except:
-                    pass
-            return d
-            
-        # special cases
-        if hasattr(self, 'record_created') and self.record_created: self.record_created = parsedt(self.record_created)
-        if hasattr(self, 'record_lastmod') and self.record_lastmod: self.record_lastmod = parsedt(self.record_lastmod)
-        # end special cases
+                    try:
+                        d = datetime.strptime(txt, TIME_FORMAT)
+                    except:
+                        pass
+                return d
+            if hasattr(document, 'record_created') and document.record_created:
+                document.record_created = parsedt(document.record_created)
+            if hasattr(document, 'record_lastmod') and document.record_lastmod:
+                document.record_lastmod = parsedt(document.record_lastmod)
         
-        # Ensure that every field in entitymodule.ENTITY_FIELDS is represented
-        # even if not present in json_data.
-        for ff in entitymodule.ENTITY_FIELDS:
-            if not hasattr(self, ff['name']):
-                setattr(self, ff['name'], ff.get('default',None))
-        
+        if not os.path.exists(self.json_path):
+            raise IOError('File not found: %s' % self.json_path)
+        with open(self.json_path, 'r') as f:
+            raw_json = f.read()
+        load_json(self, entitymodule, raw_json, special_cases)
         # replace list of file paths with list of DDRLocalFile objects
         self._load_file_objects()
+    
+    def prep_file_metadata(self):
+        data = []
+        for f in self.files:
+            fd = {}
+            for key in ENTITY_FILE_KEYS:
+                if hasattr(f, key):
+                    fd[key] = getattr(f, key, None)
+            data.append(fd)
+        return data
     
     def dump_json(self, path=None, template=False):
         """Dump Entity data to .json file.
@@ -646,44 +754,18 @@ class DDRLocalEntity( DDREntity ):
         @param path: [optional] Alternate file path.
         @param template: [optional] Boolean. If true, write default values for fields.
         """
-        entity = [{'application': 'https://github.com/densho/ddr-local.git',
-                   'commit': COMMIT,
-                   'release': VERSION,
-                   'git': dvcs.git_version(self.parent_path),}]
-        exceptions = ['files', 'filemeta']
-        template_passthru = ['id', 'record_created', 'record_lastmod']
-        for ff in entitymodule.ENTITY_FIELDS:
-            item = {}
-            key = ff['name']
-            val = ''
-            dt = datetime(1970,1,1)
-            d = date(1970,1,1)
-            if template and (key not in template_passthru) and hasattr(ff,'form'):
-                # write default values
-                val = ff['form']['initial']
-            elif hasattr(self, ff['name']):
-                # write object's values
-                val = getattr(self, ff['name'])
-                # special cases
-                if val:
-                    if (type(val) == type(dt)) or (type(val) == type(d)):
-                        val = val.strftime(settings.DATETIME_FORMAT)
-                # end special cases
-            item[key] = val
-            if (key not in exceptions):
-                entity.append(item)
-        files = []
-        if not template:
-            for f in self.files:
-                fd = {}
-                for key in ENTITY_FILE_KEYS:
-                    if hasattr(f, key):
-                        fd[key] = getattr(f, key, None)
-                files.append(fd)
-        entity.append( {'files':files} )
+        data = prep_json_data(self, entitymodule,
+                              field_exceptions=['files', 'filemeta'],
+                              template=template)
+        data.insert(0, document_metadata(entitymodule, self.parent_path))
+        if template:
+            files = {}
+        else:
+            files = self.prep_file_metadata()
+        data.append({ 'files': files })
         if not path:
             path = self.json_path
-        write_json(entity, path)
+        write_json(data, path)
     
     def mets( self ):
         if not os.path.exists(self.mets_path):
@@ -712,7 +794,7 @@ class DDRLocalEntity( DDREntity ):
         NS = NAMESPACES_TAGPREFIX
         ns = NAMESPACES_XPATH
         tree = etree.parse(StringIO(self.mets().xml))
-        for f in entitymodule.ENTITY_FIELDS:
+        for f in entitymodule.FIELDS:
             key = f['name']
             value = ''
             if hasattr(self, f['name']):
@@ -759,7 +841,7 @@ class DDRLocalEntity( DDREntity ):
         self.files_log(1, 'src_basename: %s' % src_basename)
         # temporary working dir
         tmp_dir = os.path.join(
-            settings.MEDIA_BASE, 'tmp', 'file-add',
+            MEDIA_BASE, 'tmp', 'file-add',
             self.parent_uid, self.id)
         self.files_log(1, 'tmp_dir: %s' % tmp_dir)
         if not os.path.exists(tmp_dir):
@@ -815,7 +897,7 @@ class DDRLocalEntity( DDREntity ):
             tmp_access_path = imaging.thumbnail(
                 src_path,
                 os.path.join(tmp_dir, os.path.basename(access_filename)),
-                geometry=settings.ACCESS_FILE_GEOMETRY)
+                geometry=ACCESS_FILE_GEOMETRY)
         except:
             tmp_access_path = None
             self.files_log(0, traceback.format_exc().strip())
@@ -974,7 +1056,7 @@ class DDRLocalEntity( DDREntity ):
         self.files_log(1, 'src_basename: %s' % src_basename)
         # temporary working dir
         tmp_dir = os.path.join(
-            settings.MEDIA_BASE, 'tmp', 'file-add',
+            MEDIA_BASE, 'tmp', 'file-add',
             self.parent_uid, self.id)
         self.files_log(1, 'tmp_dir: %s' % tmp_dir)
         if not os.path.exists(tmp_dir):
@@ -994,7 +1076,7 @@ class DDRLocalEntity( DDREntity ):
         tmp_access_path = imaging.thumbnail(
             src_path,
             os.path.join(tmp_dir, os.path.basename(access_filename)),
-            geometry=settings.ACCESS_FILE_GEOMETRY)
+            geometry=ACCESS_FILE_GEOMETRY)
         self.files_log(1, 'tmp_access_path: %s' % tmp_access_path)
         # unlike add_file, it's a fail if there's no access file
         if (not tmp_access_path) or (not os.path.exists(tmp_access_path)):
@@ -1241,7 +1323,8 @@ class DDRLocalFile( object ):
             self.json_path_rel = self.json_path.replace(self.collection_path, '')
             if self.json_path_rel[0] == '/':
                 self.json_path_rel = self.json_path_rel[1:]
-            self.load_json()
+            if self.path_abs and os.path.exists(self.path_abs):
+                self.load_json()
             access_abs = None
             if self.access_rel and self.entity_path:
                 access_abs = os.path.join(self.entity_files_path, self.access_rel)
@@ -1259,6 +1342,14 @@ class DDRLocalFile( object ):
     # create(path)
     
     # entities/files/???
+    
+    def model_def_commits( self ):
+        return cmp_model_definition_commits(self, filemodule)
+    
+    def model_def_fields( self ):
+        with open(self.json_path, 'r') as f:
+            text = f.read()
+        return cmp_model_definition_fields(text, filemodule)
     
     def files_rel( self, collection_path ):
         """Returns list of the file, its metadata JSON, and access file, relative to collection.
@@ -1295,61 +1386,24 @@ class DDRLocalFile( object ):
         _inherit( parent, self )
     
     def labels_values(self):
-        """Generic display
-        
-        Certain fields require special processing.
-        If a "display_{field}" function is present in the ddrlocal.models.files
-        module it will be executed.
+        """Apply display_{field} functions to prep object data for the UI.
         """
-        lv = []
-        for f in filemodule.FILE_FIELDS:
-            if hasattr(self, f['name']) and f.get('form',None):
-                key = f['name']
-                label = f['form']['label']
-                # run display_* functions on field data if present
-                value = module_function(filemodule,
-                                        'display_%s' % key,
-                                        getattr(self, f['name']))
-                lv.append( {'label':label, 'value':value,} )
-        return lv
+        return labels_values(self, filemodule)
     
     def form_prep(self):
-        """Prep data dict to pass into FileForm object.
-        
-        Certain fields require special processing.
-        If a "formprep_{field}" function is present in the ddrlocal.models.files
-        module it will be executed.
+        """Apply formprep_{field} functions to prep data dict to pass into DDRForm object.
         
         @returns data: dict object as used by Django Form object.
         """
-        data = {}
-        for f in filemodule.FILE_FIELDS:
-            if hasattr(self, f['name']) and f.get('form',None):
-                key = f['name']
-                # run formprep_* functions on field data if present
-                value = module_function(filemodule,
-                                        'formprep_%s' % key,
-                                        getattr(self, f['name']))
-                data[key] = value
+        data = form_prep(self, filemodule)
         return data
     
     def form_post(self, form):
-        """Process cleaned_data coming from FileForm
+        """Apply formpost_{field} functions to process cleaned_data from DDRForm
         
-        Certain fields require special processing.
-        If a "formpost_{field}" function is present in the ddrlocal.models.files
-        module it will be executed.
-        
-        @param form
+        @param form: DDRForm object
         """
-        for f in filemodule.FILE_FIELDS:
-            if hasattr(self, f['name']) and f.get('form',None):
-                key = f['name']
-                # run formpost_* functions on field data if present
-                cleaned_data = module_function(filemodule,
-                                               'formpost_%s' % key,
-                                               form.cleaned_data[key])
-                setattr(self, key, cleaned_data)
+        form_post(self, filemodule, form)
     
     @staticmethod
     def from_json(file_json):
@@ -1373,15 +1427,12 @@ class DDRLocalFile( object ):
     
     def load_json(self):
         """Populate File data from .json file.
-        @param path: Absolute path to file
         """
-        if os.path.exists(self.json_path):
-            data = read_json(self.json_path)
-            # everything else
-            for ff in filemodule.FILE_FIELDS:
-                for f in data:
-                    if hasattr(f, 'keys') and (f.keys()[0] == ff['name']):
-                        setattr(self, f.keys()[0], f.values()[0])
+        if not os.path.exists(self.json_path):
+            raise IOError('File not found: %s' % self.json_path)
+        with open(self.json_path, 'r') as f:
+            raw_json = f.read()
+        load_json(self, filemodule, raw_json)
     
     def dump_json(self, path=None):
         """Dump File data to .json file.
@@ -1390,23 +1441,13 @@ class DDRLocalFile( object ):
         
         @param path: Absolute path to .json file.
         """
+        data = prep_json_data(self, filemodule)
+        data.insert(0, document_metadata(filemodule, self.collection_path))
+        data.insert(1, {'path_rel': self.path_rel})
         if not path:
             path = self.json_path
-        # TODO DUMP FILE AND FILEMETA PROPERLY!!!
-        file_ = [{'application': 'https://github.com/densho/ddr-local.git',
-                  'commit': COMMIT,
-                  'release': VERSION,
-                  'git': dvcs.git_version(self.collection_path),},
-                 {'path_rel': self.path_rel},]
-        for ff in filemodule.FILE_FIELDS:
-            item = {}
-            key = ff['name']
-            val = ''
-            if hasattr(self, ff['name']):
-                val = getattr(self, ff['name'])
-            item[key] = val
-            file_.append(item)
-        write_json(file_, path)
+        write_json(data, path)
+
     
     @staticmethod
     def file_name( entity, path_abs, role, sha1=None ):
@@ -1488,7 +1529,7 @@ class DDRLocalFile( object ):
         """
         return '%s%s.%s' % (
             os.path.splitext(src_abs)[0],
-            settings.ACCESS_FILE_APPEND,
+            ACCESS_FILE_APPEND,
             'jpg')
     
     def links_incoming( self ):

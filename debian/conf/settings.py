@@ -36,6 +36,40 @@ if not configs_read:
 # ddr.cfg is installed in /etc/ddr/ddr.cfg.
 # Settings in /etc/ddr/ddr.cfg may be overridden in /etc/ddr/local.cfg.
 
+GITOLITE             = config.get('workbench','gitolite')
+GITOLITE_TIMEOUT     = config.get('workbench','gitolite_timeout')
+CGIT_URL             = config.get('workbench','cgit_url')
+GIT_REMOTE_NAME      = config.get('workbench','remote')
+WORKBENCH_URL        = config.get('workbench','workbench_url')
+WORKBENCH_LOGIN_URL  = config.get('workbench','workbench_login_url')
+WORKBENCH_LOGOUT_URL = config.get('workbench','workbench_logout_url')
+WORKBENCH_LOGIN_TEST = config.get('workbench','login_test_url')
+WORKBENCH_USERINFO   = config.get('workbench','workbench_userinfo_url')
+WORKBENCH_NEWCOL_URL = config.get('workbench','workbench_newcol_url')
+WORKBENCH_NEWENT_URL = config.get('workbench','workbench_newent_url')
+
+MEDIA_BASE = config.get('cmdln','media_base')
+# Location of Repository 'ddr' repo, which should contain repo_models
+# for the Repository.
+REPO_MODELS_PATH = config.get('cmdln','repo_models_path')
+DATE_FORMAT = config.get('cmdln','date_format')
+TIME_FORMAT = config.get('cmdln','time_format')
+DATETIME_FORMAT = config.get('cmdln','datetime_format')
+TIMESTAMP_FORMAT = config.get('cmdln','timestamp_format')
+PRETTY_DATE_FORMAT = config.get('cmdln','pretty_date_format')
+PRETTY_TIME_FORMAT = config.get('cmdln','pretty_time_format')
+PRETTY_DATETIME_FORMAT = config.get('cmdln','pretty_datetime_format')
+TEMPLATE_CJSON       = config.get('cmdln','template_cjson')
+TEMPLATE_EJSON       = config.get('cmdln','template_ejson')
+TEMPLATE_EAD         = config.get('cmdln','template_ead')
+TEMPLATE_METS        = config.get('cmdln','template_mets')
+ACCESS_FILE_APPEND   = config.get('cmdln','access_file_append')
+ACCESS_FILE_EXTENSION = config.get('cmdln','access_file_extension')
+ACCESS_FILE_GEOMETRY = config.get('cmdln','access_file_geometry')
+ACCESS_FILE_OPTIONS  = config.get('cmdln','access_file_options')
+
+SUPERVISORD_URL      = config.get('local','supervisord_url')
+SUPERVISORD_PROCS    = ['ddrlocal', 'celery']
 SECRET_KEY           = config.get('local','secret_key')
 LANGUAGE_CODE        = config.get('local','language_code')
 TIME_ZONE            = config.get('local','time_zone')
@@ -48,14 +82,6 @@ STATIC_ROOT          = config.get('local','static_root')
 STATIC_URL           = config.get('local','static_url')
 MEDIA_ROOT           = config.get('local','media_root')
 MEDIA_URL            = config.get('local','media_url')
-TEMPLATE_CJSON       = config.get('local','template_cjson')
-TEMPLATE_EJSON       = config.get('local','template_ejson')
-TEMPLATE_EAD         = config.get('local','template_ead')
-TEMPLATE_METS        = config.get('local','template_mets')
-ACCESS_FILE_APPEND   = config.get('local','access_file_append')
-ACCESS_FILE_EXTENSION = config.get('local','access_file_extension')
-ACCESS_FILE_GEOMETRY = config.get('local','access_file_geometry')
-ACCESS_FILE_OPTIONS  = config.get('local','access_file_options')
 THUMBNAIL_GEOMETRY   = config.get('local','thumbnail_geometry')
 THUMBNAIL_COLORSPACE = 'sRGB'
 THUMBNAIL_OPTIONS    = config.get('local','thumbnail_options')
@@ -70,18 +96,6 @@ CSV_TMPDIR           = '/tmp/ddr/csv'
 GITOLITE_INFO_CACHE_TIMEOUT = int(config.get('local', 'gitolite_info_cache_timeout'))
 GITOLITE_INFO_CACHE_CUTOFF  = int(config.get('local', 'gitolite_info_cache_cutoff'))
 GITOLITE_INFO_CHECK_PERIOD  = int(config.get('local', 'gitolite_info_check_period'))
-
-GITOLITE             = config.get('workbench','gitolite')
-GITOLITE_TIMEOUT     = config.get('workbench','gitolite_timeout')
-CGIT_URL             = config.get('workbench','cgit_url')
-GIT_REMOTE_NAME      = config.get('workbench','remote')
-WORKBENCH_URL        = config.get('workbench','workbench_url')
-WORKBENCH_LOGIN_URL  = config.get('workbench','workbench_login_url')
-WORKBENCH_LOGOUT_URL = config.get('workbench','workbench_logout_url')
-WORKBENCH_LOGIN_TEST = config.get('workbench','login_test_url')
-WORKBENCH_USERINFO   = config.get('workbench','workbench_userinfo_url')
-WORKBENCH_NEWCOL_URL = config.get('workbench','workbench_newcol_url')
-WORKBENCH_NEWENT_URL = config.get('workbench','workbench_newent_url')
 
 TESTING_USERNAME     = config.get('testing','username')
 TESTING_PASSWORD     = config.get('testing','password')
@@ -98,25 +112,14 @@ TESTING_CREATE       = int(config.get('testing','create'))
 # /media/USBHDDNAME/ddr
 DDR_USBHDD_BASE_DIR = 'ddr'
 
-MEDIA_BASE = os.path.join(MEDIA_ROOT, 'base')
-
-
 ENTITY_FILE_ROLES = (
     ('master','master'),
     ('mezzanine','mezzanine'),
     ('access','access'),
 )
 
-DATE_FORMAT = '%Y-%m-%d'
-TIME_FORMAT = '%H:%M:%S'
-DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
-TIMESTAMP_FORMAT = '%Y-%m-%dT%H:%M:%S:%f'
 # Django uses a slightly different datetime format
 DATETIME_FORMAT_FORM = '%Y-%m-%d %H:%M:%S'
-
-PRETTY_DATE_FORMAT = '%d %B %Y'
-PRETTY_TIME_FORMAT = '%I:%M %p'
-PRETTY_DATETIME_FORMAT = '%d %B %Y, %I:%M %p'
 
 # cache key used for storing URL of page user was requesting
 # when redirected to either login or storage remount page
@@ -152,6 +155,7 @@ GITSTATUS_BACKOFF = 30
 GITSTATUS_BACKGROUND_ACTIVE = True
 if config.has_option('local', 'gitstatus_background_active'):
     GITSTATUS_BACKGROUND_ACTIVE = config.get('local', 'gitstatus_background_active')
+    SUPERVISORD_PROCS.append('celerybeat')
 
 # ----------------------------------------------------------------------
 

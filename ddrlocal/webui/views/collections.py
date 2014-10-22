@@ -4,6 +4,7 @@ import logging
 logger = logging.getLogger(__name__)
 import os
 import random
+import sys
 
 from bs4 import BeautifulSoup
 
@@ -23,7 +24,12 @@ from DDR import commands
 from DDR import docstore
 from DDR.models import make_object_id, id_from_path
 
-from ddrlocal.models.collection import COLLECTION_FIELDS
+if settings.REPO_MODELS_PATH not in sys.path:
+    sys.path.append(settings.REPO_MODELS_PATH)
+try:
+    from repo_models import collection as collectionmodule
+except ImportError:
+    from ddrlocal.models import collection as collectionmodule
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
@@ -86,6 +92,8 @@ def collections( request ):
 @storage_required
 def detail( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    collection.model_def_commits()
+    collection.model_def_fields()
     alert_if_conflicted(request, collection)
     return render_to_response(
         'webui/collections/detail.html',
@@ -135,7 +143,7 @@ def changelog( request, repo, org, cid ):
 def collection_json( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     alert_if_conflicted(request, collection)
-    return HttpResponse(json.dumps(collection.json().data), mimetype="application/json")
+    return HttpResponse(json.dumps(collection.json().data), content_type="application/json")
 
 @ddrview
 @storage_required
@@ -146,7 +154,7 @@ def sync_status_ajax( request, repo, org, cid ):
         sync_status = gitstatus['sync_status']
         if sync_status.get('timestamp',None):
             sync_status['timestamp'] = sync_status['timestamp'].strftime(settings.TIMESTAMP_FORMAT)
-        return HttpResponse(json.dumps(sync_status), mimetype="application/json")
+        return HttpResponse(json.dumps(sync_status), content_type="application/json")
     raise Http404
 
 @ddrview
@@ -173,7 +181,7 @@ def ead_xml( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     alert_if_conflicted(request, collection)
     soup = BeautifulSoup(collection.ead().xml, 'xml')
-    return HttpResponse(soup.prettify(), mimetype="application/xml")
+    return HttpResponse(soup.prettify(), content_type="application/xml")
 
 @ddrview
 @login_required
@@ -280,6 +288,8 @@ def edit( request, repo, org, cid ):
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    collection.model_def_commits()
+    collection.model_def_fields()
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
@@ -288,7 +298,7 @@ def edit( request, repo, org, cid ):
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
     if request.method == 'POST':
-        form = DDRForm(request.POST, fields=COLLECTION_FIELDS)
+        form = DDRForm(request.POST, fields=collectionmodule.FIELDS)
         if form.is_valid():
             collection.form_post(form)
             collection.dump_json()
@@ -322,7 +332,7 @@ def edit( request, repo, org, cid ):
                 messages.success(request, success_msg)
                 return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
     else:
-        form = DDRForm(collection.form_prep(), fields=COLLECTION_FIELDS)
+        form = DDRForm(collection.form_prep(), fields=collectionmodule.FIELDS)
     return render_to_response(
         'webui/collections/edit-json.html',
         {'repo': repo,

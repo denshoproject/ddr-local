@@ -18,7 +18,7 @@
 {% for o in collections %}
 <h3>{{ o.0 }}</h3>
 
-{% if username %}
+{% if username and models_valid %}
 <p>
 <a href="{% url "webui-collection-new" o.1 o.2 %}" class="btn btn-xs btn-primary"><span class="glyphicon glyphicon-plus icon-white"></span> New Collection</a>
 </p>

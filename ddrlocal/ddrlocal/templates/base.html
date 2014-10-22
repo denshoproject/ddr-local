@@ -32,6 +32,8 @@
 
 #indicators { margin-top:7px; padding:0px; float:right; }
 
+.alert { margin:0px; margin-bottom:5px; }
+
 #celery-status a {
   color:#8a6d3b; /* warning */
 }
@@ -152,13 +154,17 @@ form td { padding-bottom:20px; }
 
 
 {% for message in messages %}
-<div class="alert alert-{{ message.tags }}">
+<div class="alert alert-{{ message.tags }} {% if "debug" in message.tags %}alert-warning{% endif %} {% if "error" in message.tags %}alert-danger{% endif %}">
   <button type="button" class="close" data-dismiss="alert">&times;</button>
   {{ message|safe }}
 </div>
 {% endfor %}
 
+
+
 <div id="celery-status"></div>
+
+
 
     </div><!-- .span12 -->
   </div><!-- .row-fluid -->

@@ -9,6 +9,11 @@ urlpatterns = patterns(
     url(r'^task-status/$', 'webui.views.task_status', name='webui-task-status'),
     url(r'^tasks/(?P<task_id>[-\w]+)/dismiss/$', 'webui.views.task_dismiss', name='webui-tasks-dismiss'),
     url(r'^tasks/$', 'webui.views.tasks', name='webui-tasks'),
+    
+    url(r'^restart/$', TemplateView.as_view(template_name="webui/restart-park.html"), name='webui-restart'),
+    url(r'^supervisord/procinfo.html$', 'webui.views.supervisord.procinfo_html', name='webui-supervisord-procinfo-html'),
+    url(r'^supervisord/procinfo.json$', 'webui.views.supervisord.procinfo_json', name='webui-supervisord-procinfo-json'),
+    url(r'^supervisord/restart/$', 'webui.views.supervisord.restart', name='webui-supervisord-restart'),
 
     # search
 

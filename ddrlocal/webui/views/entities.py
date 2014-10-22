@@ -4,6 +4,7 @@ import logging
 logger = logging.getLogger(__name__)
 import os
 import re
+import sys
 
 from bs4 import BeautifulSoup
 import requests
@@ -22,7 +23,12 @@ from django.template import RequestContext
 from DDR import commands
 from DDR import docstore
 
-from ddrlocal.models.entity import ENTITY_FIELDS
+if settings.REPO_MODELS_PATH not in sys.path:
+    sys.path.append(settings.REPO_MODELS_PATH)
+try:
+    from repo_models import entity as entitymodule
+except ImportError:
+    from ddrlocal.models import entity as entitymodule
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
@@ -193,6 +199,8 @@ def detail( request, repo, org, cid, eid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     epath = Entity.entity_path(request,repo,org,cid,eid)
     entity = Entity.from_json(epath)
+    entity.model_def_commits()
+    entity.model_def_fields()
     tasks = request.session.get('celery-tasks', [])
     return render_to_response(
         'webui/entities/detail.html',
@@ -278,14 +286,14 @@ def entity_json( request, repo, org, cid, eid ):
     entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
     with open(entity.json_path, 'r') as f:
         json = f.read()
-    return HttpResponse(json, mimetype="application/json")
+    return HttpResponse(json, content_type="application/json")
 
 @storage_required
 def mets_xml( request, repo, org, cid, eid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
     soup = BeautifulSoup(entity.mets().xml, 'xml')
-    return HttpResponse(soup.prettify(), mimetype="application/xml")
+    return HttpResponse(soup.prettify(), content_type="application/xml")
 
 @ddrview
 @login_required
@@ -387,8 +395,10 @@ def edit( request, repo, org, cid, eid ):
     # TODO This should be baked into models somehow.
     topics_terms = tagmanager_terms('topics')
     facility_terms = tagmanager_terms('facility')
+    entity.model_def_commits()
+    entity.model_def_fields()
     if request.method == 'POST':
-        form = DDRForm(request.POST, fields=ENTITY_FIELDS)
+        form = DDRForm(request.POST, fields=entitymodule.FIELDS)
         if form.is_valid():
             
             # clean up after TagManager
@@ -432,7 +442,7 @@ def edit( request, repo, org, cid, eid ):
                 messages.success(request, success_msg)
                 return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     else:
-        form = DDRForm(entity.form_prep(), fields=ENTITY_FIELDS)
+        form = DDRForm(entity.form_prep(), fields=entitymodule.FIELDS)
     
     topics_prefilled = tagmanager_prefilled_terms(entity.topics, topics_terms)
     facility_prefilled = tagmanager_prefilled_terms(entity.facility, facility_terms)

@@ -3,25 +3,39 @@ import json
 import logging
 logger = logging.getLogger(__name__)
 import os
+import sys
 
 import envoy
 import requests
 
 from django.conf import settings
+from django.contrib import messages
 from django.core.cache import cache
 from django.core.urlresolvers import reverse
 from django.db import models
 
 from DDR import dvcs
+from DDR.models import module_is_valid
+from DDR.storage import storage_status
+
+from storage import base_path
 
 from ddrlocal.models import DDRLocalCollection, DDRLocalEntity, DDRLocalFile
 from ddrlocal.models import COLLECTION_FILES_PREFIX, ENTITY_FILES_PREFIX
-from ddrlocal.models import collection as collectionmodule
-from ddrlocal.models import entity as entitymodule
-from ddrlocal.models import files as filemodule
+
+if settings.REPO_MODELS_PATH not in sys.path:
+    sys.path.append(settings.REPO_MODELS_PATH)
+try:
+    from repo_models import collection as collectionmodule
+    from repo_models import entity as entitymodule
+    from repo_models import files as filemodule
+except ImportError:
+    from ddrlocal.models import collection as collectionmodule
+    from ddrlocal.models import entity as entitymodule
+    from ddrlocal.models import files as filemodule
 
 from webui import gitstatus
-
+from webui import WEBUI_MESSAGES
 from webui import COLLECTION_FETCH_CACHE_KEY
 from webui import COLLECTION_STATUS_CACHE_KEY
 from webui import COLLECTION_ANNEX_STATUS_CACHE_KEY
@@ -29,6 +43,48 @@ from webui import COLLECTION_FETCH_TIMEOUT
 from webui import COLLECTION_STATUS_TIMEOUT
 from webui import COLLECTION_ANNEX_STATUS_TIMEOUT
 
+
+def repo_models_valid(request):
+    """Displays alerts if repo_models are absent or undefined
+    """
+    valid = True
+    NOIMPORT_MSG = 'Error: Could not import model definitions!'
+    UNDEFINED_MSG = 'Error: One or more models improperly defined.'
+    # don't check again if messages already added
+    added = False
+    for m in messages.get_messages(request):
+        if (NOIMPORT_MSG in m.message) or (UNDEFINED_MSG in m.message):
+            added = True
+    if added:
+        valid = False
+    else:
+        cvalid,cmsg = module_is_valid(collectionmodule)
+        evalid,emsg = module_is_valid(entitymodule)
+        fvalid,fmsg = module_is_valid(filemodule)
+        if not (cvalid and evalid and fvalid):
+            valid = False
+            messages.error(request, UNDEFINED_MSG)
+    return valid
+
+def model_def_commits(document, module):
+    status = super(module, document).model_def_commits()
+    alert,msg = WEBUI_MESSAGES['MODEL_DEF_COMMITS_STATUS_%s' % status]
+    document.model_def_commits_alert = alert
+    document.model_def_commits_msg = msg
+
+def model_def_fields(document, module):
+    added,removed = super(module, document).model_def_fields()
+    # 'File.path_rel' is created when instantiating Files,
+    # is not part of model definitions.
+    def rm_path_rel(fields):
+        if 'path_rel' in fields:
+            fields.remove('path_rel')
+    rm_path_rel(added)
+    rm_path_rel(removed)
+    document.model_def_fields_added = added
+    document.model_def_fields_removed = removed
+    document.model_def_fields_added_msg = WEBUI_MESSAGES['MODEL_DEF_FIELDS_ADDED'] % added
+    document.model_def_fields_removed_msg = WEBUI_MESSAGES['MODEL_DEF_FIELDS_REMOVED'] % removed
 
 
 # functions relating to inheritance ------------------------------------
@@ -182,7 +238,7 @@ class Collection( DDRLocalCollection ):
         """
         collection = Collection(collection_abs)
         collection_uid = collection.id  # save this just in case
-        collection.load_json(collection.json_path)
+        collection.load_json()
         if not collection.id:
             # id gets overwritten if collection.json is blank
             collection.id = collection_uid
@@ -255,8 +311,27 @@ class Collection( DDRLocalCollection ):
     
     def update_inheritables( self, inheritables, cleaned_data ):
         return _update_inheritables(self, 'collection', inheritables, cleaned_data)
-
-
+    
+    def model_def_commits(self):
+        """Assesses document's relation to model defs in 'ddr' repo.
+        
+        Adds the following fields:
+        .model_def_commits_alert
+        .model_def_commits_msg
+        """
+        model_def_commits(self, Collection)
+    
+    def model_def_fields(self):
+        """From POV of document, indicates fields added/removed in model defs
+        
+        Adds the following fields:
+        .model_def_fields_added
+        .model_def_fields_removed
+        .model_def_fields_added_msg
+        .model_def_fields_removed_msg
+        """
+        model_def_fields(self, Collection)
+    
 
 class Entity( DDRLocalEntity ):
 
@@ -277,7 +352,7 @@ class Entity( DDRLocalEntity ):
         if os.path.exists(entity_abs):
             entity = Entity(entity_abs)
             entity_uid = entity.id
-            entity.load_json(entity.json_path)
+            entity.load_json()
             if not entity.id:
                 entity.id = entity_uid  # might get overwritten if entity.json is blank
         return entity
@@ -301,7 +376,26 @@ class Entity( DDRLocalEntity ):
         for f in self._files:
             path_abs = os.path.join(self.files_path, f['path_rel'])
             self.files.append(DDRFile(path_abs=path_abs))
-
+    
+    def model_def_commits(self):
+        """Assesses document's relation to model defs in 'ddr' repo.
+        
+        Adds the following fields:
+        .model_def_commits_alert
+        .model_def_commits_msg
+        """
+        model_def_commits(self, Entity)
+    
+    def model_def_fields(self):
+        """From POV of document, indicates fields added/removed in model defs
+        
+        Adds the following fields:
+        .model_def_fields_added
+        .model_def_fields_removed
+        .model_def_fields_added_msg
+        .model_def_fields_removed_msg
+        """
+        model_def_fields(self, Entity)
 
 
 class DDRFile( DDRLocalFile ):
@@ -324,3 +418,23 @@ class DDRFile( DDRLocalFile ):
     @staticmethod
     def file_path(request, repo, org, cid, eid, role, sha1):
         return os.path.join(settings.MEDIA_BASE, '{}-{}-{}-{}-{}-{}'.format(repo, org, cid, eid, role, sha1))
+    
+    def model_def_commits(self):
+        """Assesses document's relation to model defs in 'ddr' repo.
+        
+        Adds the following fields:
+        .model_def_commits_alert
+        .model_def_commits_msg
+        """
+        model_def_commits(self, DDRFile)
+    
+    def model_def_fields(self):
+        """From POV of document, indicates fields added/removed in model defs
+        
+        Adds the following fields:
+        .model_def_fields_added
+        .model_def_fields_removed
+        .model_def_fields_added_msg
+        .model_def_fields_removed_msg
+        """
+        model_def_fields(self, DDRFile)
