@@ -118,7 +118,7 @@ def filter_paths(collection_path, model, pattern):
     print('filter_paths')
     paths = []
     prog = re.compile(pattern)
-    allpaths = models.metadata_files(basedir=collection_path, model=model, recursive=True)
+    allpaths = models.metadata_files(basedir=collection_path, model=model, recursive=1, force_read=1)
     while allpaths:
         path = allpaths.pop()
         print(path)
@@ -130,7 +130,7 @@ def filter_paths(collection_path, model, pattern):
 def all_paths(collection_path, model):
     print('all_paths')
     paths = models.metadata_files(
-        basedir=collection_path, model=model, recursive=True)
+        basedir=collection_path, model=model, recursive=1, force_read=1)
     return paths
 
 
