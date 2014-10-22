@@ -86,12 +86,30 @@ def main():
     if not (class_ and module):
         raise Exception('ERROR: Could not decide on a class/module.')
     
-    batch.import_entities(
-        args.csv,
-        args.collection,
-        class_, module, VOCABS_PATH,
-        args.user, args.mail
-    )
+    start = datetime.now()
+    print('%s Starting...' % start)
+    
+    if model == 'entity':
+        updated = batch.update_entities(
+            args.csv,
+            args.collection,
+            DDRLocalEntity, entitymodule, VOCABS_PATH,
+            args.user, args.mail, 'ddr-import'
+        )
+    elif model == 'file':
+        updated = batch.update_files(
+            args.csv,
+            args.collection,
+            DDRLocalEntity, DDRLocalFile, module, VOCABS_PATH,
+            args.user, args.mail, 'ddr-import'
+        )
+    
+    finish = datetime.now()
+    elapsed = finish - start
+    print('%s done' % finish)
+    print('%s elapsed' % elapsed)
+
+
 
 if __name__ == '__main__':
     main()
