@@ -98,7 +98,6 @@ def read_id_file(path):
     return ids
 
 def make_paths(collection_path, model, ids):
-    print('make_paths')
     basedir = os.path.dirname(collection_path)
     if model == 'entity':
         fmt = '%s/entity.json'
@@ -115,20 +114,16 @@ def filter_paths(collection_path, model, pattern):
     @param pattern: str A regular expression
     @returns: list of absolute paths
     """
-    print('filter_paths')
     paths = []
     prog = re.compile(pattern)
     allpaths = models.metadata_files(basedir=collection_path, model=model, recursive=1, force_read=1)
     while allpaths:
         path = allpaths.pop()
-        print(path)
         if prog.search(path):
-            print('YES')
             paths.append(path)
     return paths
 
 def all_paths(collection_path, model):
-    print('all_paths')
     paths = models.metadata_files(
         basedir=collection_path, model=model, recursive=1, force_read=1)
     return paths
