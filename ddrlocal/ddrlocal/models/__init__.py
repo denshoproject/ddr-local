@@ -219,7 +219,7 @@ def cmp_model_definition_commits(document, module):
     if not module_defs_commit:
         return 128
     doc_metadata = getattr(document, 'json_metadata', {})
-    document_commit_raw = doc_metadata.get('model_definitions','')
+    document_commit_raw = doc_metadata.get('models_commit','')
     document_defs_commit = parse(document_commit_raw)
     if not document_defs_commit:
         return -1
