@@ -21,7 +21,8 @@ from DDR import imaging
 from DDR import natural_order_string, natural_sort
 from DDR.models import Collection as DDRCollection, Entity as DDREntity
 from DDR.models import dissect_path, file_hash, _inheritable_fields, _inherit
-from DDR.models import module_function, module_xml_function, write_json
+from DDR.models import module_path, module_function, module_xml_function
+from DDR.models import write_json
 from ddrlocal import VERSION
 from ddrlocal.models.meta import CollectionJSON, EntityJSON, read_json
 from ddrlocal.models.xml import EAD, METS
@@ -193,7 +194,7 @@ def document_metadata(module, document_repo_path):
         'application': 'https://github.com/densho/ddr-local.git',
         'app_commit': dvcs.latest_commit(os.path.dirname(__file__)),
         'app_release': VERSION,
-        'models_commit': dvcs.latest_commit(module.__file__),
+        'models_commit': dvcs.latest_commit(module_path(module)),
         'git_version': dvcs.git_version(document_repo_path),
     }
     return data
@@ -213,8 +214,7 @@ def cmp_model_definition_commits(document, module):
     """
     def parse(txt):
         return txt.strip().split(' ')[0]
-    module_path = module.__file__.replace('.pyc', '.py')
-    module_commit_raw = dvcs.latest_commit(module_path)
+    module_commit_raw = dvcs.latest_commit(module_path(module))
     module_defs_commit = parse(module_commit_raw)
     if not module_defs_commit:
         return 128
@@ -223,9 +223,7 @@ def cmp_model_definition_commits(document, module):
     document_defs_commit = parse(document_commit_raw)
     if not document_defs_commit:
         return -1
-    if document.model == 'collection': repo = dvcs.repository(document_object.path)
-    elif document.model == 'entity': repo = dvcs.repository(document_object.parent_path)
-    elif document.model == 'file': repo = dvcs.repository(document_object.collection_path)
+    repo = dvcs.repository(module_path(module))
     return dvcs.cmp_commits(repo, document_defs_commit, module_defs_commit)
 
 def cmp_model_definition_fields(document_json, module):
