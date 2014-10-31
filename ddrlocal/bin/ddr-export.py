@@ -28,6 +28,12 @@ from DDR import natural_sort
 from DDR import batch
 from DDR import models
 
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s %(levelname)-8s %(message)s',
+    stream=sys.stdout,
+)
+
 DDRLOCAL_PATH = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 sys.path.append(DDRLOCAL_PATH)
 from ddrlocal.models import DDRLocalCollection, DDRLocalEntity, DDRLocalFile
@@ -166,7 +172,7 @@ def main():
         raise Exception('ERROR: Could not decide on a class/module.')
     
     start = datetime.now()
-    print('%s Gathering entity paths...' % start)
+    logging.info('Gathering entity paths')
     
     paths = []
     if args.file:  # file containing list of IDs
@@ -175,17 +181,14 @@ def main():
         paths = filter_paths(args.collection, model, args.ids)
     else:  # just get everything
         paths = all_paths(args.collection, model)
-    if paths:
-        print('%s ok %s paths' % (datetime.now(), len(paths)))
-    else:
+    if not paths:
         raise Exception('ERROR: Could not find metadata paths.')
+    logging.info('%s paths' % len(paths))
     
-    print('%s Exporting' % datetime.now())
     batch.export(paths, class_, module, args.csv)
     finish = datetime.now()
     elapsed = finish - start
-    print('%s done' % finish)
-    print('%s elapsed' % elapsed)
+    logging.info('DONE - %s elapsed' % elapsed)
     
     
 

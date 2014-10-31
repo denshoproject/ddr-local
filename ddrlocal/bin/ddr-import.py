@@ -21,6 +21,12 @@ import sys
 from DDR import batch
 from DDR import models
 
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s %(levelname)-8s %(message)s',
+    stream=sys.stdout,
+)
+
 DDRLOCAL_PATH = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 sys.path.append(DDRLOCAL_PATH)
 from ddrlocal.models import DDRLocalCollection, DDRLocalEntity, DDRLocalFile
@@ -62,13 +68,13 @@ def main():
     
     # check args
     if not os.path.exists(args.csv):
-        print('ddr-export: CSV file does not exist.')
+        logging.debug('ddr-export: CSV file does not exist.')
         sys.exit(1)
     if not (os.path.isfile(args.csv) and os.path.isdir(args.collection)):
-        print('ddr-export: CSV filename comes before collection.')
+        logging.debug('ddr-export: CSV filename comes before collection.')
         sys.exit(1)
     if not os.path.exists(args.collection):
-        print('ddr-export: Collection does not exist.')
+        logging.debug('ddr-export: Collection does not exist.')
         sys.exit(1)
     
     model = None
@@ -87,8 +93,6 @@ def main():
         raise Exception('ERROR: Could not decide on a class/module.')
     
     start = datetime.now()
-    print('%s Starting...' % start)
-    
     if model == 'entity':
         updated = batch.update_entities(
             args.csv,
@@ -103,11 +107,9 @@ def main():
             DDRLocalEntity, DDRLocalFile, module, VOCABS_PATH,
             args.user, args.mail, 'ddr-import'
         )
-    
     finish = datetime.now()
     elapsed = finish - start
-    print('%s done' % finish)
-    print('%s elapsed' % elapsed)
+    logging.info('DONE - %s elapsed' % elapsed)
 
 
 
