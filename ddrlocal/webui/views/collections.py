@@ -135,7 +135,7 @@ def changelog( request, repo, org, cid ):
 def collection_json( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     alert_if_conflicted(request, collection)
-    return HttpResponse(json.dumps(collection.json().data), mimetype="application/json")
+    return HttpResponse(json.dumps(collection.json().data), content_type="application/json")
 
 @ddrview
 @storage_required
@@ -146,7 +146,7 @@ def sync_status_ajax( request, repo, org, cid ):
         sync_status = gitstatus['sync_status']
         if sync_status.get('timestamp',None):
             sync_status['timestamp'] = sync_status['timestamp'].strftime(settings.TIMESTAMP_FORMAT)
-        return HttpResponse(json.dumps(sync_status), mimetype="application/json")
+        return HttpResponse(json.dumps(sync_status), content_type="application/json")
     raise Http404
 
 @ddrview
@@ -173,7 +173,7 @@ def ead_xml( request, repo, org, cid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     alert_if_conflicted(request, collection)
     soup = BeautifulSoup(collection.ead().xml, 'xml')
-    return HttpResponse(soup.prettify(), mimetype="application/xml")
+    return HttpResponse(soup.prettify(), content_type="application/xml")
 
 @ddrview
 @login_required
