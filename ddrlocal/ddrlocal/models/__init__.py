@@ -15,6 +15,7 @@ from lxml import etree
 
 from django.conf import settings
 
+from DDR import changelog
 from DDR import commands
 from DDR import dvcs
 from DDR import imaging
@@ -417,6 +418,30 @@ class DDRLocalCollection( DDRCollection ):
 
 
 
+class EntityAddFileLogger():
+    logpath = None
+    
+    def entry(self, ok, msg ):
+        """Returns log of add_files activity; adds an entry if status,msg given.
+        
+        @param ok: Boolean. ok or not ok.
+        @param msg: Text message.
+        @returns log: A text file.
+        """
+        entry = '[{}] {} - {}\n'.format(datetime.now().isoformat('T'), ok, msg)
+        with open(self.logpath, 'a') as f:
+            f.write(entry)
+    
+    def ok(self, msg): self.entry('ok', msg)
+    def not_ok(self, msg): self.entry('not ok', msg)
+    
+    def log(self):
+        log = ''
+        if os.path.exists(self.logpath):
+            with open(self.logpath, 'r') as f:
+                log = f.read()
+        return log
+
 class DDRLocalEntity( DDREntity ):
     """
     This subclass of Entity and DDREntity adds functions for reading and writing
@@ -526,25 +551,9 @@ class DDRLocalEntity( DDREntity ):
             os.makedirs(os.path.dirname(logpath))
         return logpath
     
-    def files_log( self, ok=None, msg=None ):
-        """Returns log of add_files activity; adds an entry if status,msg given.
-        
-        @param ok: Boolean. ok or not ok.
-        @param msg: Text message.
-        @returns log: A text file.
-        """
-        logpath = self._addfile_log_path()
-        if ok:
-            ok = 'ok'
-        else:
-            ok = 'not ok'
-        entry = '[{}] {} - {}\n'.format(datetime.now().isoformat('T'), ok, msg)
-        with open(logpath, 'a') as f:
-            f.write(entry)
-        log = ''
-        if os.path.exists(logpath):
-            with open(logpath, 'r') as f:
-                log = f.read()
+    def addfile_logger( self ):
+        log = EntityAddFileLogger()
+        log.logpath = self._addfile_log_path()
         return log
     
     @staticmethod
@@ -752,7 +761,7 @@ class DDRLocalEntity( DDREntity ):
         with open(self.mets_path, 'w') as f:
             f.write(xml_pretty)
     
-    def add_file( self, git_name, git_mail, src_path, role, data, agent='' ):
+    def add_file( self, src_path, role, data, git_name, git_mail, agent='' ):
         """Add file to entity
         
         This method breaks out of OOP and manipulates entity.json directly.
@@ -760,216 +769,245 @@ class DDRLocalEntity( DDREntity ):
         Writes a log to ${entity}/addfile.log, formatted in pseudo-TAP.
         This log is returned along with a DDRLocalFile object.
         
+        IMPORTANT: Files are only staged! Be sure to commit!
+        
         @param src_path: Absolute path to an uploadable file.
         @param role: Keyword of a file role.
+        @param data: 
         @param git_name: Username of git committer.
         @param git_mail: Email of git committer.
         @param agent: (optional) Name of software making the change.
-        @return file_ DDRLocalFile object
+        @return DDRLocalFile,repo,log
         """
+        f = None
+        repo = None
+        log = self.addfile_logger()
+        
         def crash(msg):
             """Write to addfile log and raise an exception."""
-            self.files_log(0, msg)
+            log.not_ok(msg)
             raise Exception(msg)
         
-        self.files_log(1, 'ddrlocal.models.DDRLocalEntity.add_file: START')
-        self.files_log(1, 'entity: %s' % self.id)
-        self.files_log(1, 'data: %s' % data)
+        log.ok('ddrlocal.models.DDRLocalEntity.add_file: START')
+        log.ok('entity: %s' % self.id)
+        log.ok('data: %s' % data)
         
-        self.files_log(1, 'Checking files/dirs')
-        # source file
-        self.files_log(1, 'src_path: %s' % src_path)
-        if not os.path.exists(src_path): crash('src_path does not exist')
-        if not os.access(src_path, os.R_OK): crash('src_path not readable')
-        src_basename = os.path.basename(src_path)
-        self.files_log(1, 'src_basename: %s' % src_basename)
-        # temporary working dir
         tmp_dir = os.path.join(
-            settings.MEDIA_BASE, 'tmp', 'file-add',
-            self.parent_uid, self.id)
-        self.files_log(1, 'tmp_dir: %s' % tmp_dir)
-        if not os.path.exists(tmp_dir):
-            os.makedirs(tmp_dir)
-        if not os.path.exists(tmp_dir): crash('tmp_dir does not exist')
-        if not os.access(tmp_dir, os.W_OK): crash('tmp_dir not writable')
-        # destination dir in repo-entity
+            settings.MEDIA_BASE, 'tmp', 'file-add', self.parent_uid, self.id)
         dest_dir = self.files_path
-        self.files_log(1, 'dest_dir: %s' % dest_dir)
-        if not os.path.exists(dest_dir):
-            os.makedirs(dest_dir)
-        if not os.path.exists(dest_dir): crash('dest_dir does not exist')
-        if not os.access(dest_dir, os.W_OK): crash('dest_dir not writable')
         
-        self.files_log(1, 'Extracting XMP data')
-        xmp = imaging.extract_xmp(src_path)
-        if xmp:
-            self.files_log(1, 'we got some XMP')
-        else:
-            self.files_log(1, 'no XMP here')
+        log.ok('Checking files/dirs')
+        def check_dir(label, path, mkdir=False, perm=os.W_OK):
+            log.ok('%s: %s' % (label, path))
+            if mkdir and not os.path.exists(path):
+                os.makedirs(path)
+            if not os.path.exists(path): crash('%s does not exist' % label)
+            if not os.access(path, perm): crash('%s not has permission %s' % (label, permission))
+        check_dir('src_path', src_path, mkdir=False, perm=os.R_OK)
+        check_dir('tmp_dir', tmp_dir, mkdir=True, perm=os.W_OK)
+        check_dir('dest_dir', dest_dir, mkdir=True, perm=os.W_OK)
         
-        self.files_log(1, 'Copying to work dir')
-        size = os.path.getsize(src_path)
-        self.files_log(1, 'size: %s' % size)
-        tmp_path = os.path.join(tmp_dir, src_basename)
-        self.files_log(1, 'cp %s %s' % (src_path, tmp_path))
+        log.ok('Checksumming')
+        sha1   = file_hash(src_path, 'sha1');   log.ok('sha1: %s' % sha1)
+        md5    = file_hash(src_path, 'md5');    log.ok('md5: %s' % md5)
+        sha256 = file_hash(src_path, 'sha256'); log.ok('sha256: %s' % sha256)
+        if not sha1 and md5 and sha256:
+            crash('Could not calculate checksums')
+        
+        # final basename
+        dest_basename = DDRLocalFile.file_name(
+            self, src_path, role, sha1)  # NOTE: runs checksum if no sha1 arg!
+        dest_path = os.path.join(dest_dir, dest_basename)
+        
+        # file object
+        f = DDRLocalFile(path_abs=dest_path)
+        f.basename_orig = os.path.basename(src_path)
+        f.size = os.path.getsize(src_path)
+        f.role = role
+        f.sha1 = sha1
+        f.md5 = md5
+        f.sha256 = sha256
+        log.ok('Created DDRLocalFile: %s' % f)
+        log.ok('f.path_abs: %s' % f.path_abs)
+        log.ok('f.basename_orig: %s' % f.basename_orig)
+        log.ok('f.size: %s' % f.size)
+        # form data
+        for field in data:
+            setattr(f, field, data[field])
+        
+        log.ok('Copying to work dir')
+        tmp_path = os.path.join(tmp_dir, f.basename_orig)
+        log.ok('cp %s %s' % (src_path, tmp_path))
         shutil.copy(src_path, tmp_path)
         os.chmod(tmp_path, 0644)
         if not os.path.exists(tmp_path):
             crash('Copy to work dir failed %s %s' % (src_path, tmp_path))
         
-        self.files_log(1, 'Checksumming')
-        sha1   = file_hash(tmp_path, 'sha1');   self.files_log(1, 'sha1: %s' % sha1)
-        md5    = file_hash(tmp_path, 'md5');    self.files_log(1, 'md5: %s' % md5)
-        sha256 = file_hash(tmp_path, 'sha256'); self.files_log(1, 'sha256: %s' % sha256)
-        if not sha1 and md5 and sha256:
-            crash('Could not calculate checksums')
-        
-        # rename file now that we have checksum
-        dest_basename = DDRLocalFile.file_name(
-            self, src_path, role, sha1)  # NOTE: runs checksum if no sha1 arg!
+        # rename file
         tmp_path_renamed = os.path.join(os.path.dirname(tmp_path), dest_basename)
-        self.files_log(1, 'Renaming %s -> %s' % (os.path.basename(tmp_path), dest_basename))
+        log.ok('Renaming %s -> %s' % (os.path.basename(tmp_path), dest_basename))
         os.rename(tmp_path, tmp_path_renamed)
         if not os.path.exists(tmp_path_renamed) and not os.path.exists(tmp_path):
             crash('File rename failed: %s -> %s' % (tmp_path, tmp_path_renamed))
         
-        self.files_log(1, 'Making access file')
+        log.ok('Extracting XMP data')
+        f.xmp = imaging.extract_xmp(src_path)
+        
+        log.ok('Making access file')
         access_filename = DDRLocalFile.access_filename(tmp_path_renamed)
-        # Access file fails should not stop the process but we want
-        # to capture tracebacks in the log
+        tmp_access_path = None
         try:
             tmp_access_path = imaging.thumbnail(
                 src_path,
                 os.path.join(tmp_dir, os.path.basename(access_filename)),
                 geometry=settings.ACCESS_FILE_GEOMETRY)
         except:
-            tmp_access_path = None
-            self.files_log(0, traceback.format_exc().strip())
-        
-        # file object
-        dest_path = os.path.join(dest_dir, dest_basename)
-        f = DDRLocalFile(path_abs=dest_path)
-        f.basename_orig = src_basename
-        self.files_log(1, 'Created DDRLocalFile: %s' % f)
-        self.files_log(1, 'f.path_abs: %s' % f.path_abs)
-        f.xmp = xmp
-        f.size = size
-        f.sha1 = sha1
-        f.md5 = md5
-        f.sha256 = sha256
-        f.role = role
+            # write traceback to log and continue on
+            log.not_ok(traceback.format_exc().strip())
         if tmp_access_path and os.path.exists(tmp_access_path):
-            self.files_log(1, 'Attaching access file')
+            log.ok('Attaching access file')
             #dest_access_path = os.path.join('files', os.path.basename(tmp_access_path))
-            #self.files_log(1, 'dest_access_path: %s' % dest_access_path)
+            #log.ok('dest_access_path: %s' % dest_access_path)
             f.set_access(tmp_access_path, self)
-            self.files_log(1, 'f.access_rel: %s' % f.access_rel)
-            self.files_log(1, 'f.access_abs: %s' % f.access_abs)
+            log.ok('f.access_rel: %s' % f.access_rel)
+            log.ok('f.access_abs: %s' % f.access_abs)
         else:
-            self.files_log(0, 'no access file')
-        # form data
-        for field in data:
-            setattr(f, field, data[field])
-        # attach file to entity
-        self.files_log(1, 'Attaching file to entity')
+            log.not_ok('no access file')
+        
+        log.ok('Attaching file to entity')
         self.files.append(f)
         
-        self.files_log(1, 'Writing file and entity metadata')
+        log.ok('Writing file metadata')
         tmp_file_json = os.path.join(tmp_dir, os.path.basename(f.json_path))
-        tmp_entity_json = os.path.join(tmp_dir, os.path.basename(self.json_path))
-        self.files_log(1, tmp_file_json)
-        with open(tmp_file_json, 'w') as j:
-            j.write(f.dump_json())
+        log.ok(tmp_file_json)
+        with open(tmp_file_json, 'w') as fj:
+            fj.write(f.dump_json())
         if not os.path.exists(tmp_file_json):
             crash('Could not write file metadata %s' % tmp_file_json)
-        self.files_log(1, tmp_entity_json)
-        with open(tmp_entity_json, 'w') as j:
-            j.write(self.dump_json())
+        log.ok('Writing entity metadata')
+        tmp_entity_json = os.path.join(tmp_dir, os.path.basename(self.json_path))
+        log.ok(tmp_entity_json)
+        with open(tmp_entity_json, 'w') as ej:
+            ej.write(self.dump_json())
         if not os.path.exists(tmp_entity_json):
             crash('Could not write entity metadata %s' % tmp_entity_json)
-        # grab copy of original entity metadata in case something goes wrong
-        self.files_log(1, 'Backing up entity metadata')
-        entity_json_backup = os.path.join(tmp_dir, 'entity.json.orig')
-        shutil.copy(self.json_path, entity_json_backup)
-        if not os.path.exists(entity_json_backup):
-            crash('Could not backup entity metadata %s' % entity_json_backup)
         
-        self.files_log(1, 'Moving files to dest_dir')
-        new_files = []
+        # WE ARE NOW MAKING CHANGES TO THE REPO ------------------------
+        
+        log.ok('Moving files to dest_dir')
+        new_files = [
+            [tmp_path_renamed, f.path_abs],
+            [tmp_file_json, f.json_path],
+        ]
         if tmp_access_path and os.path.exists(tmp_access_path):
             new_files.append([tmp_access_path, f.access_abs])
-        new_files.append([tmp_path_renamed, f.path_abs])
-        new_files.append([tmp_file_json, f.json_path])
-        failures = []
+        mvfiles_failures = []
         for tmp,dest in new_files:
-            self.files_log(1, 'mv %s %s' % (tmp,dest))
+            log.ok('mv %s %s' % (tmp,dest))
             os.rename(tmp,dest)
             if not os.path.exists(dest):
-                self.files_log(0, 'FAIL')
-                failures.append(tmp)
+                log.not_ok('FAIL')
+                mvfiles_failures.append(tmp)
                 break
         # one of new_files failed to copy, so move all back to tmp
-        if failures:
-            self.files_log(0, '%s failures: %s' % (len(failures), failures))
-            self.files_log(0, 'moving files back to tmp_dir')
+        if mvfiles_failures:
+            log.not_ok('%s failures: %s' % (len(mvfiles_failures), mvfiles_failures))
+            log.not_ok('moving files back to tmp_dir')
             try:
                 for tmp,dest in new_files:
-                    self.files_log(1, 'mv %s %s' % (dest,tmp))
+                    log.ok('mv %s %s' % (dest,tmp))
                     os.rename(dest,tmp)
                     if not os.path.exists(tmp) and not os.path.exists(dest):
-                        self.files_log(0, 'FAIL')
+                        log.not_ok('FAIL')
             except:
                 msg = "Unexpected error:", sys.exc_info()[0]
-                self.files_log(0, msg)
+                log.not_ok(msg)
                 raise
             finally:
                 crash('Failed to place one or more files to destination repo')
         # entity metadata will only be copied if everything else was moved
-        self.files_log(1, 'mv %s %s' % (tmp_entity_json, self.json_path))
+        log.ok('mv %s %s' % (tmp_entity_json, self.json_path))
         os.rename(tmp_entity_json, self.json_path)
         if not os.path.exists(self.json_path):
             crash('Failed to place entity.json in destination repo')
         
-        # commit
-        git_files = [
-            self.json_path_rel,
-            f.json_path_rel
-        ]
-        annex_files = [
-            f.basename
-        ]
-        if f.access_rel:
-            annex_files.append(f.access_rel)
-        self.files_log(1, 'entity_annex_add(%s, %s, %s, %s, %s, %s, %s, %s)' % (
-            git_name, git_mail,
-            self.parent_path, self.id,
-            git_files, annex_files,
-            agent, self))
+        # stage files
+        git_files = [self.json_path_rel, f.json_path_rel]
+        annex_files = [f.path_abs.replace('%s/' % f.collection_path, '')]
+        if f.access_abs:
+            annex_files.append(f.access_abs.replace('%s/' % f.collection_path, ''))
+        to_stage = len(git_files + annex_files)
+        stage_ok = False
         try:
-            exit,status = commands.entity_annex_add(
-                git_name, git_mail,
-                self.parent_path, self.id, git_files, annex_files,
-                agent=agent, entity=self)
-            self.files_log(1, 'status: %s' % status)
-            self.files_log(1, 'ddrlocal.models.DDRLocalEntity.add_file: FINISHED')
+            repo = dvcs.repository(f.collection_path)
+            log.ok(repo)
+            log.ok('Staging %s files to the repo' % to_stage)
+            for path in git_files:
+                log.ok('git add %s' % path)
+                repo.git.add(path)
+            for path in annex_files:
+                log.ok('git annex add %s' % path)
+                repo.git.annex('add', path)
+            staged = len(dvcs.list_staged(repo))
+            if staged == to_stage:
+                log.ok('%s files staged' % staged)
+                stage_ok = True
+            else:
+                log.not_ok('%s files staged (should be %s)' % (staged, to_stage))
         except:
-            # COMMIT FAILED! try to pick up the pieces
-            # print traceback to addfile log
+            # FAILED! print traceback to addfile log
+            entrails = traceback.format_exc().strip()
+            log.not_ok(entrails)
             with open(self._addfile_log_path(), 'a') as f:
-                traceback.print_exc(file=f)
-            # mv files back to tmp_dir
-            self.files_log(0, 'Cleaning up...')
-            for tmp,dest in new_files:
-                self.files_log(0, 'mv %s %s' % (dest,tmp))
-                os.rename(dest,tmp)
-            # restore backup of original entity metadata
-            self.files_log(0, 'cp %s %s' % (entity_json_backup, self.json_path))
-            shutil.copy(entity_json_backup, self.json_path)
-            self.files_log(0, 'finished cleanup. good luck...')
-            raise
-        return f.__dict__
+                f.write(entrails)
+        finally:
+            if not stage_ok:
+                log.not_ok('File staging aborted. Cleaning up...')
+                # try to pick up the pieces
+                # mv files back to tmp_dir
+                for tmp,dest in new_files:
+                    log.not_ok('mv %s %s' % (dest,tmp))
+                    os.rename(dest,tmp)
+                log.not_ok('finished cleanup. good luck...')
+                raise crash('Add file aborted, see log file for details.')
+        
+        # IMPORTANT: Files are only staged! Be sure to commit!
+        # IMPORTANT: changelog is not staged!
+        return f,repo,log
     
-    def add_access( self, git_name, git_mail, ddrfile, agent='' ):
+    def add_file_commit(self, file_, repo, log, git_name, git_mail, agent):
+        staged = dvcs.list_staged(repo)
+        modified = dvcs.list_modified(repo)
+        if staged and not modified:
+            log.ok('All files staged.')
+            
+            log.ok('Updating changelog')
+            path = file_.path_abs.replace('{}/'.format(self.path), '')
+            changelog_messages = ['Added entity file {}'.format(path)]
+            if agent:
+                changelog_messages.append('@agent: %s' % agent)
+            changelog.write_changelog_entry(
+                self.changelog_path, changelog_messages, git_name, git_mail)
+            log.ok('git add %s' % self.changelog_path_rel)
+            repo.git.add(self.changelog_path_rel)
+     
+            log.ok('Committing')
+            commit_message = dvcs.compose_commit_message('Added entity file(s)', agent=agent)
+            commit = repo.index.commit(commit_message)
+            log.ok('commit: {}'.format(commit.hexsha))
+            committed = dvcs.list_committed(repo, commit)
+            committed.sort()
+            log.ok('files committed:     {}'.format(committed))
+            
+        else:
+            log.not_ok('%s files staged, %s files modified' % (len(staged),len(modified)))
+            log.not_ok('staged %s' % staged)
+            log.not_ok('modified %s' % modified)
+            log.not_ok('Can not commit!')
+            raise Exception()
+        return file_,repo,log
+    
+    def add_access( self, ddrfile, git_name, git_mail, agent='' ):
         """Generate new access file for entity
         
         This method breaks out of OOP and manipulates entity.json directly.
@@ -977,119 +1015,112 @@ class DDRLocalEntity( DDREntity ):
         Writes a log to ${entity}/addfile.log, formatted in pseudo-TAP.
         This log is returned along with a DDRLocalFile object.
         
-        @param ddrfile: DDRLocalFile
+        TODO Refactor this function! It is waaay too long!
+        
+        @param ddrfile: DDRLocalFile object
         @param git_name: Username of git committer.
         @param git_mail: Email of git committer.
         @param agent: (optional) Name of software making the change.
         @return file_ DDRLocalFile object
         """
+        f = ddrfile
+        repo = None
+        log = self.addfile_logger()
+        
         def crash(msg):
             """Write to addfile log and raise an exception."""
-            self.files_log(0, msg)
+            log.not_ok(msg)
             raise Exception(msg)
         
+        log.ok('ddrlocal.models.DDRLocalEntity.add_access: START')
+        log.ok('entity: %s' % self.id)
+        log.ok('ddrfile: %s' % ddrfile)
+        
         src_path = ddrfile.path_abs
-        self.files_log(1, 'ddrlocal.models.DDRLocalEntity.add_access: START')
-        self.files_log(1, 'entity: %s' % self.id)
-        self.files_log(1, 'src_path: %s' % src_path)
-
-        self.files_log(1, 'Checking files/dirs')
-        # source file
-        self.files_log(1, 'src_path: %s' % src_path)
-        if not os.path.exists(src_path): crash('src_path does not exist')
-        if not os.access(src_path, os.R_OK): crash('src_path not readable')
-        src_basename = os.path.basename(src_path)
-        self.files_log(1, 'src_basename: %s' % src_basename)
-        # temporary working dir
         tmp_dir = os.path.join(
             settings.MEDIA_BASE, 'tmp', 'file-add',
             self.parent_uid, self.id)
-        self.files_log(1, 'tmp_dir: %s' % tmp_dir)
-        if not os.path.exists(tmp_dir):
-            os.makedirs(tmp_dir)
-        if not os.path.exists(tmp_dir): crash('tmp_dir does not exist')
-        if not os.access(tmp_dir, os.W_OK): crash('tmp_dir not writable')
-        # destination dir in repo-entity
         dest_dir = self.files_path
-        self.files_log(1, 'dest_dir: %s' % dest_dir)
-        if not os.path.exists(dest_dir):
-            os.makedirs(dest_dir)
-        if not os.path.exists(dest_dir): crash('dest_dir does not exist')
-        if not os.access(dest_dir, os.W_OK): crash('dest_dir not writable')
+
+        log.ok('Checking files/dirs')
+        def check_dir(label, path, mkdir=False, perm=os.W_OK):
+            log.ok('%s: %s' % (label, path))
+            if mkdir and not os.path.exists(path):
+                os.makedirs(path)
+            if not os.path.exists(path): crash('%s does not exist' % label)
+            if not os.access(path, perm): crash('%s not has permission %s' % (label, permission))
+        check_dir('src_path', src_path, mkdir=False, perm=os.R_OK)
+        check_dir('tmp_dir', tmp_dir, mkdir=True, perm=os.W_OK)
+        check_dir('dest_dir', dest_dir, mkdir=True, perm=os.W_OK)
         
-        self.files_log(1, 'Making access file')
+        log.ok('Making access file')
         access_filename = DDRLocalFile.access_filename(src_path)
-        tmp_access_path = imaging.thumbnail(
-            src_path,
-            os.path.join(tmp_dir, os.path.basename(access_filename)),
-            geometry=settings.ACCESS_FILE_GEOMETRY)
-        self.files_log(1, 'tmp_access_path: %s' % tmp_access_path)
-        # unlike add_file, it's a fail if there's no access file
-        if (not tmp_access_path) or (not os.path.exists(tmp_access_path)):
+        tmp_access_path = None
+        try:
+            tmp_access_path = imaging.thumbnail(
+                src_path,
+                os.path.join(tmp_dir, os.path.basename(access_filename)),
+                geometry=settings.ACCESS_FILE_GEOMETRY)
+        except:
+            # write traceback to log and continue on
+            log.not_ok(traceback.format_exc().strip())
+        if tmp_access_path and os.path.exists(tmp_access_path):
+            log.ok('Attaching access file')
+            #dest_access_path = os.path.join('files', os.path.basename(tmp_access_path))
+            #log.ok('dest_access_path: %s' % dest_access_path)
+            f.set_access(tmp_access_path, self)
+            log.ok('f.access_rel: %s' % f.access_rel)
+            log.ok('f.access_abs: %s' % f.access_abs)
+        else:
             crash('Failed to make an access file from %s' % src_path)
         
-        # file object
-        f = ddrfile
-        self.files_log(1, 'Attaching access file')
-        f.set_access(tmp_access_path, self)
-        self.files_log(1, 'f.access_rel: %s' % f.access_rel)
-        self.files_log(1, 'f.access_abs: %s' % f.access_abs)
-        
-        self.files_log(1, 'Writing file metadata')
+        log.ok('Writing file metadata')
         tmp_file_json = os.path.join(tmp_dir, os.path.basename(f.json_path))
-        self.files_log(1, tmp_file_json)
+        log.ok(tmp_file_json)
         with open(tmp_file_json, 'w') as j:
             j.write(f.dump_json())
         if not os.path.exists(tmp_file_json):
             crash('Could not write file metadata %s' % tmp_file_json)
-        # grab copy of file metadata in case something goes wrong
-        self.files_log(1, 'Backing up file metadata')
-        file_json_backup = '%s.orig' % tmp_file_json
-        shutil.copy(f.json_path, file_json_backup)
-        if not os.path.exists(file_json_backup):
-            crash('Could not back up file metadata %s' % file_json_backup)
         
-        self.files_log(1, 'Moving files to dest_dir')
+        # WE ARE NOW MAKING CHANGES TO THE REPO ------------------------
+        
+        log.ok('Moving files to dest_dir')
         new_files = []
         new_files.append([tmp_access_path, f.access_abs])
-        failures = []
+        mvfiles_failures = []
         for tmp,dest in new_files:
-            self.files_log(1, 'mv %s %s' % (tmp,dest))
+            log.ok('mv %s %s' % (tmp,dest))
             os.rename(tmp,dest)
             if not os.path.exists(dest):
-                self.files_log(0, 'FAIL')
-                failures.append(tmp)
+                log.not_ok('FAIL')
+                mvfiles_failures.append(tmp)
                 break
         # one of new_files failed to copy, so move all back to tmp
-        if failures:
-            self.files_log(0, '%s failures: %s' % (len(failures), failures))
-            self.files_log(0, 'moving files back to tmp_dir')
+        if mvfiles_failures:
+            log.not_ok('%s failures: %s' % (len(mvfiles_failures), mvfiles_failures))
+            log.not_ok('moving files back to tmp_dir')
             try:
                 for tmp,dest in new_files:
-                    self.files_log(1, 'mv %s %s' % (dest,tmp))
+                    log.ok('mv %s %s' % (dest,tmp))
                     os.rename(dest,tmp)
                     if not os.path.exists(tmp) and not os.path.exists(dest):
-                        self.files_log(0, 'FAIL')
+                        log.not_ok('FAIL')
             except:
                 msg = "Unexpected error:", sys.exc_info()[0]
-                self.files_log(0, msg)
+                log.not_ok(msg)
                 raise
             finally:
                 crash('Failed to place one or more files to destination repo')
         # file metadata will only be copied if everything else was moved
-        self.files_log(1, 'mv %s %s' % (tmp_file_json, f.json_path))
+        log.ok('mv %s %s' % (tmp_file_json, f.json_path))
         os.rename(tmp_file_json, f.json_path)
         if not os.path.exists(f.json_path):
             crash('Failed to place file metadata in destination repo')
         
         # commit
-        git_files = [
-            f.json_path_rel
-        ]
-        annex_files = [
-            f.access_rel
-        ]
-        self.files_log(1, 'entity_annex_add(%s, %s, %s, %s, %s, %s, %s, %s)' % (
+        git_files = [f.json_path_rel]
+        annex_files = [f.access_rel]
+        log.ok('entity_annex_add(%s, %s, %s, %s, %s, %s, %s, %s)' % (
             git_name, git_mail,
             self.parent_path, self.id,
             git_files, annex_files,
@@ -1099,25 +1130,26 @@ class DDRLocalEntity( DDREntity ):
                 git_name, git_mail,
                 self.parent_path, self.id, git_files, annex_files,
                 agent=agent, entity=self)
-            self.files_log(1, 'status: %s' % status)
-            self.files_log(1, 'ddrlocal.models.DDRLocalEntity.add_file: FINISHED')
+            log.ok('status: %s' % status)
+            log.ok('ddrlocal.models.DDRLocalEntity.add_file: FINISHED')
         except:
             # COMMIT FAILED! try to pick up the pieces
             # print traceback to addfile log
             with open(self._addfile_log_path(), 'a') as f:
                 traceback.print_exc(file=f)
             # mv files back to tmp_dir
-            self.files_log(0, 'status: %s' % status)
-            self.files_log(0, 'Cleaning up...')
+            log.not_ok('status: %s' % status)
+            log.not_ok('Cleaning up...')
             for tmp,dest in new_files:
-                self.files_log(0, 'mv %s %s' % (dest,tmp))
+                log.not_ok('mv %s %s' % (dest,tmp))
                 os.rename(dest,tmp)
             # restore backup of original file metadata
-            self.files_log(0, 'cp %s %s' % (file_json_backup, f.json_path))
+            log.not_ok('cp %s %s' % (file_json_backup, f.json_path))
             shutil.copy(file_json_backup, f.json_path)
-            self.files_log(0, 'finished cleanup. good luck...')
+            log.not_ok('finished cleanup. good luck...')
             raise
-        return f.__dict__
+        
+        return f,repo,log
     
     def checksums( self, algo ):
         """Calculates hash checksums for the Entity's files.
