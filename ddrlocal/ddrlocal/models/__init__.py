@@ -1453,9 +1453,10 @@ class DDRLocalFile( object ):
                 if hasattr(f, 'keys') and (f.keys()[0] == mf['name']):
                     setattr(self, f.keys()[0], f.values()[0])
         # fill in the blanks
-        access_abs = os.path.join(self.entity_files_path, self.access_rel)
-        if os.path.exists(access_abs):
-            self.access_abs = access_abs
+        if self.access_rel:
+            access_abs = os.path.join(self.entity_files_path, self.access_rel)
+            if os.path.exists(access_abs):
+                self.access_abs = access_abs
     
     def dump_json(self):
         """Dump File data to JSON-formatted text.
