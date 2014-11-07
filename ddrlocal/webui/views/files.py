@@ -335,8 +335,7 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
         form = DDRForm(request.POST, fields=FILE_FIELDS)
         if form.is_valid():
             file_.form_post(form)
-            with open(file_.json_path, 'w') as f:
-                f.write(file_.dump_json())
+            file_.write_json()
             exit,status = commands.entity_update(git_name, git_mail,
                                                  entity.parent_path, entity.id,
                                                  [file_.json_path,],
@@ -406,8 +405,7 @@ def edit_old( request, repo, org, cid, eid, role, sha1 ):
             f.xmp = form.cleaned_data['xmp']
             result = entity.file(repo, org, cid, eid, role, sha1, f)
             if result in ['added','updated']:
-                with open(entity.json_path, 'w') as j:
-                    j.write(entity.dump_json())
+                entity.write_json()
                 entity.dump_mets()
                 exit,status = commands.entity_update(git_name, git_mail,
                                                      entity.parent_path, entity.id,

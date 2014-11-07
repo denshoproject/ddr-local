@@ -292,8 +292,7 @@ def edit( request, repo, org, cid ):
         form = DDRForm(request.POST, fields=COLLECTION_FIELDS)
         if form.is_valid():
             collection.form_post(form)
-            with open(collection.json_path, 'w') as f:
-                f.write(collection.dump_json())
+            collection.write_json()
             collection.dump_ead()
             updated_files = [collection.json_path, collection.ead_path,]
             success_msg = WEBUI_MESSAGES['VIEWS_COLL_UPDATED']

@@ -122,8 +122,7 @@ def _update_inheritables( parent_object, objecttype, inheritables, cleaned_data 
                             changed = True
                 # write json and add to list of changed IDs/files
                 if changed:
-                    with open(child.json_path, 'w') as f:
-                        f.write(child.dump_json())
+                    child.write_json()
                     if hasattr(child, 'id'):         child_ids.append(child.id)
                     elif hasattr(child, 'basename'): child_ids.append(child.basename)
                     changed_files.append(child_json)

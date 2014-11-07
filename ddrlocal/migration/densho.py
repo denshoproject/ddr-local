@@ -709,8 +709,7 @@ def import_entities( csv_path, collection_path, git_name, git_mail ):
             entity.record_lastmod = datetime.now()
             
             # write back to file
-            with open(entity.json_path, 'w') as f:
-                f.write(entity.dump_json())
+            entity.write_json()
             updated_files = [entity.json_path]
             exit,status = commands.entity_update(git_name, git_mail,
                                                  entity.parent_path, entity.id,

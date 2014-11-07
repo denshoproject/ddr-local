@@ -385,6 +385,13 @@ class DDRLocalCollection( DDRCollection ):
         data = prep_json(self, collectionmodule, template=template)
         return format_json(data)
     
+    def write_json(self):
+        """Write JSON file to disk.
+        """
+        # TODO use codecs.open utf-8
+        with open(self.json_path, 'w') as f:
+            f.write(self.dump_json())
+    
     def ead( self ):
         """Returns a ddrlocal.models.xml.EAD object for the collection.
         
@@ -723,6 +730,13 @@ class DDRLocalEntity( DDREntity ):
                 files.append(fd)
         data.append( {'files':files} )
         return format_json(data)
+    
+    def write_json(self):
+        """Write JSON file to disk.
+        """
+        # TODO use codecs.open utf-8
+        with open(self.json_path, 'w') as f:
+            f.write(self.dump_json())
     
     def mets( self ):
         if not os.path.exists(self.mets_path):
@@ -1465,6 +1479,13 @@ class DDRLocalFile( object ):
         data = prep_json(self, filemodule)
         data.insert(1, {'path_rel': self.path_rel})
         return format_json(data)
+    
+    def write_json(self):
+        """Write JSON file to disk.
+        """
+        # TODO use codecs.open utf-8
+        with open(self.json_path, 'w') as f:
+            f.write(self.dump_json())
     
     @staticmethod
     def file_name( entity, path_abs, role, sha1=None ):

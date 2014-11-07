@@ -401,8 +401,7 @@ def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, 
     for f in entity.files:
         if f.basename == file_basename:
             entity.files.remove(f)
-    with open(entity.json_path, 'w') as f:
-        f.write(entity.dump_json())
+    entity.write_json()
     updated_files = ['entity.json']
     logger.debug('updated_files: %s' % updated_files)
     status,message = file_destroy(git_name, git_mail, collection_path, entity_id, rm_files, updated_files, agent)
