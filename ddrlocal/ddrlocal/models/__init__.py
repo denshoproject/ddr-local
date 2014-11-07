@@ -942,12 +942,7 @@ class DDRLocalEntity( DDREntity ):
             repo = dvcs.repository(f.collection_path)
             log.ok(repo)
             log.ok('Staging %s files to the repo' % to_stage)
-            for path in git_files:
-                log.ok('git add %s' % path)
-                repo.git.add(path)
-            for path in annex_files:
-                log.ok('git annex add %s' % path)
-                repo.git.annex('add', path)
+            dvcs.stage(repo, git_files, annex_files)
             staged = len(dvcs.list_staged(repo))
             if staged == to_stage:
                 log.ok('%s files staged' % staged)
@@ -989,11 +984,11 @@ class DDRLocalEntity( DDREntity ):
             changelog.write_changelog_entry(
                 self.changelog_path, changelog_messages, git_name, git_mail)
             log.ok('git add %s' % self.changelog_path_rel)
-            repo.git.add(self.changelog_path_rel)
-     
+            git_files = [self.changelog_path_rel]
+            dvcs.stage(repo, git_files)
+            
             log.ok('Committing')
-            commit_message = dvcs.compose_commit_message('Added entity file(s)', agent=agent)
-            commit = repo.index.commit(commit_message)
+            commit = dvcs.commit(repo, 'Added entity file(s)', agent)
             log.ok('commit: {}'.format(commit.hexsha))
             committed = dvcs.list_committed(repo, commit)
             committed.sort()
