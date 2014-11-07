@@ -649,11 +649,15 @@ class DDRLocalEntity( DDREntity ):
         @returns: DDRLocalEntity
         """
         entity = None
+        text = None
         if os.path.exists(entity_abs):
             entity = DDRLocalEntity(entity_abs)
             entity_uid = entity.id
-            with open(entity.json_path, 'r') as f:
-                entity.load_json(f.read())
+            if os.path.exists(entity.json_path):
+                with open(entity.json_path, 'r') as f:
+                    text = f.read()
+        if text:
+            entity.load_json(text)
             if not entity.id:
                 entity.id = entity_uid  # might get overwritten if entity.json is blank
         return entity
