@@ -47,8 +47,7 @@ try:
     from repo_models import entity as entitymodule
     from repo_models import files as filemodule
 except ImportError:
-    # No Store mounted, no 'ddr' repository, or no valid repo_models in 'ddr'.
-    raise Exception('Could not load repo_models.')
+    raise Exception("Could not load repo_models. No Store mounted, no 'ddr' repository, or no valid repo_models in 'ddr'.")
 
 ENTITY_MODULE_NAMES = ['entity', 'entities']
 FILE_MODULE_NAMES = ['file', 'files']
