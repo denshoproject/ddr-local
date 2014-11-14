@@ -7,6 +7,10 @@
 description = """Exports a DDR collection's entities or files to CSV."""
 
 epilog = """
+If CSV is not specified a filename will be generated in the form
+COLLECTION-MODULE.csv and written to /tmp/.  For example:
+    /tmp/ddr-test-123-entity.csv
+
 Sample ID formats:
     ddr-test-123-*            All entities in a collection
     ddr-test-123-1-*          All files in an entity
@@ -111,6 +115,10 @@ def make_paths(collection_path, model, ids):
     paths = [fmt % models.path_from_id(object_id, basedir) for object_id in ids]
     return paths
 
+def make_csv_path(collection_path, model):
+    cid = os.path.basename(collection_path).replace('/', '')
+    return os.path.join('/tmp', '%s-%s.csv' % (cid, model))
+
 def filter_paths(collection_path, model, pattern):
     """Get metadata paths containing a regex.
     
@@ -139,23 +147,21 @@ def main():
     parser = argparse.ArgumentParser(description=description, epilog=epilog,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('-i', '--ids', help='ID(s) (see help for formatting).')
-    parser.add_argument('-f', '--file', help='File containing list of IDs, one per line.')
+    parser.add_argument('-I', '--idfile', help='File containing list of IDs, one per line.')
     parser.add_argument('-m', '--module', required=True, help="Module: 'entity' or 'file'.")
     parser.add_argument('collection', help='Absolute path to Collection.')
-    parser.add_argument('csv', help='Absolute path to CSV file.')
+    parser.add_argument('-c', '--csv', help='Absolute path to CSV file.')
     args = parser.parse_args()
     
-    if not (args.ids or args.file):
+    if not (args.ids or args.idfile):
         raise Exception('Specify an ID pattern or a file containing IDs.')
-    elif args.file and not os.path.exists(args.file):
-        raise Exception('IDs file does not exist: %s' % args.file)
+    elif args.idfile and not os.path.exists(args.idfile):
+        raise Exception('IDs file does not exist: %s' % args.idfile)
     elif not os.path.exists(args.collection):
         raise Exception('Collection does not exist: %s' % args.collection)
-    elif not os.access(os.path.dirname(args.csv), os.W_OK):
-        raise Exception('Cannot write to %s.' % args.csv)
     elif args.module not in MODULE_NAMES:
         raise Exception("Bad module name: '%s'" % args.module)
-    
+
     model = None
     class_ = None
     module = None
@@ -170,24 +176,33 @@ def main():
     if not (class_ and module):
         raise Exception('ERROR: Could not decide on a class/module.')
     
-    start = datetime.now()
-    logging.info('Gathering entity paths')
+    if args.csv:
+        csv = args.csv
+    else:
+        csv = make_csv_path(args.collection, model)
+    logging.info('Writing to %s' % csv)
+    if not os.access(os.path.dirname(csv), os.W_OK):
+        raise Exception('Cannot write to %s.' % csv)
     
+    start = datetime.now()
+    
+    logging.info('Gathering entity paths')
     paths = []
-    if args.file:  # file containing list of IDs
-        paths = make_paths(args.collection, model, read_id_file(args.file))
+    if args.idfile:  # file containing list of IDs
+        paths = make_paths(args.collection, model, read_id_file(args.idfile))
     elif args.ids:  # ID pattern
         paths = filter_paths(args.collection, model, args.ids)
     else:  # just get everything
         paths = all_paths(args.collection, model)
     if not paths:
         raise Exception('ERROR: Could not find metadata paths.')
-    logging.info('%s paths' % len(paths))
+    logging.info('%s matching paths' % len(paths))
     
-    batch.export(paths, class_, module, args.csv)
+    batch.export(paths, class_, module, csv)
+    
     finish = datetime.now()
     elapsed = finish - start
-    logging.info('DONE - %s elapsed' % elapsed)
+    logging.info('DONE - (%s elapsed) - %s' % (elapsed, csv))
     
     
 
