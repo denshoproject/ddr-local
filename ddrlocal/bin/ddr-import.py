@@ -54,6 +54,26 @@ FILE_MODULE_NAMES = ['file', 'files']
 MODULE_NAMES = ENTITY_MODULE_NAMES + FILE_MODULE_NAMES
 
 
+def guess_model(csv_path, collection_path, args_model=None):
+    """Try to guess module from csv path.
+    
+    Works if CSV path in the form COLLECTIONID-MODEL.csv
+    e.g. ddr-test-123-entity.csv
+    """
+    if collection_path[-1] == os.sep:
+        collection_path = collection_path[:-1]
+    cid = os.path.basename(collection_path)
+    try:
+        model = os.path.splitext(
+            os.path.basename(csv_path)
+        )[0].replace(cid,'').replace('-','')
+    except:
+        model = None
+    if model and (model in MODULE_NAMES):
+        return model
+    return args_model
+
+
 def main():
 
     parser = argparse.ArgumentParser(description=description, epilog=epilog,
@@ -62,7 +82,7 @@ def main():
     parser.add_argument('collection', help='Absolute path to Collection.')
     parser.add_argument('-u', '--user', required=True, help='User name')
     parser.add_argument('-m', '--mail', required=True, help='User e-mail address')
-    parser.add_argument('-M', '--module', required=True, help="Module: 'entity' or 'file'.")
+    parser.add_argument('-M', '--model', help="Model: 'entity' or 'file'.")
     args = parser.parse_args()
     
     # check args
@@ -76,18 +96,20 @@ def main():
         logging.debug('ddr-export: Collection does not exist.')
         sys.exit(1)
     
-    model = None
+    model = guess_model(args.csv, args.collection, args.model)
+    if not model:
+        logging.debug('ddr-export: Could not guess model based on csv and collection. Add an -M arg.')
+        sys.exit(1)
     class_ = None
     module = None
-    if args.module in ENTITY_MODULE_NAMES:
+    if model in ENTITY_MODULE_NAMES:
         model = 'entity'
         class_ = DDRLocalEntity
         module = entitymodule
-    elif args.module in FILE_MODULE_NAMES:
+    elif model in FILE_MODULE_NAMES:
         model = 'file'
         class_ = DDRLocalFile
         module = filemodule
-
     if not (class_ and module):
         raise Exception('ERROR: Could not decide on a class/module.')
     
