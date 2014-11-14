@@ -8,7 +8,7 @@ description = """Exports a DDR collection's entities or files to CSV."""
 
 epilog = """
 If CSV is not specified a filename will be generated in the form
-COLLECTION-MODULE.csv and written to /tmp/.  For example:
+COLLECTION-MODEL.csv and written to /tmp/.  For example:
     /tmp/ddr-test-123-entity.csv
 
 Sample ID formats:
@@ -148,7 +148,7 @@ def main():
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('-i', '--ids', help='ID(s) (see help for formatting).')
     parser.add_argument('-I', '--idfile', help='File containing list of IDs, one per line.')
-    parser.add_argument('-m', '--module', required=True, help="Module: 'entity' or 'file'.")
+    parser.add_argument('-m', '--model', required=True, help="Model: 'entity' or 'file'.")
     parser.add_argument('collection', help='Absolute path to Collection.')
     parser.add_argument('-c', '--csv', help='Absolute path to CSV file.')
     args = parser.parse_args()
@@ -159,17 +159,17 @@ def main():
         raise Exception('IDs file does not exist: %s' % args.idfile)
     elif not os.path.exists(args.collection):
         raise Exception('Collection does not exist: %s' % args.collection)
-    elif args.module not in MODULE_NAMES:
-        raise Exception("Bad module name: '%s'" % args.module)
+    elif args.model not in MODULE_NAMES:
+        raise Exception("Bad model name: '%s'" % args.model)
 
     model = None
     class_ = None
     module = None
-    if args.module in ENTITY_MODULE_NAMES:
+    if args.model in ENTITY_MODULE_NAMES:
         model = 'entity'
         class_ = DDRLocalEntity
         module = entitymodule
-    elif args.module in FILE_MODULE_NAMES:
+    elif args.model in FILE_MODULE_NAMES:
         model = 'file'
         class_ = DDRLocalFile
         module = filemodule
