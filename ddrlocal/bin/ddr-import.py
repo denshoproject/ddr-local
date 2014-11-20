@@ -134,14 +134,11 @@ def main():
     
     # check args
     if not os.path.exists(args.csv):
-        logging.debug('ddr-export: CSV file does not exist.')
-        sys.exit(1)
+        raise Exception('ddr-export: CSV file does not exist.')
     if not (os.path.isfile(args.csv) and os.path.isdir(args.collection)):
-        logging.debug('ddr-export: CSV filename comes before collection.')
-        sys.exit(1)
+        raise Exception('ddr-export: CSV filename comes before collection.')
     if not os.path.exists(args.collection):
-        logging.debug('ddr-export: Collection does not exist.')
-        sys.exit(1)
+        raise Exception('ddr-export: Collection does not exist.')
     
     model,class_,module = model_class_module(args.csv, args.collection, args.model)
     
