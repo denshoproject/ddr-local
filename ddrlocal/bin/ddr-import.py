@@ -73,6 +73,31 @@ def guess_model(csv_path, collection_path, args_model=None):
         return model
     return args_model
 
+def model_class_module(csv_path, collection_path, args_model=None):
+    """Pick object class and module based on model arg.
+    
+    @param csv_path: Absolute path to CSV file.
+    @param collection_path: Absolute path to collection repo.
+    @param args_model: str 'entity' or 'file'
+    @returns: model, class, module
+    """
+    model = guess_model(csv_path, collection_path, args_model)
+    if not model:
+        raise Exception('ddr-export: Could not guess model based on csv and collection. Add an -M arg.')
+    class_ = None
+    module = None
+    if model in ENTITY_MODULE_NAMES:
+        model = 'entity'
+        class_ = DDRLocalEntity
+        module = entitymodule
+    elif model in FILE_MODULE_NAMES:
+        model = 'file'
+        class_ = DDRLocalFile
+        module = filemodule
+    if not (class_ and module):
+        raise Exception('ERROR: Could not decide on a class/module.')
+    return model,class_,module
+    
 
 def main():
 
@@ -96,22 +121,7 @@ def main():
         logging.debug('ddr-export: Collection does not exist.')
         sys.exit(1)
     
-    model = guess_model(args.csv, args.collection, args.model)
-    if not model:
-        logging.debug('ddr-export: Could not guess model based on csv and collection. Add an -M arg.')
-        sys.exit(1)
-    class_ = None
-    module = None
-    if model in ENTITY_MODULE_NAMES:
-        model = 'entity'
-        class_ = DDRLocalEntity
-        module = entitymodule
-    elif model in FILE_MODULE_NAMES:
-        model = 'file'
-        class_ = DDRLocalFile
-        module = filemodule
-    if not (class_ and module):
-        raise Exception('ERROR: Could not decide on a class/module.')
+    model,class_,module = model_class_module(args.csv, args.collection, args.model)
     
     start = datetime.now()
     if model == 'entity':
