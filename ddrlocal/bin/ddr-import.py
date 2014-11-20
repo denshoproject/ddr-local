@@ -13,12 +13,14 @@ epilog = """
 import argparse
 import ConfigParser
 from datetime import datetime
+import getpass
 import json
 import logging
 import os
 import sys
 
 from DDR import batch
+from DDR import idservice
 from DDR import models
 
 logging.basicConfig(
@@ -97,6 +99,24 @@ def model_class_module(csv_path, collection_path, args_model=None):
     if not (class_ and module):
         raise Exception('ERROR: Could not decide on a class/module.')
     return model,class_,module
+
+def username_password(args):
+    if args.username:
+        username = args.username
+    else:
+        username = args.user
+    if args.password:
+        password = args.password
+    else:
+        password = getpass.getpass(prompt='Password: ')
+    return username,password
+
+def get_max_eid(username, password):
+    logging.debug('logging in')
+    session = idservice.login(username, password)
+    logging.debug(session)
+    eids = idservice.entities_latest(session, 'ddr', 'testing', '141', 1)
+    return eids[0]
     
 
 def main():
@@ -105,9 +125,11 @@ def main():
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('csv', help='Absolute path to CSV file.')
     parser.add_argument('collection', help='Absolute path to Collection.')
-    parser.add_argument('-u', '--user', required=True, help='User name')
-    parser.add_argument('-m', '--mail', required=True, help='User e-mail address')
+    parser.add_argument('-u', '--user', required=True, help='Git user name')
+    parser.add_argument('-m', '--mail', required=True, help='Git user e-mail address')
     parser.add_argument('-M', '--model', help="Model: 'entity' or 'file'.")
+    parser.add_argument('-U', '--username', help='ID service username if different from Git user name.')
+    parser.add_argument('-P', '--password', help='ID service pasword. If not given here, you will be prompted.')
     args = parser.parse_args()
     
     # check args
@@ -125,12 +147,18 @@ def main():
     
     start = datetime.now()
     if model == 'entity':
+        username,password = username_password(args)
+        max_eid_before = get_max_eid(username, password)
         updated = batch.update_entities(
             args.csv,
             args.collection,
             DDRLocalEntity, entitymodule, VOCABS_PATH,
             args.user, args.mail, 'ddr-import'
         )
+        max_eid_after = get_max_eid(username, password)
+        if not (max_eid_before == max_eid_after):
+            raise Exception('Entity IDs were requested during operation.')
+        logging.debug('SUCCESS! We can commit!')
     elif model == 'file':
         updated = batch.update_files(
             args.csv,
