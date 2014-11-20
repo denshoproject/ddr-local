@@ -41,6 +41,8 @@ def storage_required(func):
         if not os.path.exists(basepath):
             messages.error(request, 'ERROR: Base path does not exist.')
             return HttpResponseRedirect(reverse('storage-required'))
+        # realpath(MEDIA_BASE) indicates which Store is mounted
+        basepathreal = os.path.realpath(settings.MEDIA_BASE)
         try:
             basepath_listdir = os.listdir(basepath)
         except OSError:
