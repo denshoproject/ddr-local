@@ -61,6 +61,11 @@ def guess_model(csv_path, collection_path, args_model=None):
     
     Works if CSV path in the form COLLECTIONID-MODEL.csv
     e.g. ddr-test-123-entity.csv
+    
+    @param csv_path: Absolute path to CSV file.
+    @param collection_path: Absolute path to collection repo.
+    @param args_model: str 'entity' or 'file'
+    @returns: model
     """
     if collection_path[-1] == os.sep:
         collection_path = collection_path[:-1]
@@ -101,6 +106,9 @@ def model_class_module(csv_path, collection_path, args_model=None):
     return model,class_,module
 
 def username_password(args):
+    """
+    @param args:
+    """
     if args.username:
         username = args.username
     else:
@@ -111,13 +119,40 @@ def username_password(args):
         password = getpass.getpass(prompt='Password: ')
     return username,password
 
-def get_max_eid(username, password):
-    logging.debug('logging in')
-    session = idservice.login(username, password)
-    logging.debug(session)
-    eids = idservice.entities_latest(session, 'ddr', 'testing', '141', 1)
-    return eids[0]
+def get_entity_ids(collection_id, session):
+    """
+    TODO do we actually need to log in?
     
+    @param collection_id: str
+    @param session: requests.session.Session object
+    """
+    logging.debug('Getting entity IDs')
+    repo,org,cid = collection_id.split('-')
+    return idservice.entities_latest(session, repo,org,cid, -1)
+
+def register_ids(added, collection_id, session):
+    """Register the specified entity IDs with the ID service
+    
+    @param added: list of Entity objects
+    @param collection_id: str
+    @param session: requests.session.Session object
+    """
+    logging.debug('Registering new entity IDs')
+    idservice.register_entity_ids(session, added)
+
+def confirm_added(expected, collection_id, session):
+    """Confirm that entity_ids were added.
+    
+    @param expected: list of entities
+    @param collection_id: str
+    @param session: requests.session.Session object
+    @returns: list of entity_ids NOT added
+    """
+    logging.debug('Confirming that entity IDs were added')
+    entity_ids = get_entity_ids(collection_id, session)
+    confirmed = [entity.id for entity in expected if entity.id in entity_ids]
+    return confirmed
+
 
 def main():
 
@@ -144,18 +179,49 @@ def main():
     
     start = datetime.now()
     if model == 'entity':
+        
+        collection_id = os.path.basename(args.collection)
         username,password = username_password(args)
-        max_eid_before = get_max_eid(username, password)
+        session = idservice.login(username, password)
+
+        # Check max IDs before and after
+        max_eid_before = get_entity_ids(collection_id, session)[-1]
+        # Update the collection repo
         updated = batch.update_entities(
             args.csv,
             args.collection,
             DDRLocalEntity, entitymodule, VOCABS_PATH,
             args.user, args.mail, 'ddr-import'
         )
-        max_eid_after = get_max_eid(username, password)
+        max_eid_after = get_entity_ids(collection_id, session)[-1]
+        # Quit if someone else added entity IDs on the workbench
         if not (max_eid_before == max_eid_after):
             raise Exception('Entity IDs were requested during operation.')
-        logging.debug('SUCCESS! We can commit!')
+
+        # See if any new entities were added
+        added = []
+        while updated:
+            entity = updated.pop(0)
+            if entity.new:
+                added.append(entity)
+        if added:
+            logging.info('New entities were created:')
+            for entity in added:
+                logging.info('| %s' % entity.id)
+            added_ids = [entity.id for entity in added]
+            confirmed_ids = []
+
+            # Register new entity IDs with ID service
+            register = raw_input('Register new IDs with ID service? [y/N] ')
+            if register and (register == 'y'):
+                # register and confirm
+                register_ids(added, collection_id, session)
+                confirmed_ids = confirm_added(added, collection_id, session)
+            if confirmed_ids and (confirmed_ids == added_ids):
+                logging.info('Entity IDs registered with ID service.')
+            else:
+                raise Exception('Some entity ids not added.')
+                
     elif model == 'file':
         updated = batch.update_files(
             args.csv,
@@ -163,10 +229,10 @@ def main():
             DDRLocalEntity, DDRLocalFile, module, VOCABS_PATH,
             args.user, args.mail, 'ddr-import'
         )
+    
     finish = datetime.now()
     elapsed = finish - start
     logging.info('DONE - %s elapsed' % elapsed)
-
 
 
 if __name__ == '__main__':
