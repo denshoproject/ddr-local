@@ -21,12 +21,12 @@ from django.template import RequestContext
 
 from DDR import commands
 from DDR import docstore
+from DDR import idservice
 
 from ddrlocal.models.entity import ENTITY_FIELDS
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
-from webui import api
 from webui.decorators import ddrview
 from webui.forms import DDRForm
 from webui.forms.entities import NewEntityForm, JSONForm, UpdateForm, DeleteEntityForm, RmDuplicatesForm
@@ -309,14 +309,16 @@ def new( request, repo, org, cid ):
         return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
     # get new entity ID
     try:
-        entity_ids = api.entities_next(request, repo, org, cid, 1)
+        session = idservice.session(request.session['workbench_sessionid'],
+                                    request.session['workbench_csrftoken'])
+        entity_ids = idservice.entities_next(session, repo, org, cid, num_ids=1)
     except Exception as e:
         logger.error('Could not get new object ID from workbench!')
         logger.error(str(e.args))
         messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_ERR_NO_IDS'])
         messages.error(request, e)
         return HttpResponseRedirect(reverse('webui-collection', args=[repo,org,cid]))
-    eid = int(entity_ids[-1].split('-')[3])
+    eid = int(entity_ids[0].split('-')[3])
     # create new entity
     entity_uid = '{}-{}-{}-{}'.format(repo,org,cid,eid)
     entity_path = Entity.entity_path(request, repo, org, cid, eid)

@@ -12,9 +12,9 @@ from django.shortcuts import Http404, get_object_or_404, render_to_response
 from django.template import RequestContext
 
 from DDR import commands
+from DDR import idservice
 
 from webui import WEBUI_MESSAGES
-from webui import api
 from webui.decorators import ddrview
 from webui.forms import LoginForm, TaskDismissForm
 from webui.tasks import dismiss_session_task, session_tasks_list
@@ -41,6 +41,22 @@ what do we need to store?
 - orgs the user belongs to
 """
 
+def _login(request, username, password):
+    """Logs in to the ID service / workbench server.
+    
+    @param request: HttpRequest object
+    @param username: str
+    @param password: str
+    @returns requests.Session object or string error message (starting with 'error:')
+    """
+    session = idservice.login(username, password)
+    request.session['workbench_sessionid'] = session.cookies.get('sessionid')
+    request.session['workbench_csrftoken'] = session.cookies.get('csrftoken')
+    request.session['username'] = username
+    request.session['git_name'] = session.git_name
+    request.session['git_mail'] = session.git_mail
+    return session
+
 @ddrview
 def login( request ):
     if request.method == 'POST':
@@ -49,9 +65,11 @@ def login( request ):
             redirect_uri = form.cleaned_data['next']
             if not redirect_uri:
                 redirect_uri = reverse('webui-index')
-            s = api.login(request,
-                          form.cleaned_data['username'],
-                          form.cleaned_data['password'])
+            s = _login(
+                request,
+                form.cleaned_data['username'],
+                form.cleaned_data['password']
+            )
             if s and (type(s) != type('')) and s.cookies.get('sessionid', None):
                 messages.success(
                     request,
@@ -74,7 +92,7 @@ def logout( request ):
     redirect_uri = request.GET.get('redirect',None)
     if not redirect_uri:
         redirect_uri = reverse('webui-index')
-    status = api.logout()
+    status = idservice.logout()
     if status == 'ok':
         username = request.session.get('username')
         # remove user info from session

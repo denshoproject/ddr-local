@@ -21,13 +21,13 @@ from django.template.loader import get_template
 
 from DDR import commands
 from DDR import docstore
+from DDR import idservice
 from DDR.models import make_object_id, id_from_path
 
 from ddrlocal.models.collection import COLLECTION_FIELDS
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
-from webui import api
 from webui.decorators import ddrview, search_index
 from webui.forms import DDRForm
 from webui.forms.collections import NewCollectionForm, UpdateForm, SyncConfirmForm
@@ -237,14 +237,17 @@ def new( request, repo, org ):
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     # get new collection ID
     try:
-        collection_ids = api.collections_next(request, repo, org, 1)
+        # TODO should this really be in a try/except?
+        session = idservice.session(request.session['workbench_sessionid'],
+                                    request.session['workbench_csrftoken'])
+        collection_ids = idservice.collections_next(session, repo, org, num_ids=1)
     except Exception as e:
         logger.error('Could not get new collecion ID!')
         logger.error(str(e.args))
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_ERR_NO_IDS'])
         messages.error(request, e)
         return HttpResponseRedirect(reverse('webui-collections'))
-    cid = int(collection_ids[-1].split('-')[2])
+    cid = int(collection_ids[0].split('-')[2])
     # create the new collection repo
     collection_path = Collection.collection_path(request,repo,org,cid)
     # collection.json template
