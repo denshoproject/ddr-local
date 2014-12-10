@@ -859,8 +859,14 @@ def csvimport_facility( data ): return [x.strip() for x in data.strip().split(';
 # and format it for export in a CSV field.
 #
 
-def csvexport_record_created( data ): return data.strftime(DATETIME_FORMAT)
-def csvexport_record_lastmod( data ): return data.strftime(DATETIME_FORMAT)
+def csvexport_record_created( data ):
+    if isinstance(data, datetime):
+        return data.strftime(DATETIME_FORMAT)
+    return data
+def csvexport_record_lastmod( data ):
+    if isinstance(data, datetime):
+        return data.strftime(DATETIME_FORMAT)
+    return data
 def csvexport_creators( data ):
     items = []
     for d in data:
