@@ -52,7 +52,11 @@ def checkout_new_local(branch):
     print(r.std_out)
     print(r.std_err)
 
-
+def setup_install_cmdln(cmdln_path):
+    os.chdir(cmdln_path)
+    r = envoy.run('sudo python setup.py install')
+    print(r.std_out)
+    print(r.std_err)
 
 
 def main():
@@ -94,7 +98,8 @@ def main():
         checkout_existing_local(args.branch)
     else:
         checkout_new_local(args.branch)
-        
+    setup_install_cmdln(ddrcmdln_dir)
+    
     os.chdir(ddrlocal_dir)
     
 
