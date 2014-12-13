@@ -34,7 +34,7 @@ help:
 	@echo ""
 	@echo "update  - Updates ddr-cmd and ddr-local and re-copies config files."
 	@echo ""
-	@echo "branch BRANCH=$branch - Switches both ddr-local and ddr-cmdln repos to $branch."
+	@echo "branch BRANCH=[branch] - Switches both ddr-local and ddr-cmdln repos to [branch]."
 	@echo ""
 	@echo "reload  - Reloads supervisord and nginx configs"
 	@echo "reload-nginx"
