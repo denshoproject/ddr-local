@@ -49,8 +49,8 @@ MEDIA_BASE = config.get('cmdln','media_base')
 LOG_DIR = config.get('local', 'log_dir')
 TIME_FORMAT = config.get('cmdln','time_format')
 DATETIME_FORMAT = config.get('cmdln','datetime_format')
-ACCESS_FILE_GEOMETRY = config.get('local','access_file_geometry')
-ACCESS_FILE_APPEND = config.get('local','access_file_append')
+ACCESS_FILE_GEOMETRY = config.get('cmdln','access_file_geometry')
+ACCESS_FILE_APPEND = config.get('cmdln','access_file_append')
 
 COLLECTION_FILES_PREFIX = 'files'
 ENTITY_FILES_PREFIX = 'files'

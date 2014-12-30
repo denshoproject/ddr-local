@@ -12,8 +12,8 @@ configs_read = config.read(CONFIG_FILES)
 if not configs_read:
     raise NoConfigError('No config file!')
 
-TEMPLATE_EAD = config.get('local','template_ead')
-TEMPLATE_METS = config.get('local','template_mets')
+TEMPLATE_EAD = config.get('cmdln','template_ead')
+TEMPLATE_METS = config.get('cmdln','template_mets')
 
 NAMESPACES = {
     'mets':  'http://www.loc.gov/standards/mets/mets.xsd',
