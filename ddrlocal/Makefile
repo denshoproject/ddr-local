@@ -34,7 +34,7 @@ help:
 	@echo ""
 	@echo "update  - Updates ddr-cmd and ddr-local and re-copies config files."
 	@echo ""
-	@echo "branch BRANCH=$branch - Switches both ddr-local and ddr-cmdln repos to $branch."
+	@echo "branch BRANCH=[branch] - Switches both ddr-local and ddr-cmdln repos to [branch]."
 	@echo ""
 	@echo "reload  - Reloads supervisord and nginx configs"
 	@echo "reload-nginx"
@@ -81,6 +81,8 @@ howto-install:
 	@echo "- make install"
 	@echo "- make enable-bkgnd"
 	@echo "- make syncdb"
+	@echo "- make restart"
+
 
 
 install: install-prep install-daemons install-ddr install-static install-configs
@@ -92,19 +94,24 @@ uninstall: uninstall-ddr
 clean: clean-ddr
 
 
-install-prep: apt-update install-core ddr-user git-config install-misc-tools
+install-prep: ddr-user apt-update install-core git-config install-misc-tools
+
+ddr-user:
+	-addgroup ddr plugdev
+	-addgroup ddr vboxsf
 
 apt-update:
 	@echo ""
 	@echo "Package update ---------------------------------------------------------"
 	apt-get --assume-yes update
 
+apt-upgrade:
+	@echo ""
+	@echo "Package upgrade --------------------------------------------------------"
+	apt-get --assume-yes upgrade
+
 install-core:
 	apt-get --assume-yes install bzip2 curl gdebi-core git-core logrotate ntp p7zip-full wget
-
-ddr-user:
-	-addgroup ddr plugdev
-	-addgroup ddr vboxsf
 
 git-config:
 	git config --global alias.st status
@@ -234,8 +241,9 @@ clean-pip:
 syncdb:
 	cd /usr/local/src/ddr-local/ddrlocal && ./manage.py syncdb --noinput
 	chown -R ddr.root /var/lib/ddr
-	chmod -R 755 /var/lib/ddr
-
+	chmod -R 750 /var/lib/ddr
+	chown -R ddr.root /var/log/ddr
+	chmod -R 755 /var/log/ddr
 
 branch:
 	cd /usr/local/src/ddr-local/ddrlocal; python ./bin/git-checkout-branch.py $(BRANCH)
@@ -251,6 +259,9 @@ install-modernizr:
 	@echo "Modernizr --------------------------------------------------------------"
 	-rm /var/www/static/js/$(MODERNIZR)*
 	wget -nc -P /var/www/static/js http://$(PACKAGE_SERVER)/$(MODERNIZR)
+
+clean-modernizr:
+	-rm /var/www/static/js/$(MODERNIZR)*
 
 install-bootstrap:
 	@echo ""
