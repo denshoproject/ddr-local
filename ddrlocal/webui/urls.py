@@ -73,6 +73,7 @@ urlpatterns = patterns(
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/mets.xml$', 'webui.views.entities.mets_xml', name='webui-entity-mets-xml'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/$', 'webui.views.entities.detail', name='webui-entity'),
 
+    url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/new-expert/$', 'webui.views.entities.newexpert', name='webui-entity-newexpert'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/new/$', 'webui.views.entities.new', name='webui-entity-new'),
 
     # files

@@ -33,7 +33,7 @@ from webui.forms.entities import NewEntityForm, JSONForm, UpdateForm, DeleteEnti
 from webui.mets import NAMESPACES, NAMESPACES_XPATH
 from webui.mets import METS_FIELDS, MetsForm
 from webui.models import Collection, Entity
-from webui.tasks import collection_delete_entity, gitstatus_update
+from webui.tasks import collection_entity_newexpert, collection_delete_entity, gitstatus_update
 from webui.views.decorators import login_required
 from xmlforms.models import XMLModel
 
@@ -307,6 +307,7 @@ def new( request, repo, org, cid ):
     if collection.repo_behind():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+    
     # get new entity ID
     try:
         entity_ids = api.entities_next(request, repo, org, cid, 1)
@@ -317,11 +318,13 @@ def new( request, repo, org, cid ):
         messages.error(request, e)
         return HttpResponseRedirect(reverse('webui-collection', args=[repo,org,cid]))
     eid = int(entity_ids[-1].split('-')[3])
+    
     # create new entity
     entity_uid = '{}-{}-{}-{}'.format(repo,org,cid,eid)
     entity_path = Entity.entity_path(request, repo, org, cid, eid)
     # write entity.json template to entity location
     Entity(entity_path).dump_json(path=settings.TEMPLATE_EJSON, template=True)
+    
     # commit files
     exit,status = commands.entity_create(git_name, git_mail,
                                          collection.path, entity_uid,
@@ -353,11 +356,73 @@ def new( request, repo, org, cid ):
         gitstatus_update.apply_async((collection.path,), countdown=2)
         # positive feedback
         return HttpResponseRedirect(reverse('webui-entity-edit', args=[repo,org,cid,eid]))
+    
     # something happened...
     logger.error('Could not create new entity!')
     messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_ERR_CREATE'])
     return HttpResponseRedirect(reverse('webui-collection', args=[repo,org,cid]))
 
+@ddrview
+@login_required
+@storage_required
+def newexpert( request, repo, org, cid ):
+    """Ask for Entity ID, then create new Entity.
+    """
+    git_name = request.session.get('git_name')
+    git_mail = request.session.get('git_mail')
+    if not git_name and git_mail:
+        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
+    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    if collection.locked():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
+        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+    collection.repo_fetch()
+    if collection.repo_behind():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
+        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+    
+    if request.method == 'POST':
+        form = NewEntityForm(request.POST)
+        if form.is_valid():
+
+            entity_id = '-'.join([repo, org, str(cid), str(form.cleaned_data['eid'])])
+            entity_ids = [entity.id for entity in collection.entities(quick=True)]
+            is_legal = False
+            already_exists = False
+            if '-'.join([repo, org, str(cid)]) == collection.id:
+                is_legal = True
+            else:
+                messages.error(request, "Can only create objects in this collection. Try again.")
+            if entity_id in entity_ids:
+                already_exists = True
+                messages.error(request, "That object ID already exists. Try again.")
+            
+            if entity_id and is_legal and not already_exists:
+                collection_entity_newexpert(
+                    request,
+                    collection, entity_id,
+                    git_name, git_mail
+                )
+                return HttpResponseRedirect(reverse('webui-collection-entities', args=[repo,org,cid]))
+            
+    else:
+        data = {
+            'repo':repo,
+            'org':org,
+            'cid':cid,
+        }
+        form = NewEntityForm(data)
+    return render_to_response(
+        'webui/entities/new.html',
+        {'repo': repo,
+         'org': org,
+         'cid': cid,
+         'collection': collection,
+         'form': form,
+         },
+        context_instance=RequestContext(request, processors=[])
+    )
+    
 @ddrview
 @login_required
 @storage_required

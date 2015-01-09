@@ -263,6 +263,79 @@ def entity_add_access( git_name, git_mail, entity, ddrfile, agent='' ):
 
 
 
+# ----------------------------------------------------------------------
+
+TASK_STATUS_MESSAGES['webui-entity-newexpert'] = {
+    #'STARTED': '',
+    'PENDING': 'Creating new object <b>{entity_id}</b>...',
+    'SUCCESS': 'Created new object <b><a href="{entity_url}">{entity_id}</a></b>.',
+    'FAILURE': 'Could not create new object <b>{entity_id}</b>.',
+    #'RETRY': '',
+    #'REVOKED': '',
+}
+
+def collection_entity_newexpert(request, collection, entity_id, git_name, git_mail):
+    # start tasks
+    repo,org,cid,eid = entity_id.split('-')
+    entity_url = reverse('webui-entity', args=[repo,org,cid,eid])
+    result = entity_newexpert.apply_async(
+        (collection.path, entity_id, git_name, git_mail),
+        countdown=2)
+    # lock collection
+    lockstatus = collection.lock(result.task_id)
+    # add celery task_id to session
+    celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
+    # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
+    celery_tasks[result.task_id] = {
+        'task_id': result.task_id,
+        'action': 'webui-entity-newexpert',
+        'collection_url': collection.url(),
+        'collection_id': collection.id,
+        'entity_url': entity_url,
+        'entity_id': entity_id,
+        'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
+    request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
+
+class EntityNewExpertTask(Task):
+    abstract = True
+    
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
+        logger.debug('EntityNewExpertTask.on_failure(%s, %s, %s, %s)' % (exc, task_id, args, kwargs))
+    
+    def on_success(self, retval, task_id, args, kwargs):
+        logger.debug('EntityNewExpertTask.on_success(%s, %s, %s, %s)' % (retval, task_id, args, kwargs))
+    
+    def after_return(self, status, retval, task_id, args, kwargs, einfo):
+        logger.debug('EntityNewExpertTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
+        collection_path = args[0]
+        collection = Collection.from_json(collection_path)
+        lockstatus = collection.unlock(task_id)
+        gitstatus.update(settings.MEDIA_BASE, collection_path)
+        gitstatus.unlock(settings.MEDIA_BASE, 'entity_newexpert')
+
+@task(base=EntityNewExpertTask, name='webui-entity-newexpert')
+def entity_newexpert(collection_path, entity_id, git_name, git_mail):
+    """Create new entity using known entity ID.
+    
+    @param collection_path: str Absolute path to collection
+    @param entity_id: str
+    @param git_name: Username of git committer.
+    @param git_mail: Email of git committer.
+    """
+    logger.debug('collection_entity_newexpert(%s,%s,%s,%s)' % (
+        collection_path, entity_id, git_name, git_mail))
+    
+    collection = Collection.from_json(collection_path)
+    
+    gitstatus.lock(settings.MEDIA_BASE, 'entity_newexpert')
+    entity = Entity.create(collection, entity_id, git_name, git_mail)
+    gitstatus_update.apply_async((collection.path,), countdown=2)
+
+    return 'status',collection_path,entity.id
+
+
+# ------------------------------------------------------------------------
+
 TASK_STATUS_MESSAGES['webui-entity-delete'] = {
     #'STARTED': '',
     'PENDING': 'Deleting object <b>{entity_id}</b> from <a href="{collection_url}">{collection_id}</a>.',

@@ -12,6 +12,8 @@ from django.core.cache import cache
 from django.core.urlresolvers import reverse
 from django.db import models
 
+from DDR import commands
+from DDR import docstore
 from DDR import dvcs
 
 from ddrlocal.models import DDRLocalCollection, DDRLocalEntity, DDRLocalFile
@@ -301,7 +303,41 @@ class Entity( DDRLocalEntity ):
         for f in self._files:
             path_abs = os.path.join(self.files_path, f['path_rel'])
             self.files.append(DDRFile(path_abs=path_abs))
+    
+    @staticmethod
+    def create(collection, entity_id, git_name, git_mail, agent=settings.AGENT):
+        """create new entity given an entity ID
+        """
+        repo,org,cid,eid = entity_id.split('-')
+        entity_path = Entity.entity_path(None, repo, org, cid, eid)
+        
+        # write entity.json template to entity location and commit
+        Entity(entity_path).dump_json(path=settings.TEMPLATE_EJSON, template=True)
+        exit,status = commands.entity_create(
+            git_name, git_mail,
+            collection.path, entity_id,
+            [collection.json_path_rel, collection.ead_path_rel],
+            [settings.TEMPLATE_EJSON, settings.TEMPLATE_METS],
+            agent=agent)
+        
+        # load new entity, inherit values from parent, write and commit
+        entity = Entity.from_json(entity_path)
+        entity.inherit(collection)
+        entity.dump_json()
+        updated_files = [entity.json_path]
+        exit,status = commands.entity_update(
+            git_name, git_mail,
+            collection.path, entity.id,
+            updated_files,
+            agent=agent)
 
+        # delete cache, update search index
+        collection.cache_delete()
+        with open(entity.json_path, 'r') as f:
+            document = json.loads(f.read())
+        docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+        
+        return entity
 
 
 class DDRFile( DDRLocalFile ):
