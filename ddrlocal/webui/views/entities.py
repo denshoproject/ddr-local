@@ -33,7 +33,8 @@ from webui.forms.entities import NewEntityForm, JSONForm, UpdateForm, DeleteEnti
 from webui.mets import NAMESPACES, NAMESPACES_XPATH
 from webui.mets import METS_FIELDS, MetsForm
 from webui.models import Collection, Entity
-from webui.tasks import collection_entity_newexpert, collection_delete_entity, gitstatus_update
+from webui.tasks import collection_entity_newexpert, collection_entity_edit, collection_delete_entity
+from webui.tasks import gitstatus_update
 from webui.views.decorators import login_required
 from xmlforms.models import XMLModel
 
@@ -463,39 +464,19 @@ def edit( request, repo, org, cid, eid ):
             hidden_facility = request.POST.get('hidden-facility', None)
             if hidden_facility:
                 form.cleaned_data['facility'] = tagmanager_process_tags(hidden_facility)
+
+            # write changes to disk
+            updated_files = entity.save_part1(form)
             
-            entity.form_post(form)
-            entity.dump_json()
-            entity.dump_mets()
-            updated_files = [entity.json_path, entity.mets_path,]
-            success_msg = WEBUI_MESSAGES['VIEWS_ENT_UPDATED']
+            # commit files, delete cache, update search index, update git status
+            # in the background
+            collection_entity_edit(
+                request,
+                collection, entity, updated_files,
+                git_name, git_mail, settings.AGENT
+            )
             
-            # if inheritable fields selected, propagate changes to child objects
-            inheritables = entity.selected_inheritables(form.cleaned_data)
-            modified_ids,modified_files = entity.update_inheritables(inheritables, form.cleaned_data)
-            if modified_files:
-                updated_files = updated_files + modified_files
-            if modified_ids:
-                success_msg = 'Object updated. ' \
-                              'The value(s) for <b>%s</b> were applied to <b>%s</b>' % (
-                                  ', '.join(inheritables), ', '.join(modified_ids))
-            
-            exit,status = commands.entity_update(git_name, git_mail,
-                                                 entity.parent_path, entity.id,
-                                                 updated_files,
-                                                 agent=settings.AGENT)
-            collection.cache_delete()
-            if exit:
-                messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
-            else:
-                # update search index
-                with open(entity.json_path, 'r') as f:
-                    document = json.loads(f.read())
-                docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
-                gitstatus_update.apply_async((collection.path,), countdown=2)
-                # positive feedback
-                messages.success(request, success_msg)
-                return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+            return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     else:
         form = DDRForm(entity.form_prep(), fields=ENTITY_FIELDS)
     
