@@ -335,6 +335,69 @@ def entity_newexpert(collection_path, entity_id, git_name, git_mail):
 
 # ----------------------------------------------------------------------
 
+TASK_STATUS_MESSAGES['webui-file-edit'] = {
+    #'STARTED': '',
+    'PENDING': 'Saving changes to file <b><a href="{file_url}">{file_id}</a></b>...',
+    'SUCCESS': 'Saved changes to file <b><a href="{file_url}">{file_id}</a></b>.',
+    'FAILURE': 'Could not save changes to file <b><a href="{file_url}">{file_id}</a></b>.',
+    #'RETRY': '',
+    #'REVOKED': '',
+}
+
+def entity_file_edit(request, collection, file_, git_name, git_mail):
+    # start tasks
+    file_id = models.make_object_id(
+        'file', file_.repo, file_.org, file_.cid, file_.eid, file_.role, file_.sha1)
+    result = file_edit.apply_async(
+        (collection.path, file_id, git_name, git_mail),
+        countdown=2)
+    # lock collection
+    lockstatus = collection.lock(result.task_id)
+    # add celery task_id to session
+    celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
+    # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
+    celery_tasks[result.task_id] = {
+        'task_id': result.task_id,
+        'action': 'webui-file-edit',
+        'file_url': file_.url(),
+        'file_id': file_id,
+        'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
+    request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
+
+class FileEditTask(Task):
+    abstract = True
+    
+    def after_return(self, status, retval, task_id, args, kwargs, einfo):
+        logger.debug('FileEditTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
+        collection_path = args[0]
+        collection = Collection.from_json(collection_path)
+        lockstatus = collection.unlock(task_id)
+        gitstatus.update(settings.MEDIA_BASE, collection_path)
+        gitstatus.unlock(settings.MEDIA_BASE, 'file_edit')
+
+@task(base=FileEditTask, name='webui-file-edit')
+def file_edit(collection_path, file_id, git_name, git_mail):
+    """The time-consuming parts of file-edit.
+    
+    @param collection_path: str Absolute path to collection
+    @param file_id: str
+    @param git_name: Username of git committer.
+    @param git_mail: Email of git committer.
+    """
+    logger.debug('file_edit(%s,%s,%s,%s)' % (git_name, git_mail, collection_path, file_id))
+    
+    model,repo,org,cid,eid,role,sha1 = models.split_object_id(file_id)
+    entity = Entity.from_json(Entity.entity_path(None,repo,org,cid,eid))
+    file_ = entity.file(repo, org, cid, eid, role, sha1)
+    
+    gitstatus.lock(settings.MEDIA_BASE, 'file_edit')
+    exit,status = file_.save(git_name, git_mail)
+    gitstatus_update.apply_async((collection_path,), countdown=2)
+    
+    return status,collection_path,file_id
+
+# ----------------------------------------------------------------------
+
 TASK_STATUS_MESSAGES['webui-entity-edit'] = {
     #'STARTED': '',
     'PENDING': 'Saving changes to object <b><a href="{entity_url}">{entity_id}</a></b>...',

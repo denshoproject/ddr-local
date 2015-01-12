@@ -15,6 +15,7 @@ from django.db import models
 from DDR import commands
 from DDR import docstore
 from DDR import dvcs
+from DDR import models
 
 from ddrlocal.models import DDRLocalCollection, DDRLocalEntity, DDRLocalFile
 from ddrlocal.models import COLLECTION_FILES_PREFIX, ENTITY_FILES_PREFIX
@@ -403,3 +404,30 @@ class DDRFile( DDRLocalFile ):
     @staticmethod
     def file_path(request, repo, org, cid, eid, role, sha1):
         return os.path.join(settings.MEDIA_BASE, '{}-{}-{}-{}-{}-{}'.format(repo, org, cid, eid, role, sha1))
+    
+    def save( self, git_name, git_mail ):
+        """Perform file-save functions.
+        
+        Commit files, delete cache, update search index.
+        These steps are to be called asynchronously from tasks.file_edit.
+        
+        @param collection: Collection
+        @param file_id: str
+        @param git_name: str
+        @param git_mail: str
+        """
+        collection = Collection.from_json(self.collection_path)
+        entity_id = models.make_object_id(
+            'entity', self.repo, self.org, self.cid, self.eid)
+        
+        exit,status = commands.entity_update(
+            git_name, git_mail,
+            collection.path, entity_id,
+            [self.json_path],
+            agent=settings.AGENT)
+        collection.cache_delete()
+        with open(self.json_path, 'r') as f:
+            document = json.loads(f.read())
+        docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+        
+        return exit,status
