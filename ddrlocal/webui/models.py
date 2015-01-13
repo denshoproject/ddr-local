@@ -258,6 +258,27 @@ class Collection( DDRLocalCollection ):
     
     def update_inheritables( self, inheritables, cleaned_data ):
         return _update_inheritables(self, 'collection', inheritables, cleaned_data)
+    
+    def save( self, updated_files, git_name, git_mail ):
+        """Perform file-save functions.
+        
+        Commit files, delete cache, update search index.
+        These steps are to be called asynchronously from tasks.collection_edit.
+        
+        @param collection: Collection
+        @param updated_files: list
+        @param git_name: str
+        @param git_mail: str
+        """
+        exit,status = commands.update(
+            git_name, git_mail,
+            self.path, updated_files,
+            agent=settings.AGENT)
+        self.cache_delete()
+        with open(self.json_path, 'r') as f:
+            document = json.loads(f.read())
+        docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+        return exit,status
 
 
 

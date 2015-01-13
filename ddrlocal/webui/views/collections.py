@@ -33,7 +33,8 @@ from webui.forms import DDRForm
 from webui.forms.collections import NewCollectionForm, UpdateForm, SyncConfirmForm
 from webui import gitolite
 from webui.models import Collection, COLLECTION_STATUS_CACHE_KEY, COLLECTION_STATUS_TIMEOUT
-from webui.tasks import collection_sync, csv_export_model, export_csv_path, gitstatus_update
+from webui.tasks import collection_edit, collection_sync
+from webui.tasks import csv_export_model, export_csv_path, gitstatus_update
 from webui.views.decorators import login_required
 from xmlforms.models import XMLModel
 
@@ -290,37 +291,23 @@ def edit( request, repo, org, cid ):
     if request.method == 'POST':
         form = DDRForm(request.POST, fields=COLLECTION_FIELDS)
         if form.is_valid():
+            
             collection.form_post(form)
             collection.dump_json()
             collection.dump_ead()
             updated_files = [collection.json_path, collection.ead_path,]
-            success_msg = WEBUI_MESSAGES['VIEWS_COLL_UPDATED']
             
             # if inheritable fields selected, propagate changes to child objects
             inheritables = collection.selected_inheritables(form.cleaned_data)
             modified_ids,modified_files = collection.update_inheritables(inheritables, form.cleaned_data)
             if modified_files:
                 updated_files = updated_files + modified_files
-            if modified_ids:
-                success_msg = 'Collection updated. ' \
-                              'The value(s) for <b>%s</b> were applied to <b>%s</b>' % (
-                                  ', '.join(inheritables), ', '.join(modified_ids))
             
-            exit,status = commands.update(git_name, git_mail,
-                                          collection.path, updated_files,
-                                          agent=settings.AGENT)
-            collection.cache_delete()
-            if exit:
-                messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
-            else:
-                # update search index
-                with open(collection.json_path, 'r') as f:
-                    document = json.loads(f.read())
-                docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
-                gitstatus_update.apply_async((collection.path,), countdown=2)
-                # positive feedback
-                messages.success(request, success_msg)
-                return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+            # commit files, delete cache, update search index, update git status
+            collection_edit(request, collection, updated_files, git_name, git_mail)
+            
+            return HttpResponseRedirect(collection.url())
+        
     else:
         form = DDRForm(collection.form_prep(), fields=COLLECTION_FIELDS)
     return render_to_response(
