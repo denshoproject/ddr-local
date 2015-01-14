@@ -33,7 +33,7 @@ from webui.forms import DDRForm
 from webui.forms.collections import NewCollectionForm, UpdateForm, SyncConfirmForm
 from webui import gitolite
 from webui.models import Collection, COLLECTION_STATUS_CACHE_KEY, COLLECTION_STATUS_TIMEOUT
-from webui.tasks import collection_edit, collection_sync
+from webui.tasks import collection_new_expert, collection_edit, collection_sync
 from webui.tasks import csv_export_model, export_csv_path, gitstatus_update
 from webui.views.decorators import login_required
 from xmlforms.models import XMLModel
@@ -271,6 +271,57 @@ def new( request, repo, org ):
     logger.error('Could not create new collecion!')
     messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_ERR_CREATE'])
     return HttpResponseRedirect(reverse('webui-collections'))
+
+@ddrview
+@login_required
+@storage_required
+def newexpert( request, repo, org ):
+    """Ask for Entity ID, then create new Entity.
+    """
+    git_name = request.session.get('git_name')
+    git_mail = request.session.get('git_mail')
+    if not git_name and git_mail:
+        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
+    
+    if request.method == 'POST':
+        form = NewCollectionForm(request.POST)
+        if form.is_valid():
+
+            cid = str(form.cleaned_data['cid'])
+            collection_id = '-'.join([repo, org, cid])
+            collection_ids = [
+                os.path.basename(cpath)
+                for cpath
+                in commands.collections_local(settings.MEDIA_BASE, repo, org)
+            ]
+            already_exists = False
+            if collection_id in collection_ids:
+                already_exists = True
+                messages.error(request, "That collection ID already exists. Try again.")
+            
+            if collection_id and not already_exists:
+                collection_new_expert(
+                    request,
+                    settings.MEDIA_BASE,
+                    collection_id,
+                    git_name, git_mail
+                )
+                return HttpResponseRedirect(reverse('webui-collections'))
+            
+    else:
+        data = {
+            'repo':repo,
+            'org':org,
+        }
+        form = NewCollectionForm(data)
+    return render_to_response(
+        'webui/collections/new.html',
+        {'repo': repo,
+         'org': org,
+         'form': form,
+         },
+        context_instance=RequestContext(request, processors=[])
+    )
 
 @ddrview
 @login_required

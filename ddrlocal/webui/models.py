@@ -259,6 +259,28 @@ class Collection( DDRLocalCollection ):
     def update_inheritables( self, inheritables, cleaned_data ):
         return _update_inheritables(self, 'collection', inheritables, cleaned_data)
     
+    @staticmethod
+    def create(collection_path, git_name, git_mail):
+        """create new entity given an entity ID
+        """
+        # write collection.json template to collection location and commit
+        Collection(collection_path).dump_json(path=settings.TEMPLATE_CJSON, template=True)
+        templates = [settings.TEMPLATE_CJSON, settings.TEMPLATE_EAD]
+        agent = settings.AGENT
+        
+        exit,status = commands.create(
+            git_name, git_mail, collection_path, templates, agent)
+        
+        collection = Collection.from_json(collection_path)
+        
+        # [delete cache], update search index
+        #collection.cache_delete()
+        with open(collection.json_path, 'r') as f:
+            document = json.loads(f.read())
+        docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+        
+        return collection
+    
     def save( self, updated_files, git_name, git_mail ):
         """Perform file-save functions.
         

@@ -53,6 +53,7 @@ urlpatterns = patterns(
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/git-status/$', 'webui.views.collections.git_status', name='webui-collection-git-status'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/$', 'webui.views.collections.detail', name='webui-collection'),
 
+    url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)/new-expert/$', 'webui.views.collections.newexpert', name='webui-collection-newexpert'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)/new/$', 'webui.views.collections.new', name='webui-collection-new'),
 
     # entities
