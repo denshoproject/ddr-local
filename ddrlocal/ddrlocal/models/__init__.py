@@ -604,87 +604,6 @@ class DDRLocalEntity( DDREntity ):
             text = f.read()
         return cmp_model_definition_fields(text, entitymodule)
     
-    def files_master( self ):
-        self.load_file_objects()
-        files = [f for f in self.files if hasattr(f,'role') and (f.role == 'master')]
-        return sorted(files, key=lambda f: f.sort)
-    
-    def files_mezzanine( self ):
-        self.load_file_objects()
-        files = [f for f in self.files if hasattr(f,'role') and (f.role == 'mezzanine')]
-        return sorted(files, key=lambda f: f.sort)
-    
-    def detect_file_duplicates( self, role ):
-        """Returns list of file dicts that appear in Entity.files more than once
-        
-        NOTE: This function looks only at the list of file dicts in entity.json;
-        it does not examine the filesystem.
-        """
-        duplicates = []
-        for x,f in enumerate(self.files):
-            for y,f2 in enumerate(self.files):
-                if (f2 == f) and (f.role == role) and (y != x) and (f not in duplicates):
-                    duplicates.append(f)
-        return duplicates
-    
-    def rm_file_duplicates( self ):
-        """Remove duplicates from the Entity.files (._files) list of dicts.
-        
-        Technically, it rebuilds the last without the duplicates.
-        NOTE: See note for detect_file_duplicates().
-        """
-        # regenerate files list
-        new_files = []
-        for f in self._files:
-            if f not in new_files:
-                new_files.append(f)
-        self.files = new_files
-        # reload objects
-        self.load_file_objects()
-    
-    def file( self, repo, org, cid, eid, role, sha1, newfile=None ):
-        """Given a SHA1 hash, get the corresponding file dict.
-        
-        @param sha1
-        @param newfile (optional) If present, updates existing file or appends new one.
-        @returns 'added', 'updated', DDRLocalFile, or None
-        """
-        self.load_file_objects()
-        # update existing file or append
-        if sha1 and newfile:
-            for f in self.files:
-                if sha1 in f.sha1:
-                    f = newfile
-                    return 'updated'
-            self.files.append(newfile)
-            return 'added'
-        # get a file
-        for f in self.files:
-            if (f.sha1[:10] == sha1[:10]) and (f.role == role):
-                return f
-        # just do nothing
-        return None
-    
-    def _addfile_log_path( self ):
-        """Generates path to collection addfiles.log.
-        
-        Previously each entity had its own addfile.log.
-        Going forward each collection will have a single log file.
-            /STORE/log/REPO-ORG-CID-addfile.log
-        
-        @returns: absolute path to logfile
-        """
-        logpath = os.path.join(
-            LOG_DIR, 'addfile', self.parent_uid, '%s.log' % self.id)
-        if not os.path.exists(os.path.dirname(logpath)):
-            os.makedirs(os.path.dirname(logpath))
-        return logpath
-    
-    def addfile_logger( self ):
-        log = EntityAddFileLogger()
-        log.logpath = self._addfile_log_path()
-        return log
-    
     @staticmethod
     def create(path):
         """Creates a new entity with the specified entity ID.
@@ -739,24 +658,6 @@ class DDRLocalEntity( DDREntity ):
         @returns: DDRLocalEntity
         """
         return from_json(DDRLocalEntity, entity_abs)
-
-    def load_file_objects( self ):
-        """Replaces list of file info dicts with list of DDRLocalFile objects
-        
-        TODO Don't call in loop - causes all file .JSONs to be loaded!
-        """
-        # keep copy of the list for detect_file_duplicates()
-        self._files = [f for f in self.files]
-        self.files = []
-        for f in self._files:
-            if f and f.get('path_rel',None):
-                path_abs = os.path.join(self.files_path, f['path_rel'])
-                file_ = DDRLocalFile(path_abs=path_abs)
-                with open(file_.json_path, 'r') as j:
-                    file_.load_json(j.read())
-                self.files.append(file_)
-        # keep track of how many times this gets loaded...
-        self._file_objects_loaded = self._file_objects_loaded + 1
 
     def load_json(self, json_text):
         """Populate Entity data from JSON-formatted text.
@@ -854,6 +755,105 @@ class DDRLocalEntity( DDREntity ):
         xml_pretty = etree.tostring(tree, pretty_print=True)
         with open(self.mets_path, 'w') as f:
             f.write(xml_pretty)
+    
+    def load_file_objects( self ):
+        """Replaces list of file info dicts with list of DDRLocalFile objects
+        
+        TODO Don't call in loop - causes all file .JSONs to be loaded!
+        """
+        # keep copy of the list for detect_file_duplicates()
+        self._files = [f for f in self.files]
+        self.files = []
+        for f in self._files:
+            if f and f.get('path_rel',None):
+                path_abs = os.path.join(self.files_path, f['path_rel'])
+                file_ = DDRLocalFile(path_abs=path_abs)
+                with open(file_.json_path, 'r') as j:
+                    file_.load_json(j.read())
+                self.files.append(file_)
+        # keep track of how many times this gets loaded...
+        self._file_objects_loaded = self._file_objects_loaded + 1
+    
+    def files_master( self ):
+        self.load_file_objects()
+        files = [f for f in self.files if hasattr(f,'role') and (f.role == 'master')]
+        return sorted(files, key=lambda f: f.sort)
+    
+    def files_mezzanine( self ):
+        self.load_file_objects()
+        files = [f for f in self.files if hasattr(f,'role') and (f.role == 'mezzanine')]
+        return sorted(files, key=lambda f: f.sort)
+    
+    def detect_file_duplicates( self, role ):
+        """Returns list of file dicts that appear in Entity.files more than once
+        
+        NOTE: This function looks only at the list of file dicts in entity.json;
+        it does not examine the filesystem.
+        """
+        duplicates = []
+        for x,f in enumerate(self._file_objects):
+            for y,f2 in enumerate(self._file_objects):
+                if (f2 == f) and (f.role == role) and (y != x) and (f not in duplicates):
+                    duplicates.append(f)
+        return duplicates
+    
+    def rm_file_duplicates( self ):
+        """Remove duplicates from the Entity.files (._files) list of dicts.
+        
+        Technically, it rebuilds the last without the duplicates.
+        NOTE: See note for detect_file_duplicates().
+        """
+        # regenerate files list
+        new_files = []
+        for f in self._files:
+            if f not in new_files:
+                new_files.append(f)
+        self.files = new_files
+        # reload objects
+        self.load_file_objects()
+    
+    def file( self, repo, org, cid, eid, role, sha1, newfile=None ):
+        """Given a SHA1 hash, get the corresponding file dict.
+        
+        @param sha1
+        @param newfile (optional) If present, updates existing file or appends new one.
+        @returns 'added', 'updated', DDRLocalFile, or None
+        """
+        self.load_file_objects()
+        # update existing file or append
+        if sha1 and newfile:
+            for f in self.files:
+                if sha1 in f.sha1:
+                    f = newfile
+                    return 'updated'
+            self.files.append(newfile)
+            return 'added'
+        # get a file
+        for f in self._file_objects:
+            if (f.sha1[:10] == sha1[:10]) and (f.role == role):
+                return f
+        # just do nothing
+        return None
+    
+    def _addfile_log_path( self ):
+        """Generates path to collection addfiles.log.
+        
+        Previously each entity had its own addfile.log.
+        Going forward each collection will have a single log file.
+            /STORE/log/REPO-ORG-CID-addfile.log
+        
+        @returns: absolute path to logfile
+        """
+        logpath = os.path.join(
+            LOG_DIR, 'addfile', self.parent_uid, '%s.log' % self.id)
+        if not os.path.exists(os.path.dirname(logpath)):
+            os.makedirs(os.path.dirname(logpath))
+        return logpath
+    
+    def addfile_logger( self ):
+        log = EntityAddFileLogger()
+        log.logpath = self._addfile_log_path()
+        return log
     
     def add_file( self, src_path, role, data, git_name, git_mail, agent='' ):
         """Add file to entity

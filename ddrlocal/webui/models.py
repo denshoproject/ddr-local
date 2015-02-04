@@ -361,26 +361,6 @@ class Entity( DDRLocalEntity ):
     def update_inheritables( self, inheritables, cleaned_data ):
         return _update_inheritables(self, 'entity', inheritables, cleaned_data)
     
-    def load_file_objects( self ):
-        """Replaces list of file info dicts with list of DDRFile objects
-        
-        Overrides the function in ddrlocal.models.DDRLocalEntity, which
-        adds DDRLocalFile objects which are missing certain methods of
-        DDRFile.
-        """
-        # keep copy of the list for detect_file_duplicates()
-        self._files = [f for f in self.files]
-        self.files = []
-        for f in self._files:
-            if f and f.get('path_rel',None):
-                path_abs = os.path.join(self.files_path, f['path_rel'])
-                file_ = DDRFile(path_abs=path_abs)
-                with open(file_.json_path, 'r') as j:
-                    file_.load_json(j.read())
-                self.files.append(file_)
-        # keep track of how many times this gets loaded...
-        self._file_objects_loaded = self._file_objects_loaded + 1
-    
     def model_def_commits(self):
         """Assesses document's relation to model defs in 'ddr' repo.
         
@@ -400,6 +380,26 @@ class Entity( DDRLocalEntity ):
         .model_def_fields_removed_msg
         """
         model_def_fields(self, Entity)
+    
+    def load_file_objects( self ):
+        """Replaces list of file info dicts with list of DDRFile objects
+        
+        Overrides the function in ddrlocal.models.DDRLocalEntity, which
+        adds DDRLocalFile objects which are missing certain methods of
+        DDRFile.
+        """
+        # keep copy of the list for detect_file_duplicates()
+        self._files = [f for f in self.files]
+        self.files = []
+        for f in self._files:
+            if f and f.get('path_rel',None):
+                path_abs = os.path.join(self.files_path, f['path_rel'])
+                file_ = DDRFile(path_abs=path_abs)
+                with open(file_.json_path, 'r') as j:
+                    file_.load_json(j.read())
+                self.files.append(file_)
+        # keep track of how many times this gets loaded...
+        self._file_objects_loaded = self._file_objects_loaded + 1
 
 
 class DDRFile( DDRLocalFile ):
