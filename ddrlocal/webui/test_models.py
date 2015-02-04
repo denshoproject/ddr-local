@@ -41,6 +41,7 @@ def test_git_version():
 # TODO DDRLocalCollection.from_json
 # TODO DDRLocalCollection.load_json
 # TODO DDRLocalCollection.dump_json
+# TODO DDRLocalCollection.write_json
 # TODO DDRLocalCollection.ead
 # TODO DDRLocalCollection.dump_ead
 
@@ -69,6 +70,7 @@ def test_git_version():
 # TODO DDRLocalEntity._load_file_objects
 # TODO DDRLocalEntity.load_json
 # TODO DDRLocalEntity.dump_json
+# TODO DDRLocalEntity.write_json
 # TODO DDRLocalEntity.mets
 # TODO DDRLocalEntity.dump_mets
 # TODO DDRLocalEntity.add_file
@@ -90,6 +92,7 @@ def test_git_version():
 # TODO DDRLocalFile.from_json
 # TODO DDRLocalFile.load_json
 # TODO DDRLocalFile.dump_json
+# TODO DDRLocalFile.write_json
 # TODO DDRLocalFile.file_name
 # TODO DDRLocalFile.set_path
 # TODO DDRLocalFile.set_access

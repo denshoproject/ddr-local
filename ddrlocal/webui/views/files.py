@@ -196,15 +196,17 @@ def new( request, repo, org, cid, eid, role='master' ):
             result = entity_add_file.apply_async(
                 (git_name, git_mail, entity, src_path, role, data, settings.AGENT),
                 countdown=2)
-            entity.files_log(1,'START task_id %s' % result.task_id)
-            entity.files_log(1,'ddrlocal.webui.file.new')
-            entity.files_log(1,'Locking %s' % entity.id)
+            result_dict = result.__dict__
+            log = entity.addfile_logger()
+            log.ok('START task_id %s' % result.task_id)
+            log.ok('ddrlocal.webui.file.new')
+            log.ok('Locking %s' % entity.id)
             # lock entity
             lockstatus = entity.lock(result.task_id)
             if lockstatus == 'ok':
-                entity.files_log(1, 'locked')
+                log.ok('locked')
             else:
-                entity.files_log(0, lockstatus)
+                log.not_ok(lockstatus)
             
             # add celery task_id to session
             celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
@@ -283,15 +285,16 @@ def new_access( request, repo, org, cid, eid, role, sha1 ):
                 (git_name, git_mail, entity, file_),
                 countdown=2)
             result_dict = result.__dict__
-            entity.files_log(1,'START task_id %s' % result.task_id)
-            entity.files_log(1,'ddrlocal.webui.file.new_access')
-            entity.files_log(1,'Locking %s' % entity.id)
+            log = entity.addfile_logger()
+            log.ok('START task_id %s' % result.task_id)
+            log.ok('ddrlocal.webui.file.new_access')
+            log.ok('Locking %s' % entity.id)
             # lock entity
             lockstatus = entity.lock(result.task_id)
             if lockstatus == 'ok':
-                entity.files_log(1, 'locked')
+                log.ok( 'locked')
             else:
-                entity.files_log(0, lockstatus)
+                log.not_ok( lockstatus)
             # add celery task_id to session
             celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
             # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
@@ -362,7 +365,7 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
         form = DDRForm(request.POST, fields=filemodule.FIELDS)
         if form.is_valid():
             file_.form_post(form)
-            file_.dump_json()
+            file_.write_json()
             exit,status = commands.entity_update(git_name, git_mail,
                                                  entity.parent_path, entity.id,
                                                  [file_.json_path,],

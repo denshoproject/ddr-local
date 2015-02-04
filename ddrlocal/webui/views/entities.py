@@ -22,6 +22,7 @@ from django.template import RequestContext
 
 from DDR import commands
 from DDR import docstore
+from DDR import idservice
 
 if settings.REPO_MODELS_PATH not in sys.path:
     sys.path.append(settings.REPO_MODELS_PATH)
@@ -32,7 +33,6 @@ except ImportError:
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
-from webui import api
 from webui.decorators import ddrview
 from webui.forms import DDRForm
 from webui.forms.entities import NewEntityForm, JSONForm, UpdateForm, DeleteEntityForm, RmDuplicatesForm
@@ -317,19 +317,22 @@ def new( request, repo, org, cid ):
         return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
     # get new entity ID
     try:
-        entity_ids = api.entities_next(request, repo, org, cid, 1)
+        session = idservice.session(request.session['workbench_sessionid'],
+                                    request.session['workbench_csrftoken'])
+        entity_ids = idservice.entities_next(session, repo, org, cid, num_ids=1)
     except Exception as e:
         logger.error('Could not get new object ID from workbench!')
         logger.error(str(e.args))
         messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_ERR_NO_IDS'])
         messages.error(request, e)
         return HttpResponseRedirect(reverse('webui-collection', args=[repo,org,cid]))
-    eid = int(entity_ids[-1].split('-')[3])
+    eid = int(entity_ids[0].split('-')[3])
     # create new entity
     entity_uid = '{}-{}-{}-{}'.format(repo,org,cid,eid)
     entity_path = Entity.entity_path(request, repo, org, cid, eid)
     # write entity.json template to entity location
-    Entity(entity_path).dump_json(path=settings.TEMPLATE_EJSON, template=True)
+    with open(settings.TEMPLATE_EJSON, 'w') as f:
+        f.write(Entity(entity_path).dump_json(template=True))
     # commit files
     exit,status = commands.entity_create(git_name, git_mail,
                                          collection.path, entity_uid,
@@ -340,7 +343,7 @@ def new( request, repo, org, cid ):
     # load Entity object, inherit values from parent, write back to file
     entity = Entity.from_json(entity_path)
     entity.inherit(collection)
-    entity.dump_json()
+    entity.write_json()
     updated_files = [entity.json_path]
     exit,status = commands.entity_update(git_name, git_mail,
                                          entity.parent_path, entity.id,
@@ -410,7 +413,7 @@ def edit( request, repo, org, cid, eid ):
                 form.cleaned_data['facility'] = tagmanager_process_tags(hidden_facility)
             
             entity.form_post(form)
-            entity.dump_json()
+            entity.write_json()
             entity.dump_mets()
             updated_files = [entity.json_path, entity.mets_path,]
             success_msg = WEBUI_MESSAGES['VIEWS_ENT_UPDATED']
@@ -611,7 +614,7 @@ def files_dedupe( request, repo, org, cid, eid ):
             # remove duplicates
             entity.rm_file_duplicates()
             # update metadata files
-            entity.dump_json()
+            entity.write_json()
             entity.dump_mets()
             updated_files = [entity.json_path, entity.mets_path,]
             success_msg = WEBUI_MESSAGES['VIEWS_ENT_UPDATED']

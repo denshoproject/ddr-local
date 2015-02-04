@@ -20,6 +20,7 @@ from DDR.storage import storage_status
 
 from storage import base_path
 
+from ddrlocal.models import from_json
 from ddrlocal.models import DDRLocalCollection, DDRLocalEntity, DDRLocalFile
 from ddrlocal.models import COLLECTION_FILES_PREFIX, ENTITY_FILES_PREFIX
 
@@ -178,7 +179,7 @@ def _update_inheritables( parent_object, objecttype, inheritables, cleaned_data 
                             changed = True
                 # write json and add to list of changed IDs/files
                 if changed:
-                    child.dump_json()
+                    child.write_json()
                     if hasattr(child, 'id'):         child_ids.append(child.id)
                     elif hasattr(child, 'basename'): child_ids.append(child.basename)
                     changed_files.append(child_json)
@@ -187,6 +188,11 @@ def _update_inheritables( parent_object, objecttype, inheritables, cleaned_data 
 
 
 class Collection( DDRLocalCollection ):
+    
+    def __repr__(self):
+        """Returns string representation of object.
+        """
+        return "<webui.models.Collection %s>" % (self.id)
     
     @staticmethod
     def collection_path(request, repo, org, cid):
@@ -236,13 +242,7 @@ class Collection( DDRLocalCollection ):
     def from_json(collection_abs):
         """Instantiates a Collection object, loads data from collection.json.
         """
-        collection = Collection(collection_abs)
-        collection_uid = collection.id  # save this just in case
-        collection.load_json()
-        if not collection.id:
-            # id gets overwritten if collection.json is blank
-            collection.id = collection_uid
-        return collection
+        return from_json(Collection, collection_abs)
     
     def repo_fetch( self ):
         key = COLLECTION_FETCH_CACHE_KEY % self.id
@@ -334,7 +334,12 @@ class Collection( DDRLocalCollection ):
     
 
 class Entity( DDRLocalEntity ):
-
+    
+    def __repr__(self):
+        """Returns string representation of object.
+        """
+        return "<webui.models.Entity %s>" % (self.id)
+    
     @staticmethod
     def entity_path(request, repo, org, cid, eid):
         collection_uid = '{}-{}-{}'.format(repo, org, cid)
@@ -348,14 +353,7 @@ class Entity( DDRLocalEntity ):
     
     @staticmethod
     def from_json(entity_abs):
-        entity = None
-        if os.path.exists(entity_abs):
-            entity = Entity(entity_abs)
-            entity_uid = entity.id
-            entity.load_json()
-            if not entity.id:
-                entity.id = entity_uid  # might get overwritten if entity.json is blank
-        return entity
+        return from_json(Entity, entity_abs)
     
     def selected_inheritables(self, cleaned_data ):
         return _selected_inheritables(self.inheritable_fields(), cleaned_data)
@@ -363,7 +361,7 @@ class Entity( DDRLocalEntity ):
     def update_inheritables( self, inheritables, cleaned_data ):
         return _update_inheritables(self, 'entity', inheritables, cleaned_data)
     
-    def _load_file_objects( self ):
+    def load_file_objects( self ):
         """Replaces list of file info dicts with list of DDRFile objects
         
         Overrides the function in ddrlocal.models.DDRLocalEntity, which
@@ -374,8 +372,14 @@ class Entity( DDRLocalEntity ):
         self._files = [f for f in self.files]
         self.files = []
         for f in self._files:
-            path_abs = os.path.join(self.files_path, f['path_rel'])
-            self.files.append(DDRFile(path_abs=path_abs))
+            if f and f.get('path_rel',None):
+                path_abs = os.path.join(self.files_path, f['path_rel'])
+                file_ = DDRFile(path_abs=path_abs)
+                with open(file_.json_path, 'r') as j:
+                    file_.load_json(j.read())
+                self.files.append(file_)
+        # keep track of how many times this gets loaded...
+        self._file_objects_loaded = self._file_objects_loaded + 1
     
     def model_def_commits(self):
         """Assesses document's relation to model defs in 'ddr' repo.
@@ -399,6 +403,11 @@ class Entity( DDRLocalEntity ):
 
 
 class DDRFile( DDRLocalFile ):
+    
+    def __repr__(self):
+        """Returns string representation of object.
+        """
+        return "<webui.models.DDRFile %s>" % (self.id)
     
     def url( self ):
         return reverse('webui-file', args=[self.repo, self.org, self.cid, self.eid, self.role, self.sha1[:10]])

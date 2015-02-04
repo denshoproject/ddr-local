@@ -209,25 +209,28 @@ class FileAddDebugTask(Task):
         
     def on_failure(self, exc, task_id, args, kwargs, einfo):
         entity = args[2]
-        entity.files_log(0,'DDRTask.ON_FAILURE')
+        log = entity.addfile_logger()
+        log.not_ok('DDRTask.ON_FAILURE')
     
     def on_success(self, retval, task_id, args, kwargs):
         entity = args[2]
-        entity.files_log(1,'DDRTask.ON_SUCCESS')
+        log = entity.addfile_logger()
+        log.ok('DDRTask.ON_SUCCESS')
     
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
         entity = args[2]
-        entity.files_log(1,'DDRTask.AFTER_RETURN')
-        entity.files_log(1,'task_id: %s' % task_id)
-        entity.files_log(1,'status: %s' % status)
-        entity.files_log(1,'retval: %s' % retval)
-        entity.files_log(1,'Unlocking %s' % entity.id)
+        log = entity.addfile_logger()
+        log.ok('DDRTask.AFTER_RETURN')
+        log.ok('task_id: %s' % task_id)
+        log.ok('status: %s' % status)
+        log.ok('retval: %s' % retval)
+        log.ok('Unlocking %s' % entity.id)
         lockstatus = entity.unlock(task_id)
         if lockstatus == 'ok':
-            entity.files_log(1,'unlocked')
+            log.ok('unlocked')
         else:
-            entity.files_log(0,lockstatus)
-        entity.files_log(1, 'END task_id %s\n' % task_id)
+            log.not_ok(lockstatus)
+        log.ok( 'END task_id %s\n' % task_id)
         collection_path = Collection.collection_path(None,entity.repo,entity.org,entity.cid)
         collection = Collection.from_json(collection_path)
         collection.cache_delete()
@@ -246,7 +249,9 @@ def entity_add_file( git_name, git_mail, entity, src_path, role, data, agent='' 
     @param agent: (optional) Name of software making the change.
     """
     gitstatus.lock(settings.MEDIA_BASE, 'entity_add_file')
-    return entity.add_file(git_name, git_mail, src_path, role, data, agent)
+    file_,repo,log = entity.add_file(src_path, role, data, git_name, git_mail, agent)
+    file_,repo,log = entity.add_file_commit(file_, repo, log, git_name, git_mail, agent)
+    return file_.__dict__
 
 @task(base=FileAddDebugTask, name='entity-add-access')
 def entity_add_access( git_name, git_mail, entity, ddrfile, agent='' ):
@@ -259,7 +264,8 @@ def entity_add_access( git_name, git_mail, entity, ddrfile, agent='' ):
     @param agent: (optional) Name of software making the change.
     """
     gitstatus.lock(settings.MEDIA_BASE, 'entity_add_access')
-    return entity.add_access(git_name, git_mail, ddrfile, agent)
+    file_,repo,log = entity.add_access(ddrfile, git_name, git_mail, agent)
+    return file_.__dict__
 
 
 
@@ -395,7 +401,7 @@ def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, 
     for f in entity.files:
         if f.basename == file_basename:
             entity.files.remove(f)
-    entity.dump_json()
+    entity.write_json()
     updated_files = ['entity.json']
     logger.debug('updated_files: %s' % updated_files)
     status,message = file_destroy(git_name, git_mail, collection_path, entity_id, rm_files, updated_files, agent)

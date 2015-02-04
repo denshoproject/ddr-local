@@ -143,6 +143,10 @@ except ImportError:
 #def add_file( git_name, git_mail, entity, src_path, role, data ):
 #    print('add_file(%s, %s, %s, %s, %s, %s)' % (git_name, git_mail, entity, src_path, role, data))
 
+CSV_TMPDIR = settings.CSV_TMPDIR
+TEMPLATE_EJSON = settings.TEMPLATE_EJSON
+TEMPLATE_METS = settings.TEMPLATE_METS
+
 AGENT = 'importers.densho'
 
 # Some files' XMP data is wayyyyyy too big
@@ -264,17 +268,52 @@ FIELD_NAMES = {
     'file': [field['name'] for field in FILE_FIELDS],
 }
 
+def prep_creators( data ): return [x.strip() for x in data.strip().split(';') if x]
+def prep_language( data ):
+    """language can be 'eng', 'eng;jpn', 'eng:English', 'jpn:Japanese'
+    """
+    y = []
+    for x in data.strip().split(';'):
+        if ':' in x:
+            y.append(x.strip().split(':')[0])
+        else:
+            y.append(x.strip())
+    return y
+def prep_topics( data ): return [x.strip() for x in data.strip().split(';') if x]
+def prep_persons( data ): return [x.strip() for x in data.strip().split(';') if x]
+def prep_facility( data ): return [x.strip() for x in data.strip().split(';') if x]
+PREP_FUNCTIONS = {
+    'creators': prep_creators,
+    'language': prep_language,
+    'topics': prep_topics,
+    'persons': prep_persons,
+    'facility': prep_facility,
+}
+
+
 
 # helper functions -----------------------------------------------------
 
-def dtfmt(dt): return dt.strftime('%Y-%m-%dT%H:%M:%S.%f')
+def dtfmt(dt, fmt='%Y-%m-%dT%H:%M:%S.%f'):
+    """Format dates in consistent format.
+    
+    @param dt: datetime
+    @param fmt: str Format string (default: '%Y-%m-%dT%H:%M:%S.%f')
+    @returns: str
+    """
+    return dt.strftime(fmt)
 
-def make_tmpdir():
-    if not os.path.exists(settings.CSV_TMPDIR):
-        os.makedirs(settings.CSV_TMPDIR)
+def make_tmpdir(tmpdir):
+    """Make tmp dir if doesn't exist.
+    
+    @param tmpdir: Absolute path to dir
+    """
+    if not os.path.exists(tmpdir):
+        os.makedirs(tmpdir)
     
 def make_csv_reader( csvfile ):
-    """
+    """Get a csv.reader object for the file.
+    
     @param csvfile: A file object.
     """
     reader = csv.reader(
@@ -286,7 +325,8 @@ def make_csv_reader( csvfile ):
     return reader
 
 def make_csv_writer( csvfile ):
-    """
+    """Get a csv.writer object for the file.
+    
     @param csvfile: A file object.
     """
     writer = csv.writer(
@@ -298,7 +338,8 @@ def make_csv_writer( csvfile ):
     return writer
 
 def read_csv( path ):
-    """
+    """Read specified file, return list of rows.
+    
     @param path: Absolute path to CSV file
     @returns list of rows
     """
@@ -309,12 +350,13 @@ def read_csv( path ):
             rows.append(row)
     return rows
 
-def get_required_fields( object_class, fields ):
+def get_required_fields( fields, exceptions ):
     """Picks out the required fields.
+    
     @param fields: COLLECTION_FIELDS, ENTITY_FIELDS, FILE_FIELDS
+    @param exceptions: list of field names
     @return list of field names
     """
-    exceptions = REQUIRED_FIELDS_EXCEPTIONS[object_class]
     required_fields = []
     for field in fields:
         if field.get('form', None) and field['form']['required'] and (field['name'] not in exceptions):
@@ -336,7 +378,8 @@ def make_row_dict( headers, row ):
     return d
 
 def row_missing_required_fields( required_fields, row ):
-    """
+    """Return list of missing required fields from the row.
+    
     @param required_fields: List of required field names
     @param row: A single row (list of fields, not dict)
     @returns False (nothing missing) or a list of fieldnames
@@ -351,7 +394,8 @@ def row_missing_required_fields( required_fields, row ):
     return missing
 
 def valid_choice_values( choices ):
-    """
+    """Return list of valid values for list of tuples.
+    
     @param choices: List of value:descriptor tuples from MODEL_FIELDS doc.
     @returns list of values
     """
@@ -375,39 +419,39 @@ def choice_is_valid( valid_choices, choice ):
         return True
     return False
 
-def invalid_headers( object_class, headers ):
-    """
+def invalid_headers( object_class, headers, field_names, exceptions ):
+    """Analyzes headers and crashes if problems.
+    
     @param object_class: 'entity' or 'file'
     @param headers: List of field names
-    @returns True if everything's OK, False if not; prints errors to console
+    @param field_names: List of field names
+    @param exceptions: List of nonrequired field names
     """
     headers = deepcopy(headers)
-    the_official_fields = FIELD_NAMES[object_class]
-    exceptions = REQUIRED_FIELDS_EXCEPTIONS[object_class]
     if object_class == 'file':
         headers.remove('entity_id')
     # validate
     missing_headers = []
-    for field in the_official_fields:
+    for field in field_names:
         if (field not in exceptions) and (field not in headers):
             missing_headers.append(field)
+    if missing_headers:
+        raise Exception('MISSING HEADER(S): %s' % missing_headers)
     bad_headers = []
     for header in headers:
-        if header not in the_official_fields:
+        if header not in field_names:
             bad_headers.append(header)
-    if missing_headers:
-        print('MISSING HEADER(S): %s' % missing_headers)
     if bad_headers:
-        print('BAD HEADER(S): %s' % bad_headers)
-    if missing_headers or bad_headers:
-        return 1
-    return 0
+        raise Exception('BAD HEADER(S): %s' % bad_headers)
 
 def invalid_values( object_class, headers, rowd ):
-    """
+    """Analyzes row values and crashes if problems.
+    
+    TODO refers to lots of globals!!!
+    
+    @param object_class: 'entity' or 'file'
     @param headers: List of field names
     @param rowd: A single row (dict, not list of fields)
-    @returns False (nothing missing) or a list of fieldnames
     """
     invalid = []
     if object_class == 'entity':
@@ -430,32 +474,31 @@ def invalid_values( object_class, headers, rowd ):
     return invalid
 
 def all_rows_valid( object_class, headers, required_fields, rows ):
-    """
+    """Analyzes rows and crashes if problems.
+    
+    @param object_class: 'entity' or 'file'
     @param headers: List of field names
     @param required_fields: List of required field names
     @param rows: List of rows (each with list of fields, not dict)
-    @returns list of invalid rows
     """
-    rows_bad = []
     for row in rows:
         rowd = make_row_dict(headers, row)
         missing_required_fields = row_missing_required_fields(required_fields, rowd)
         invalid = invalid_values(object_class, headers, rowd)
+        # print feedback and die
         if missing_required_fields or invalid:
-            rows_bad.append(row)
-        # feedback
-        if missing_required_fields or invalid:
-            print('INVALID ROW')
             print(row)
             if missing_required_fields:
-                print('    MISSING REQUIRED FIELDS: %s' % missing_required_fields)
+                raise Exception('MISSING REQUIRED FIELDS: %s' % missing_required_fields)
             if invalid:
-                print('    INVALID VALUES: %s' % invalid)
-            print('')
-    return rows_bad
+                raise Exception('INVALID VALUES: %s' % invalid)
 
 def test_entities( headers, rows ):
-    """Test-loads Entities mentioned in rows; will crash if any are missing.
+    """Test-loads Entities mentioned in rows; crashes if any are missing.
+    
+    @param headers: List of field names
+    @param rows: List of rows (each with list of fields, not dict)
+    @returns list of invalid entities
     """
     bad_entities = []
     for row in rows:
@@ -473,6 +516,11 @@ def test_entities( headers, rows ):
 
 def find_missing_files( csv_dir, headers, rows ):
     """checks for missing files
+    
+    @param csv_dir: Absolute path to dir
+    @param headers: List of field names
+    @param rows: List of rows (each with list of fields, not dict)
+    @returns list of missing files
     """
     missing_files = []
     for row in rows:
@@ -483,7 +531,12 @@ def find_missing_files( csv_dir, headers, rows ):
     return missing_files
 
 def find_unreadable_files( csv_dir, headers, rows ):
-    """checks for missing files
+    """checks for unreadable files
+    
+    @param csv_dir: Absolute path to dir
+    @param headers: List of field names
+    @param rows: List of rows (each with list of fields, not dict)
+    @returns list of unreadable files
     """
     unreadable_files = []
     for row in rows:
@@ -519,6 +572,10 @@ def humanize_bytes(bytes, precision=1):
     '1.3 GB'
     
     source: http://code.activestate.com/recipes/577081-humanized-representation-of-a-number-of-bytes/
+    
+    @param bytes: int Raw number of bytes
+    @param precision: int
+    @returns: str
     """
     abbrevs = (
         (1<<50L, 'PB'),
@@ -537,6 +594,11 @@ def humanize_bytes(bytes, precision=1):
 
 def replace_variant_headers( object_class, headers ):
     """Tries to replace variant headers with official values
+    
+    @param object_class: 'entity' or 'file'
+    @param headers: List of field names
+    @param rows: List of rows (each with list of fields, not dict)
+    @returns: list of headers
     """
     if   object_class == 'entity': index = ENTITY_HEADER_FIELDS_ALT_INDEX
     elif object_class == 'file': index = FILE_HEADER_FIELDS_ALT_INDEX
@@ -548,6 +610,11 @@ def replace_variant_headers( object_class, headers ):
 
 def replace_variant_cv_field_values( object_class, headers, rows ):
     """Tries to replace variants of controlled-vocab with official values
+    
+    @param object_class: 'entity' or 'file'
+    @param headers: List of field names
+    @param rows: List of rows (each with list of fields, not dict)
+    @returns: list rows
     """
     def replace(fieldname, row, headers, rowd, index):
         """This does the actual work.
@@ -590,16 +657,13 @@ def import_entities( csv_path, collection_path, git_name, git_mail ):
     rows = rows[1:]
     
     headers = replace_variant_headers('entity', headers)
+    field_names = FIELD_NAMES['entity']
+    nonrequired_fields = REQUIRED_FIELDS_EXCEPTIONS['entity']
+    required_fields = get_required_fields(ENTITY_FIELDS, nonrequired_fields)
     rows = replace_variant_cv_field_values('entity', headers, rows)
-    
-    required_fields = get_required_fields('entity', ENTITY_FIELDS)
-    # validate metadata before attempting import
-    invalid_rows = all_rows_valid('entity', headers, required_fields, rows)
-    if invalid_headers('entity', headers):
-        print('FILE CONTAINS INVALID HEADERS - IMPORT CANCELLED')
-    elif invalid_rows:
-        print('FILE CONTAINS INVALID ROWS - IMPORT CANCELLED')
-    else:
+    invalid_headers('entity', headers, field_names, nonrequired_fields)
+    all_rows_valid('entity', headers, required_fields, rows)
+    if True:
         collection = Collection.from_json(collection_path)
         print(collection)
         
@@ -633,12 +697,13 @@ def import_entities( csv_path, collection_path, git_name, git_mail ):
             entity_path = os.path.join(collection_path, COLLECTION_FILES_PREFIX, entity_uid)
             
             # write entity.json template to entity location
-            Entity(entity_path).dump_json(path=settings.TEMPLATE_EJSON, template=True)
+            with open(TEMPLATE_EJSON, 'w') as f:
+                f.write(Entity(entity_path).dump_json(template=True))
             # commit files
             exit,status = commands.entity_create(git_name, git_mail,
                                                  collection.path, entity_uid,
                                                  [collection.json_path_rel, collection.ead_path_rel],
-                                                 [settings.TEMPLATE_EJSON, settings.TEMPLATE_METS],
+                                                 [TEMPLATE_EJSON, TEMPLATE_METS],
                                                  agent=AGENT)
             
             # reload newly-created Entity object
@@ -658,7 +723,7 @@ def import_entities( csv_path, collection_path, git_name, git_mail ):
             entity.record_lastmod = datetime.now()
             
             # write back to file
-            entity.dump_json()
+            entity.write_json()
             updated_files = [entity.json_path]
             exit,status = commands.entity_update(git_name, git_mail,
                                                  entity.parent_path, entity.id,
@@ -691,16 +756,13 @@ def import_files( csv_path, collection_path, git_name, git_mail ):
     rows = rows[1:]
     
     headers = replace_variant_headers('file', headers)
+    nonrequired_fields = REQUIRED_FIELDS_EXCEPTIONS['file']
+    required_fields = get_required_fields(FILE_FIELDS, nonrequired_fields)
     rows = replace_variant_cv_field_values('file', headers, rows)
-    
-    required_fields = get_required_fields('file', FILE_FIELDS)
-    # validate metadata before attempting import
-    invalid_rows = all_rows_valid('file', headers, required_fields, rows)
-    if invalid_headers('file', headers):
-        print('FILE CONTAINS INVALID HEADERS - IMPORT CANCELLED')
-    elif invalid_rows:
-        print('FILE CONTAINS INVALID ROWS - IMPORT CANCELLED')
-    else:
+    # crash if bad headers or rows
+    invalid_headers('file', headers, field_names, nonrequired_fields)
+    all_rows_valid('file', headers, required_fields, rows)
+    if True:
         collection = Collection.from_json(collection_path)
         print(collection)
         
@@ -768,7 +830,7 @@ def export_csv_path( collection_path, model ):
         csv_filename = '%s-objects.csv' % collection_id
     elif model == 'file':
         csv_filename = '%s-files.csv' % collection_id
-    csv_path = os.path.join(settings.CSV_TMPDIR, csv_filename)
+    csv_path = os.path.join(CSV_TMPDIR, csv_filename)
     return csv_path
 
 def export_entities( collection_path, csv_path ):
@@ -778,7 +840,7 @@ def export_entities( collection_path, csv_path ):
     """
     started = datetime.now()
     print('%s starting import' % started)
-    make_tmpdir()
+    make_tmpdir(CSV_TMPDIR)
     fieldnames = [field['name'] for field in entitymodule.ENTITY_FIELDS]
     # exclude 'files' bc not hard to convert to CSV and not different from files export.
     fieldnames.remove('files')
@@ -839,7 +901,7 @@ def export_files( collection_path, csv_path ):
     """
     started = datetime.now()
     print('%s starting import' % started)
-    make_tmpdir()
+    make_tmpdir(CSV_TMPDIR)
     fieldnames = [field['name'] for field in filemodule.FILE_FIELDS]
     print(fieldnames)
     paths = []
