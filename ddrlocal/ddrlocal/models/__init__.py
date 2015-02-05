@@ -16,6 +16,7 @@ from lxml import etree
 
 from DDR import changelog
 from DDR import commands
+from DDR import docstore
 from DDR import dvcs
 from DDR import imaging
 from DDR import format_json, natural_order_string, natural_sort
@@ -173,6 +174,21 @@ def from_json(model, json_path):
             # id gets overwritten if document.json is blank
             document.id = document_uid
     return document
+
+def post_json(hosts, index, json_path):
+    """Post current .json to docstore.
+    
+    @param hosts: list of dicts containing host information.
+    @param index: Name of the target index.
+    @param json_path: Absolute path to .json file.
+    @returns: JSON dict with status code and response
+    """
+    status = docstore.post(
+        hosts, index,
+        json.loads(read_json(json_path)),
+        private_ok=True)
+    logging.debug(str(status))
+    return status
 
 def labels_values(document, module):
     """Apply display_{field} functions to prep object data for the UI.
@@ -521,6 +537,9 @@ class DDRLocalCollection( DDRCollection ):
         """
         write_json(self.dump_json(doc_metadata=True), self.json_path)
     
+    def post_json(self, hosts, index):
+        return post_json(hosts, index, self.json_path)
+    
     def ead( self ):
         """Returns a ddrlocal.models.xml.EAD object for the collection.
         
@@ -725,6 +744,9 @@ class DDRLocalEntity( DDREntity ):
         """Write JSON file to disk.
         """
         write_json(self.dump_json(doc_metadata=True), self.json_path)
+    
+    def post_json(self, hosts, index):
+        return post_json(hosts, index, self.json_path)
 
     def mets( self ):
         if not os.path.exists(self.mets_path):
@@ -1531,6 +1553,9 @@ class DDRLocalFile( object ):
         """Write JSON file to disk.
         """
         write_json(self.dump_json(doc_metadata=True), self.json_path)
+    
+    def post_json(self, hosts, index):
+        return post_json(hosts, index, self.json_path)
     
     @staticmethod
     def file_name( entity, path_abs, role, sha1=None ):

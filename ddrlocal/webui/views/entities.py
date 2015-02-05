@@ -356,10 +356,7 @@ def new( request, repo, org, cid ):
         messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
     else:
         # update search index
-        json_path = os.path.join(entity_path, 'entity.json')
-        with open(json_path, 'r') as f:
-            document = json.loads(f.read())
-        docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+        entity.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
         gitstatus_update.apply_async((collection.path,), countdown=2)
         # positive feedback
         return HttpResponseRedirect(reverse('webui-entity-edit', args=[repo,org,cid,eid]))
@@ -436,9 +433,7 @@ def edit( request, repo, org, cid, eid ):
                 messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
             else:
                 # update search index
-                with open(entity.json_path, 'r') as f:
-                    document = json.loads(f.read())
-                docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+                entity.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
                 gitstatus_update.apply_async((collection.path,), countdown=2)
                 # positive feedback
                 messages.success(request, success_msg)
@@ -622,9 +617,7 @@ def files_dedupe( request, repo, org, cid, eid ):
                 messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
             else:
                 # update search index
-                with open(entity.json_path, 'r') as f:
-                    document = json.loads(f.read())
-                docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+                entity.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
                 gitstatus_update.apply_async((collection.path,), countdown=2)
                 # positive feedback
                 messages.success(request, success_msg)

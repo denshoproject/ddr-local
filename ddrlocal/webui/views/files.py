@@ -373,9 +373,7 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
                 messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
             else:
                 # update search index
-                with open(file_.json_path, 'r') as f:
-                    document = json.loads(f.read())
-                docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+                file_.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
                 gitstatus_update.apply_async((collection.path,), countdown=2)
                 # positive feedback
                 messages.success(request, WEBUI_MESSAGES['VIEWS_FILES_UPDATED'])

@@ -272,10 +272,8 @@ def new( request, repo, org ):
         messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
     else:
         # update search index
-        json_path = os.path.join(collection_path, 'collection.json')
-        with open(json_path, 'r') as f:
-            document = json.loads(f.read())
-        docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+        collection = Collection.from_json(collection_path)
+        collection.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
         gitstatus_update.apply_async((collection_path,), countdown=2)
         # positive feedback
         return HttpResponseRedirect( reverse('webui-collection-edit', args=[repo,org,cid]) )
@@ -329,9 +327,7 @@ def edit( request, repo, org, cid ):
                 messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
             else:
                 # update search index
-                with open(collection.json_path, 'r') as f:
-                    document = json.loads(f.read())
-                docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+                collection.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
                 gitstatus_update.apply_async((collection.path,), countdown=2)
                 # positive feedback
                 messages.success(request, success_msg)
