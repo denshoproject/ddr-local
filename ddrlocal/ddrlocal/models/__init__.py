@@ -678,6 +678,7 @@ class DDRLocalEntity( DDREntity ):
             return d
         if hasattr(self, 'record_created') and self.record_created: self.record_created = parsedt(self.record_created)
         if hasattr(self, 'record_lastmod') and self.record_lastmod: self.record_lastmod = parsedt(self.record_lastmod)
+        self.rm_file_duplicates()
 
     def dump_json(self, template=False, doc_metadata=False):
         """Dump Entity data to JSON-formatted text.
@@ -789,9 +790,9 @@ class DDRLocalEntity( DDREntity ):
         it does not examine the filesystem.
         """
         duplicates = []
-        for x,f in enumerate(self._file_objects):
-            for y,f2 in enumerate(self._file_objects):
-                if (f2 == f) and (f.role == role) and (y != x) and (f not in duplicates):
+        for x,f in enumerate(self.files):
+            for y,f2 in enumerate(self.files):
+                if (f != f2) and (f['path_rel'] == f2['path_rel']) and (f2 not in duplicates):
                     duplicates.append(f)
         return duplicates
     
