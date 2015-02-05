@@ -327,7 +327,10 @@ def delete_entity( git_name, git_mail, collection_path, entity_id, agent='' ):
     """
     gitstatus.lock(settings.MEDIA_BASE, 'delete_entity')
     logger.debug('collection_delete_entity(%s,%s,%s,%s,%s)' % (git_name, git_mail, collection_path, entity_id, agent))
+    # remove the entity
     status,message = entity_destroy(git_name, git_mail, collection_path, entity_id, agent)
+    # update search index
+    docstore.delete(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, entity_id)
     return status,message,collection_path,entity_id
 
 
@@ -405,7 +408,10 @@ def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, 
     entity.write_json()
     updated_files = ['entity.json']
     logger.debug('updated_files: %s' % updated_files)
+    # remove the file itself
     status,message = file_destroy(git_name, git_mail, collection_path, entity_id, rm_files, updated_files, agent)
+    # update search index
+    docstore.delete(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, file_id)
     return status,message,collection_path,file_basename
 
 
