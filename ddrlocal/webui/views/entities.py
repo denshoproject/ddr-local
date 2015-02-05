@@ -31,6 +31,7 @@ try:
 except ImportError:
     from ddrlocal.models import entity as entitymodule
 
+from ddrlocal.models import write_json
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
 from webui.decorators import ddrview
@@ -284,9 +285,7 @@ def changelog( request, repo, org, cid, eid ):
 def entity_json( request, repo, org, cid, eid ):
     collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
     entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
-    with open(entity.json_path, 'r') as f:
-        json = f.read()
-    return HttpResponse(json, content_type="application/json")
+    return HttpResponse(entity.dump_json(), content_type="application/json")
 
 @storage_required
 def mets_xml( request, repo, org, cid, eid ):
@@ -331,8 +330,8 @@ def new( request, repo, org, cid ):
     entity_uid = '{}-{}-{}-{}'.format(repo,org,cid,eid)
     entity_path = Entity.entity_path(request, repo, org, cid, eid)
     # write entity.json template to entity location
-    with open(settings.TEMPLATE_EJSON, 'w') as f:
-        f.write(Entity(entity_path).dump_json(template=True))
+    write_json(Entity(entity_path).dump_json(template=True),
+               settings.TEMPLATE_EJSON)
     # commit files
     exit,status = commands.entity_create(git_name, git_mail,
                                          collection.path, entity_uid,
@@ -513,10 +512,8 @@ def edit_json( request, repo, org, cid, eid ):
             git_name = request.session.get('git_name')
             git_mail = request.session.get('git_mail')
             if git_name and git_mail:
-                json = form.cleaned_data['json']
-                # TODO validate XML
-                with open(entity.json_path, 'w') as f:
-                    f.write(json)
+                json_text = form.cleaned_data['json']
+                write_json(json_text, entity.json_path)
                 
                 exit,status = commands.entity_update(git_name, git_mail,
                                                      entity.parent_path, entity.id,
@@ -533,9 +530,7 @@ def edit_json( request, repo, org, cid, eid ):
             else:
                 messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     else:
-        with open(entity.json_path, 'r') as f:
-            json = f.read()
-        form = JSONForm({'json': json,})
+        form = JSONForm({'json': entity.dump_json(),})
     return render_to_response(
         'webui/entities/edit-raw.html',
         {'repo': entity.repo,

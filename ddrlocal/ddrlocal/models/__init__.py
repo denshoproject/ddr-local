@@ -61,22 +61,26 @@ ENTITY_FILES_PREFIX = 'files'
 
 
 
-def from_json(model, path):
+def read_json(path):
+    """Read text file; make sure text is in UTF-8.
+    
+    @param path: str Absolute path to file.
+    @returns: unicode
     """
-    @param model: DDRLocalCollection, DDRLocalEntity, or DDRLocalFile
-    @param path: absolute path to the object(not the JSON file)
+    # TODO use codecs.open utf-8
+    with open(path, 'r') as f:
+        text = f.read()
+    return text
+
+def write_json(text, path):
+    """Write text to UTF-8 file.
+    
+    @param text: unicode
+    @param path: str Absolute path to file.
     """
-    logging.debug('from_json(%s, %s)' % (model, path))
-    document = None
-    if os.path.exists(path):
-        document = model(path)
-        document_uid = document.id  # save this just in case
-        with open(document.json_path, 'r') as f:
-            document.load_json(f.read())
-        if not document.id:
-            # id gets overwritten if document.json is blank
-            document.id = document_uid
-    return document
+    # TODO use codecs.open utf-8
+    with open(path, 'w') as f:
+        f.write(text)
 
 def load_json(document, module, json_text):
     """Populates object from JSON-formatted text.
@@ -152,6 +156,23 @@ def prep_json(obj, module, template=False,
         if key not in exceptions:
             data.append(item)
     return data
+
+def from_json(model, json_path):
+    """Read the specified JSON file and properly instantiate object.
+    
+    @param model: DDRLocalCollection, DDRLocalEntity, or DDRLocalFile
+    @param json_path: absolute path to the object's .json file
+    @returns: object
+    """
+    document = None
+    if os.path.exists(json_path):
+        document = model(os.path.dirname(json_path))
+        document_uid = document.id  # save this just in case
+        document.load_json(read_json(json_path))
+        if not document.id:
+            # id gets overwritten if document.json is blank
+            document.id = document_uid
+    return document
 
 def labels_values(document, module):
     """Apply display_{field} functions to prep object data for the UI.
@@ -373,9 +394,7 @@ class DDRLocalCollection( DDRCollection ):
         return cmp_model_definition_commits(self, collectionmodule)
     
     def model_def_fields( self ):
-        with open(self.json_path, 'r') as f:
-            text = f.read()
-        return cmp_model_definition_fields(text, collectionmodule)
+        return cmp_model_definition_fields(read_json(self.json_path), collectionmodule)
     
     def entities( self, quick=None ):
         """Returns list of the Collection's Entity objects.
@@ -403,15 +422,14 @@ class DDRLocalCollection( DDRCollection ):
                 # fake Entity with just enough info for lists
                 entity_json_path = os.path.join(path,'entity.json')
                 if os.path.exists(entity_json_path):
-                    with open(entity_json_path, 'r') as f:
-                        for line in f.readlines():
-                            if '"title":' in line:
-                                e = ListEntity()
-                                e.id = e.uid = eid = os.path.basename(path)
-                                e.repo,e.org,e.cid,e.eid = eid.split('-')
-                                # make a miniature JSON doc out of just title line
-                                e.title = json.loads('{%s}' % line)['title']
-                                entities.append(e)
+                    for line in read_json(entity_json_path).split('\n'):
+                        if '"title":' in line:
+                            e = ListEntity()
+                            e.id = e.uid = eid = os.path.basename(path)
+                            e.repo,e.org,e.cid,e.eid = eid.split('-')
+                            # make a miniature JSON doc out of just title line
+                            e.title = json.loads('{%s}' % line)['title']
+                            entities.append(e)
             else:
                 entity = DDRLocalEntity.from_json(path)
                 for lv in entity.labels_values():
@@ -465,7 +483,7 @@ class DDRLocalCollection( DDRCollection ):
         @param collection_abs: Absolute path to collection directory.
         @returns: DDRLocalCollection
         """
-        return from_json(DDRLocalCollection, collection_abs)
+        return from_json(DDRLocalCollection, os.path.join(collection_abs, 'collection.json'))
     
     def load_json(self, json_text):
         """Populates Collection from JSON-formatted text.
@@ -501,10 +519,7 @@ class DDRLocalCollection( DDRCollection ):
     def write_json(self):
         """Write JSON file to disk.
         """
-        json_data = self.dump_json(doc_metadata=True)
-        # TODO use codecs.open utf-8
-        with open(self.json_path, 'w') as f:
-            f.write(json_data)
+        write_json(self.dump_json(doc_metadata=True), self.json_path)
     
     def ead( self ):
         """Returns a ddrlocal.models.xml.EAD object for the collection.
@@ -600,9 +615,7 @@ class DDRLocalEntity( DDREntity ):
         return cmp_model_definition_commits(self, entitymodule)
     
     def model_def_fields( self ):
-        with open(self.json_path, 'r') as f:
-            text = f.read()
-        return cmp_model_definition_fields(text, entitymodule)
+        return cmp_model_definition_fields(read_json(self.json_path), entitymodule)
     
     @staticmethod
     def create(path):
@@ -657,7 +670,7 @@ class DDRLocalEntity( DDREntity ):
         @param entity_abs: Absolute path to entity dir.
         @returns: DDRLocalEntity
         """
-        return from_json(DDRLocalEntity, entity_abs)
+        return from_json(DDRLocalEntity, os.path.join(entity_abs, 'entity.json'))
 
     def load_json(self, json_text):
         """Populate Entity data from JSON-formatted text.
@@ -711,10 +724,7 @@ class DDRLocalEntity( DDREntity ):
     def write_json(self):
         """Write JSON file to disk.
         """
-        json_data = self.dump_json(doc_metadata=True)
-        # TODO use codecs.open utf-8
-        with open(self.json_path, 'w') as f:
-            f.write(json_data)
+        write_json(self.dump_json(doc_metadata=True), self.json_path)
 
     def mets( self ):
         if not os.path.exists(self.mets_path):
@@ -767,8 +777,7 @@ class DDRLocalEntity( DDREntity ):
             if f and f.get('path_rel',None):
                 path_abs = os.path.join(self.files_path, f['path_rel'])
                 file_ = DDRLocalFile(path_abs=path_abs)
-                with open(file_.json_path, 'r') as j:
-                    file_.load_json(j.read())
+                file_.load_json(read_json(file_.json_path))
                 self._file_objects.append(file_)
         # keep track of how many times this gets loaded...
         self._file_objects_loaded = self._file_objects_loaded + 1
@@ -973,15 +982,13 @@ class DDRLocalEntity( DDREntity ):
         log.ok('Writing file metadata')
         tmp_file_json = os.path.join(tmp_dir, os.path.basename(f.json_path))
         log.ok(tmp_file_json)
-        with open(tmp_file_json, 'w') as fj:
-            fj.write(f.dump_json())
+        write_json(f.dump_json(), tmp_file_json)
         if not os.path.exists(tmp_file_json):
             crash('Could not write file metadata %s' % tmp_file_json)
         log.ok('Writing entity metadata')
         tmp_entity_json = os.path.join(tmp_dir, os.path.basename(self.json_path))
         log.ok(tmp_entity_json)
-        with open(tmp_entity_json, 'w') as ej:
-            ej.write(self.dump_json())
+        write_json(self.dump_json(), tmp_entity_json)
         if not os.path.exists(tmp_entity_json):
             crash('Could not write entity metadata %s' % tmp_entity_json)
         
@@ -1165,8 +1172,7 @@ class DDRLocalEntity( DDREntity ):
         log.ok('Writing file metadata')
         tmp_file_json = os.path.join(tmp_dir, os.path.basename(f.json_path))
         log.ok(tmp_file_json)
-        with open(tmp_file_json, 'w') as j:
-            j.write(f.dump_json())
+        write_json(f.dump_json(), tmp_file_json)
         if not os.path.exists(tmp_file_json):
             crash('Could not write file metadata %s' % tmp_file_json)
         
@@ -1419,9 +1425,7 @@ class DDRLocalFile( object ):
         return cmp_model_definition_commits(self, filemodule)
     
     def model_def_fields( self ):
-        with open(self.json_path, 'r') as f:
-            text = f.read()
-        return cmp_model_definition_fields(text, filemodule)
+        return cmp_model_definition_fields(read_json(self.json_path), filemodule)
     
     def files_rel( self, collection_path ):
         """Returns list of the file, its metadata JSON, and access file, relative to collection.
@@ -1496,8 +1500,7 @@ class DDRLocalFile( object ):
         file_ = None
         if os.path.exists(file_abs) or os.path.islink(file_abs):
             file_ = DDRLocalFile(path_abs=file_abs)
-            with open(file_.json_path, 'r') as f:
-                file_.load_json(f.read())
+            file_.load_json(read_json(file_.json_path))
         return file_
     
     def load_json(self, json_text):
@@ -1527,11 +1530,8 @@ class DDRLocalFile( object ):
     def write_json(self):
         """Write JSON file to disk.
         """
-        json_data = self.dump_json(doc_metadata=True)
-        # TODO use codecs.open utf-8
-        with open(self.json_path, 'w') as f:
-            f.write(json_data)
-
+        write_json(self.dump_json(doc_metadata=True), self.json_path)
+    
     @staticmethod
     def file_name( entity, path_abs, role, sha1=None ):
         """Generate a new name for the specified file; Use only when ingesting a file!
@@ -1624,10 +1624,8 @@ class DDRLocalFile( object ):
         jsons = []
         if r.std_out:
             jsons = r.std_out.strip().split('\n')
-        for fn in jsons:
-            with open(fn, 'r') as f:
-                raw = f.read()
-            data = json.loads(raw)
+        for filename in jsons:
+            data = json.loads(read_json(filename))
             path_rel = None
             for field in data:
                 if field.get('path_rel',None):

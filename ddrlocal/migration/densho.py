@@ -697,8 +697,8 @@ def import_entities( csv_path, collection_path, git_name, git_mail ):
             entity_path = os.path.join(collection_path, COLLECTION_FILES_PREFIX, entity_uid)
             
             # write entity.json template to entity location
-            with open(TEMPLATE_EJSON, 'w') as f:
-                f.write(Entity(entity_path).dump_json(template=True))
+            write_json(Entity(entity_path).dump_json(template=True),
+                       TEMPLATE_EJSON)
             # commit files
             exit,status = commands.entity_create(git_name, git_mail,
                                                  collection.path, entity_uid,

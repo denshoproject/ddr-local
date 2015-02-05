@@ -20,7 +20,7 @@ from DDR.storage import storage_status
 
 from storage import base_path
 
-from ddrlocal.models import from_json
+from ddrlocal.models import read_json, from_json
 from ddrlocal.models import DDRLocalCollection, DDRLocalEntity, DDRLocalFile
 from ddrlocal.models import COLLECTION_FILES_PREFIX, ENTITY_FILES_PREFIX
 
@@ -242,7 +242,7 @@ class Collection( DDRLocalCollection ):
     def from_json(collection_abs):
         """Instantiates a Collection object, loads data from collection.json.
         """
-        return from_json(Collection, collection_abs)
+        return from_json(Collection, os.path.join(collection_abs, 'collection.json'))
     
     def repo_fetch( self ):
         key = COLLECTION_FETCH_CACHE_KEY % self.id
@@ -353,7 +353,7 @@ class Entity( DDRLocalEntity ):
     
     @staticmethod
     def from_json(entity_abs):
-        return from_json(Entity, entity_abs)
+        return from_json(Entity, os.path.join(entity_abs, 'entity.json'))
     
     def selected_inheritables(self, cleaned_data ):
         return _selected_inheritables(self.inheritable_fields(), cleaned_data)
@@ -393,8 +393,7 @@ class Entity( DDRLocalEntity ):
             if f and f.get('path_rel',None):
                 path_abs = os.path.join(self.files_path, f['path_rel'])
                 file_ = DDRFile(path_abs=path_abs)
-                with open(file_.json_path, 'r') as j:
-                    file_.load_json(j.read())
+                file_.load_json(read_json(file_.json_path))
                 self._file_objects.append(file_)
         # keep track of how many times this gets loaded...
         self._file_objects_loaded = self._file_objects_loaded + 1

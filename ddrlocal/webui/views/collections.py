@@ -32,6 +32,7 @@ try:
 except ImportError:
     from ddrlocal.models import collection as collectionmodule
 
+from ddrlocal.models import write_json
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
 from webui.decorators import ddrview, search_index
@@ -259,8 +260,8 @@ def new( request, repo, org ):
     # create the new collection repo
     collection_path = Collection.collection_path(request,repo,org,cid)
     # collection.json template
-    with open(settings.TEMPLATE_CJSON, 'w') as f:
-        f.write(Collection(collection_path).dump_json(template=True))
+    write_json(Collection(collection_path).dump_json(template=True),
+               settings.TEMPLATE_CJSON)
     exit,status = commands.create(git_name, git_mail,
                                   collection_path,
                                   [settings.TEMPLATE_CJSON, settings.TEMPLATE_EAD],
