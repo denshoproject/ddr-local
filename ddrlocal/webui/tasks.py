@@ -399,7 +399,7 @@ def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, 
     # remove file from entity.json
     # TODO move this to commands.file_destroy or models.Entity
     for f in entity.files:
-        if f.basename == file_basename:
+        if f['path_rel'] == file_basename:
             entity.files.remove(f)
     entity.write_json()
     updated_files = ['entity.json']

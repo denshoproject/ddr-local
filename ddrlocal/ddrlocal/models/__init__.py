@@ -573,7 +573,7 @@ class DDRLocalEntity( DDREntity ):
     org = None
     cid = None
     eid = None
-    _files = []
+    _file_objects = 0
     _file_objects_loaded = 0
     json_path = None
     mets_path = None
@@ -591,7 +591,7 @@ class DDRLocalEntity( DDREntity ):
         self.mets_path          = self._path_absrel('mets.xml'   )
         self.json_path_rel      = self._path_absrel('entity.json',rel=True)
         self.mets_path_rel      = self._path_absrel('mets.xml',   rel=True)
-        self._files = []
+        self._file_objects = []
     
     def __repr__(self):
         return "<DDRLocalEntity %s>" % (self.id)
@@ -761,27 +761,25 @@ class DDRLocalEntity( DDREntity ):
         
         TODO Don't call in loop - causes all file .JSONs to be loaded!
         """
-        # keep copy of the list for detect_file_duplicates()
-        self._files = [f for f in self.files]
-        self.files = []
-        for f in self._files:
+        self._file_objects = []
+        for f in self.files:
             if f and f.get('path_rel',None):
                 path_abs = os.path.join(self.files_path, f['path_rel'])
                 file_ = DDRLocalFile(path_abs=path_abs)
                 with open(file_.json_path, 'r') as j:
                     file_.load_json(j.read())
-                self.files.append(file_)
+                self._file_objects.append(file_)
         # keep track of how many times this gets loaded...
         self._file_objects_loaded = self._file_objects_loaded + 1
     
     def files_master( self ):
         self.load_file_objects()
-        files = [f for f in self.files if hasattr(f,'role') and (f.role == 'master')]
+        files = [f for f in self._file_objects if hasattr(f,'role') and (f.role == 'master')]
         return sorted(files, key=lambda f: f.sort)
     
     def files_mezzanine( self ):
         self.load_file_objects()
-        files = [f for f in self.files if hasattr(f,'role') and (f.role == 'mezzanine')]
+        files = [f for f in self._file_objects if hasattr(f,'role') and (f.role == 'mezzanine')]
         return sorted(files, key=lambda f: f.sort)
     
     def detect_file_duplicates( self, role ):
@@ -805,7 +803,7 @@ class DDRLocalEntity( DDREntity ):
         """
         # regenerate files list
         new_files = []
-        for f in self._files:
+        for f in self.files:
             if f not in new_files:
                 new_files.append(f)
         self.files = new_files

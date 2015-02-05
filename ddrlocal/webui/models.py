@@ -388,16 +388,14 @@ class Entity( DDRLocalEntity ):
         adds DDRLocalFile objects which are missing certain methods of
         DDRFile.
         """
-        # keep copy of the list for detect_file_duplicates()
-        self._files = [f for f in self.files]
-        self.files = []
-        for f in self._files:
+        self._file_objects = []
+        for f in self.files:
             if f and f.get('path_rel',None):
                 path_abs = os.path.join(self.files_path, f['path_rel'])
                 file_ = DDRFile(path_abs=path_abs)
                 with open(file_.json_path, 'r') as j:
                     file_.load_json(j.read())
-                self.files.append(file_)
+                self._file_objects.append(file_)
         # keep track of how many times this gets loaded...
         self._file_objects_loaded = self._file_objects_loaded + 1
 
