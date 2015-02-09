@@ -16,13 +16,15 @@ from django.db import models
 
 from DDR import dvcs
 from DDR.models import module_is_valid
+from DDR.models import read_json, from_json
+from DDR.models import Collection as DDRCollection
 from DDR.storage import storage_status
 
 from storage import base_path
 
-from ddrlocal.models import read_json, from_json
-from ddrlocal.models import DDRLocalCollection, DDRLocalEntity, DDRLocalFile
+from ddrlocal.models import DDRLocalEntity, DDRLocalFile
 from ddrlocal.models import COLLECTION_FILES_PREFIX, ENTITY_FILES_PREFIX
+from ddrlocal.models import post_json, labels_values, form_prep, form_post
 
 if settings.REPO_MODELS_PATH not in sys.path:
     sys.path.append(settings.REPO_MODELS_PATH)
@@ -31,7 +33,7 @@ try:
     from repo_models import entity as entitymodule
     from repo_models import files as filemodule
 except ImportError:
-    from ddrlocal.models import collection as collectionmodule
+    from DDR.models import collectionmodule
     from ddrlocal.models import entity as entitymodule
     from ddrlocal.models import files as filemodule
 
@@ -187,7 +189,7 @@ def _update_inheritables( parent_object, objecttype, inheritables, cleaned_data 
 
 
 
-class Collection( DDRLocalCollection ):
+class Collection( DDRCollection ):
     
     def __repr__(self):
         """Returns string representation of object.
@@ -331,6 +333,29 @@ class Collection( DDRLocalCollection ):
         .model_def_fields_removed_msg
         """
         model_def_fields(self, Collection)
+    
+    def labels_values(self):
+        """Apply display_{field} functions to prep object data for the UI.
+        """
+        return labels_values(self, collectionmodule)
+    
+    def form_prep(self):
+        """Apply formprep_{field} functions to prep data dict to pass into DDRForm object.
+        
+        @returns data: dict object as used by Django Form object.
+        """
+        data = form_prep(self, collectionmodule)
+        return data
+    
+    def form_post(self, form):
+        """Apply formpost_{field} functions to process cleaned_data from DDRForm
+        
+        @param form: DDRForm object
+        """
+        form_post(self, collectionmodule, form)
+    
+    def post_json(self, hosts, index):
+        return post_json(hosts, index, self.json_path)
     
 
 class Entity( DDRLocalEntity ):

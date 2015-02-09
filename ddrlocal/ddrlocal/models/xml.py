@@ -5,32 +5,7 @@ import os
 
 from lxml import etree
 
-from DDR import CONFIG_FILES, NoConfigError
-
-config = ConfigParser.ConfigParser()
-configs_read = config.read(CONFIG_FILES)
-if not configs_read:
-    raise NoConfigError('No config file!')
-
-TEMPLATE_EAD = config.get('cmdln','template_ead')
-TEMPLATE_METS = config.get('cmdln','template_mets')
-
-NAMESPACES = {
-    'mets':  'http://www.loc.gov/standards/mets/mets.xsd',
-    'mix':   'http://www.loc.gov/mix/v10',
-    'mods':  'http://www.loc.gov/mods/v3',
-    'rts':   'http://cosimo.stanford.edu/sdr/metsrights/',
-    'xlink': 'http://www.w3.org/1999/xlink',
-    'xsi':   'http://www.w3.org/2001/XMLSchema-instance',}
-
-NAMESPACES_TAGPREFIX = {}
-for k,v in NAMESPACES.iteritems():
-    NAMESPACES_TAGPREFIX[k] = '{%s}' % v
-
-NAMESPACES_XPATH = {'m': NAMESPACES['mets'],}
-
-NSMAP = {None : NAMESPACES['mets'],}
-
+from DDR import TEMPLATE_EAD
 
 
 def load_template(filename):
@@ -38,7 +13,6 @@ def load_template(filename):
     with open(filename, 'r') as f:
         template = f.read()
     return template
-
 
 
 class EAD( object ):
@@ -112,100 +86,3 @@ class EAD( object ):
         else:
             ead = self.tree.xpath('/ead')[0]
             etree.SubElement(ead, dsc)
-
-
-class METS( object ):
-    """Metadata Encoding and Transmission Standard (METS) file.
-    """
-    path = None
-    entity_path = None
-    filename = None
-    tree = None
-    xml = None
-    
-    def __init__( self, entity ):
-        self.entity_path = entity.path
-        self.filename = entity.mets_path
-        self.path = entity.mets_path
-        self.read()
-        #logger.debug('\n{}'.format(etree.tostring(self.tree, pretty_print=True)))
-    
-    @staticmethod
-    def create( path ):
-        logger.debug('    METS.create({})'.format(path))
-        t = load_template(TEMPLATE_METS)
-        with open(path, 'w') as f:
-            f.write(t)
-    
-    def read( self ):
-        #logger.debug('    METS.read({})'.format(self.filename))
-        with open(self.filename, 'r') as f:
-            self.xml = f.read()
-            self.tree = etree.fromstring(self.xml)
-    
-    def write( self ):
-        logger.debug('    METS.write({})'.format(self.filename))
-        xml = etree.tostring(self.tree, pretty_print=True)
-        with open(self.filename, 'w') as f:
-            f.write(xml)
-    
-    def update_filesec( self, entity ):
-        """Repopulates <mets:mets><mets:fileSec> based on entity files.
-        
-        TODO Instead of creating a new <fileSec>, read current data then recreate with additional files
-        
-        <mets:fileSec>
-          <mets:fileGrp USE="image/master">
-            <mets:file GROUPID="GID1" ID="FID1" ADMID="ADM1 ADM5" SEQ="1" MIMETYPE="image/tiff" CREATED="2003-01-22T00:00:00.0">
-              <mets:FLocat LOCTYPE="URL" xlink:href="http://nma.berkeley.edu/ark:/28722/bk0001j1m10" />
-            </mets:file>
-          </mets:fileGrp>
-          <mets:fileGrp USE="image/thumbnail">
-            <mets:file GROUPID="GID1" ID="FID2" SEQ="1" ADMID="ADM2 ADM6" MIMETYPE="image/gif" CREATED="2003-01-22T00:00:00.0">
-              <mets:FLocat LOCTYPE="URL" xlink:href="http://nma.berkeley.edu/ark:/28722/bk0001j1m2j" />
-            </mets:file>
-          </mets:fileGrp>
-        </mets:fileSec>
-        """
-        NS = NAMESPACES_TAGPREFIX
-        ns = NAMESPACES_XPATH
-        payload_path = entity.files_path
-        
-        def relative_path(entity_path, payload_file):
-            """return relative path to payload
-            """
-            if entity_path[-1] != '/':
-                entity_path = '{}/'.format(entity_path)
-            return payload_file.replace(entity_path, '')
-        
-        # <mets:fileSec>
-        filesec = etree.Element(NS['mets']+'fileSec', nsmap=NSMAP)
-        n = 0
-        for md5,path in entity.checksums('md5'):
-            n = n + 1
-            use = 'unknown'
-            path = relative_path(entity.path, path)
-            # mets:fileGrp, mets:file, mets:Flocat
-            fileGrp = etree.SubElement(filesec, NS['mets']+'fileGrp', USE=use)
-            ffile = etree.SubElement(
-                fileGrp, NS['mets']+'file',
-                GROUPID='GID1',
-                ID='FID1',
-                ADMID='ADM1 ADM5',
-                SEQ='1',
-                MIMETYPE='image/tiff',
-                CREATED='',
-                CHECKSUM=md5, CHECKSUMTYPE='md5')
-            flocat = etree.SubElement(ffile, NS['mets']+'FLocat', LOCTYPE='URL',)
-            flocat.set(NS['xlink']+'href', path)
-        
-        # swap out existing one
-        tags = self.tree.xpath('/m:mets/m:fileSec', namespaces=ns)
-        if tags:
-            filesec_old = tags[0]
-            self.tree.replace(filesec_old, filesec)
-        else:
-            rtags = self.tree.xpath('/m:mets', namespaces=ns)
-            if rtags:
-                root = rtags[0]
-                etree.SubElement(root, filesec)

@@ -30,11 +30,8 @@ from DDR.models import document_metadata
 from DDR.models import cmp_model_definition_commits, cmp_model_definition_fields
 
 from ddrlocal import VERSION, COMMIT
-from ddrlocal.models import collection as collectionmodule
-from ddrlocal.models import entity as entitymodule
-from ddrlocal.models import files as filemodule
-from ddrlocal.models.meta import CollectionJSON, EntityJSON, read_json
-from ddrlocal.models.xml import EAD, METS
+from ddrlocal.models.meta import CollectionJSON, EntityJSON
+from ddrlocal.models.xml import EAD
 
 from DDR import CONFIG_FILES, NoConfigError
 config = ConfigParser.ConfigParser()
@@ -51,7 +48,7 @@ try:
     from repo_models import entity as entitymodule
     from repo_models import files as filemodule
 except ImportError:
-    from ddrlocal.models import collection as collectionmodule
+    from DDR.models import collectionmodule
     from ddrlocal.models import entity as entitymodule
     from ddrlocal.models import files as filemodule
 
@@ -168,50 +165,13 @@ def form_post(document, module, form):
 class DDRLocalCollection( DDRCollection ):
     """
     Subclass of DDR.models.Collection (renamed).
-    Adds functions for reading/writing collection.json and ead.xml,
-    preparing/processing Django forms, and displaying data in Django.
+    Used to contain functions for reading/writing collection.json and ead.xml,
+    but now is only here to prevent import clashing between DDR.models.Collection
+    and webui.models.Collection.
     """
-    id = 'whatever'
-    repo = None
-    org = None
-    cid = None
-    _status = ''
-    _astatus = ''
-    _unsynced = 0
-    ead_path = None
-    json_path = None
-    ead_path_rel = None
-    json_path_rel = None
 
     def __init__(self, *args, **kwargs):
-        """
-        >>> c = DDRLocalCollection('/tmp/ddr-testing-123')
-        >>> c.uid
-        'ddr-testing-123'
-        >>> c.repo
-        'ddr'
-        >>> c.org
-        'testing'
-        >>> c.cid
-        '123'
-        >>> c.ead_path_rel
-        'ead.xml'
-        >>> c.ead_path
-        '/tmp/ddr-testing-123/ead.xml'
-        >>> c.json_path_rel
-        'collection.json'
-        >>> c.json_path
-        '/tmp/ddr-testing-123/collection.json'
-        """
         super(DDRLocalCollection, self).__init__(*args, **kwargs)
-        self.id = self.uid
-        self.repo = self.id.split('-')[0]
-        self.org = self.id.split('-')[1]
-        self.cid = self.id.split('-')[2]
-        self.ead_path           = self._path_absrel('ead.xml'        )
-        self.json_path          = self._path_absrel('collection.json')
-        self.ead_path_rel       = self._path_absrel('ead.xml',        rel=True)
-        self.json_path_rel      = self._path_absrel('collection.json',rel=True)
     
     def __repr__(self):
         """Returns string representation of object.
@@ -221,188 +181,6 @@ class DDRLocalCollection( DDRCollection ):
         <DDRLocalCollection ddr-testing-123>
         """
         return "<DDRLocalCollection %s>" % (self.id)
-    
-    @staticmethod
-    def create(path):
-        """Creates a new collection with the specified collection ID.
-        
-        Also sets initial field values if present.
-        
-        >>> c = DDRLocalCollection.create('/tmp/ddr-testing-120')
-        
-        @param path: Absolute path to collection; must end in valid DDR collection id.
-        @returns: Collection object
-        """
-        collection = DDRLocalCollection(path)
-        for f in collectionmodule.FIELDS:
-            if hasattr(f, 'name') and hasattr(f, 'initial'):
-                setattr(collection, f['name'], f['initial'])
-        return collection
-    
-    def model_def_commits( self ):
-        return cmp_model_definition_commits(self, collectionmodule)
-    
-    def model_def_fields( self ):
-        return cmp_model_definition_fields(read_json(self.json_path), collectionmodule)
-    
-    def entities( self, quick=None ):
-        """Returns list of the Collection's Entity objects.
-        
-        >>> c = Collection.from_json('/tmp/ddr-testing-123')
-        >>> c.entities()
-        [<DDRLocalEntity ddr-testing-123-1>, <DDRLocalEntity ddr-testing-123-2>, ...]
-        
-        @param quick: Boolean List only titles and IDs
-        """
-        # empty class used for quick view
-        class ListEntity( object ):
-            def __repr__(self):
-                return "<DDRListEntity %s>" % (self.id)
-        entity_paths = []
-        if os.path.exists(self.files_path):
-            # TODO use cached list if available
-            for eid in os.listdir(self.files_path):
-                path = os.path.join(self.files_path, eid)
-                entity_paths.append(path)
-        entity_paths = natural_sort(entity_paths)
-        entities = []
-        for path in entity_paths:
-            if quick:
-                # fake Entity with just enough info for lists
-                entity_json_path = os.path.join(path,'entity.json')
-                if os.path.exists(entity_json_path):
-                    for line in read_json(entity_json_path).split('\n'):
-                        if '"title":' in line:
-                            e = ListEntity()
-                            e.id = e.uid = eid = os.path.basename(path)
-                            e.repo,e.org,e.cid,e.eid = eid.split('-')
-                            # make a miniature JSON doc out of just title line
-                            e.title = json.loads('{%s}' % line)['title']
-                            entities.append(e)
-            else:
-                entity = DDRLocalEntity.from_json(path)
-                for lv in entity.labels_values():
-                    if lv['label'] == 'title':
-                        entity.title = lv['value']
-                entities.append(entity)
-        return entities
-    
-    def inheritable_fields( self ):
-        """Returns list of Collection object's field names marked as inheritable.
-        
-        >>> c = Collection.from_json('/tmp/ddr-testing-123')
-        >>> c.inheritable_fields()
-        ['status', 'public', 'rights']
-        """
-        return _inheritable_fields(collectionmodule.FIELDS )
-    
-    def labels_values(self):
-        """Apply display_{field} functions to prep object data for the UI.
-        """
-        return labels_values(self, collectionmodule)
-    
-    def form_prep(self):
-        """Apply formprep_{field} functions to prep data dict to pass into DDRForm object.
-        
-        @returns data: dict object as used by Django Form object.
-        """
-        data = form_prep(self, collectionmodule)
-        return data
-    
-    def form_post(self, form):
-        """Apply formpost_{field} functions to process cleaned_data from DDRForm
-        
-        @param form: DDRForm object
-        """
-        form_post(self, collectionmodule, form)
-    
-    def json( self ):
-        """Returns a ddrlocal.models.meta.CollectionJSON object
-        
-        TODO Do we really need this?
-        """
-        #if not os.path.exists(self.json_path):
-        #    CollectionJSON.create(self.json_path)
-        return CollectionJSON(self)
-    
-    @staticmethod
-    def from_json(collection_abs):
-        """Creates a DDRLocalCollection and populates with data from JSON file.
-        
-        @param collection_abs: Absolute path to collection directory.
-        @returns: DDRLocalCollection
-        """
-        return from_json(DDRLocalCollection, os.path.join(collection_abs, 'collection.json'))
-    
-    def load_json(self, json_text):
-        """Populates Collection from JSON-formatted text.
-        
-        Goes through COLLECTION_FIELDS, turning data in the JSON file into
-        object attributes.
-        
-        @param json_text: JSON-formatted text
-        """
-        load_json(self, collectionmodule, json_text)
-        # special cases
-        if hasattr(self, 'record_created') and self.record_created:
-            self.record_created = datetime.strptime(self.record_created, DATETIME_FORMAT)
-        else:
-            self.record_created = datetime.now()
-        if hasattr(self, 'record_lastmod') and self.record_lastmod:
-            self.record_lastmod = datetime.strptime(self.record_lastmod, DATETIME_FORMAT)
-        else:
-            self.record_lastmod = datetime.now()
-    
-    def dump_json(self, template=False, doc_metadata=False):
-        """Dump Collection data to JSON-formatted text.
-        
-        @param template: [optional] Boolean. If true, write default values for fields.
-        @param doc_metadata: boolean. Insert document_metadata().
-        @returns: JSON-formatted text
-        """
-        data = prep_json(self, collectionmodule, template=template)
-        if doc_metadata:
-            data.insert(0, document_metadata(collectionmodule, self.path))
-        return format_json(data)
-    
-    def write_json(self):
-        """Write JSON file to disk.
-        """
-        write_json(self.dump_json(doc_metadata=True), self.json_path)
-    
-    def post_json(self, hosts, index):
-        return post_json(hosts, index, self.json_path)
-    
-    def ead( self ):
-        """Returns a ddrlocal.models.xml.EAD object for the collection.
-        
-        TODO Do we really need this?
-        """
-        if not os.path.exists(self.ead_path):
-            EAD.create(self.ead_path)
-        return EAD(self)
-    
-    def dump_ead(self):
-        """Dump Collection data to ead.xml file.
-        
-        TODO render a Django/Jinja template instead of using lxml
-        TODO This should not actually write the XML! It should return XML to the code that calls it.
-        """
-        NAMESPACES = None
-        tree = etree.fromstring(self.ead().xml)
-        for f in collectionmodule.FIELDS:
-            key = f['name']
-            value = ''
-            if hasattr(self, f['name']):
-                value = getattr(self, key)
-                # run ead_* functions on field data if present
-                tree = module_xml_function(collectionmodule,
-                                           'ead_%s' % key,
-                                           tree, NAMESPACES, f,
-                                           value)
-        xml_pretty = etree.tostring(tree, pretty_print=True)
-        with open(self.ead_path, 'w') as f:
-            f.write(xml_pretty)
 
 
 
