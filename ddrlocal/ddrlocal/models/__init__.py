@@ -21,8 +21,13 @@ from DDR import dvcs
 from DDR import imaging
 from DDR import format_json, natural_order_string, natural_sort
 from DDR.models import Collection as DDRCollection, Entity as DDREntity
-from DDR.models import dissect_path, file_hash, _inheritable_fields, _inherit
+from DDR.models import file_hash
+from DDR.models import dissect_path
+from DDR.models import _inheritable_fields, _inherit
 from DDR.models import module_function, module_path, module_xml_function
+from DDR.models import read_json, write_json, load_json, prep_json, from_json
+from DDR.models import document_metadata
+from DDR.models import cmp_model_definition_commits, cmp_model_definition_fields
 
 from ddrlocal import VERSION, COMMIT
 from ddrlocal.models import collection as collectionmodule
@@ -61,119 +66,6 @@ COLLECTION_FILES_PREFIX = 'files'
 ENTITY_FILES_PREFIX = 'files'
 
 
-
-def read_json(path):
-    """Read text file; make sure text is in UTF-8.
-    
-    @param path: str Absolute path to file.
-    @returns: unicode
-    """
-    # TODO use codecs.open utf-8
-    with open(path, 'r') as f:
-        text = f.read()
-    return text
-
-def write_json(text, path):
-    """Write text to UTF-8 file.
-    
-    @param text: unicode
-    @param path: str Absolute path to file.
-    """
-    # TODO use codecs.open utf-8
-    with open(path, 'w') as f:
-        f.write(text)
-
-def load_json(document, module, json_text):
-    """Populates object from JSON-formatted text.
-    
-    Goes through module.FIELDS turning data in the JSON file into
-    object attributes.
-    
-    @param document: Collection/Entity/File object.
-    @param module: collection/entity/file module from 'ddr' repo.
-    @param json_text: JSON-formatted text
-    @returns: dict
-    """
-    json_data = json.loads(json_text)
-    ## software and commit metadata
-    #if data:
-    #    setattr(document, 'json_metadata', data[0])
-    # field values from JSON
-    for mf in module.FIELDS:
-        for f in json_data:
-            if hasattr(f, 'keys') and (f.keys()[0] == mf['name']):
-                setattr(document, f.keys()[0], f.values()[0])
-    # Fill in missing fields with default values from module.FIELDS.
-    # Note: should not replace fields that are just empty.
-    for mf in module.FIELDS:
-        if not hasattr(document, mf['name']):
-            setattr(document, mf['name'], mf.get('default',None))
-    return json_data
-
-def prep_json(obj, module, template=False,
-              template_passthru=['id', 'record_created', 'record_lastmod'],
-              exceptions=[]):
-    """Arranges object data in list-of-dicts format before serialization.
-    
-    DDR keeps data in Git is to take advantage of versioning.  Python
-    dicts store data in random order which makes it impossible to
-    meaningfully compare diffs of the data over time.  DDR thus stores
-    data as an alphabetically arranged list of dicts, with several
-    exceptions.
-    
-    The first dict in the list is not part of the object itself but
-    contains metadata about the state of the DDR application at the time
-    the file was last written: the Git commit of the app, the release
-    number, and the versions of Git and git-annex used.
-    
-    Python data types that cannot be represented in JSON (e.g. datetime)
-    are converted into strings.
-    
-    @param obj: Collection/Entity/File object.
-    @param module: collection/entity/file module from 'ddr' repo.
-    @param template: Boolean True if object to be used as blank template.
-    @param template_passthru: list
-    @param exceptions: list
-    @returns: dict
-    """
-    data = []
-    for mf in module.FIELDS:
-        item = {}
-        key = mf['name']
-        val = ''
-        if template and (key not in template_passthru) and hasattr(mf,'form'):
-            # write default values
-            val = mf['form']['initial']
-        elif hasattr(obj, mf['name']):
-            # write object's values
-            val = getattr(obj, mf['name'])
-            # special cases
-            if val:
-                # JSON requires dates to be represented as strings
-                if hasattr(val, 'fromtimestamp') and hasattr(val, 'strftime'):
-                    val = val.strftime(DATETIME_FORMAT)
-            # end special cases
-        item[key] = val
-        if key not in exceptions:
-            data.append(item)
-    return data
-
-def from_json(model, json_path):
-    """Read the specified JSON file and properly instantiate object.
-    
-    @param model: DDRLocalCollection, DDRLocalEntity, or DDRLocalFile
-    @param json_path: absolute path to the object's .json file
-    @returns: object
-    """
-    document = None
-    if os.path.exists(json_path):
-        document = model(os.path.dirname(json_path))
-        document_uid = document.id  # save this just in case
-        document.load_json(read_json(json_path))
-        if not document.id:
-            # id gets overwritten if document.json is blank
-            document.id = document_uid
-    return document
 
 def post_json(hosts, index, json_path):
     """Post current .json to docstore.
@@ -271,65 +163,6 @@ def form_post(document, module, form):
     # update record_lastmod
     if hasattr(document, 'record_lastmod'):
         document.record_lastmod = datetime.now()
-
-def document_metadata(module, document_repo_path):
-    """Metadata for the ddrlocal/ddrcmdln and models definitions used.
-    
-    @param module: collection, entity, files model definitions module
-    @param document_repo_path: Absolute path to root of document's repo
-    @returns: dict
-    """
-    data = {
-        'application': 'https://github.com/densho/ddr-local.git',
-        'app_commit': dvcs.latest_commit(os.path.dirname(__file__)),
-        'app_release': VERSION,
-        'models_commit': dvcs.latest_commit(module_path(module)),
-        'git_version': dvcs.git_version(document_repo_path),
-    }
-    return data
-
-def cmp_model_definition_commits(document, module):
-    """Indicate document's model defs are newer or older than module's.
-    
-    Prepares repository and document/module commits to be compared
-    by DDR.dvcs.cmp_commits.  See that function for how to interpret
-    the results.
-    Note: if a document has no defs commit it is considered older
-    than the module.
-    
-    @param document: A Collection, Entity, or File object.
-    @param module: A collection, entity, or files module.
-    @returns: int
-    """
-    def parse(txt):
-        return txt.strip().split(' ')[0]
-    module_commit_raw = dvcs.latest_commit(module_path(module))
-    module_defs_commit = parse(module_commit_raw)
-    if not module_defs_commit:
-        return 128
-    doc_metadata = getattr(document, 'json_metadata', {})
-    document_commit_raw = doc_metadata.get('models_commit','')
-    document_defs_commit = parse(document_commit_raw)
-    if not document_defs_commit:
-        return -1
-    repo = dvcs.repository(module_path(module))
-    return dvcs.cmp_commits(repo, document_defs_commit, module_defs_commit)
-
-def cmp_model_definition_fields(document_json, module):
-    """Indicate whether module adds or removes fields from document
-    
-    @param document_json: Raw contents of document *.json file
-    @param module: A collection, entity, or files module.
-    @returns: list,list Lists of added,removed field names.
-    """
-    # First item in list is document metadata, everything else is a field.
-    document_fields = [field.keys()[0] for field in json.loads(document_json)[1:]]
-    module_fields = [field['name'] for field in getattr(module, 'FIELDS')]
-    # models.load_json() uses MODULE.FIELDS, so get list of fields
-    # directly from the JSON document.
-    added = [field for field in module_fields if field not in document_fields]
-    removed = [field for field in document_fields if field not in module_fields]
-    return added,removed
 
 
 class DDRLocalCollection( DDRCollection ):

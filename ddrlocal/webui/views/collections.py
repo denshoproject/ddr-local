@@ -24,6 +24,7 @@ from DDR import commands
 from DDR import docstore
 from DDR import idservice
 from DDR.models import make_object_id, id_from_path
+from DDR.models import write_json
 
 if settings.REPO_MODELS_PATH not in sys.path:
     sys.path.append(settings.REPO_MODELS_PATH)
@@ -32,7 +33,6 @@ try:
 except ImportError:
     from ddrlocal.models import collection as collectionmodule
 
-from ddrlocal.models import write_json
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
 from webui.decorators import ddrview, search_index

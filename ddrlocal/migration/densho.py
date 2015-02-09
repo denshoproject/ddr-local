@@ -116,9 +116,8 @@ import doctest
 from django.conf import settings
 
 from DDR import commands
-from DDR.models import metadata_files
+from DDR.models import metadata_files, module_function
 from webui.models import Collection, Entity
-from ddrlocal.models import module_function
 from ddrlocal.models import DDRLocalEntity, DDRLocalFile
 
 if settings.REPO_MODELS_PATH not in sys.path:

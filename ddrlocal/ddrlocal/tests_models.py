@@ -68,48 +68,6 @@ def test_form_post():
     assert document.title == "NEW TITLE"
     assert document.description == "NEW DESCRIPTION"    
 
-# from_json
-
-def test_load_json():
-    document = Document()
-    models.load_json(document, testmodule, TEST_DOCUMENT)
-    assert document.id == 'ddr-test-123'
-    assert document.timestamp == u'2014-09-19T03:14:59'
-    assert document.status == 1
-    assert document.title == 'TITLE'
-    assert document.description == 'DESCRIPTION'
-
-def test_document_metadata():
-    pass
-
-# cmp_model_definition_commits
-
-def test_cmp_model_definition_fields():
-    document = json.loads(TEST_DOCUMENT)
-    assert models.cmp_model_definition_fields(
-        json.dumps(document), testmodule) == ([],[])
-    
-    document.append( {'new': 'new field'} )
-    assert models.cmp_model_definition_fields(
-        json.dumps(document), testmodule) == (['new'],[])
-    
-    document.pop()
-    document.pop()
-    assert models.cmp_model_definition_fields(
-        json.dumps(document), testmodule) == ([],['description'])
-
-def test_prep_json_data():
-    document = Document()
-    models.load_json(document, testmodule, TEST_DOCUMENT)
-    expected = [
-        {'id': u'ddr-test-123'},
-        {'timestamp': u'2014-09-19T03:14:59'},
-        {'status': 1},
-        {'title': u'TITLE'},
-        {'description': u'DESCRIPTION'}
-    ]
-    assert models.prep_json_data(document, testmodule) == expected
-
 
 
 #DDRLocalCollection
