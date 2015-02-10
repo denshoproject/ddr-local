@@ -16,6 +16,7 @@ from django.db import models
 
 from DDR import docstore
 from DDR import dvcs
+from DDR.models import make_object_id, path_from_id
 from DDR.models import module_is_valid, module_function
 from DDR.models import read_json, from_json
 from DDR.models import Collection as DDRCollection
@@ -25,8 +26,6 @@ from DDR.models import COLLECTION_FILES_PREFIX, ENTITY_FILES_PREFIX
 from DDR.storage import storage_status
 
 from storage import base_path
-
-#from ddrlocal.models import DDRLocalCollection, DDRLocalEntity, DDRLocalFile
 
 if settings.REPO_MODELS_PATH not in sys.path:
     sys.path.append(settings.REPO_MODELS_PATH)
@@ -51,6 +50,11 @@ from webui import COLLECTION_ANNEX_STATUS_TIMEOUT
 
 def repo_models_valid(request):
     """Displays alerts if repo_models are absent or undefined
+    
+    Wrapper around DDR.models.module_is_valid
+    
+    @param request
+    @returns: boolean
     """
     valid = True
     NOIMPORT_MSG = 'Error: Could not import model definitions!'
@@ -72,12 +76,24 @@ def repo_models_valid(request):
     return valid
 
 def model_def_commits(document, module):
+    """
+    Wrapper around DDR.models.model_def_commits
+    
+    @param document
+    @param module
+    """
     status = super(module, document).model_def_commits()
     alert,msg = WEBUI_MESSAGES['MODEL_DEF_COMMITS_STATUS_%s' % status]
     document.model_def_commits_alert = alert
     document.model_def_commits_msg = msg
 
 def model_def_fields(document, module):
+    """
+    Wrapper around DDR.models.model_def_fields
+    
+    @param document
+    @param module
+    """
     added,removed = super(module, document).model_def_fields()
     # 'File.path_rel' is created when instantiating Files,
     # is not part of model definitions.
@@ -94,12 +110,10 @@ def model_def_fields(document, module):
 def form_prep(document, module):
     """Apply formprep_{field} functions to prep data dict to pass into DDRForm object.
     
-    TODO Move to webui.models
-    
     Certain fields require special processing.  Data may need to be massaged
     and prepared for insertion into particular Django form objects.
-    If a "formprep_{field}" function is present in the ddrlocal.models.collection
-    module it will be executed.
+    If a "formprep_{field}" function is present in the collectionmodule
+    it will be executed.
     
     @param document: Collection, Entity, File document object
     @param module: collection, entity, files model definitions module
@@ -121,11 +135,9 @@ def form_prep(document, module):
 def form_post(document, module, form):
     """Apply formpost_{field} functions to process cleaned_data from CollectionForm
     
-    TODO Move to webui.models
-    
     Certain fields require special processing.
-    If a "formpost_{field}" function is present in the ddrlocal.models.entity
-    module it will be executed.
+    If a "formpost_{field}" function is present in the entitymodule
+    it will be executed.
     
     @param document: Collection, Entity, File document object
     @param module: collection, entity, files model definitions module
@@ -146,7 +158,8 @@ def form_post(document, module, form):
         document.record_lastmod = datetime.now()
 
 def post_json(hosts, index, json_path):
-    """Post current .json to docstore.    
+    """Post current .json to docstore.
+    
     @param hosts: list of dicts containing host information.
     @param index: Name of the target index.
     @param json_path: Absolute path to .json file.
@@ -178,7 +191,16 @@ class Collection( DDRCollection ):
         >>> DDRLocalCollection.collection_path(None, 'ddr', 'testing', 123)
         '/var/www/media/base/ddr-testing-123'
         """
-        return os.path.join(settings.MEDIA_BASE, '{}-{}-{}'.format(repo, org, cid))
+        return path_from_id(
+            make_object_id('collection', repo, org, cid),
+            settings.MEDIA_BASE
+        )
+    
+    @staticmethod
+    def from_json(collection_abs):
+        """Instantiates a Collection object, loads data from collection.json.
+        """
+        return from_json(Collection, os.path.join(collection_abs, 'collection.json'))
     
     def gitstatus_path( self ):
         """Returns absolute path to collection .gitstatus cache file.
@@ -214,12 +236,6 @@ class Collection( DDRCollection ):
         cache.delete(COLLECTION_FETCH_CACHE_KEY % self.id)
         cache.delete(COLLECTION_STATUS_CACHE_KEY % self.id)
         cache.delete(COLLECTION_ANNEX_STATUS_CACHE_KEY % self.id)
-    
-    @staticmethod
-    def from_json(collection_abs):
-        """Instantiates a Collection object, loads data from collection.json.
-        """
-        return from_json(Collection, os.path.join(collection_abs, 'collection.json'))
     
     def repo_fetch( self ):
         key = COLLECTION_FETCH_CACHE_KEY % self.id
@@ -308,8 +324,7 @@ class Collection( DDRCollection ):
         
         @returns data: dict object as used by Django Form object.
         """
-        data = form_prep(self, collectionmodule)
-        return data
+        return form_prep(self, collectionmodule)
     
     def form_post(self, form):
         """Apply formpost_{field} functions to process cleaned_data from DDRForm
@@ -331,18 +346,17 @@ class Entity( DDREntity ):
     
     @staticmethod
     def entity_path(request, repo, org, cid, eid):
-        collection_uid = '{}-{}-{}'.format(repo, org, cid)
-        entity_uid     = '{}-{}-{}-{}'.format(repo, org, cid, eid)
-        collection_abs = os.path.join(settings.MEDIA_BASE, collection_uid)
-        entity_abs     = os.path.join(collection_abs, COLLECTION_FILES_PREFIX, entity_uid)
-        return entity_abs
-    
-    def url( self ):
-        return reverse('webui-entity', args=[self.repo, self.org, self.cid, self.eid])
+        return path_from_id(
+            make_object_id('entity', repo, org, cid, eid),
+            settings.MEDIA_BASE
+        )
     
     @staticmethod
     def from_json(entity_abs):
         return from_json(Entity, os.path.join(entity_abs, 'entity.json'))
+    
+    def url( self ):
+        return reverse('webui-entity', args=[self.repo, self.org, self.cid, self.eid])
     
     def model_def_commits(self):
         """Assesses document's relation to model defs in 'ddr' repo.
@@ -389,7 +403,7 @@ class Entity( DDREntity ):
     def load_file_objects( self ):
         """Replaces list of file info dicts with list of DDRFile objects
         
-        Overrides the function in ddrlocal.models.DDRLocalEntity, which
+        Overrides the function in .models.DDRLocalEntity, which
         adds DDRLocalFile objects which are missing certain methods of
         DDRFile.
         """
@@ -411,6 +425,13 @@ class DDRFile( File ):
         """
         return "<webui.models.DDRFile %s>" % (self.id)
     
+    @staticmethod
+    def file_path(request, repo, org, cid, eid, role, sha1):
+        return path_from_id(
+            make_object_id('file', repo, org, cid, eid, role, sha1),
+            settings.MEDIA_BASE
+        )
+    
     def url( self ):
         return reverse('webui-file', args=[self.repo, self.org, self.cid, self.eid, self.role, self.sha1[:10]])
     
@@ -425,10 +446,6 @@ class DDRFile( File ):
             stub = os.path.join(self.entity_files_path.replace(settings.MEDIA_ROOT,''), self.access_rel)
             return '%s%s' % (settings.MEDIA_URL, stub)
         return None
-    
-    @staticmethod
-    def file_path(request, repo, org, cid, eid, role, sha1):
-        return os.path.join(settings.MEDIA_BASE, '{}-{}-{}-{}-{}-{}'.format(repo, org, cid, eid, role, sha1))
     
     def model_def_commits(self):
         """Assesses document's relation to model defs in 'ddr' repo.
@@ -455,8 +472,7 @@ class DDRFile( File ):
         
         @returns data: dict object as used by Django Form object.
         """
-        data = form_prep(self, filemodule)
-        return data
+        return form_prep(self, filemodule)
     
     def form_post(self, form):
         """Apply formpost_{field} functions to process cleaned_data from DDRForm
