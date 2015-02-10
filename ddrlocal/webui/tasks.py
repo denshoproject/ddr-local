@@ -22,9 +22,11 @@ from migration.densho import export_entities, export_files, export_csv_path
 from webui import GITOLITE_INFO_CACHE_KEY
 from webui import gitolite
 from webui import gitstatus
-from webui.models import Collection, Entity, DDRFile
+from webui.models import Collection, Entity, DDRFile, post_json
 
-from DDR import docstore, dvcs, models
+from DDR import docstore
+from DDR import dvcs
+from DDR import models
 from DDR.commands import entity_destroy, file_destroy
 from DDR.commands import sync
 
@@ -251,7 +253,7 @@ def entity_add_file( git_name, git_mail, entity, src_path, role, data, agent='' 
     gitstatus.lock(settings.MEDIA_BASE, 'entity_add_file')
     file_,repo,log = entity.add_file(src_path, role, data, git_name, git_mail, agent)
     file_,repo,log = entity.add_file_commit(file_, repo, log, git_name, git_mail, agent)
-    file_.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+    post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, file_.json_path)
     return file_.__dict__
 
 @task(base=FileAddDebugTask, name='entity-add-access')

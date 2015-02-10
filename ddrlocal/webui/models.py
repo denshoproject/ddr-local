@@ -14,17 +14,19 @@ from django.core.cache import cache
 from django.core.urlresolvers import reverse
 from django.db import models
 
+from DDR import docstore
 from DDR import dvcs
-from DDR.models import module_is_valid
+from DDR.models import module_is_valid, module_function
 from DDR.models import read_json, from_json
 from DDR.models import Collection as DDRCollection
+from DDR.models import Entity as DDREntity
+from DDR.models import File
+from DDR.models import COLLECTION_FILES_PREFIX, ENTITY_FILES_PREFIX
 from DDR.storage import storage_status
 
 from storage import base_path
 
-from ddrlocal.models import DDRLocalEntity, DDRLocalFile
-from ddrlocal.models import COLLECTION_FILES_PREFIX, ENTITY_FILES_PREFIX
-from ddrlocal.models import post_json, labels_values, form_prep, form_post
+#from ddrlocal.models import DDRLocalCollection, DDRLocalEntity, DDRLocalFile
 
 if settings.REPO_MODELS_PATH not in sys.path:
     sys.path.append(settings.REPO_MODELS_PATH)
@@ -34,8 +36,8 @@ try:
     from repo_models import files as filemodule
 except ImportError:
     from DDR.models import collectionmodule
-    from ddrlocal.models import entity as entitymodule
-    from ddrlocal.models import files as filemodule
+    from DDR.models import entitymodule
+    from DDR.models import filemodule
 
 from webui import gitstatus
 from webui import WEBUI_MESSAGES
@@ -88,6 +90,74 @@ def model_def_fields(document, module):
     document.model_def_fields_removed = removed
     document.model_def_fields_added_msg = WEBUI_MESSAGES['MODEL_DEF_FIELDS_ADDED'] % added
     document.model_def_fields_removed_msg = WEBUI_MESSAGES['MODEL_DEF_FIELDS_REMOVED'] % removed
+
+def form_prep(document, module):
+    """Apply formprep_{field} functions to prep data dict to pass into DDRForm object.
+    
+    TODO Move to webui.models
+    
+    Certain fields require special processing.  Data may need to be massaged
+    and prepared for insertion into particular Django form objects.
+    If a "formprep_{field}" function is present in the ddrlocal.models.collection
+    module it will be executed.
+    
+    @param document: Collection, Entity, File document object
+    @param module: collection, entity, files model definitions module
+    @returns data: dict object as used by Django Form object.
+    """
+    data = {}
+    for f in module.FIELDS:
+        if hasattr(document, f['name']) and f.get('form',None):
+            key = f['name']
+            # run formprep_* functions on field data if present
+            value = module_function(
+                module,
+                'formprep_%s' % key,
+                getattr(document, f['name'])
+            )
+            data[key] = value
+    return data
+    
+def form_post(document, module, form):
+    """Apply formpost_{field} functions to process cleaned_data from CollectionForm
+    
+    TODO Move to webui.models
+    
+    Certain fields require special processing.
+    If a "formpost_{field}" function is present in the ddrlocal.models.entity
+    module it will be executed.
+    
+    @param document: Collection, Entity, File document object
+    @param module: collection, entity, files model definitions module
+    @param form: DDRForm object
+    """
+    for f in module.FIELDS:
+        if hasattr(document, f['name']) and f.get('form',None):
+            key = f['name']
+            # run formpost_* functions on field data if present
+            cleaned_data = module_function(
+                module,
+                'formpost_%s' % key,
+                form.cleaned_data[key]
+            )
+            setattr(document, key, cleaned_data)
+    # update record_lastmod
+    if hasattr(document, 'record_lastmod'):
+        document.record_lastmod = datetime.now()
+
+def post_json(hosts, index, json_path):
+    """Post current .json to docstore.    
+    @param hosts: list of dicts containing host information.
+    @param index: Name of the target index.
+    @param json_path: Absolute path to .json file.
+    @returns: JSON dict with status code and response
+    """
+    status = docstore.post(
+        hosts, index,
+        json.loads(read_json(json_path)),
+        private_ok=True)
+    logging.debug(str(status))
+    return status
 
 
 # functions relating to inheritance ------------------------------------
@@ -334,11 +404,6 @@ class Collection( DDRCollection ):
         """
         model_def_fields(self, Collection)
     
-    def labels_values(self):
-        """Apply display_{field} functions to prep object data for the UI.
-        """
-        return labels_values(self, collectionmodule)
-    
     def form_prep(self):
         """Apply formprep_{field} functions to prep data dict to pass into DDRForm object.
         
@@ -358,7 +423,7 @@ class Collection( DDRCollection ):
         return post_json(hosts, index, self.json_path)
     
 
-class Entity( DDRLocalEntity ):
+class Entity( DDREntity ):
     
     def __repr__(self):
         """Returns string representation of object.
@@ -406,6 +471,28 @@ class Entity( DDRLocalEntity ):
         """
         model_def_fields(self, Entity)
     
+    def form_prep(self):
+        """Apply formprep_{field} functions to prep data dict to pass into DDRForm object.
+        
+        @returns data: dict object as used by Django Form object.
+        """
+        data = form_prep(self, entitymodule)
+        if not data.get('record_created', None):
+            data['record_created'] = datetime.now()
+        if not data.get('record_lastmod', None):
+            data['record_lastmod'] = datetime.now()
+        return data
+    
+    def form_post(self, form):
+        """Apply formpost_{field} functions to process cleaned_data from DDRForm
+        
+        @param form: DDRForm object
+        """
+        form_post(self, entitymodule, form)
+    
+    def post_json(self, hosts, index):
+        return post_json(hosts, index, self.json_path)
+    
     def load_file_objects( self ):
         """Replaces list of file info dicts with list of DDRFile objects
         
@@ -424,7 +511,7 @@ class Entity( DDRLocalEntity ):
         self._file_objects_loaded = self._file_objects_loaded + 1
 
 
-class DDRFile( DDRLocalFile ):
+class DDRFile( File ):
     
     def __repr__(self):
         """Returns string representation of object.
@@ -469,3 +556,21 @@ class DDRFile( DDRLocalFile ):
         .model_def_fields_removed_msg
         """
         model_def_fields(self, DDRFile)
+    
+    def form_prep(self):
+        """Apply formprep_{field} functions to prep data dict to pass into DDRForm object.
+        
+        @returns data: dict object as used by Django Form object.
+        """
+        data = form_prep(self, filemodule)
+        return data
+    
+    def form_post(self, form):
+        """Apply formpost_{field} functions to process cleaned_data from DDRForm
+        
+        @param form: DDRForm object
+        """
+        form_post(self, filemodule, form)
+    
+    def post_json(self, hosts, index):
+        return post_json(hosts, index, self.json_path)

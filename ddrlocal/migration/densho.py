@@ -132,11 +132,11 @@ try:
     from repo_models.entity import STATUS_CHOICES, PERMISSIONS_CHOICES, RIGHTS_CHOICES
     from repo_models.entity import LANGUAGE_CHOICES, GENRE_CHOICES, FORMAT_CHOICES
 except ImportError:
-    from ddrlocal.models import collection as collectionmodule
-    from ddrlocal.models import entity as entitymodule
-    from ddrlocal.models import files as filemodule
-    from ddrlocal.models.entity import FIELDS as ENTITY_FIELDS
-    from ddrlocal.models.files import FIELDS as FILE_FIELDS
+    from DDR.models import collectionmodule
+    from DDR.models import entitymodule
+    from DDR.models import filemodule
+    from DDR.models.entitymodule import FIELDS as ENTITY_FIELDS
+    from DDR.models.filemodule import FIELDS as FILE_FIELDS
     STATUS_CHOICES = PERMISSIONS_CHOICES = RIGHTS_CHOICES = []
     LANGUAGE_CHOICES = GENRE_CHOICES = FORMAT_CHOICES = []
 #def add_file( git_name, git_mail, entity, src_path, role, data ):
