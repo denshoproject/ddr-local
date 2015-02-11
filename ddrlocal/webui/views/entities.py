@@ -23,6 +23,7 @@ from django.template import RequestContext
 from DDR import commands
 from DDR import docstore
 from DDR import idservice
+from DDR.models import write_json
 
 if settings.REPO_MODELS_PATH not in sys.path:
     sys.path.append(settings.REPO_MODELS_PATH)
@@ -31,7 +32,6 @@ try:
 except ImportError:
     from ddrlocal.models import entity as entitymodule
 
-from ddrlocal.models import write_json
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
 from webui.decorators import ddrview

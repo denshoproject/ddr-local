@@ -14,15 +14,18 @@ from django.core.cache import cache
 from django.core.urlresolvers import reverse
 from django.db import models
 
+from DDR import docstore
 from DDR import dvcs
-from DDR.models import module_is_valid
+from DDR.models import make_object_id, path_from_id
+from DDR.models import module_is_valid, module_function
+from DDR.models import read_json, from_json
+from DDR.models import Collection as DDRCollection
+from DDR.models import Entity as DDREntity
+from DDR.models import File
+from DDR.models import COLLECTION_FILES_PREFIX, ENTITY_FILES_PREFIX
 from DDR.storage import storage_status
 
 from storage import base_path
-
-from ddrlocal.models import read_json, from_json
-from ddrlocal.models import DDRLocalCollection, DDRLocalEntity, DDRLocalFile
-from ddrlocal.models import COLLECTION_FILES_PREFIX, ENTITY_FILES_PREFIX
 
 if settings.REPO_MODELS_PATH not in sys.path:
     sys.path.append(settings.REPO_MODELS_PATH)
@@ -31,9 +34,9 @@ try:
     from repo_models import entity as entitymodule
     from repo_models import files as filemodule
 except ImportError:
-    from ddrlocal.models import collection as collectionmodule
-    from ddrlocal.models import entity as entitymodule
-    from ddrlocal.models import files as filemodule
+    from DDR.models import collectionmodule
+    from DDR.models import entitymodule
+    from DDR.models import filemodule
 
 from webui import gitstatus
 from webui import WEBUI_MESSAGES
@@ -47,6 +50,11 @@ from webui import COLLECTION_ANNEX_STATUS_TIMEOUT
 
 def repo_models_valid(request):
     """Displays alerts if repo_models are absent or undefined
+    
+    Wrapper around DDR.models.module_is_valid
+    
+    @param request
+    @returns: boolean
     """
     valid = True
     NOIMPORT_MSG = 'Error: Could not import model definitions!'
@@ -68,12 +76,24 @@ def repo_models_valid(request):
     return valid
 
 def model_def_commits(document, module):
+    """
+    Wrapper around DDR.models.model_def_commits
+    
+    @param document
+    @param module
+    """
     status = super(module, document).model_def_commits()
     alert,msg = WEBUI_MESSAGES['MODEL_DEF_COMMITS_STATUS_%s' % status]
     document.model_def_commits_alert = alert
     document.model_def_commits_msg = msg
 
 def model_def_fields(document, module):
+    """
+    Wrapper around DDR.models.model_def_fields
+    
+    @param document
+    @param module
+    """
     added,removed = super(module, document).model_def_fields()
     # 'File.path_rel' is created when instantiating Files,
     # is not part of model definitions.
@@ -87,107 +107,77 @@ def model_def_fields(document, module):
     document.model_def_fields_added_msg = WEBUI_MESSAGES['MODEL_DEF_FIELDS_ADDED'] % added
     document.model_def_fields_removed_msg = WEBUI_MESSAGES['MODEL_DEF_FIELDS_REMOVED'] % removed
 
+def form_prep(document, module):
+    """Apply formprep_{field} functions to prep data dict to pass into DDRForm object.
+    
+    Certain fields require special processing.  Data may need to be massaged
+    and prepared for insertion into particular Django form objects.
+    If a "formprep_{field}" function is present in the collectionmodule
+    it will be executed.
+    
+    @param document: Collection, Entity, File document object
+    @param module: collection, entity, files model definitions module
+    @returns data: dict object as used by Django Form object.
+    """
+    data = {}
+    for f in module.FIELDS:
+        if hasattr(document, f['name']) and f.get('form',None):
+            key = f['name']
+            # run formprep_* functions on field data if present
+            value = module_function(
+                module,
+                'formprep_%s' % key,
+                getattr(document, f['name'])
+            )
+            data[key] = value
+    return data
+    
+def form_post(document, module, form):
+    """Apply formpost_{field} functions to process cleaned_data from CollectionForm
+    
+    Certain fields require special processing.
+    If a "formpost_{field}" function is present in the entitymodule
+    it will be executed.
+    
+    @param document: Collection, Entity, File document object
+    @param module: collection, entity, files model definitions module
+    @param form: DDRForm object
+    """
+    for f in module.FIELDS:
+        if hasattr(document, f['name']) and f.get('form',None):
+            key = f['name']
+            # run formpost_* functions on field data if present
+            cleaned_data = module_function(
+                module,
+                'formpost_%s' % key,
+                form.cleaned_data[key]
+            )
+            setattr(document, key, cleaned_data)
+    # update record_lastmod
+    if hasattr(document, 'record_lastmod'):
+        document.record_lastmod = datetime.now()
+
+def post_json(hosts, index, json_path):
+    """Post current .json to docstore.
+    
+    @param hosts: list of dicts containing host information.
+    @param index: Name of the target index.
+    @param json_path: Absolute path to .json file.
+    @returns: JSON dict with status code and response
+    """
+    status = docstore.post(
+        hosts, index,
+        json.loads(read_json(json_path)),
+        private_ok=True)
+    logging.debug(str(status))
+    return status
+
 
 # functions relating to inheritance ------------------------------------
 
-def _child_jsons( path ):
-    """List all the .json files under path directory; excludes specified dir.
-    
-    @param path: Absolute directory path.
-    @return list of paths
-    """
-    paths = []
-    r = envoy.run('find %s -name "*.json" ! -name ".git" -print' % path)
-    if not r.status_code:
-        for p in r.std_out.strip().split('\n'):
-            if os.path.dirname(p) != path:
-                paths.append(p)
-    return paths
-
-def _selected_inheritables( inheritables, cleaned_data ):
-    """Indicates which inheritable fields from the list were selected in the form.
-    
-    Selector fields are assumed to be BooleanFields named "FIELD_inherit".
-    
-    @param inheritables: List of field/attribute names.
-    @param cleaned_data: form.cleaned_data.
-    @return
-    """
-    fieldnames = {}
-    for field in inheritables:
-        fieldnames['%s_inherit' % field] = field
-    selected = []
-    if fieldnames:
-        for key in cleaned_data.keys():
-            if (key in fieldnames.keys()) and cleaned_data[key]:
-                selected.append(fieldnames[key])
-    return selected
-
-def _selected_field_values( parent_object, inheritables ):
-    """Gets list of selected inherited fieldnames and their values from the parent object
-    
-    @param parent_object
-    @param inheritables
-    """
-    field_values = []
-    for field in inheritables:
-        value = getattr(parent_object, field)
-        field_values.append( (field,value) )
-    return field_values
-
-def _load_object( json_path ):
-    """Loads File, Entity, or Collection from JSON file
-    
-    @param json_path
-    """
-    dirname = os.path.dirname(json_path)
-    basename = os.path.basename(json_path)
-    if ('master' in basename) or ('mezzanine' in basename):  # file
-        entity = Entity.from_json(os.path.dirname(dirname))
-        fname = os.path.splitext(basename)[0]
-        repo,org,cid,eid,role,sha1 = fname.split('-')
-        return entity.file(repo, org, cid, eid, role, sha1)
-    elif basename == 'entity.json':
-        return Entity.from_json(dirname)
-    elif basename == 'collection.json':
-        return Collection.from_json(dirname)
-    return None
-    
-def _update_inheritables( parent_object, objecttype, inheritables, cleaned_data ):
-    """Update specified inheritable fields of child objects using form data.
-    
-    @param parent_object: A Collection, Entity, or File
-    @param cleaned_data: Form cleaned_data from POST.
-    @returns: tuple containing list of changed object Ids and list of changed objects' JSON files.
-    """
-    child_ids = []
-    changed_files = []
-    # values of selected inheritable fields from parent
-    field_values = _selected_field_values(parent_object, inheritables)
-    # load child objects and apply the change
-    if field_values:
-        for child_json in _child_jsons(parent_object.path):
-            child = _load_object(child_json)
-            if child:
-                # set field if exists in child and doesn't already match parent value
-                changed = False
-                for field,value in field_values:
-                    if hasattr(child, field):
-                        existing_value = getattr(child,field)
-                        if existing_value != value:
-                            setattr(child, field, value)
-                            changed = True
-                # write json and add to list of changed IDs/files
-                if changed:
-                    child.write_json()
-                    if hasattr(child, 'id'):         child_ids.append(child.id)
-                    elif hasattr(child, 'basename'): child_ids.append(child.basename)
-                    changed_files.append(child_json)
-    return child_ids,changed_files
 
 
-
-class Collection( DDRLocalCollection ):
+class Collection( DDRCollection ):
     
     def __repr__(self):
         """Returns string representation of object.
@@ -201,7 +191,16 @@ class Collection( DDRLocalCollection ):
         >>> DDRLocalCollection.collection_path(None, 'ddr', 'testing', 123)
         '/var/www/media/base/ddr-testing-123'
         """
-        return os.path.join(settings.MEDIA_BASE, '{}-{}-{}'.format(repo, org, cid))
+        return path_from_id(
+            make_object_id('collection', repo, org, cid),
+            settings.MEDIA_BASE
+        )
+    
+    @staticmethod
+    def from_json(collection_abs):
+        """Instantiates a Collection object, loads data from collection.json.
+        """
+        return from_json(Collection, os.path.join(collection_abs, 'collection.json'))
     
     def gitstatus_path( self ):
         """Returns absolute path to collection .gitstatus cache file.
@@ -237,12 +236,6 @@ class Collection( DDRLocalCollection ):
         cache.delete(COLLECTION_FETCH_CACHE_KEY % self.id)
         cache.delete(COLLECTION_STATUS_CACHE_KEY % self.id)
         cache.delete(COLLECTION_ANNEX_STATUS_CACHE_KEY % self.id)
-    
-    @staticmethod
-    def from_json(collection_abs):
-        """Instantiates a Collection object, loads data from collection.json.
-        """
-        return from_json(Collection, os.path.join(collection_abs, 'collection.json'))
     
     def repo_fetch( self ):
         key = COLLECTION_FETCH_CACHE_KEY % self.id
@@ -305,12 +298,6 @@ class Collection( DDRLocalCollection ):
     
     def gitstatus( self, force=False ):
         return gitstatus.read(settings.MEDIA_BASE, self.path)
-
-    def selected_inheritables(self, cleaned_data ):
-        return _selected_inheritables(self.inheritable_fields(), cleaned_data)
-    
-    def update_inheritables( self, inheritables, cleaned_data ):
-        return _update_inheritables(self, 'collection', inheritables, cleaned_data)
     
     def model_def_commits(self):
         """Assesses document's relation to model defs in 'ddr' repo.
@@ -332,8 +319,25 @@ class Collection( DDRLocalCollection ):
         """
         model_def_fields(self, Collection)
     
+    def form_prep(self):
+        """Apply formprep_{field} functions to prep data dict to pass into DDRForm object.
+        
+        @returns data: dict object as used by Django Form object.
+        """
+        return form_prep(self, collectionmodule)
+    
+    def form_post(self, form):
+        """Apply formpost_{field} functions to process cleaned_data from DDRForm
+        
+        @param form: DDRForm object
+        """
+        form_post(self, collectionmodule, form)
+    
+    def post_json(self, hosts, index):
+        return post_json(hosts, index, self.json_path)
+    
 
-class Entity( DDRLocalEntity ):
+class Entity( DDREntity ):
     
     def __repr__(self):
         """Returns string representation of object.
@@ -342,24 +346,17 @@ class Entity( DDRLocalEntity ):
     
     @staticmethod
     def entity_path(request, repo, org, cid, eid):
-        collection_uid = '{}-{}-{}'.format(repo, org, cid)
-        entity_uid     = '{}-{}-{}-{}'.format(repo, org, cid, eid)
-        collection_abs = os.path.join(settings.MEDIA_BASE, collection_uid)
-        entity_abs     = os.path.join(collection_abs, COLLECTION_FILES_PREFIX, entity_uid)
-        return entity_abs
-    
-    def url( self ):
-        return reverse('webui-entity', args=[self.repo, self.org, self.cid, self.eid])
+        return path_from_id(
+            make_object_id('entity', repo, org, cid, eid),
+            settings.MEDIA_BASE
+        )
     
     @staticmethod
     def from_json(entity_abs):
         return from_json(Entity, os.path.join(entity_abs, 'entity.json'))
     
-    def selected_inheritables(self, cleaned_data ):
-        return _selected_inheritables(self.inheritable_fields(), cleaned_data)
-    
-    def update_inheritables( self, inheritables, cleaned_data ):
-        return _update_inheritables(self, 'entity', inheritables, cleaned_data)
+    def url( self ):
+        return reverse('webui-entity', args=[self.repo, self.org, self.cid, self.eid])
     
     def model_def_commits(self):
         """Assesses document's relation to model defs in 'ddr' repo.
@@ -381,10 +378,32 @@ class Entity( DDRLocalEntity ):
         """
         model_def_fields(self, Entity)
     
+    def form_prep(self):
+        """Apply formprep_{field} functions to prep data dict to pass into DDRForm object.
+        
+        @returns data: dict object as used by Django Form object.
+        """
+        data = form_prep(self, entitymodule)
+        if not data.get('record_created', None):
+            data['record_created'] = datetime.now()
+        if not data.get('record_lastmod', None):
+            data['record_lastmod'] = datetime.now()
+        return data
+    
+    def form_post(self, form):
+        """Apply formpost_{field} functions to process cleaned_data from DDRForm
+        
+        @param form: DDRForm object
+        """
+        form_post(self, entitymodule, form)
+    
+    def post_json(self, hosts, index):
+        return post_json(hosts, index, self.json_path)
+    
     def load_file_objects( self ):
         """Replaces list of file info dicts with list of DDRFile objects
         
-        Overrides the function in ddrlocal.models.DDRLocalEntity, which
+        Overrides the function in .models.DDRLocalEntity, which
         adds DDRLocalFile objects which are missing certain methods of
         DDRFile.
         """
@@ -399,12 +418,19 @@ class Entity( DDRLocalEntity ):
         self._file_objects_loaded = self._file_objects_loaded + 1
 
 
-class DDRFile( DDRLocalFile ):
+class DDRFile( File ):
     
     def __repr__(self):
         """Returns string representation of object.
         """
         return "<webui.models.DDRFile %s>" % (self.id)
+    
+    @staticmethod
+    def file_path(request, repo, org, cid, eid, role, sha1):
+        return path_from_id(
+            make_object_id('file', repo, org, cid, eid, role, sha1),
+            settings.MEDIA_BASE
+        )
     
     def url( self ):
         return reverse('webui-file', args=[self.repo, self.org, self.cid, self.eid, self.role, self.sha1[:10]])
@@ -420,10 +446,6 @@ class DDRFile( DDRLocalFile ):
             stub = os.path.join(self.entity_files_path.replace(settings.MEDIA_ROOT,''), self.access_rel)
             return '%s%s' % (settings.MEDIA_URL, stub)
         return None
-    
-    @staticmethod
-    def file_path(request, repo, org, cid, eid, role, sha1):
-        return os.path.join(settings.MEDIA_BASE, '{}-{}-{}-{}-{}-{}'.format(repo, org, cid, eid, role, sha1))
     
     def model_def_commits(self):
         """Assesses document's relation to model defs in 'ddr' repo.
@@ -444,3 +466,20 @@ class DDRFile( DDRLocalFile ):
         .model_def_fields_removed_msg
         """
         model_def_fields(self, DDRFile)
+    
+    def form_prep(self):
+        """Apply formprep_{field} functions to prep data dict to pass into DDRForm object.
+        
+        @returns data: dict object as used by Django Form object.
+        """
+        return form_prep(self, filemodule)
+    
+    def form_post(self, form):
+        """Apply formpost_{field} functions to process cleaned_data from DDRForm
+        
+        @param form: DDRForm object
+        """
+        form_post(self, filemodule, form)
+    
+    def post_json(self, hosts, index):
+        return post_json(hosts, index, self.json_path)
