@@ -116,7 +116,7 @@ import doctest
 from django.conf import settings
 
 from DDR import commands
-from DDR.models import metadata_files, module_function
+from DDR.models import Module, metadata_files
 from webui.models import Collection, Entity
 from ddrlocal.models import DDRLocalEntity, DDRLocalFile
 
@@ -860,7 +860,7 @@ def export_entities( collection_path, csv_path ):
             entity_dir = os.path.dirname(path)
             entity_id = os.path.basename(entity_dir)
             entity = DDRLocalEntity.from_json(entity_dir)
-            # seealso ddrlocal.models.__init__.module_function()
+            # seealso DDR.models.__init__.Module.function
             values = []
             for f in entitymodule.ENTITY_FIELDS:
                 value = ''
@@ -868,9 +868,10 @@ def export_entities( collection_path, csv_path ):
                     key = f['name']
                     label = f['form']['label']
                     # run csvexport_* functions on field data if present
-                    val = module_function(entitymodule,
-                                          'csvexport_%s' % key,
-                                          getattr(entity, f['name']))
+                    val = Module(entitymodule).function(
+                        'csvexport_%s' % key,
+                        getattr(entity, f['name'])
+                    )
                     if not (isinstance(val, str) or isinstance(val, unicode)):
                         val = unicode(val)
                     if val:
@@ -921,16 +922,17 @@ def export_files( collection_path, csv_path ):
             file_id = os.path.splitext(filename)[0]
             file_ = DDRLocalFile.from_json(path)
             if file_:
-                # seealso ddrlocal.models.__init__.module_function()
+                # seealso DDR.models.__init__.Module.function
                 values = []
                 for f in filemodule.FILE_FIELDS:
                     value = ''
                     if hasattr(file_, f['name']):
                         key = f['name']
                         # run csvexport_* functions on field data if present
-                        val = module_function(filemodule,
-                                              'csvexport_%s' % key,
-                                              getattr(file_, f['name']))
+                        val = Module(filemodule).function(
+                            'csvexport_%s' % key,
+                            getattr(file_, f['name'])
+                        )
                         if not (isinstance(val, str) or isinstance(val, unicode)):
                             val = unicode(val)
                         if val:

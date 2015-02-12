@@ -17,7 +17,7 @@ from django.db import models
 from DDR import docstore
 from DDR import dvcs
 from DDR.models import make_object_id, path_from_id
-from DDR.models import module_is_valid, module_function
+from DDR.models import Module
 from DDR.models import read_json, from_json
 from DDR.models import Collection as DDRCollection
 from DDR.models import Entity as DDREntity
@@ -51,7 +51,7 @@ from webui import COLLECTION_ANNEX_STATUS_TIMEOUT
 def repo_models_valid(request):
     """Displays alerts if repo_models are absent or undefined
     
-    Wrapper around DDR.models.module_is_valid
+    Wrapper around DDR.models.Module.is_valid
     
     @param request
     @returns: boolean
@@ -67,9 +67,9 @@ def repo_models_valid(request):
     if added:
         valid = False
     else:
-        cvalid,cmsg = module_is_valid(collectionmodule)
-        evalid,emsg = module_is_valid(entitymodule)
-        fvalid,fmsg = module_is_valid(filemodule)
+        cvalid,cmsg = Module(collectionmodule).is_valid()
+        evalid,emsg = Module(entitymodule).is_valid()
+        fvalid,fmsg = Module(filemodule).is_valid()
         if not (cvalid and evalid and fvalid):
             valid = False
             messages.error(request, UNDEFINED_MSG)
@@ -124,8 +124,7 @@ def form_prep(document, module):
         if hasattr(document, f['name']) and f.get('form',None):
             key = f['name']
             # run formprep_* functions on field data if present
-            value = module_function(
-                module,
+            value = Module(module).function(
                 'formprep_%s' % key,
                 getattr(document, f['name'])
             )
@@ -147,8 +146,7 @@ def form_post(document, module, form):
         if hasattr(document, f['name']) and f.get('form',None):
             key = f['name']
             # run formpost_* functions on field data if present
-            cleaned_data = module_function(
-                module,
+            cleaned_data = Module(module).function(
                 'formpost_%s' % key,
                 form.cleaned_data[key]
             )
