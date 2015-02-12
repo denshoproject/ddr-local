@@ -197,9 +197,8 @@ def tagmanager_process_tags( form_terms ):
 
 @storage_required
 def detail( request, repo, org, cid, eid ):
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
-    epath = Entity.entity_path(request,repo,org,cid,eid)
-    entity = Entity.from_json(epath)
+    collection = Collection.from_id_parts(repo,org,cid)
+    entity = Entity.from_id_parts(repo,org,cid,eid)
     entity.model_def_commits()
     entity.model_def_fields()
     tasks = request.session.get('celery-tasks', [])
@@ -219,8 +218,8 @@ def detail( request, repo, org, cid, eid ):
 
 @storage_required
 def files( request, repo, org, cid, eid, role ):
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
-    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+    collection = Collection.from_id_parts(repo,org,cid)
+    entity = Entity.from_id_parts(repo,org,cid,eid)
     if role == 'mezzanine':
         files = entity.files_mezzanine()
     else:
@@ -251,8 +250,8 @@ def files( request, repo, org, cid, eid, role ):
 
 @storage_required
 def addfile_log( request, repo, org, cid, eid ):
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
-    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+    collection = Collection.from_id_parts(repo,org,cid)
+    entity = Entity.from_id_parts(repo,org,cid,eid)
     return render_to_response(
         'webui/entities/addfiles-log.html',
         {'repo': entity.repo,
@@ -267,8 +266,8 @@ def addfile_log( request, repo, org, cid, eid ):
 
 @storage_required
 def changelog( request, repo, org, cid, eid ):
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
-    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+    collection = Collection.from_id_parts(repo,org,cid)
+    entity = Entity.from_id_parts(repo,org,cid,eid)
     return render_to_response(
         'webui/entities/changelog.html',
         {'repo': entity.repo,
@@ -283,14 +282,14 @@ def changelog( request, repo, org, cid, eid ):
 
 @storage_required
 def entity_json( request, repo, org, cid, eid ):
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
-    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+    collection = Collection.from_id_parts(repo,org,cid)
+    entity = Entity.from_id_parts(repo,org,cid,eid)
     return HttpResponse(entity.dump_json(), content_type="application/json")
 
 @storage_required
 def mets_xml( request, repo, org, cid, eid ):
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
-    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+    collection = Collection.from_id_parts(repo,org,cid)
+    entity = Entity.from_id_parts(repo,org,cid,eid)
     soup = BeautifulSoup(entity.mets().xml, 'xml')
     return HttpResponse(soup.prettify(), content_type="application/xml")
 
@@ -306,7 +305,7 @@ def new( request, repo, org, cid ):
     git_mail = request.session.get('git_mail')
     if not (git_name and git_mail):
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    collection = Collection.from_id_parts(repo,org,cid)
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
@@ -377,8 +376,8 @@ def edit( request, repo, org, cid, eid ):
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
-    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+    collection = Collection.from_id_parts(repo,org,cid)
+    entity = Entity.from_id_parts(repo,org,cid,eid)
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
@@ -488,8 +487,8 @@ def edit_json( request, repo, org, cid, eid ):
     NOTE: will permit editing even if entity is locked!
     (which you need to do sometimes).
     """
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
-    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+    collection = Collection.from_id_parts(repo,org,cid)
+    entity = Entity.from_id_parts(repo,org,cid,eid)
     #if collection.locked():
     #    messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
     #    return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
@@ -545,10 +544,10 @@ def delete( request, repo, org, cid, eid, confirm=False ):
     """Delete the requested entity from the collection.
     """
     try:
-        entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+        entity = Entity.from_id_parts(repo,org,cid,eid)
     except:
         raise Http404
-    collection = Collection.from_json(entity.parent_path)
+    collection = Collection.from_id_parts(repo,org,cid)
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
@@ -589,11 +588,11 @@ def files_dedupe( request, repo, org, cid, eid ):
     git_mail = request.session.get('git_mail')
     if not (git_name and git_mail):
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    collection = Collection.from_id_parts(repo,org,cid)
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
-    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+    entity = Entity.from_id_parts(repo,org,cid,eid)
     duplicate_masters = entity.detect_file_duplicates('master')
     duplicate_mezzanines = entity.detect_file_duplicates('mezzanine')
     duplicates = duplicate_masters + duplicate_mezzanines
@@ -652,8 +651,8 @@ def edit_mets_xml( request, repo, org, cid, eid ):
     - write contents of field to EAD.xml
     - commands.update
     """
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
-    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+    collection = Collection.from_id_parts(repo,org,cid)
+    entity = Entity.from_id_parts(repo,org,cid,eid)
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
@@ -780,8 +779,8 @@ def unlock( request, repo, org, cid, eid, task_id ):
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
-    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+    collection = Collection.from_id_parts(repo,org,cid)
+    entity = Entity.from_id_parts(repo,org,cid,eid)
     if task_id and entity.locked() and (task_id == entity.locked()):
         entity.unlock(task_id)
         messages.success(request, 'Object <b>%s</b> unlocked.' % entity.id)

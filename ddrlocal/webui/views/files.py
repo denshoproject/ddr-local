@@ -78,8 +78,8 @@ def prep_newfile_form_fields(FIELDS):
 def detail( request, repo, org, cid, eid, role, sha1 ):
     """Add file to entity.
     """
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
-    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+    collection = Collection.from_id_parts(repo,org,cid)
+    entity = Entity.from_id_parts(repo,org,cid,eid)
     file_ = entity.file(repo, org, cid, eid, role, sha1)
     file_.model_def_commits()
     file_.model_def_fields()
@@ -102,7 +102,7 @@ def detail( request, repo, org, cid, eid, role, sha1 ):
 
 @storage_required
 def file_json( request, repo, org, cid, eid, role, sha1 ):
-    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+    entity = Entity.from_id_parts(repo,org,cid,eid)
     file_ = entity.file(repo, org, cid, eid, role, sha1)
     if file_.json_path and os.path.exists(file_.json_path):
         return HttpResponse(file_.dump_json(), content_type="application/json")
@@ -115,8 +115,8 @@ def file_json( request, repo, org, cid, eid, role, sha1 ):
 def browse( request, repo, org, cid, eid, role='master' ):
     """Browse for a file in vbox shared folder.
     """
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
-    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+    collection = Collection.from_id_parts(repo,org,cid)
+    entity = Entity.from_id_parts(repo,org,cid,eid)
     path = request.GET.get('path')
     home = None
     parent = None
@@ -167,8 +167,8 @@ def new( request, repo, org, cid, eid, role='master' ):
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
-    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+    collection = Collection.from_id_parts(repo,org,cid)
+    entity = Entity.from_id_parts(repo,org,cid,eid)
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
@@ -260,8 +260,8 @@ def new_access( request, repo, org, cid, eid, role, sha1 ):
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
-    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+    collection = Collection.from_id_parts(repo,org,cid)
+    entity = Entity.from_id_parts(repo,org,cid,eid)
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
@@ -316,8 +316,8 @@ def new_access( request, repo, org, cid, eid, role, sha1 ):
 def batch( request, repo, org, cid, eid, role='master' ):
     """Add multiple files to entity.
     """
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
-    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+    collection = Collection.from_id_parts(repo,org,cid)
+    entity = Entity.from_id_parts(repo,org,cid,eid)
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
@@ -343,8 +343,8 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
-    entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+    collection = Collection.from_id_parts(repo,org,cid)
+    entity = Entity.from_id_parts(repo,org,cid,eid)
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
@@ -403,11 +403,11 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
 @storage_required
 def delete( request, repo, org, cid, eid, role, sha1 ):
     try:
-        entity = Entity.from_json(Entity.entity_path(request,repo,org,cid,eid))
+        entity = Entity.from_id_parts(repo,org,cid,eid)
         file_ = entity.file(repo, org, cid, eid, role, sha1)
     except:
         raise Http404
-    collection = Collection.from_json(file_.collection_path)
+    collection = Collection.from_id_parts(repo,org,cid)
     if entity.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )

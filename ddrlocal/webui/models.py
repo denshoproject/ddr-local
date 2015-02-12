@@ -195,6 +195,12 @@ class Collection( DDRCollection ):
         )
     
     @staticmethod
+    def from_id_parts(repo, org, cid):
+        object_id = make_object_id('collection', repo, org, cid)
+        path = path_from_id(object_id, settings.MEDIA_BASE)
+        return Collection.from_json(path)
+    
+    @staticmethod
     def from_json(collection_abs):
         """Instantiates a Collection object, loads data from collection.json.
         """
@@ -348,6 +354,12 @@ class Entity( DDREntity ):
             make_object_id('entity', repo, org, cid, eid),
             settings.MEDIA_BASE
         )
+    
+    @staticmethod
+    def from_id_parts(repo, org, cid, eid):
+        object_id = make_object_id('entity', repo, org, cid, eid)
+        path = path_from_id(object_id, settings.MEDIA_BASE)
+        return Entity.from_json(path)
     
     @staticmethod
     def from_json(entity_abs):

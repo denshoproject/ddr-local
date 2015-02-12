@@ -92,7 +92,7 @@ def collections( request ):
 
 @storage_required
 def detail( request, repo, org, cid ):
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    collection = Collection.from_id_parts(repo,org,cid)
     collection.model_def_commits()
     collection.model_def_fields()
     alert_if_conflicted(request, collection)
@@ -108,7 +108,7 @@ def detail( request, repo, org, cid ):
 
 @storage_required
 def entities( request, repo, org, cid ):
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    collection = Collection.from_id_parts(repo,org,cid)
     alert_if_conflicted(request, collection)
     entities = collection.entities(quick=True)
     # paginate
@@ -129,7 +129,7 @@ def entities( request, repo, org, cid ):
 
 @storage_required
 def changelog( request, repo, org, cid ):
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    collection = Collection.from_id_parts(repo,org,cid)
     alert_if_conflicted(request, collection)
     return render_to_response(
         'webui/collections/changelog.html',
@@ -142,14 +142,14 @@ def changelog( request, repo, org, cid ):
 
 @storage_required
 def collection_json( request, repo, org, cid ):
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    collection = Collection.from_id_parts(repo,org,cid)
     alert_if_conflicted(request, collection)
     return HttpResponse(json.dumps(collection.json().data), content_type="application/json")
 
 @ddrview
 @storage_required
 def sync_status_ajax( request, repo, org, cid ):
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    collection = Collection.from_id_parts(repo,org,cid)
     gitstatus = collection.gitstatus()
     if gitstatus:
         sync_status = gitstatus['sync_status']
@@ -161,7 +161,7 @@ def sync_status_ajax( request, repo, org, cid ):
 @ddrview
 @storage_required
 def git_status( request, repo, org, cid ):
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    collection = Collection.from_id_parts(repo,org,cid)
     alert_if_conflicted(request, collection)
     gitstatus = collection.gitstatus()
     return render_to_response(
@@ -179,7 +179,7 @@ def git_status( request, repo, org, cid ):
 
 @storage_required
 def ead_xml( request, repo, org, cid ):
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    collection = Collection.from_id_parts(repo,org,cid)
     alert_if_conflicted(request, collection)
     soup = BeautifulSoup(collection.ead().xml, 'xml')
     return HttpResponse(soup.prettify(), content_type="application/xml")
@@ -189,7 +189,7 @@ def ead_xml( request, repo, org, cid ):
 @storage_required
 def sync( request, repo, org, cid ):
     try:
-        collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+        collection = Collection.from_id_parts(repo,org,cid)
     except:
         raise Http404
     git_name = request.session.get('git_name')
@@ -290,7 +290,7 @@ def edit( request, repo, org, cid ):
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    collection = Collection.from_id_parts(repo,org,cid)
     collection.model_def_commits()
     collection.model_def_fields()
     if collection.locked():
@@ -352,7 +352,7 @@ def csv_export( request, repo, org, cid, model=None ):
     """
     if (not model) or (not (model in ['entity','file'])):
         raise Http404
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    collection = Collection.from_id_parts(repo,org,cid)
     things = {'entity':'objects', 'file':'files'}
     csv_path = export_csv_path(collection.path, model)
     csv_filename = os.path.basename(csv_path)
@@ -385,7 +385,7 @@ def csv_download( request, repo, org, cid, model=None ):
     File must be readable by Python csv module.
     If all that is true then it must be a legal CSV file.
     """
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    collection = Collection.from_id_parts(repo,org,cid)
     path = export_csv_path(collection.path, model)
     filename = os.path.basename(path)
     if not os.path.exists(path):
@@ -546,7 +546,7 @@ def unlock( request, repo, org, cid, task_id ):
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    collection = Collection.from_id_parts(repo,org,cid)
     if task_id and collection.locked() and (task_id == collection.locked()):
         collection.unlock(task_id)
         messages.success(request, 'Collection <b>%s</b> unlocked.' % collection.id)
