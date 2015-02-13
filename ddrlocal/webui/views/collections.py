@@ -31,7 +31,7 @@ if settings.REPO_MODELS_PATH not in sys.path:
 try:
     from repo_models import collection as collectionmodule
 except ImportError:
-    from ddrlocal.models import collection as collectionmodule
+    from DDR.models import collectionmodule
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES

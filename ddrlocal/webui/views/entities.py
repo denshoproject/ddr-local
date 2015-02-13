@@ -30,7 +30,7 @@ if settings.REPO_MODELS_PATH not in sys.path:
 try:
     from repo_models import entity as entitymodule
 except ImportError:
-    from ddrlocal.models import entity as entitymodule
+    from DDR.models import entitymodule
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
