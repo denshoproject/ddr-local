@@ -23,7 +23,7 @@ from django.template.loader import get_template
 from DDR import commands
 from DDR import docstore
 from DDR import idservice
-from DDR.models import make_object_id, id_from_path
+from DDR.models import make_object_id, id_from_path, split_object_id
 from DDR.models import write_json
 
 if settings.REPO_MODELS_PATH not in sys.path:
@@ -65,22 +65,19 @@ def collections( request ):
     """
     collections = []
     collection_status_urls = []
-    for o in gitolite.get_repos_orgs():
-        repo,org = o.split('-')
+    for object_id in gitolite.get_repos_orgs():
+        model,repo,org = split_object_id(object_id)
         colls = []
-        for coll in commands.collections_local(settings.MEDIA_BASE, repo, org):
-            if coll:
-                coll = os.path.basename(coll)
-                c = coll.split('-')
-                repo,org,cid = c[0],c[1],c[2]
-                collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+        for collection_path in commands.collections_local(settings.MEDIA_BASE, repo, org):
+            if collection_path:
+                collection = Collection.from_json(collection_path)
                 colls.append(collection)
                 gitstatus = collection.gitstatus()
                 if gitstatus and gitstatus.get('sync_status'):
                     collection.sync_status = gitstatus['sync_status']
                 else:
                     collection_status_urls.append( "'%s'" % collection.sync_status_url())
-        collections.append( (o,repo,org,colls) )
+        collections.append( (object_id,repo,org,colls) )
     # load statuses in random order
     random.shuffle(collection_status_urls)
     return render_to_response(
@@ -256,7 +253,8 @@ def new( request, repo, org ):
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_ERR_NO_IDS'])
         messages.error(request, e)
         return HttpResponseRedirect(reverse('webui-collections'))
-    cid = int(collection_ids[0].split('-')[2])
+    new_collection_id = collection_ids[0]
+    cid = split_object_id(new_collection_id)[-1]
     # create the new collection repo
     collection_path = Collection.collection_path(request,repo,org,cid)
     # collection.json template

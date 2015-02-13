@@ -16,7 +16,7 @@ from django.db import models
 
 from DDR import docstore
 from DDR import dvcs
-from DDR.models import make_object_id, path_from_id
+from DDR.models import json_path_from_dir, make_object_id, id_from_path, path_from_id
 from DDR.models import Module
 from DDR.models import read_json, from_json
 from DDR.models import Collection as DDRCollection
@@ -203,8 +203,14 @@ class Collection( DDRCollection ):
     @staticmethod
     def from_json(collection_abs):
         """Instantiates a Collection object, loads data from collection.json.
+        
+        @param collection_abs: Absolute path, without .json file.
+        @returns: Collection
         """
-        return from_json(Collection, os.path.join(collection_abs, 'collection.json'))
+        return from_json(
+            Collection,
+            json_path_from_dir('collection', collection_abs)
+        )
     
     def gitstatus_path( self ):
         """Returns absolute path to collection .gitstatus cache file.
@@ -363,7 +369,14 @@ class Entity( DDREntity ):
     
     @staticmethod
     def from_json(entity_abs):
-        return from_json(Entity, os.path.join(entity_abs, 'entity.json'))
+        """
+        @param entity_abs: Absolute path, without .json file.
+        @returns: Entity
+        """
+        return from_json(
+            Entity,
+            json_path_from_dir('entity', entity_abs)
+        )
     
     def url( self ):
         return reverse('webui-entity', args=[self.repo, self.org, self.cid, self.eid])
@@ -420,7 +433,10 @@ class Entity( DDREntity ):
         self._file_objects = []
         for f in self.files:
             if f and f.get('path_rel',None):
-                path_abs = os.path.join(self.files_path, f['path_rel'])
+                path_abs = path_from_id(
+                    id_from_path(f['path_rel']),
+                    settings.MEDIA_BASE
+                )
                 file_ = DDRFile(path_abs=path_abs)
                 file_.load_json(read_json(file_.json_path))
                 self._file_objects.append(file_)
