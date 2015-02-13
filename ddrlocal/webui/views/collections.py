@@ -23,7 +23,7 @@ from django.template.loader import get_template
 from DDR import commands
 from DDR import docstore
 from DDR import idservice
-from DDR.models import make_object_id, id_from_path, split_object_id
+from DDR.models import Identity
 from DDR.models import write_json
 
 if settings.REPO_MODELS_PATH not in sys.path:
@@ -66,7 +66,7 @@ def collections( request ):
     collections = []
     collection_status_urls = []
     for object_id in gitolite.get_repos_orgs():
-        model,repo,org = split_object_id(object_id)
+        model,repo,org = Identity.split_object_id(object_id)
         colls = []
         for collection_path in commands.collections_local(settings.MEDIA_BASE, repo, org):
             if collection_path:
@@ -254,7 +254,7 @@ def new( request, repo, org ):
         messages.error(request, e)
         return HttpResponseRedirect(reverse('webui-collections'))
     new_collection_id = collection_ids[0]
-    cid = split_object_id(new_collection_id)[-1]
+    cid = Identity.split_object_id(new_collection_id)[-1]
     # create the new collection repo
     collection_path = Collection.collection_path(request,repo,org,cid)
     # collection.json template
@@ -469,7 +469,7 @@ def edit_xml( request, repo, org, cid, slug, Form, FIELDS ):
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     collection_path = Collection.collection_path(request,repo,org,cid)
-    collection_id = id_from_path(collection_path)
+    collection_id = Identity.id_from_path(collection_path)
     ead_path_rel = 'ead.xml'
     ead_path_abs = os.path.join(collection_path, ead_path_rel)
     with open(ead_path_abs, 'r') as f:

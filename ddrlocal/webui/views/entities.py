@@ -23,7 +23,7 @@ from django.template import RequestContext
 from DDR import commands
 from DDR import docstore
 from DDR import idservice
-from DDR.models import make_object_id, split_object_id
+from DDR.models import Identity
 from DDR.models import write_json
 
 if settings.REPO_MODELS_PATH not in sys.path:
@@ -326,9 +326,9 @@ def new( request, repo, org, cid ):
         messages.error(request, e)
         return HttpResponseRedirect(reverse('webui-collection', args=[repo,org,cid]))
     new_entity_id = entity_ids[0]
-    eid = split_object_id(new_entity_id)[-1]
+    eid = Identity.split_object_id(new_entity_id)[-1]
     # create new entity
-    entity_uid = make_object_id('entity',repo,org,cid,eid)
+    entity_uid = Identity.make_object_id('entity',repo,org,cid,eid)
     entity_path = Entity.entity_path(request, repo, org, cid, eid)
     # write entity.json template to entity location
     write_json(Entity(entity_path).dump_json(template=True),

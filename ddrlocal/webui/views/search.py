@@ -48,7 +48,7 @@ def massage_query_results( results, thispage, size ):
     for o in objects:
         if not o.get('placeholder',False):
             # add URL
-            parts = models.split_object_id(o['id'])
+            parts = models.Identity.split_object_id(o['id'])
             parts = parts[1:]
             o['absolute_url'] = make_object_url(parts)
     return objects

@@ -16,7 +16,7 @@ from django.db import models
 
 from DDR import docstore
 from DDR import dvcs
-from DDR.models import json_path_from_dir, make_object_id, id_from_path, path_from_id
+from DDR.models import Identity
 from DDR.models import Module
 from DDR.models import read_json, from_json
 from DDR.models import Collection as DDRCollection
@@ -189,15 +189,15 @@ class Collection( DDRCollection ):
         >>> DDRLocalCollection.collection_path(None, 'ddr', 'testing', 123)
         '/var/www/media/base/ddr-testing-123'
         """
-        return path_from_id(
-            make_object_id('collection', repo, org, cid),
+        return Identity.path_from_id(
+            Identity.make_object_id('collection', repo, org, cid),
             settings.MEDIA_BASE
         )
     
     @staticmethod
     def from_id_parts(repo, org, cid):
-        object_id = make_object_id('collection', repo, org, cid)
-        path = path_from_id(object_id, settings.MEDIA_BASE)
+        object_id = Identity.make_object_id('collection', repo, org, cid)
+        path = Identity.path_from_id(object_id, settings.MEDIA_BASE)
         return Collection.from_json(path)
     
     @staticmethod
@@ -209,7 +209,7 @@ class Collection( DDRCollection ):
         """
         return from_json(
             Collection,
-            json_path_from_dir('collection', collection_abs)
+            Identity.json_path_from_dir('collection', collection_abs)
         )
     
     def gitstatus_path( self ):
@@ -356,15 +356,15 @@ class Entity( DDREntity ):
     
     @staticmethod
     def entity_path(request, repo, org, cid, eid):
-        return path_from_id(
-            make_object_id('entity', repo, org, cid, eid),
+        return Identity.path_from_id(
+            Identity.make_object_id('entity', repo, org, cid, eid),
             settings.MEDIA_BASE
         )
     
     @staticmethod
     def from_id_parts(repo, org, cid, eid):
-        object_id = make_object_id('entity', repo, org, cid, eid)
-        path = path_from_id(object_id, settings.MEDIA_BASE)
+        object_id = Identity.make_object_id('entity', repo, org, cid, eid)
+        path = Identity.path_from_id(object_id, settings.MEDIA_BASE)
         return Entity.from_json(path)
     
     @staticmethod
@@ -375,7 +375,7 @@ class Entity( DDREntity ):
         """
         return from_json(
             Entity,
-            json_path_from_dir('entity', entity_abs)
+            Identity.json_path_from_dir('entity', entity_abs)
         )
     
     def url( self ):
@@ -433,8 +433,8 @@ class Entity( DDREntity ):
         self._file_objects = []
         for f in self.files:
             if f and f.get('path_rel',None):
-                path_abs = path_from_id(
-                    id_from_path(f['path_rel']),
+                path_abs = Identity.path_from_id(
+                    Identity.id_from_path(f['path_rel']),
                     settings.MEDIA_BASE
                 )
                 file_ = DDRFile(path_abs=path_abs)
@@ -453,8 +453,8 @@ class DDRFile( File ):
     
     @staticmethod
     def file_path(request, repo, org, cid, eid, role, sha1):
-        return path_from_id(
-            make_object_id('file', repo, org, cid, eid, role, sha1),
+        return Identity.path_from_id(
+            Identity.make_object_id('file', repo, org, cid, eid, role, sha1),
             settings.MEDIA_BASE
         )
     
