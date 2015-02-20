@@ -16,8 +16,8 @@ from django.db import models
 
 from DDR import docstore
 from DDR import dvcs
-from DDR.models import make_object_id, path_from_id
-from DDR.models import module_is_valid, module_function
+from DDR.models import Identity
+from DDR.models import Module
 from DDR.models import read_json, from_json
 from DDR.models import Collection as DDRCollection
 from DDR.models import Entity as DDREntity
@@ -51,7 +51,7 @@ from webui import COLLECTION_ANNEX_STATUS_TIMEOUT
 def repo_models_valid(request):
     """Displays alerts if repo_models are absent or undefined
     
-    Wrapper around DDR.models.module_is_valid
+    Wrapper around DDR.models.Module.is_valid
     
     @param request
     @returns: boolean
@@ -67,9 +67,9 @@ def repo_models_valid(request):
     if added:
         valid = False
     else:
-        cvalid,cmsg = module_is_valid(collectionmodule)
-        evalid,emsg = module_is_valid(entitymodule)
-        fvalid,fmsg = module_is_valid(filemodule)
+        cvalid,cmsg = Module(collectionmodule).is_valid()
+        evalid,emsg = Module(entitymodule).is_valid()
+        fvalid,fmsg = Module(filemodule).is_valid()
         if not (cvalid and evalid and fvalid):
             valid = False
             messages.error(request, UNDEFINED_MSG)
@@ -124,8 +124,7 @@ def form_prep(document, module):
         if hasattr(document, f['name']) and f.get('form',None):
             key = f['name']
             # run formprep_* functions on field data if present
-            value = module_function(
-                module,
+            value = Module(module).function(
                 'formprep_%s' % key,
                 getattr(document, f['name'])
             )
@@ -147,8 +146,7 @@ def form_post(document, module, form):
         if hasattr(document, f['name']) and f.get('form',None):
             key = f['name']
             # run formpost_* functions on field data if present
-            cleaned_data = module_function(
-                module,
+            cleaned_data = Module(module).function(
                 'formpost_%s' % key,
                 form.cleaned_data[key]
             )
@@ -191,16 +189,28 @@ class Collection( DDRCollection ):
         >>> DDRLocalCollection.collection_path(None, 'ddr', 'testing', 123)
         '/var/www/media/base/ddr-testing-123'
         """
-        return path_from_id(
-            make_object_id('collection', repo, org, cid),
+        return Identity.path_from_id(
+            Identity.make_object_id('collection', repo, org, cid),
             settings.MEDIA_BASE
         )
     
     @staticmethod
+    def from_id_parts(repo, org, cid):
+        object_id = Identity.make_object_id('collection', repo, org, cid)
+        path = Identity.path_from_id(object_id, settings.MEDIA_BASE)
+        return Collection.from_json(path)
+    
+    @staticmethod
     def from_json(collection_abs):
         """Instantiates a Collection object, loads data from collection.json.
+        
+        @param collection_abs: Absolute path, without .json file.
+        @returns: Collection
         """
-        return from_json(Collection, os.path.join(collection_abs, 'collection.json'))
+        return from_json(
+            Collection,
+            Identity.json_path_from_dir('collection', collection_abs)
+        )
     
     def gitstatus_path( self ):
         """Returns absolute path to collection .gitstatus cache file.
@@ -346,14 +356,27 @@ class Entity( DDREntity ):
     
     @staticmethod
     def entity_path(request, repo, org, cid, eid):
-        return path_from_id(
-            make_object_id('entity', repo, org, cid, eid),
+        return Identity.path_from_id(
+            Identity.make_object_id('entity', repo, org, cid, eid),
             settings.MEDIA_BASE
         )
     
     @staticmethod
+    def from_id_parts(repo, org, cid, eid):
+        object_id = Identity.make_object_id('entity', repo, org, cid, eid)
+        path = Identity.path_from_id(object_id, settings.MEDIA_BASE)
+        return Entity.from_json(path)
+    
+    @staticmethod
     def from_json(entity_abs):
-        return from_json(Entity, os.path.join(entity_abs, 'entity.json'))
+        """
+        @param entity_abs: Absolute path, without .json file.
+        @returns: Entity
+        """
+        return from_json(
+            Entity,
+            Identity.json_path_from_dir('entity', entity_abs)
+        )
     
     def url( self ):
         return reverse('webui-entity', args=[self.repo, self.org, self.cid, self.eid])
@@ -410,7 +433,10 @@ class Entity( DDREntity ):
         self._file_objects = []
         for f in self.files:
             if f and f.get('path_rel',None):
-                path_abs = os.path.join(self.files_path, f['path_rel'])
+                path_abs = Identity.path_from_id(
+                    Identity.id_from_path(f['path_rel']),
+                    settings.MEDIA_BASE
+                )
                 file_ = DDRFile(path_abs=path_abs)
                 file_.load_json(read_json(file_.json_path))
                 self._file_objects.append(file_)
@@ -427,8 +453,8 @@ class DDRFile( File ):
     
     @staticmethod
     def file_path(request, repo, org, cid, eid, role, sha1):
-        return path_from_id(
-            make_object_id('file', repo, org, cid, eid, role, sha1),
+        return Identity.path_from_id(
+            Identity.make_object_id('file', repo, org, cid, eid, role, sha1),
             settings.MEDIA_BASE
         )
     

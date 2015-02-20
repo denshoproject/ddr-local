@@ -44,8 +44,8 @@ from django.conf import settings
 from django.core.cache import cache
 
 from DDR import dvcs
+from DDR.models import Identity
 from DDR.storage import is_writable
-from DDR.models import id_from_path
 from ddrlocal.models import DDRLocalCollection as Collection
 from webui import COLLECTION_STATUS_TIMEOUT
 from webui import gitolite
@@ -182,7 +182,7 @@ def sync_status( collection_path, git_status, timestamp, cache_set=False, force=
     @param cache_set: Run git-status if data is not cached
     """
     # IMPORTANT: DO NOT call collection.gitstatus() it will loop
-    collection_id = id_from_path(collection_path)
+    collection_id = Identity.id_from_path(collection_path)
     key = COLLECTION_SYNC_STATUS_CACHE_KEY % collection_id
     data = cache.get(key)
     if force or (not data and cache_set):
@@ -208,7 +208,7 @@ def sync_status( collection_path, git_status, timestamp, cache_set=False, force=
         cache.set(key, data, COLLECTION_STATUS_TIMEOUT)
     return data
 
-def update( base_dir, collection_id ):
+def update( base_dir, collection_path ):
     """Gets a bunch of status info for the collection; refreshes if forced
     
     timestamp, elapsed, status, annex_status, syncstatus
@@ -217,7 +217,6 @@ def update( base_dir, collection_id ):
     @returns: dict
     """
     start = datetime.now()
-    collection_path = os.path.join(base_dir, collection_id)
     status = dvcs.repo_status(collection_path, short=True)
     annex_status = dvcs.annex_status(collection_path)
     timestamp = datetime.now()
@@ -480,7 +479,7 @@ def next_repo( queue, local=False ):
         # choose first collection that is not locked
         for timestamp,cid in collections:
             if datetime.now() > timestamp:
-                cpath = os.path.join(settings.MEDIA_BASE, cid)
+                cpath = Identity.path_from_id(cid, settings.MEDIA_BASE)
                 collection = Collection.from_json(cpath)
                 if not collection.locked():
                     collection_path = cpath
@@ -491,7 +490,7 @@ def next_repo( queue, local=False ):
         # global lock - just take the first collection
         for timestamp,cid in collections:
             if datetime.now() > timestamp:
-                collection_path = os.path.join(settings.MEDIA_BASE, cid)
+                collection_path = Identity.path_from_id(cid, settings.MEDIA_BASE)
                 return collection_path
             if (not next_available) or (timestamp < next_available):
                 next_available = timestamp
@@ -548,7 +547,7 @@ def update_store( base_dir, delta, minimum, local=False ):
                     collection_path = response
                 if collection_path:
                     timestamp,elapsed,status,annex_status,syncstatus = update(base_dir, collection_path)
-                    collection_id = os.path.basename(collection_path)
+                    collection_id = Identity.id_from_path(collection_path)
                     queue = queue_mark_updated(queue, collection_id, delta, minimum)
                     queue_write(base_dir, queue)
                     messages.append('%s updated' % (collection_path))
