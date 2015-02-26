@@ -167,7 +167,7 @@ def post_json(hosts, index, json_path):
         hosts, index,
         json.loads(read_json(json_path)),
         private_ok=True)
-    logging.debug(str(status))
+    logging.debug(unicode(status))
     return status
 
 

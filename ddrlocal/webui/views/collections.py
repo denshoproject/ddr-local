@@ -249,7 +249,7 @@ def new( request, repo, org ):
         collection_ids = idservice.collections_next(session, repo, org, num_ids=1)
     except Exception as e:
         logger.error('Could not get new collecion ID!')
-        logger.error(str(e.args))
+        logger.error(unicode(e.args))
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_ERR_NO_IDS'])
         messages.error(request, e)
         return HttpResponseRedirect(reverse('webui-collections'))

@@ -116,7 +116,7 @@ def tagmanager_prefilled_terms( entity_terms, all_terms ):
         if match:
             for tid in match.groups():
                 if tid in entity_term_ids:
-                    selected_terms.append(str(term))
+                    selected_terms.append(unicode(term))
     return selected_terms
 
 def tagmanager_legacy_terms( entity_terms, all_terms ):
@@ -133,7 +133,7 @@ def tagmanager_legacy_terms( entity_terms, all_terms ):
     for term in entity_terms:
         match = regex.search(term)
         if not match:
-            legacy_terms.append(str(term))
+            legacy_terms.append(unicode(term))
     return legacy_terms
 
 #def tagmanager_prefilled_terms( entity_terms, all_terms ):
@@ -321,7 +321,7 @@ def new( request, repo, org, cid ):
         entity_ids = idservice.entities_next(session, repo, org, cid, num_ids=1)
     except Exception as e:
         logger.error('Could not get new object ID from workbench!')
-        logger.error(str(e.args))
+        logger.error(unicode(e.args))
         messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_ERR_NO_IDS'])
         messages.error(request, e)
         return HttpResponseRedirect(reverse('webui-collection', args=[repo,org,cid]))
