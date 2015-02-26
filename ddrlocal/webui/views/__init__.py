@@ -45,8 +45,8 @@ def _login(request, username, password):
     """Logs in to the ID service / workbench server.
     
     @param request: HttpRequest object
-    @param username: str
-    @param password: str
+    @param username: unicode
+    @param password: unicode
     @returns requests.Session object or string error message (starting with 'error:')
     """
     session = idservice.login(username, password)

@@ -321,8 +321,8 @@ class DeleteEntityTask(Task):
 @task(base=DeleteEntityTask, name='webui-entity-delete')
 def delete_entity( git_name, git_mail, collection_path, entity_id, agent='' ):
     """
-    @param collection_path: string
-    @param entity_id: string
+    @param collection_path: unicode
+    @param entity_id: unicode
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
     @param agent: (optional) Name of software making the change.
@@ -386,9 +386,9 @@ class DeleteFileTask(Task):
 @task(base=DeleteFileTask, name='webui-file-delete')
 def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, agent='' ):
     """
-    @param collection_path: string
-    @param entity_id: string
-    @param file_basename: string
+    @param collection_path: unicode
+    @param entity_id: unicode
+    @param file_basename: unicode
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
     @param agent: (optional) Name of software making the change.
