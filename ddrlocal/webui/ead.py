@@ -6,6 +6,8 @@ from lxml import etree
 
 from django import forms
 
+from DDR import fileio
+
 from xmlforms.forms import XMLForm
 
 
@@ -22,10 +24,8 @@ def repository_codes():
             ('ddr-testing','ddr-testing'),]
 
 
-EAD_XML = ''
 ead_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ead.xml')
-with open(ead_path, 'r') as f:
-    EAD_XML = f.read()
+EAD_XML = fileio.read_raw(ead_path)
 
 
 COLLECTION_OVERVIEW_FIELDS = [

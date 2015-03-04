@@ -6,16 +6,15 @@ from lxml import etree
 
 from django import forms
 
+from DDR import fileio
 
 import xmlforms
 from xmlforms.forms import XMLForm
 import tematres
 
 
-METS_XML = ''
 xml_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'mets.xml')
-with open(xml_path, 'r') as f:
-    METS_XML = f.read()
+METS_XML = fileio.read_raw(xml_path)
 
 NAMESPACES = {
     'mets':  'http://www.loc.gov/METS/',

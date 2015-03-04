@@ -676,8 +676,7 @@ def edit_mets_xml( request, repo, org, cid, eid ):
             if git_name and git_mail:
                 xml = form.cleaned_data['xml']
                 # TODO validate XML
-                with open(entity.mets_path, 'w') as f:
-                    f.write(xml)
+                fileio.write_raw(xml, entity.mets_path)
                 
                 exit,status = commands.entity_update(git_name, git_mail,
                                                      entity.parent_path, entity.id,
@@ -723,8 +722,7 @@ def edit_xml( request, repo, org, cid, eid, slug, Form, FIELDS, namespaces=None 
     entity_rel     = os.path.join('files',entity_uid)
     xml_path_rel   = 'mets.xml'
     xml_path_abs   = os.path.join(entity_abs, xml_path_rel)
-    with open(xml_path_abs, 'r') as f:
-        xml = f.read()
+    xml = fileio.read_raw(xml_path_abs)
     fields = Form.prep_fields(FIELDS, xml, namespaces=namespaces)
     #
     if request.method == 'POST':
@@ -734,8 +732,8 @@ def edit_xml( request, repo, org, cid, eid, slug, Form, FIELDS, namespaces=None 
             cleaned_data = form.cleaned_data
             xml_new = Form.process(xml, fields, form, namespaces=namespaces)
             # TODO validate XML
-            with open(xml_path_abs, 'w') as fnew:
-                fnew.write(xml_new)
+            fileio.write_raw(xml_new, xml_path_abs)
+            
             # TODO validate XML
             exit,status = commands.entity_update(git_name, git_mail,
                                                  collection_abs, entity_uid, [xml_path_rel],

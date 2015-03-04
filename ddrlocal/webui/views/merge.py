@@ -15,7 +15,9 @@ from django.shortcuts import Http404, get_object_or_404, render_to_response
 from django.template import RequestContext
 from django.template.loader import get_template
 
-from DDR import commands, dvcs
+from DDR import commands
+from DDR import dvcs
+from DDR import fileio
 
 from storage.decorators import storage_required
 from webui.decorators import ddrview
@@ -125,11 +127,9 @@ def edit_auto( request, repo, org, cid ):
     
     filename = request.GET.get('filename', None)
     filepath = os.path.join(collection_path, filename)
-    with open(filepath, 'r') as f:
-        text = f.read()
+    text = fileio.read_raw(filepath)
     merged = dvcs.automerge_conflicted(text, 'left')
-    with open(filepath, 'w') as f:
-        f.write(merged)
+    fileio.write_raw(merged, filepath)
     
     # TODO git add FILENAME
     
@@ -159,14 +159,12 @@ def edit_raw( request, repo, org, cid ):
         if form.is_valid():
             text = form.cleaned_data['text']
             # TODO validate XML
-            with open(filepath, 'w') as f:
-                f.write(text)
+            fileio.write_raw(text, filepath)
             # git add file
             dvcs.merge_add(repository, filename)
             return HttpResponseRedirect( reverse('webui-merge', args=[repo,org,cid]) )
     else:
-        with open(filepath, 'r') as f:
-            text = f.read()
+        text = fileio.read_raw(filepath)
         form = MergeRawForm({'filename': filename, 'text': text,})
     return render_to_response(
         'webui/merge/edit-raw.html',
@@ -193,8 +191,7 @@ def edit_json( request, repo, org, cid ):
     fields = []
     if filename:
         path = os.path.join(collection_path, filename)
-        with open(path, 'r') as f:
-            txt = f.read()
+        txt = fileio.read_raw(path)
         fields = dvcs.conflicting_fields(txt)
     
     if request.method == 'POST':
@@ -202,8 +199,7 @@ def edit_json( request, repo, org, cid ):
         #if form.is_valid():
         #    text = form.cleaned_data['text']
         #    # TODO validate XML
-        #    with open(filepath, 'w') as f:
-        #        f.write(text)
+        #    text = fileio.read_raw(filepath)
         #    # git add file
         #    dvcs.merge_add(repository, filename)
         assert False
