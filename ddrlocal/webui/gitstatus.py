@@ -216,6 +216,7 @@ def update( base_dir, collection_path ):
     @param force: Boolean Forces refresh of status
     @returns: dict
     """
+    queue_generate_if_absent(base_dir)
     start = datetime.now()
     status = dvcs.repo_status(collection_path, short=True)
     annex_status = dvcs.annex_status(collection_path)
@@ -224,8 +225,6 @@ def update( base_dir, collection_path ):
     elapsed = timestamp - start
     text = write(base_dir, collection_path, timestamp, elapsed, status, annex_status, syncstatus)
     return loads(text)
-
-
 
 def lock( base_dir, task_id ):
     """Sets a lock to prevent update_store from running
@@ -421,6 +420,17 @@ def queue_generate( base_dir, repos_orgs ):
     queue['generated'] = datetime.now()
     return queue
 
+def queue_generate_if_absent(base_dir):
+    """Check for queue file, generate if none present.
+    """
+    qpath = queue_path(settings.MEDIA_BASE)
+    if (os.path.exists(qpath) == False) or (os.path.getsize(qpath) == 0):
+        queue = queue_generate(
+            base_dir,
+            gitolite.get_repos_orgs()
+        )
+        queue_write(base_dir, queue)
+
 def queue_mark_updated( queue, collection_id, delta, minimum ):
     """Resets or adds collection timestamp and returns queue
     
@@ -517,6 +527,7 @@ def update_store( base_dir, delta, minimum, local=False ):
     """
     if not os.path.exists(base_dir):
         raise Exception('base_dir does not exist. No Store mounted?: %s' % base_dir)
+    queue_generate_if_absent(base_dir)
     GITSTATUS_LOCK_ID = 'gitstatus-update-lock'
     GITSTATUS_LOCK_EXPIRE = 60 * 5
     acquire_lock = lambda: cache.add(GITSTATUS_LOCK_ID, 'true', GITSTATUS_LOCK_EXPIRE)
