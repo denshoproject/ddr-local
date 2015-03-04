@@ -44,6 +44,7 @@ from django.conf import settings
 from django.core.cache import cache
 
 from DDR import dvcs
+from DDR import fileio
 from DDR.models import Identity
 from DDR.storage import is_writable
 from ddrlocal.models import DDRLocalCollection as Collection
@@ -55,8 +56,7 @@ def log(msg):
     """celery does not like writing to logs, so write to separate logfile
     """
     entry = '%s %s\n' % (datetime.now().strftime(settings.TIMESTAMP_FORMAT), msg)
-    with open(settings.GITSTATUS_LOG, 'a') as f:
-        f.write(entry)
+    fileio.append_raw(entry, settings.GITSTATUS_LOG)
 
 def tmp_dir( base_dir ):
     """Returns path to tmp dir; creates dir under certain conditions
@@ -156,16 +156,14 @@ def write( base_dir, collection_path, timestamp, elapsed, status, annex_status, 
     """Writes .gitstatus for the collection; see format.
     """
     text = dumps(timestamp, elapsed, status, annex_status, syncstatus) + '\n'
-    with open(path(base_dir, collection_path), 'w') as f:
-        f.write(text)
+    fileio.write_raw(text, path(base_dir, collection_path))
     return text
 
 def read( base_dir, collection_path ):
     """Reads .gitstatus for the collection and returns parsed data.
     """
     if os.path.exists(path(base_dir, collection_path)):
-        with open(path(base_dir, collection_path), 'r') as f:
-            text = f.read()
+        text = fileio.read_raw(path(base_dir, collection_path))
         data = loads(text)
         return data
     return None
@@ -271,8 +269,7 @@ def lock( base_dir, task_id ):
     LOCK = lock_path(base_dir)
     locks = []
     if os.path.exists(LOCK):
-        with open(LOCK, 'r') as f:
-            locks = f.readlines()
+        locks = fileio.readlines_raw(LOCK)
     already = None
     for lock in locks:
         lock = lock.strip()
@@ -284,8 +281,7 @@ def lock( base_dir, task_id ):
         locks.append(text)
     cleaned = [lock.strip() for lock in locks]
     lockfile_text = '\n'.join(cleaned)
-    with open(LOCK, 'w') as f:
-        f.write(lockfile_text)
+    fileio.write_raw(lockfile_text, LOCK)
     return lockfile_text
 
 def unlock( base_dir, task_id ):
@@ -299,8 +295,7 @@ def unlock( base_dir, task_id ):
     LOCK = lock_path(base_dir)
     locks = []
     if os.path.exists(LOCK):
-        with open(LOCK, 'r') as f:
-            locks = f.readlines()
+        locks = fileio.readlines_raw(LOCK)
     remaining = []
     for lock in locks:
         lock = lock.strip()
@@ -310,8 +305,7 @@ def unlock( base_dir, task_id ):
                 remaining.append(lock)
     lockfile_text = '\n'.join(remaining)
     if lockfile_text:
-        with open(LOCK, 'w') as f:
-            f.write(lockfile_text)
+        fileio.write_raw(lockfile_text, LOCK)
     else:
         if os.path.exists(LOCK):
             os.remove(LOCK)
@@ -326,8 +320,7 @@ def locked_global( base_dir ):
     """
     LOCK = lock_path(base_dir)
     if os.path.exists(LOCK):
-        with open(LOCK, 'r') as f:
-            locks = f.readlines()
+        locks = fileio.readlines_raw(LOCK)
         return locks
     return False
 
@@ -379,8 +372,7 @@ def queue_read( base_dir ):
     """
     path = queue_path(base_dir)
     assert os.path.exists(path)
-    with open(path, 'r') as f:
-        text = f.read()
+    text = fileio.read_raw(path)
     return queue_loads(text)
 
 def queue_write( base_dir, queue ):
@@ -389,8 +381,7 @@ def queue_write( base_dir, queue ):
     """
     path = queue_path(base_dir)
     text = queue_dumps(queue)
-    with open(path, 'w') as f:
-        f.write(text)
+    fileio.write_raw(text, path)
 
 def queue_generate( base_dir, repos_orgs ):
     """Generates a new queue file
