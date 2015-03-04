@@ -181,7 +181,10 @@ class GitStatusTask(Task):
 def gitstatus_update( collection_path ):
     if not os.path.exists(settings.MEDIA_BASE):
         raise Exception('base_dir does not exist. No Store mounted?: %s' % settings.MEDIA_BASE)
-    if not os.path.exists(gitstatus.queue_path(settings.MEDIA_BASE)):
+    qpath = gitstatus.queue_path(settings.MEDIA_BASE)
+    file_exists = os.path.exists(qpath)
+    file_has_contents = os.path.getsize(qpath)
+    if not (file_exists and file_has_contents):
         queue = gitstatus.queue_generate(
             settings.MEDIA_BASE,
             gitolite.get_repos_orgs()
@@ -193,7 +196,9 @@ def gitstatus_update( collection_path ):
 def gitstatus_update_store():
     if not os.path.exists(settings.MEDIA_BASE):
         raise Exception('base_dir does not exist. No Store mounted?: %s' % settings.MEDIA_BASE)
-    if not os.path.exists(gitstatus.queue_path(settings.MEDIA_BASE)):
+    qpath = gitstatus.queue_path(settings.MEDIA_BASE)
+    if (os.path.exists(qpath) == False) \
+       or (os.path.getsize(qpath) == 0):
         queue = gitstatus.queue_generate(
             settings.MEDIA_BASE,
             gitolite.get_repos_orgs()
