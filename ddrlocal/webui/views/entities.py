@@ -22,9 +22,9 @@ from django.template import RequestContext
 
 from DDR import commands
 from DDR import docstore
+from DDR import fileio
 from DDR import idservice
 from DDR.models import Identity
-from DDR.models import write_json
 
 if settings.REPO_MODELS_PATH not in sys.path:
     sys.path.append(settings.REPO_MODELS_PATH)
@@ -331,8 +331,10 @@ def new( request, repo, org, cid ):
     entity_uid = Identity.make_object_id('entity',repo,org,cid,eid)
     entity_path = Entity.entity_path(request, repo, org, cid, eid)
     # write entity.json template to entity location
-    write_json(Entity(entity_path).dump_json(template=True),
-               settings.TEMPLATE_EJSON)
+    fileio.write_raw(
+        Entity(entity_path).dump_json(template=True),
+        settings.TEMPLATE_EJSON
+    )
     # commit files
     exit,status = commands.entity_create(git_name, git_mail,
                                          collection.path, entity_uid,

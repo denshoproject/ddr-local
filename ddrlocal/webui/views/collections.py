@@ -22,9 +22,9 @@ from django.template.loader import get_template
 
 from DDR import commands
 from DDR import docstore
+from DDR import fileio
 from DDR import idservice
 from DDR.models import Identity
-from DDR.models import write_json
 
 if settings.REPO_MODELS_PATH not in sys.path:
     sys.path.append(settings.REPO_MODELS_PATH)
@@ -258,8 +258,10 @@ def new( request, repo, org ):
     # create the new collection repo
     collection_path = Collection.collection_path(request,repo,org,cid)
     # collection.json template
-    write_json(Collection(collection_path).dump_json(template=True),
-               settings.TEMPLATE_CJSON)
+    fileio.write_raw(
+        Collection(collection_path).dump_json(template=True),
+        settings.TEMPLATE_CJSON
+    )
     exit,status = commands.create(git_name, git_mail,
                                   collection_path,
                                   [settings.TEMPLATE_CJSON, settings.TEMPLATE_EAD],
