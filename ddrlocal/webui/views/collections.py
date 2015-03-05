@@ -391,17 +391,16 @@ def csv_download( request, repo, org, cid, model=None ):
     if not os.path.exists(path):
         raise Http404
     import csv
-    # TODO use vars from migrations.densho or put them in settings.
-    CSV_DELIMITER = ','
-    CSV_QUOTECHAR = '"'
-    CSV_QUOTING = csv.QUOTE_ALL
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename="%s"' % filename
-    writer = csv.writer(response, delimiter=CSV_DELIMITER, quotechar=CSV_QUOTECHAR, quoting=CSV_QUOTING)
-    with open(path, 'rb') as f:
-        reader = csv.reader(f, delimiter=CSV_DELIMITER, quotechar=CSV_QUOTECHAR, quoting=CSV_QUOTING)
-        for row in reader:
-            writer.writerow(row)
+    writer = csv.writer(
+        response,
+        delimiter=fileio.CSV_DELIMITER,
+        quotechar=fileio.CSV_QUOTECHAR,
+        quoting=fileio.CSV_QUOTING
+    )
+    for row in fileio.read_csv_raw(filename):
+        writer.writerow(row)
     return response
 
 @ddrview

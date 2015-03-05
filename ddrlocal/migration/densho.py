@@ -104,7 +104,6 @@ Run the export.::
 
 from __future__ import division
 from copy import deepcopy
-import csv
 from datetime import datetime
 import json
 import logging
@@ -148,12 +147,6 @@ TEMPLATE_EJSON = settings.TEMPLATE_EJSON
 TEMPLATE_METS = settings.TEMPLATE_METS
 
 AGENT = 'importers.densho'
-
-# Some files' XMP data is wayyyyyy too big
-csv.field_size_limit(sys.maxsize)
-CSV_DELIMITER = ','
-CSV_QUOTECHAR = '"'
-CSV_QUOTING = csv.QUOTE_ALL
 
 # These are lists of alternative forms of controlled-vocabulary terms.
 # From these indexes are build that will be used to replace variant terms with the official term.
@@ -310,32 +303,6 @@ def make_tmpdir(tmpdir):
     """
     if not os.path.exists(tmpdir):
         os.makedirs(tmpdir)
-    
-def make_csv_reader( csvfile ):
-    """Get a csv.reader object for the file.
-    
-    @param csvfile: A file object.
-    """
-    reader = csv.reader(
-        csvfile,
-        delimiter=CSV_DELIMITER,
-        quoting=CSV_QUOTING,
-        quotechar=CSV_QUOTECHAR,
-    )
-    return reader
-
-def make_csv_writer( csvfile ):
-    """Get a csv.writer object for the file.
-    
-    @param csvfile: A file object.
-    """
-    writer = csv.writer(
-        csvfile,
-        delimiter=CSV_DELIMITER,
-        quoting=CSV_QUOTING,
-        quotechar=CSV_QUOTECHAR,
-    )
-    return writer
 
 def read_csv( path ):
     """Read specified file, return list of rows.
@@ -343,12 +310,7 @@ def read_csv( path ):
     @param path: Absolute path to CSV file
     @returns list of rows
     """
-    rows = []
-    with open(path, 'rU') as f:  # the 'U' is for universal-newline mode
-        reader = make_csv_reader(f)
-        for row in reader:
-            rows.append(row)
-    return rows
+    return fileio.read_csv_raw(path)
 
 def get_required_fields( fields, exceptions ):
     """Picks out the required fields.
@@ -851,40 +813,37 @@ def export_entities( collection_path, csv_path ):
     for path in metadata_files(basedir=collection_path, recursive=True):
         if os.path.basename(path) == 'entity.json':
             paths.append(path)
-    
-    with open(csv_path, 'wb') as csvfile:
-        writer = make_csv_writer(csvfile)
-        # headers
-        writer.writerow(fieldnames)
-        # everything else
-        for n,path in enumerate(paths):
-            rowstarted = datetime.now()
-            
-            entity_dir = os.path.dirname(path)
-            entity_id = os.path.basename(entity_dir)
-            entity = DDRLocalEntity.from_json(entity_dir)
-            # seealso DDR.models.__init__.Module.function
-            values = []
-            for f in entitymodule.ENTITY_FIELDS:
-                value = ''
-                if hasattr(entity, f['name']) and f.get('form',None):
-                    key = f['name']
-                    label = f['form']['label']
-                    # run csvexport_* functions on field data if present
-                    val = Module(entitymodule).function(
-                        'csvexport_%s' % key,
-                        getattr(entity, f['name'])
-                    )
-                    if not (isinstance(val, str) or isinstance(val, unicode)):
-                        val = unicode(val)
-                    if val:
-                        value = val.encode('utf-8')
-                values.append(value)
-            writer.writerow(values)
-            
-            rowfinished = datetime.now()
-            rowelapsed = rowfinished - rowstarted
-            print('%s %s/%s %s (%s)' % (dtfmt(rowfinished), n+1, len(paths), entity_id, rowelapsed))
+    rows = [
+        fieldnames
+    ]
+    for n,path in enumerate(paths):
+        rowstarted = datetime.now()
+        entity_dir = os.path.dirname(path)
+        entity_id = os.path.basename(entity_dir)
+        entity = DDRLocalEntity.from_json(entity_dir)
+        # seealso DDR.models.__init__.Module.function
+        values = []
+        for f in entitymodule.ENTITY_FIELDS:
+            value = ''
+            if hasattr(entity, f['name']) and f.get('form',None):
+                key = f['name']
+                label = f['form']['label']
+                # run csvexport_* functions on field data if present
+                val = Module(entitymodule).function(
+                    'csvexport_%s' % key,
+                    getattr(entity, f['name'])
+                )
+                if not (isinstance(val, str) or isinstance(val, unicode)):
+                    val = unicode(val)
+                if val:
+                    value = val.encode('utf-8')
+            values.append(value)
+        rows.append(values)
+        rowfinished = datetime.now()
+        rowelapsed = rowfinished - rowstarted
+        print('%s %s/%s %s (%s)' % (dtfmt(rowfinished), n+1, len(paths), entity_id, rowelapsed))
+    logging.info('writing csv: %s' % csv_path)
+    fileio.write_csv(rows, csv_path)
     
     finished = datetime.now()
     elapsed = finished - started
@@ -911,43 +870,40 @@ def export_files( collection_path, csv_path ):
     for path in metadata_files(basedir=collection_path, recursive=True):
         if ('master' in path) or ('mezzanine' in path):
             paths.append(path)
-    
-    with open(csv_path, 'wb') as csvfile:
-        writer = make_csv_writer(csvfile)
-        # headers
-        writer.writerow(fieldnames)
-        # everything else
-        for n,path in enumerate(paths):
-            rowstarted = datetime.now()
-            
-            # load file object
-            filename = os.path.basename(path)
-            file_id = os.path.splitext(filename)[0]
-            file_ = DDRLocalFile.from_json(path)
-            if file_:
-                # seealso DDR.models.__init__.Module.function
-                values = []
-                for f in filemodule.FILE_FIELDS:
-                    value = ''
-                    if hasattr(file_, f['name']):
-                        key = f['name']
-                        # run csvexport_* functions on field data if present
-                        val = Module(filemodule).function(
-                            'csvexport_%s' % key,
-                            getattr(file_, f['name'])
-                        )
-                        if not (isinstance(val, str) or isinstance(val, unicode)):
-                            val = unicode(val)
-                        if val:
-                            value = val.encode('utf-8')
-                    values.append(value)
-                writer.writerow(values)
-            
-                rowfinished = datetime.now()
-                rowelapsed = rowfinished - rowstarted
-                print('%s %s/%s %s (%s)' % (dtfmt(rowfinished), n+1, len(paths), file_id, rowelapsed))
-            else:
-                print('NO FILE FOR %s' % path)
+    rows = [
+        fieldnames
+    ]
+    for n,path in enumerate(paths):
+        rowstarted = datetime.now()
+        # load file object
+        filename = os.path.basename(path)
+        file_id = os.path.splitext(filename)[0]
+        file_ = DDRLocalFile.from_json(path)
+        if file_:
+            # seealso DDR.models.__init__.Module.function
+            values = []
+            for f in filemodule.FILE_FIELDS:
+                value = ''
+                if hasattr(file_, f['name']):
+                    key = f['name']
+                    # run csvexport_* functions on field data if present
+                    val = Module(filemodule).function(
+                        'csvexport_%s' % key,
+                        getattr(file_, f['name'])
+                    )
+                    if not (isinstance(val, str) or isinstance(val, unicode)):
+                        val = unicode(val)
+                    if val:
+                        value = val.encode('utf-8')
+                values.append(value)
+            rows.append(values)
+            rowfinished = datetime.now()
+            rowelapsed = rowfinished - rowstarted
+            print('%s %s/%s %s (%s)' % (dtfmt(rowfinished), n+1, len(paths), file_id, rowelapsed))
+        else:
+            print('NO FILE FOR %s' % path)
+    logging.info('writing csv: %s' % csv_path)
+    fileio.write_csv(rows, csv_path)
     
     finished = datetime.now()
     elapsed = finished - started
