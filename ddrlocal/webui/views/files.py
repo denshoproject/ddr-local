@@ -26,7 +26,9 @@ from webui.forms import DDRForm
 from webui.forms.files import NewFileForm, EditFileForm, NewAccessFileForm, DeleteFileForm
 from webui.forms.files import shared_folder_files
 from webui.models import Collection, Entity
-from webui.tasks import entity_add_file, entity_add_access, entity_delete_file, gitstatus_update
+from webui.tasks import entity_add_file, entity_add_access
+from webui.tasks import entity_file_edit, entity_delete_file
+from webui.tasks import gitstatus_update
 from webui.views.decorators import login_required
 
 
@@ -331,26 +333,15 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
     if request.method == 'POST':
         form = DDRForm(request.POST, fields=FILE_FIELDS)
         if form.is_valid():
+            
             file_.form_post(form)
             file_.dump_json()
-            exit,status = commands.entity_update(git_name, git_mail,
-                                                 entity.parent_path, entity.id,
-                                                 [file_.json_path,],
-                                                 agent=settings.AGENT)
-            collection.cache_delete()
-            if exit:
-                messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
-            else:
-                # update search index
-                with open(file_.json_path, 'r') as f:
-                    document = json.loads(f.read())
-                docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
-                gitstatus_update.apply_async((collection.path,), countdown=2)
-                # positive feedback
-                messages.success(request, WEBUI_MESSAGES['VIEWS_FILES_UPDATED'])
-                return HttpResponseRedirect( reverse('webui-file', args=[repo,org,cid,eid,role,sha1]) )
-            # something went wrong
-            assert False
+            
+            # commit files, delete cache, update search index, update git status
+            entity_file_edit(request, collection, file_, git_name, git_mail)
+            
+            return HttpResponseRedirect( file_.url() )
+            
     else:
         form = DDRForm(file_.form_prep(), fields=FILE_FIELDS)
     return render_to_response(

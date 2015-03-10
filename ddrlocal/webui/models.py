@@ -12,7 +12,10 @@ from django.core.cache import cache
 from django.core.urlresolvers import reverse
 from django.db import models
 
+from DDR import commands
+from DDR import docstore
 from DDR import dvcs
+from DDR import models
 
 from ddrlocal.models import DDRLocalCollection, DDRLocalEntity, DDRLocalFile
 from ddrlocal.models import COLLECTION_FILES_PREFIX, ENTITY_FILES_PREFIX
@@ -255,6 +258,49 @@ class Collection( DDRLocalCollection ):
     
     def update_inheritables( self, inheritables, cleaned_data ):
         return _update_inheritables(self, 'collection', inheritables, cleaned_data)
+    
+    @staticmethod
+    def create(collection_path, git_name, git_mail):
+        """create new entity given an entity ID
+        """
+        # write collection.json template to collection location and commit
+        Collection(collection_path).dump_json(path=settings.TEMPLATE_CJSON, template=True)
+        templates = [settings.TEMPLATE_CJSON, settings.TEMPLATE_EAD]
+        agent = settings.AGENT
+        
+        exit,status = commands.create(
+            git_name, git_mail, collection_path, templates, agent)
+        
+        collection = Collection.from_json(collection_path)
+        
+        # [delete cache], update search index
+        #collection.cache_delete()
+        with open(collection.json_path, 'r') as f:
+            document = json.loads(f.read())
+        docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+        
+        return collection
+    
+    def save( self, updated_files, git_name, git_mail ):
+        """Perform file-save functions.
+        
+        Commit files, delete cache, update search index.
+        These steps are to be called asynchronously from tasks.collection_edit.
+        
+        @param collection: Collection
+        @param updated_files: list
+        @param git_name: str
+        @param git_mail: str
+        """
+        exit,status = commands.update(
+            git_name, git_mail,
+            self.path, updated_files,
+            agent=settings.AGENT)
+        self.cache_delete()
+        with open(self.json_path, 'r') as f:
+            document = json.loads(f.read())
+        docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+        return exit,status
 
 
 
@@ -301,7 +347,84 @@ class Entity( DDRLocalEntity ):
         for f in self._files:
             path_abs = os.path.join(self.files_path, f['path_rel'])
             self.files.append(DDRFile(path_abs=path_abs))
+    
+    @staticmethod
+    def create(collection, entity_id, git_name, git_mail, agent=settings.AGENT):
+        """create new entity given an entity ID
+        """
+        repo,org,cid,eid = entity_id.split('-')
+        entity_path = Entity.entity_path(None, repo, org, cid, eid)
+        
+        # write entity.json template to entity location and commit
+        Entity(entity_path).dump_json(path=settings.TEMPLATE_EJSON, template=True)
+        exit,status = commands.entity_create(
+            git_name, git_mail,
+            collection.path, entity_id,
+            [collection.json_path_rel, collection.ead_path_rel],
+            [settings.TEMPLATE_EJSON, settings.TEMPLATE_METS],
+            agent=agent)
+        
+        # load new entity, inherit values from parent, write and commit
+        entity = Entity.from_json(entity_path)
+        entity.inherit(collection)
+        entity.dump_json()
+        updated_files = [entity.json_path]
+        exit,status = commands.entity_update(
+            git_name, git_mail,
+            collection.path, entity.id,
+            updated_files,
+            agent=agent)
 
+        # delete cache, update search index
+        collection.cache_delete()
+        with open(entity.json_path, 'r') as f:
+            document = json.loads(f.read())
+        docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+        
+        return entity
+        
+    def save_part1( self, form ):
+        """Save entity part 1: the fast parts
+        
+        Write changes to disk; propagate inheritable values to child objects.
+        These steps are relatively quick, can be done during request-response.
+        
+        @param form: Django form object
+        @returns: list of paths
+        """
+        # run module_functions on raw form data
+        self.form_post(form)
+        # write
+        self.dump_json()
+        self.dump_mets()
+        updated_files = [self.json_path, self.mets_path,]
+        inheritables = self.selected_inheritables(form.cleaned_data)
+        modified_ids,modified_files = self.update_inheritables(inheritables, form.cleaned_data)
+        if modified_files:
+            updated_files = updated_files + modified_files
+        return updated_files
+    
+    def save_part2( self, updated_files, collection, git_name, git_mail ):
+        """Save entity part 2: the slow parts
+        
+        Commit files, delete cache, update search index.
+        These steps are slow, should be called from tasks.entity_edit
+        
+        @param updated_files: list of paths
+        @param collection: Collection
+        @param git_name: str
+        @param git_mail: str
+        """
+        exit,status = commands.entity_update(
+            git_name, git_mail,
+            collection.path, self.id,
+            updated_files,
+            agent=settings.AGENT)
+        collection.cache_delete()
+        with open(self.json_path, 'r') as f:
+            document = json.loads(f.read())
+        docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+        return exit,status
 
 
 class DDRFile( DDRLocalFile ):
@@ -324,3 +447,30 @@ class DDRFile( DDRLocalFile ):
     @staticmethod
     def file_path(request, repo, org, cid, eid, role, sha1):
         return os.path.join(settings.MEDIA_BASE, '{}-{}-{}-{}-{}-{}'.format(repo, org, cid, eid, role, sha1))
+    
+    def save( self, git_name, git_mail ):
+        """Perform file-save functions.
+        
+        Commit files, delete cache, update search index.
+        These steps are to be called asynchronously from tasks.file_edit.
+        
+        @param collection: Collection
+        @param file_id: str
+        @param git_name: str
+        @param git_mail: str
+        """
+        collection = Collection.from_json(self.collection_path)
+        entity_id = models.make_object_id(
+            'entity', self.repo, self.org, self.cid, self.eid)
+        
+        exit,status = commands.entity_update(
+            git_name, git_mail,
+            collection.path, entity_id,
+            [self.json_path],
+            agent=settings.AGENT)
+        collection.cache_delete()
+        with open(self.json_path, 'r') as f:
+            document = json.loads(f.read())
+        docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+        
+        return exit,status

@@ -33,7 +33,8 @@ from webui.forms.entities import NewEntityForm, JSONForm, UpdateForm, DeleteEnti
 from webui.mets import NAMESPACES, NAMESPACES_XPATH
 from webui.mets import METS_FIELDS, MetsForm
 from webui.models import Collection, Entity
-from webui.tasks import collection_delete_entity, gitstatus_update
+from webui.tasks import collection_entity_newexpert, collection_entity_edit, collection_delete_entity
+from webui.tasks import gitstatus_update
 from webui.views.decorators import login_required
 from xmlforms.models import XMLModel
 
@@ -307,6 +308,7 @@ def new( request, repo, org, cid ):
     if collection.repo_behind():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+    
     # get new entity ID
     try:
         entity_ids = api.entities_next(request, repo, org, cid, 1)
@@ -317,11 +319,13 @@ def new( request, repo, org, cid ):
         messages.error(request, e)
         return HttpResponseRedirect(reverse('webui-collection', args=[repo,org,cid]))
     eid = int(entity_ids[-1].split('-')[3])
+    
     # create new entity
     entity_uid = '{}-{}-{}-{}'.format(repo,org,cid,eid)
     entity_path = Entity.entity_path(request, repo, org, cid, eid)
     # write entity.json template to entity location
     Entity(entity_path).dump_json(path=settings.TEMPLATE_EJSON, template=True)
+    
     # commit files
     exit,status = commands.entity_create(git_name, git_mail,
                                          collection.path, entity_uid,
@@ -353,11 +357,73 @@ def new( request, repo, org, cid ):
         gitstatus_update.apply_async((collection.path,), countdown=2)
         # positive feedback
         return HttpResponseRedirect(reverse('webui-entity-edit', args=[repo,org,cid,eid]))
+    
     # something happened...
     logger.error('Could not create new entity!')
     messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_ERR_CREATE'])
     return HttpResponseRedirect(reverse('webui-collection', args=[repo,org,cid]))
 
+@ddrview
+@login_required
+@storage_required
+def newexpert( request, repo, org, cid ):
+    """Ask for Entity ID, then create new Entity.
+    """
+    git_name = request.session.get('git_name')
+    git_mail = request.session.get('git_mail')
+    if not git_name and git_mail:
+        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
+    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    if collection.locked():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
+        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+    collection.repo_fetch()
+    if collection.repo_behind():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
+        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+    
+    if request.method == 'POST':
+        form = NewEntityForm(request.POST)
+        if form.is_valid():
+
+            entity_id = '-'.join([repo, org, str(cid), str(form.cleaned_data['eid'])])
+            entity_ids = [entity.id for entity in collection.entities(quick=True)]
+            is_legal = False
+            already_exists = False
+            if '-'.join([repo, org, str(cid)]) == collection.id:
+                is_legal = True
+            else:
+                messages.error(request, "Can only create objects in this collection. Try again.")
+            if entity_id in entity_ids:
+                already_exists = True
+                messages.error(request, "That object ID already exists. Try again.")
+            
+            if entity_id and is_legal and not already_exists:
+                collection_entity_newexpert(
+                    request,
+                    collection, entity_id,
+                    git_name, git_mail
+                )
+                return HttpResponseRedirect(reverse('webui-collection-entities', args=[repo,org,cid]))
+            
+    else:
+        data = {
+            'repo':repo,
+            'org':org,
+            'cid':cid,
+        }
+        form = NewEntityForm(data)
+    return render_to_response(
+        'webui/entities/new.html',
+        {'repo': repo,
+         'org': org,
+         'cid': cid,
+         'collection': collection,
+         'form': form,
+         },
+        context_instance=RequestContext(request, processors=[])
+    )
+    
 @ddrview
 @login_required
 @storage_required
@@ -398,39 +464,19 @@ def edit( request, repo, org, cid, eid ):
             hidden_facility = request.POST.get('hidden-facility', None)
             if hidden_facility:
                 form.cleaned_data['facility'] = tagmanager_process_tags(hidden_facility)
+
+            # write changes to disk
+            updated_files = entity.save_part1(form)
             
-            entity.form_post(form)
-            entity.dump_json()
-            entity.dump_mets()
-            updated_files = [entity.json_path, entity.mets_path,]
-            success_msg = WEBUI_MESSAGES['VIEWS_ENT_UPDATED']
+            # commit files, delete cache, update search index, update git status
+            # in the background
+            collection_entity_edit(
+                request,
+                collection, entity, updated_files,
+                git_name, git_mail, settings.AGENT
+            )
             
-            # if inheritable fields selected, propagate changes to child objects
-            inheritables = entity.selected_inheritables(form.cleaned_data)
-            modified_ids,modified_files = entity.update_inheritables(inheritables, form.cleaned_data)
-            if modified_files:
-                updated_files = updated_files + modified_files
-            if modified_ids:
-                success_msg = 'Object updated. ' \
-                              'The value(s) for <b>%s</b> were applied to <b>%s</b>' % (
-                                  ', '.join(inheritables), ', '.join(modified_ids))
-            
-            exit,status = commands.entity_update(git_name, git_mail,
-                                                 entity.parent_path, entity.id,
-                                                 updated_files,
-                                                 agent=settings.AGENT)
-            collection.cache_delete()
-            if exit:
-                messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
-            else:
-                # update search index
-                with open(entity.json_path, 'r') as f:
-                    document = json.loads(f.read())
-                docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
-                gitstatus_update.apply_async((collection.path,), countdown=2)
-                # positive feedback
-                messages.success(request, success_msg)
-                return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+            return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
     else:
         form = DDRForm(entity.form_prep(), fields=ENTITY_FIELDS)
     
