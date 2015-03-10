@@ -272,6 +272,330 @@ def entity_add_access( git_name, git_mail, entity, ddrfile, agent='' ):
 
 
 
+# ----------------------------------------------------------------------
+
+TASK_STATUS_MESSAGES['webui-collection-newexpert'] = {
+    #'STARTED': '',
+    'PENDING': 'Creating new collection <b>{collection_id}</b>...',
+    'SUCCESS': 'Created new collection <b><a href="{collection_url}">{collection_id}</a></b>.',
+    'FAILURE': 'Could not create new collection <b>{collection_id}</b>.',
+    #'RETRY': '',
+    #'REVOKED': '',
+}
+
+def collection_new_expert(request, base_dir, collection_id, git_name, git_mail):
+    # start tasks
+    repo,org,cid = collection_id.split('-')
+    collection_path = os.path.join(base_dir, collection_id)
+    collection_url = reverse('webui-collection', args=[repo,org,cid])
+    result = collection_newexpert.apply_async(
+        (collection_path, git_name, git_mail),
+        countdown=2)
+    # add celery task_id to session
+    celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
+    # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
+    celery_tasks[result.task_id] = {
+        'task_id': result.task_id,
+        'action': 'webui-collection-newexpert',
+        'collection_url': collection_url,
+        'collection_id': collection_id,
+        'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
+    request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
+
+class CollectionNewExpertTask(Task):
+    abstract = True
+    
+    def after_return(self, status, retval, task_id, args, kwargs, einfo):
+        logger.debug('CollectionNewExpertTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
+        collection_path = args[0]
+        collection = Collection.from_json(collection_path)
+        lockstatus = collection.unlock(task_id)
+        gitstatus.update(settings.MEDIA_BASE, collection_path)
+        gitstatus.unlock(settings.MEDIA_BASE, 'collection_newexpert')
+
+@task(base=CollectionNewExpertTask, name='webui-collection-newexpert')
+def collection_newexpert(collection_path, git_name, git_mail):
+    """Create new collection using known ID.
+    
+    @param collection_path: str Absolute path to collection
+    @param git_name: Username of git committer.
+    @param git_mail: Email of git committer.
+    """
+    logger.debug('collection_newexpert(%s,%s,%s)' % (
+        collection_path, git_name, git_mail))
+    
+    collection = Collection.create(collection_path, git_name, git_mail)
+    gitstatus_update.apply_async((collection.path,), countdown=2)
+    
+    return 'status',collection_path
+
+# ----------------------------------------------------------------------
+
+TASK_STATUS_MESSAGES['webui-collection-edit'] = {
+    #'STARTED': '',
+    'PENDING': 'Saving changes to collection <b><a href="{collection_url}">{collection_id}</a></b>...',
+    'SUCCESS': 'Saved changes to collection <b><a href="{collection_url}">{collection_id}</a></b>.',
+    'FAILURE': 'Could not save changes to collection <b><a href="{collection_url}">{collection_id}</a></b>.',
+    #'RETRY': '',
+    #'REVOKED': '',
+}
+
+def collection_edit(request, collection, updated_files, git_name, git_mail):
+    # start tasks
+    result = collection_save.apply_async(
+        (collection.path, updated_files, git_name, git_mail),
+        countdown=2)
+    # lock collection
+    lockstatus = collection.lock(result.task_id)
+    # add celery task_id to session
+    celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
+    # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
+    celery_tasks[result.task_id] = {
+        'task_id': result.task_id,
+        'action': 'webui-collection-edit',
+        'collection_url': collection.url(),
+        'collection_id': collection.id,
+        'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
+    request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
+
+class CollectionEditTask(Task):
+    abstract = True
+    
+    def after_return(self, status, retval, task_id, args, kwargs, einfo):
+        logger.debug('CollectionEditTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
+        collection_path = args[0]
+        collection = Collection.from_json(collection_path)
+        lockstatus = collection.unlock(task_id)
+        gitstatus.update(settings.MEDIA_BASE, collection_path)
+        gitstatus.unlock(settings.MEDIA_BASE, 'collection_edit')
+
+@task(base=CollectionEditTask, name='webui-collection-edit')
+def collection_save(collection_path, updated_files, git_name, git_mail):
+    """The time-consuming parts of collection-edit.
+    
+    @param collection_path: str Absolute path to collection
+    @param git_name: Username of git committer.
+    @param git_mail: Email of git committer.
+    """
+    logger.debug('collection_save(%s,%s,%s,%s)' % (
+        git_name, git_mail, collection_path, updated_files))
+    
+    collection = Collection.from_json(collection_path)
+    
+    gitstatus.lock(settings.MEDIA_BASE, 'collection_edit')
+    exit,status = collection.save(updated_files, git_name, git_mail)
+    gitstatus_update.apply_async((collection_path,), countdown=2)
+    
+    return status,collection_path
+
+# ----------------------------------------------------------------------
+
+TASK_STATUS_MESSAGES['webui-entity-newexpert'] = {
+    #'STARTED': '',
+    'PENDING': 'Creating new object <b>{entity_id}</b>...',
+    'SUCCESS': 'Created new object <b><a href="{entity_url}">{entity_id}</a></b>.',
+    'FAILURE': 'Could not create new object <b>{entity_id}</b>.',
+    #'RETRY': '',
+    #'REVOKED': '',
+}
+
+def collection_entity_newexpert(request, collection, entity_id, git_name, git_mail):
+    # start tasks
+    repo,org,cid,eid = entity_id.split('-')
+    entity_url = reverse('webui-entity', args=[repo,org,cid,eid])
+    result = entity_newexpert.apply_async(
+        (collection.path, entity_id, git_name, git_mail),
+        countdown=2)
+    # lock collection
+    lockstatus = collection.lock(result.task_id)
+    # add celery task_id to session
+    celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
+    # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
+    celery_tasks[result.task_id] = {
+        'task_id': result.task_id,
+        'action': 'webui-entity-newexpert',
+        'collection_url': collection.url(),
+        'collection_id': collection.id,
+        'entity_url': entity_url,
+        'entity_id': entity_id,
+        'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
+    request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
+
+class EntityNewExpertTask(Task):
+    abstract = True
+    
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
+        logger.debug('EntityNewExpertTask.on_failure(%s, %s, %s, %s)' % (exc, task_id, args, kwargs))
+    
+    def on_success(self, retval, task_id, args, kwargs):
+        logger.debug('EntityNewExpertTask.on_success(%s, %s, %s, %s)' % (retval, task_id, args, kwargs))
+    
+    def after_return(self, status, retval, task_id, args, kwargs, einfo):
+        logger.debug('EntityNewExpertTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
+        collection_path = args[0]
+        collection = Collection.from_json(collection_path)
+        lockstatus = collection.unlock(task_id)
+        gitstatus.update(settings.MEDIA_BASE, collection_path)
+        gitstatus.unlock(settings.MEDIA_BASE, 'entity_newexpert')
+
+@task(base=EntityNewExpertTask, name='webui-entity-newexpert')
+def entity_newexpert(collection_path, entity_id, git_name, git_mail):
+    """Create new entity using known entity ID.
+    
+    @param collection_path: str Absolute path to collection
+    @param entity_id: str
+    @param git_name: Username of git committer.
+    @param git_mail: Email of git committer.
+    """
+    logger.debug('collection_entity_newexpert(%s,%s,%s,%s)' % (
+        collection_path, entity_id, git_name, git_mail))
+    
+    collection = Collection.from_json(collection_path)
+    
+    gitstatus.lock(settings.MEDIA_BASE, 'entity_newexpert')
+    entity = Entity.create(collection, entity_id, git_name, git_mail)
+    gitstatus_update.apply_async((collection.path,), countdown=2)
+
+    return 'status',collection_path,entity.id
+
+# ----------------------------------------------------------------------
+
+TASK_STATUS_MESSAGES['webui-file-edit'] = {
+    #'STARTED': '',
+    'PENDING': 'Saving changes to file <b><a href="{file_url}">{file_id}</a></b>...',
+    'SUCCESS': 'Saved changes to file <b><a href="{file_url}">{file_id}</a></b>.',
+    'FAILURE': 'Could not save changes to file <b><a href="{file_url}">{file_id}</a></b>.',
+    #'RETRY': '',
+    #'REVOKED': '',
+}
+
+def entity_file_edit(request, collection, file_, git_name, git_mail):
+    # start tasks
+    file_id = models.Identity.make_object_id(
+        'file', file_.repo, file_.org, file_.cid, file_.eid, file_.role, file_.sha1)
+    result = file_edit.apply_async(
+        (collection.path, file_id, git_name, git_mail),
+        countdown=2)
+    # lock collection
+    lockstatus = collection.lock(result.task_id)
+    # add celery task_id to session
+    celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
+    # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
+    celery_tasks[result.task_id] = {
+        'task_id': result.task_id,
+        'action': 'webui-file-edit',
+        'file_url': file_.url(),
+        'file_id': file_id,
+        'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
+    request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
+
+class FileEditTask(Task):
+    abstract = True
+    
+    def after_return(self, status, retval, task_id, args, kwargs, einfo):
+        logger.debug('FileEditTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
+        collection_path = args[0]
+        collection = Collection.from_json(collection_path)
+        lockstatus = collection.unlock(task_id)
+        gitstatus.update(settings.MEDIA_BASE, collection_path)
+        gitstatus.unlock(settings.MEDIA_BASE, 'file_edit')
+
+@task(base=FileEditTask, name='webui-file-edit')
+def file_edit(collection_path, file_id, git_name, git_mail):
+    """The time-consuming parts of file-edit.
+    
+    @param collection_path: str Absolute path to collection
+    @param file_id: str
+    @param git_name: Username of git committer.
+    @param git_mail: Email of git committer.
+    """
+    logger.debug('file_edit(%s,%s,%s,%s)' % (git_name, git_mail, collection_path, file_id))
+    
+    model,repo,org,cid,eid,role,sha1 = models.Identity.split_object_id(file_id)
+    entity = Entity.from_json(Entity.entity_path(None,repo,org,cid,eid))
+    file_ = entity.file(repo, org, cid, eid, role, sha1)
+    
+    gitstatus.lock(settings.MEDIA_BASE, 'file_edit')
+    exit,status = file_.save(git_name, git_mail)
+    gitstatus_update.apply_async((collection_path,), countdown=2)
+    
+    return status,collection_path,file_id
+
+# ----------------------------------------------------------------------
+
+TASK_STATUS_MESSAGES['webui-entity-edit'] = {
+    #'STARTED': '',
+    'PENDING': 'Saving changes to object <b><a href="{entity_url}">{entity_id}</a></b>...',
+    'SUCCESS': 'Saved changes to object <b><a href="{entity_url}">{entity_id}</a></b>.',
+    'FAILURE': 'Could not save changes to object <b><a href="{entity_url}">{entity_id}</a></b>.',
+    #'RETRY': '',
+    #'REVOKED': '',
+}
+
+def collection_entity_edit(request, collection, entity, updated_files, git_name, git_mail, agent):
+    # start tasks
+    result = entity_edit.apply_async(
+        (collection.path, entity.id, updated_files, git_name, git_mail, agent),
+        countdown=2)
+    # lock collection
+    lockstatus = collection.lock(result.task_id)
+    # add celery task_id to session
+    celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
+    # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
+    celery_tasks[result.task_id] = {
+        'task_id': result.task_id,
+        'action': 'webui-entity-edit',
+        'collection_url': collection.url(),
+        'collection_id': collection.id,
+        'entity_url': entity.url(),
+        'entity_id': entity.id,
+        'updated_files': updated_files,
+        'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
+    request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
+
+class EntityEditTask(Task):
+    abstract = True
+    
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
+        logger.debug('EntityEditTask.on_failure(%s, %s, %s, %s)' % (exc, task_id, args, kwargs))
+    
+    def on_success(self, retval, task_id, args, kwargs):
+        logger.debug('EntityEditTask.on_success(%s, %s, %s, %s)' % (retval, task_id, args, kwargs))
+    
+    def after_return(self, status, retval, task_id, args, kwargs, einfo):
+        logger.debug('EntityEditTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
+        collection_path = args[0]
+        collection = Collection.from_json(collection_path)
+        lockstatus = collection.unlock(task_id)
+        gitstatus.update(settings.MEDIA_BASE, collection_path)
+        gitstatus.unlock(settings.MEDIA_BASE, 'entity_edit')
+
+@task(base=EntityEditTask, name='webui-entity-edit')
+def entity_edit(collection_path, entity_id, updated_files, git_name, git_mail, agent=''):
+    """The time-consuming parts of entity-edit.
+    
+    @param collection_path: str Absolute path to collection
+    @param entity_id: str
+    @param git_name: Username of git committer.
+    @param git_mail: Email of git committer.
+    @param agent: (optional) Name of software making the change.
+    """
+    logger.debug('collection_entity_edit(%s,%s,%s,%s,%s)' % (
+        git_name, git_mail, collection_path, entity_id, agent))
+    
+    collection = Collection.from_json(collection_path)
+    repo,org,cid,eid = entity_id.split('-')
+    entity_path = Entity.entity_path(None,repo,org,cid,eid)
+    entity = Entity.from_json(entity_path)
+    
+    gitstatus.lock(settings.MEDIA_BASE, 'entity_edit')
+    exit,status = entity.save_part2(updated_files, collection, git_name, git_mail)
+    gitstatus_update.apply_async((collection.path,), countdown=2)
+
+    return status,collection_path,entity_id
+
+# ------------------------------------------------------------------------
+
 TASK_STATUS_MESSAGES['webui-entity-delete'] = {
     #'STARTED': '',
     'PENDING': 'Deleting object <b>{entity_id}</b> from <a href="{collection_url}">{collection_id}</a>.',

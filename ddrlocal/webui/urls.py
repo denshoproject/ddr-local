@@ -58,6 +58,7 @@ urlpatterns = patterns(
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/git-status/$', 'webui.views.collections.git_status', name='webui-collection-git-status'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/$', 'webui.views.collections.detail', name='webui-collection'),
 
+    url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)/new-expert/$', 'webui.views.collections.newexpert', name='webui-collection-newexpert'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)/new/$', 'webui.views.collections.new', name='webui-collection-new'),
 
     # entities
@@ -78,6 +79,7 @@ urlpatterns = patterns(
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/mets.xml$', 'webui.views.entities.mets_xml', name='webui-entity-mets-xml'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/$', 'webui.views.entities.detail', name='webui-entity'),
 
+    url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/new-expert/$', 'webui.views.entities.newexpert', name='webui-entity-newexpert'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/new/$', 'webui.views.entities.new', name='webui-entity-new'),
 
     # files
