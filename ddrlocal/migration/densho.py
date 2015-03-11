@@ -310,7 +310,7 @@ def read_csv( path ):
     @param path: Absolute path to CSV file
     @returns list of rows
     """
-    return fileio.read_csv_raw(path)
+    return fileio.read_csv(path)
 
 def get_required_fields( fields, exceptions ):
     """Picks out the required fields.
@@ -659,7 +659,7 @@ def import_entities( csv_path, collection_path, git_name, git_mail ):
             entity_path = os.path.join(collection_path, COLLECTION_FILES_PREFIX, entity_uid)
             
             # write entity.json template to entity location
-            fileio.write_raw(
+            fileio.write(
                 Entity(entity_path).dump_json(template=True),
                 TEMPLATE_EJSON
             )

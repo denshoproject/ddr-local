@@ -331,7 +331,7 @@ def new( request, repo, org, cid ):
     entity_uid = Identity.make_object_id('entity',repo,org,cid,eid)
     entity_path = Entity.entity_path(request, repo, org, cid, eid)
     # write entity.json template to entity location
-    fileio.write_raw(
+    fileio.write(
         Entity(entity_path).dump_json(template=True),
         settings.TEMPLATE_EJSON
     )
@@ -676,7 +676,7 @@ def edit_mets_xml( request, repo, org, cid, eid ):
             if git_name and git_mail:
                 xml = form.cleaned_data['xml']
                 # TODO validate XML
-                fileio.write_raw(xml, entity.mets_path)
+                fileio.write(xml, entity.mets_path)
                 
                 exit,status = commands.entity_update(git_name, git_mail,
                                                      entity.parent_path, entity.id,
@@ -722,7 +722,7 @@ def edit_xml( request, repo, org, cid, eid, slug, Form, FIELDS, namespaces=None 
     entity_rel     = os.path.join('files',entity_uid)
     xml_path_rel   = 'mets.xml'
     xml_path_abs   = os.path.join(entity_abs, xml_path_rel)
-    xml = fileio.read_raw(xml_path_abs)
+    xml = fileio.read(xml_path_abs)
     fields = Form.prep_fields(FIELDS, xml, namespaces=namespaces)
     #
     if request.method == 'POST':
@@ -732,7 +732,7 @@ def edit_xml( request, repo, org, cid, eid, slug, Form, FIELDS, namespaces=None 
             cleaned_data = form.cleaned_data
             xml_new = Form.process(xml, fields, form, namespaces=namespaces)
             # TODO validate XML
-            fileio.write_raw(xml_new, xml_path_abs)
+            fileio.write(xml_new, xml_path_abs)
             
             # TODO validate XML
             exit,status = commands.entity_update(git_name, git_mail,

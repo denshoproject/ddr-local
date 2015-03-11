@@ -25,7 +25,7 @@ def repository_codes():
 
 
 ead_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ead.xml')
-EAD_XML = fileio.read_raw(ead_path)
+EAD_XML = fileio.read(ead_path)
 
 
 COLLECTION_OVERVIEW_FIELDS = [

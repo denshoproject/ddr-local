@@ -14,7 +14,7 @@ import tematres
 
 
 xml_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'mets.xml')
-METS_XML = fileio.read_raw(xml_path)
+METS_XML = fileio.read(xml_path)
 
 NAMESPACES = {
     'mets':  'http://www.loc.gov/METS/',

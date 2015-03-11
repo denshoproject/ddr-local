@@ -127,9 +127,9 @@ def edit_auto( request, repo, org, cid ):
     
     filename = request.GET.get('filename', None)
     filepath = os.path.join(collection_path, filename)
-    text = fileio.read_raw(filepath)
+    text = fileio.read(filepath)
     merged = dvcs.automerge_conflicted(text, 'left')
-    fileio.write_raw(merged, filepath)
+    fileio.write(merged, filepath)
     
     # TODO git add FILENAME
     
@@ -159,12 +159,12 @@ def edit_raw( request, repo, org, cid ):
         if form.is_valid():
             text = form.cleaned_data['text']
             # TODO validate XML
-            fileio.write_raw(text, filepath)
+            fileio.write(text, filepath)
             # git add file
             dvcs.merge_add(repository, filename)
             return HttpResponseRedirect( reverse('webui-merge', args=[repo,org,cid]) )
     else:
-        text = fileio.read_raw(filepath)
+        text = fileio.read(filepath)
         form = MergeRawForm({'filename': filename, 'text': text,})
     return render_to_response(
         'webui/merge/edit-raw.html',
@@ -191,7 +191,7 @@ def edit_json( request, repo, org, cid ):
     fields = []
     if filename:
         path = os.path.join(collection_path, filename)
-        txt = fileio.read_raw(path)
+        txt = fileio.read(path)
         fields = dvcs.conflicting_fields(txt)
     
     if request.method == 'POST':
@@ -199,7 +199,7 @@ def edit_json( request, repo, org, cid ):
         #if form.is_valid():
         #    text = form.cleaned_data['text']
         #    # TODO validate XML
-        #    text = fileio.read_raw(filepath)
+        #    text = fileio.read(filepath)
         #    # git add file
         #    dvcs.merge_add(repository, filename)
         assert False

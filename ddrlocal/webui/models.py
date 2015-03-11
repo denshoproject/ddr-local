@@ -166,7 +166,7 @@ def post_json(hosts, index, json_path):
     """
     status = docstore.post(
         hosts, index,
-        json.loads(fileio.read_raw(json_path)),
+        json.loads(fileio.read(json_path)),
         private_ok=True)
     logging.debug(unicode(status))
     return status
@@ -439,7 +439,7 @@ class Entity( DDREntity ):
                     settings.MEDIA_BASE
                 )
                 file_ = DDRFile(path_abs=path_abs)
-                file_.load_json(fileio.read_raw(file_.json_path))
+                file_.load_json(fileio.read(file_.json_path))
                 self._file_objects.append(file_)
         # keep track of how many times this gets loaded...
         self._file_objects_loaded = self._file_objects_loaded + 1

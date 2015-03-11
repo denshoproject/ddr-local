@@ -258,7 +258,7 @@ def new( request, repo, org ):
     # create the new collection repo
     collection_path = Collection.collection_path(request,repo,org,cid)
     # collection.json template
-    fileio.write_raw(
+    fileio.write(
         Collection(collection_path).dump_json(template=True),
         settings.TEMPLATE_CJSON
     )
@@ -399,7 +399,7 @@ def csv_download( request, repo, org, cid, model=None ):
         quotechar=fileio.CSV_QUOTECHAR,
         quoting=fileio.CSV_QUOTING
     )
-    for row in fileio.read_csv_raw(filename):
+    for row in fileio.read_csv(filename):
         writer.writerow(row)
     return response
 
@@ -431,7 +431,7 @@ def edit_ead( request, repo, org, cid ):
             if git_name and git_mail:
                 xml = form.cleaned_data['xml']
                 # TODO validate XML
-                fileio.write_raw(xml, ead_path_abs)
+                fileio.write(xml, ead_path_abs)
                 
                 exit,status = commands.update(git_name, git_mail,
                                               collection.path, [ead_path_rel],
@@ -445,7 +445,7 @@ def edit_ead( request, repo, org, cid ):
             else:
                 messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     else:
-        xml = fileio.read_raw(ead_path_abs)
+        xml = fileio.read(ead_path_abs)
         form = UpdateForm({'xml':xml,})
     return render_to_response(
         'webui/collections/edit-ead.html',
@@ -471,7 +471,7 @@ def edit_xml( request, repo, org, cid, slug, Form, FIELDS ):
     collection_id = Identity.id_from_path(collection_path)
     ead_path_rel = 'ead.xml'
     ead_path_abs = os.path.join(collection_path, ead_path_rel)
-    xml = fileio.read_raw(ead_path_abs)
+    xml = fileio.read(ead_path_abs)
     fields = Form.prep_fields(FIELDS, xml)
     #
     if request.method == 'POST':
@@ -481,7 +481,7 @@ def edit_xml( request, repo, org, cid, slug, Form, FIELDS ):
             cleaned_data = form.cleaned_data
             xml_new = Form.process(xml, fields, form)
             # TODO validate XML
-            fileio.write_raw(xml_new, ead_path_abs)
+            fileio.write(xml_new, ead_path_abs)
             # TODO validate XML
             exit,status = commands.update(git_name, git_mail,
                                           collection_path, [ead_path_rel],
