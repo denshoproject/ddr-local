@@ -3,9 +3,8 @@ See http://www.b-list.org/weblog/2006/jun/14/django-tips-template-context-proces
 """
 from django.conf import settings
 
-from DDR import storage
+import storage
 
-from storage import base_path
 
 BOOTSTRAP_COLORS = {'red': 'btn-danger',
                     'yellow': 'btn-warning',
@@ -15,7 +14,7 @@ BOOTSTRAP_COLORS = {'red': 'btn-danger',
 def sitewide(request):
     """Variables that need to be inserted into all templates.
     """
-    storage_mount_path = base_path(request)
+    storage_mount_path = storage.base_path(request)
     stype = storage.storage_type(storage_mount_path)
     sstatus = storage.storage_status(storage_mount_path)
     dspace = storage.disk_space(storage_mount_path)

@@ -10,6 +10,7 @@ from django.core.cache import cache
 
 from DDR import commands
 from DDR import docstore
+from DDR.storage import storage_type, storage_status, disk_space
 
 
 STORAGE_MESSAGES = {
