@@ -77,7 +77,8 @@ class ManualSymlinkForm(forms.Form):
     
     See storage.views.manual_symlink.
     """
-    path = forms.CharField(label='Set active device', max_length=255, required=True)
+    path = forms.CharField(label='Path', max_length=255, required=True)
+    label = forms.CharField(label='Label', max_length=255, required=True)
     
     def clean_path(self):
         data = self.cleaned_data['path']
