@@ -60,7 +60,7 @@ def storage_required(func):
             messages.error(request, STORAGE_MESSAGES['NO_REPOS_ORGS'])
         if not readable:
             logger.debug('storage not readable')
-            status,msg = commands.storage_status(basepath)
+            status,msg = commands.status(basepath)
             logger.debug('storage status: %s' % status)
             logger.debug('storage msg: %s' % msg)
             remount_uri = request.META.get('PATH_INFO',None)

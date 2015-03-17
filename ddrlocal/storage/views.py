@@ -16,7 +16,9 @@ from DDR.storage import removables, removables_mounted
 from webui.tasks import reindex_and_notify
 from storage import STORAGE_MESSAGES
 from storage import base_path, media_base_target
-from storage import mount, mount_filepath, unmount, add_media_symlink, rm_media_symlink
+from storage import mount_usb, mount_filepath
+from storage import unmount_usb #, unmount_filepath
+from storage import add_media_symlink, rm_media_symlink
 from storage.forms import MountForm, UmountForm, ActiveForm, ManualSymlinkForm
 
 
@@ -105,19 +107,19 @@ def mount_device( request ):
         if mount_form.is_valid():
             raw = mount_form.cleaned_data['device']
             devicefile,label = raw.split(' ',1)
-            mount(request, devicefile, label)
+            mount_usb(request, devicefile, label)
             # TODO regenerate redis caches
     return HttpResponseRedirect( reverse('storage-index') )
 
-def unmount_device( request ):
-    """Unmount a USB device; wrapper around storage.unmount().
+def unmount( request ):
+    """Unmount requested device or path; wrapper around storage.unmount().
     """
     if request.method == 'POST':
         umount_form = UmountForm(request.POST, devices=mounted_devices())
         if umount_form.is_valid():
             raw = umount_form.cleaned_data['device']
             mountpoint,devicefile = raw.split(' ',1)
-            unmount(request, devicefile, mountpoint)
+            unmount_usb(request, devicefile, mountpoint)
     return HttpResponseRedirect( reverse('storage-index') )
 
 def activate_device( request ):
@@ -139,17 +141,23 @@ def activate_device( request ):
             # TODO regenerate redis caches
     return HttpResponseRedirect( reverse('storage-index') )
 
-def manual_symlink( request ):
+def mount_path( request ):
     """Sets the MEDIA_BASE symlink to an arbitrary path; used for attaching non-USB storage.
     """
+    manlink_form_is_valid = None
     if request.method == 'POST':
         manlink_form = ManualSymlinkForm(request.POST)
         if manlink_form.is_valid():
             path = manlink_form.cleaned_data['path']
-            mount_filepath(request, path)
+            label = manlink_form.cleaned_data['label']
+            mount_filepath(request, path, label)
+        else:
+            path = manlink_form.data['path']
+            label = manlink_form.data['label']
+            for field,errors in manlink_form.errors.iteritems():
+                for error in errors:
+                    messages.warning(request, '%s [%s]' % (error, path))
     return HttpResponseRedirect( reverse('storage-index') )
-
-
 
 def remount0( request ):
     """Show a spinning beachball while we try to remount the storage.
