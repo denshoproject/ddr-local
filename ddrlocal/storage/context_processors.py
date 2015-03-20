@@ -29,50 +29,45 @@ def sitewide(request):
     #mount_path = storage.base_path(request)
     label = request.session.get('storage_label', None)
     mount_path = request.session.get('storage_mount_path', None)
-    store = {
+    device = {
         'path': '???',
-        'type': storage.storage_type(mount_path),
-        'disk_label': 'no storage',
+        'type': 'unknown',
+        'label': 'no storage',
         'more_info': '',
         'disk_space': '',
+        'mounted': 0,
+        'linked': 0,
         'status': '',
-        'type_label': BOOTSTRAP_COLORS['red'],
-        'space_label': BOOTSTRAP_COLORS['red'],
-        'status_label': BOOTSTRAP_COLORS['red'],
     }
-    if label:
-        store['disk_label'] = label
-        store['type_label'] = BOOTSTRAP_COLORS['green']
-    # status
-    status = 'unknown'
-    if mount_path:
-        status = storage.status(mount_path)
-        store['status'] = status
-    if status == 'ok':
-        store['status_label'] = BOOTSTRAP_COLORS['green']
+    for d in storage.removables():
+        if mount_path and d.get('mountpath',None) \
+        and (d['mountpath'] == mount_path) and d['linked']:
+            device = d
+    device['type_label'] = BOOTSTRAP_COLORS['red']
+    device['space_label'] = BOOTSTRAP_COLORS['red']
+    device['status_label'] = BOOTSTRAP_COLORS['red']
+    if device['mounted'] and device['linked']:
+        device['type_label'] = BOOTSTRAP_COLORS['green']
+        device['status_label'] = BOOTSTRAP_COLORS['green']
     # space
     space = storage.disk_space(mount_path)
     if space:
         for key,val in space.iteritems():
-            store[key] = val
-        # nicely formatted
-        store['disk_space'] = '{} used ({}%) {} free'.format(
-            store['used'], store['percent'], store['avail']
-        )
+            device[key] = val
         # color of disk space pill
         percent = int(space.get('percent', 0))
         if percent:
             if   percent <= STORAGE_WARNING_THRESHOLD:
-                store['space_label'] = BOOTSTRAP_COLORS['green']
+                device['space_label'] = BOOTSTRAP_COLORS['green']
             elif percent <= STORAGE_DANGER_THRESHOLD:
-                store['type_label'] = BOOTSTRAP_COLORS['yellow']
-                store['space_label'] = BOOTSTRAP_COLORS['yellow']
-                store['status_label'] = BOOTSTRAP_COLORS['yellow']
+                device['type_label'] = BOOTSTRAP_COLORS['yellow']
+                device['space_label'] = BOOTSTRAP_COLORS['yellow']
+                device['status_label'] = BOOTSTRAP_COLORS['yellow']
             else:
-                store['type_label'] = BOOTSTRAP_COLORS['red']
-                store['space_label'] = BOOTSTRAP_COLORS['red']
-                store['status_label'] = BOOTSTRAP_COLORS['red']
-                store['disk_full_warning'] = STORAGE_DANGER_WARNING % (percent)
+                device['type_label'] = BOOTSTRAP_COLORS['red']
+                device['space_label'] = BOOTSTRAP_COLORS['red']
+                device['status_label'] = BOOTSTRAP_COLORS['red']
+                device['disk_full_warning'] = STORAGE_DANGER_WARNING % (percent)
     return {
-        'storage': store,
+        'storage': device,
     }

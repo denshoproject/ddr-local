@@ -16,109 +16,41 @@
 
 <h1>Storage</h1>
 
-{% if removables_mounted %}
-<table width="100%">
+<table class="table">
   <tr>
-    <td valign="top">
-
-<h3>Mounted Devices</h3>
-<table id="removables" class="mounted">
-<form name="mounted" action="{% url "storage-unmount" %}" method="post">{% csrf_token %}
-  {{ umount_form.as_table }}
-{% if removables_mounted %}
-  <tr>
-    <td></td>
+    <th></th>
+    <th>Label</th>
+    <th>Device Type</th>
+    <th>Status</th>
+    <th>Action</th>
+  </tr>
+{% for device in removables %}
+  <tr {% if device.linked %}class="active"{% endif %}>
     <td>
-      <input name="submit" type="submit" value="Unmount selected device" />
+      {% if device.linked %}
+      <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
+      {% endif %}
     </td>
-  </tr>
-</table>
-{% else %}
-<p>
-No removable devices attached to this VM.<br/>
-Plug a USB drive into your computer<br/>
-Select device from <em>Devices > USB Devices</em> from the VM menu.<br/>
-Reload this page.<br/>
-</p>
-{% endif %}
-</form>
-
-    </td>
-    <td valign="top">
-
-<h3>Active Device</h3>
-<table id="removables" class="activate">
-<form name="activate" action="{% url "storage-activate" %}" method="post">{% csrf_token %}
-  {{ active_form.as_table }}
-  <tr>
-    <td></td>
+    <td>{{ device.label }}</td>
+    <td>{{ device.devicetype }}</td>
     <td>
-      <input name="submit" type="submit" value="Active device" />
+      {% if device.mounted %}mounted{% endif %}{% if device.mounted and device.linked %},{% endif %}
+      {% if device.linked %}linked{% endif %}
     </td>
-  </tr>
-</table>
-</form>
-
-    </td>
-  </tr>
-</table>
-{% endif %}{# removables_mounted #}
-
-{% if unmounted %}
-<h3>Unmounted Devices</h3>
-<table id="removables" class="unmounted">
-<form name="mount" action="{% url "storage-mount-device" %}" method="post">{% csrf_token %}
-  {{ mount_form.as_table }}
-{% if removables %}
-  <tr>
-    <td></td>
     <td>
-      <input name="submit" type="submit" value="Mount selected device" />
+
+{% for form in device.action_forms %}
+<form name="actions" action="{{ form.url }}" method="post">
+  {% csrf_token %}
+  <input type="hidden" name="device" value="{{ device.devicefile }}" />
+  <button class="btn btn-default btn-xs" type="submit">{{ form.action }}</button>
+</form>
+{% endfor %}
+
     </td>
   </tr>
+{% endfor %}
 </table>
-{% else %}
-<p>
-No removable devices attached to this VM.<br/>
-Plug a USB drive into your computer<br/>
-Select device from <em>Devices > USB Devices</em> from the VM menu.<br/>
-Reload this page.<br/>
-</p>
-{% endif %}
-</form>
-{% endif %}{# unmounted #}
-
-{% if remount_uri %}
-<h4>
-&laquo; <a href="{{ remount_uri }}">Back to {{ remount_uri }}</a>
-</h4>
-{% endif %}
-
-
-   </div><!-- .span12 -->
-  </div><!-- .row-fluid -->
-  <div class="row-fluid">
-    <div class="span12">
-
-
-<hr/>
-
-
-<h3>Virtual Storage Device</h3>
-
-<!-- mount filepath -->
-<table class="muted">
-<form name="mount" action="{% url "storage-mount-filepath" %}" method="post">{% csrf_token %}
-{{ manlink_form.as_table }}
-  <tr>
-    <td></td>
-    <td>
-      <input name="submit" type="submit" value="Mount path" />
-    </td>
-  </tr>
-</form>
-</table>
-
 
     </div><!-- .span12 -->
   </div><!-- .row-fluid -->

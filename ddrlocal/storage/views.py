@@ -11,16 +11,11 @@ from django.template import RequestContext
 
 from DDR import commands
 from DDR import docstore
-from DDR.storage import removables, removables_mounted
 
 from webui.tasks import reindex_and_notify
-from storage import STORAGE_MESSAGES
-from storage import base_path, media_base_target
-from storage import mount_usb, mount_filepath
-from storage import unmount_usb #, unmount_filepath
-from storage import add_media_symlink, rm_media_symlink
-from storage.forms import MountForm, UmountForm, ActiveForm, ManualSymlinkForm
-
+import storage
+from storage.forms import StorageForm
+from storage.tasks import mount_in_bkgnd
 
 
 # helpers --------------------------------------------------------------
@@ -37,13 +32,13 @@ def unmounted_devices():
     return [(d['devicefile'],d['label']) for d in get_unmounted(removables())]
 
 def mounted_devices():
-    return [(d['mountpath'],d['devicefile']) for d in removables_mounted()]
+    return [(d['mountpath'],d['devicefile']) for d in storage.removables_mounted()]
 
 def add_manual_symlink(devices):
     """Adds manually-set symlink to list of mounted devices if present.
     See storage.views.manual_symlink.
     """
-    path = media_base_target()
+    path = storage.media_base_target()
     for r in devices:
         if path and (r[0] in path):
             path = None
@@ -57,106 +52,52 @@ def add_manual_symlink(devices):
 
 def index( request ):
     """Interface for mounting/unmounting drives and setting active device
-    
-    - mount_form -> mount_device
-    - umount_form -> unmount_device
-    - active_form -> activate_device
-    - manlink_form -> manual_symlink
     """
-    removablez = removables()
-    mounted = removables_mounted()
-    unmounted = get_unmounted(removablez)
-    udevices = unmounted_devices()
-    mdevices = mounted_devices()
-    mdevices_plus_manual = add_manual_symlink(mdevices)
-    media_target = media_base_target()
-    #
-    uinitial = {}
-    minitial = {}
-    ainitial = None
-    if len(udevices) == 1:
-        uinitial = { 'device': '{} {}'.format(udevices[0][0], udevices[0][1]) }
-    if len(mdevices) == 1:
-        minitial = { 'device': '{} {}'.format(mdevices[0][0], mdevices[0][1]) }
-    for m in mdevices_plus_manual:
-        if media_target and (m[0] in media_target):
-            ainitial = {'device': m[0]}
-    mount_form  = MountForm( devices=udevices, initial=uinitial)
-    umount_form = UmountForm(devices=mdevices, initial=minitial)
-    active_form = ActiveForm(devices=mdevices_plus_manual, initial=ainitial)
-    manlink_form = ManualSymlinkForm()
+    devices = storage.removables()
+    # put form data for each action button in devices
+    for device in devices:
+        device['action_forms'] = []
+        for action in device['actions']:
+            form = {
+                'url': reverse(
+                    'storage-operation', args=(action, device['devicetype'],)),
+                'action': action,
+            }
+            device['action_forms'].append(form)
     return render_to_response(
         'storage/index.html',
-        {'removables': removablez,
-         'unmounted': unmounted,
-         'removables_mounted': mounted,
-         'mount_form': mount_form,
-         'umount_form': umount_form,
-         'active_form': active_form,
-         'manlink_form': manlink_form,
-         'remount_uri': request.session.get(settings.REDIRECT_URL_SESSION_KEY, None),
+        {
+            'removables': devices,
         },
         context_instance=RequestContext(request, processors=[])
     )
 
-def mount_device( request ):
-    """Mount a USB device; wrapper around storage.mount().
+def operation( request, opcode, devicetype ):
+    """Mount/unmount or link/unlink a device.
     """
+    if opcode not in ['mount', 'unmount', 'link', 'unlink']:
+        raise Http404
     if request.method == 'POST':
-        mount_form = MountForm(request.POST, devices=unmounted_devices())
-        if mount_form.is_valid():
-            raw = mount_form.cleaned_data['device']
-            devicefile,label = raw.split(' ',1)
-            mount_usb(request, devicefile, label)
-            # TODO regenerate redis caches
-    return HttpResponseRedirect( reverse('storage-index') )
-
-def unmount( request ):
-    """Unmount requested device or path; wrapper around storage.unmount().
-    """
-    if request.method == 'POST':
-        umount_form = UmountForm(request.POST, devices=mounted_devices())
-        if umount_form.is_valid():
-            raw = umount_form.cleaned_data['device']
-            mountpoint,devicefile = raw.split(' ',1)
-            unmount_usb(request, devicefile, mountpoint)
-    return HttpResponseRedirect( reverse('storage-index') )
-
-def activate_device( request ):
-    """Point MEDIA_BASE at a mounted device.
+        form = StorageForm(request.POST)
+        if form.is_valid():
+            devicefile = form.cleaned_data['device']
+            
+            if opcode == 'mount':
+                mount_in_bkgnd.apply_async((devicetype, devicefile,), countdown=2)
+                status,msg = 0,'mounting'
+                messages.success(request, 'Mounting device. Please be patient.')
+            elif opcode == 'unmount':
+                status,msg = storage.unmount(request, devicetype, devicefile)
+            elif opcode == 'link':
+                status,msg = storage.link(request, devicetype, devicefile)
+            elif opcode == 'unlink':
+                status,msg = storage.unlink(request, devicetype, devicefile)
+            
+            #if status == 'ok':
+            #    messages.success(request, msg)
+            #else:
+            #    messages.warning(request, msg)
     
-    MEDIA_BASE may not point to a USB device even though it is mounted.
-    """
-    if request.method == 'POST':
-        active_form = ActiveForm(request.POST, devices=mounted_devices())
-        if active_form.is_valid():
-            path = active_form.cleaned_data['device']
-            new_base_path = os.path.join(path, settings.DDR_USBHDD_BASE_DIR)
-            rm_media_symlink()
-            add_media_symlink(new_base_path)
-            label = os.path.basename(path)
-            messages.success(request, '<strong>%s</strong> is now the active device' % label)
-            # update elasticsearch alias
-            docstore.set_alias(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, label)
-            # TODO regenerate redis caches
-    return HttpResponseRedirect( reverse('storage-index') )
-
-def mount_path( request ):
-    """Sets the MEDIA_BASE symlink to an arbitrary path; used for attaching non-USB storage.
-    """
-    manlink_form_is_valid = None
-    if request.method == 'POST':
-        manlink_form = ManualSymlinkForm(request.POST)
-        if manlink_form.is_valid():
-            path = manlink_form.cleaned_data['path']
-            label = manlink_form.cleaned_data['label']
-            mount_filepath(request, path, label)
-        else:
-            path = manlink_form.data['path']
-            label = manlink_form.data['label']
-            for field,errors in manlink_form.errors.iteritems():
-                for error in errors:
-                    messages.warning(request, '%s [%s]' % (error, path))
     return HttpResponseRedirect( reverse('storage-index') )
 
 def remount0( request ):
@@ -203,7 +144,7 @@ def remount1( request ):
         mount_path = mount(request, devicefile_udisks, label)
         remount_attempted = True
     else:
-        messages.warning(request, STORAGE_MESSAGES['REMOUNT_FAIL'])
+        messages.warning(request, storage.STORAGE_MESSAGES['REMOUNT_FAIL'])
     # redirect
     url = reverse('storage-index')
     if remount_attempted and mount_path:
