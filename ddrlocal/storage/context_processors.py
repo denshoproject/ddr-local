@@ -39,7 +39,7 @@ def sitewide(request):
         'linked': 0,
         'status': '',
     }
-    for d in storage.removables():
+    for d in storage.devices():
         if mount_path and d.get('mountpath',None) \
         and (d['mountpath'] == mount_path) and d['linked']:
             device = d

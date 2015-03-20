@@ -9,8 +9,8 @@ from django.contrib import messages
 from django.core.cache import cache
 
 from DDR import docstore
-from DDR.storage import removables as removables_ddr
-from DDR.storage import removables_mounted as removables_mounted_ddr
+from DDR.storage import devices as devices_ddr
+from DDR.storage import mounted_devices as mounted_devices_ddr
 from DDR.storage import disk_space as disk_space_ddr, drive_label
 from DDR.storage import device_type, status
 
@@ -77,11 +77,11 @@ def base_path(request=None):
             cache.set(key, path, BASE_PATH_TIMEOUT)
     return path
 
-def removables():
-    return removables_ddr(symlink=settings.MEDIA_BASE)
+def devices():
+    return devices_ddr(symlink=settings.MEDIA_BASE)
 
-def removables_mounted():
-    return removables_mounted_ddr()
+def mounted_devices():
+    return mounted_devices_ddr()
 
 def disk_space(mount_path):
     space = cache.get(DISK_SPACE_CACHE_KEY)
@@ -213,7 +213,7 @@ def unmount_usb(request, device):
     """Removes /var/www/ddr/media symlink, unmounts requested device, gives feedback.
     
     @param request: Django request object; used to access session.
-    @param device: dict containing device info. See DDR.storage.removables.
+    @param device: dict containing device info. See DDR.storage.devices.
     """
     logger.debug('unmount(%s, %s)' % (device['devicefile'], device['label']))
     unmounted = umount(device['devicefile'])
@@ -235,7 +235,7 @@ def unmount_usb(request, device):
 
 def unmount(request, devicetype, devicefile):
     device = None
-    for d in removables():
+    for d in devices():
         if d['devicefile'] == devicefile:
             device = d
     if not device:
@@ -250,7 +250,7 @@ def unmount(request, devicetype, devicefile):
 
 def mount(request, devicetype, devicefile):
     device = None
-    for d in removables():
+    for d in devices():
         if d['devicefile'] == devicefile:
             device = d
     if not device:
@@ -266,7 +266,7 @@ def mount(request, devicetype, devicefile):
 
 def link(request, devicetype, devicefile):
     device = None
-    for d in removables():
+    for d in devices():
         if d['devicefile'] == devicefile:
             device = d
     if not device:
@@ -282,7 +282,7 @@ def link(request, devicetype, devicefile):
 
 def unlink(request, devicetype, devicefile):
     device = None
-    for d in removables():
+    for d in devices():
         if d['devicefile'] == devicefile:
             device = d
     if not device:

@@ -32,7 +32,7 @@ class StorageTask(Task):
 @task(base=StorageTask, name='storage.tasks.mount')
 def mount_in_bkgnd(devicetype, devicefile):
     device = None
-    for d in storage.removables():
+    for d in storage.devices():
         if d['devicefile'] == devicefile:
             device = d
     if not device:

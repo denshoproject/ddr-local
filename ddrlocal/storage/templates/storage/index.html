@@ -24,7 +24,7 @@
     <th>Status</th>
     <th>Action</th>
   </tr>
-{% for device in removables %}
+{% for device in devices %}
   <tr {% if device.linked %}class="active"{% endif %}>
     <td>
       {% if device.linked %}
@@ -39,13 +39,13 @@
     </td>
     <td>
 
-{% for form in device.action_forms %}
-<form name="actions" action="{{ form.url }}" method="post">
-  {% csrf_token %}
-  <input type="hidden" name="device" value="{{ device.devicefile }}" />
-  <button class="btn btn-default btn-xs" type="submit">{{ form.action }}</button>
-</form>
-{% endfor %}
+      {% for form in device.action_forms %}
+      <form name="actions" action="{{ form.url }}" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="device" value="{{ device.devicefile }}" />
+        <button class="btn btn-default btn-xs" type="submit">{{ form.action }}</button>
+      </form>
+      {% endfor %}
 
     </td>
   </tr>

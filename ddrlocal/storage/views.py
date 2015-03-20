@@ -16,7 +16,7 @@ from storage.tasks import mount_in_bkgnd
 def index( request ):
     """Interface for mounting/unmounting drives and setting active device
     """
-    devices = storage.removables()
+    devices = storage.devices()
     # put form data for each action button in devices
     for device in devices:
         device['action_forms'] = []
@@ -30,7 +30,7 @@ def index( request ):
     return render_to_response(
         'storage/index.html',
         {
-            'removables': devices,
+            'devices': devices,
         },
         context_instance=RequestContext(request, processors=[])
     )
