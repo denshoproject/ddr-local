@@ -8,7 +8,6 @@ from django.conf import settings
 from django.contrib import messages
 from django.core.cache import cache
 
-from DDR import commands
 from DDR import docstore
 from DDR.storage import removables as removables_ddr
 from DDR.storage import removables_mounted as removables_mounted_ddr
@@ -161,9 +160,7 @@ def mount_usb( request, device ):
     """
     logger.debug('mount_usb(devicefile=%s, label=%s)' % (device['devicefile'], device['label']))
     logger.debug('device: %s' % device)
-    stat,mount_path = commands.mount(device['devicefile'], device['label'])
-
-    logger.debug('stat: %s' % stat)
+    mount_path = mount(device['devicefile'], device['label'])
     logger.debug('mount_path: %s' % mount_path)
     if mount_path:
         rm_media_symlink()
@@ -219,8 +216,7 @@ def unmount_usb(request, device):
     @param device: dict containing device info. See DDR.storage.removables.
     """
     logger.debug('unmount(%s, %s)' % (device['devicefile'], device['label']))
-    stat,unmounted = commands.umount(device['devicefile'])
-    logger.debug('stat: %s' % stat)
+    unmounted = umount(device['devicefile'])
     logger.debug('unmounted: %s' % unmounted)
     rm_media_symlink()
     _unmount_common(request)
