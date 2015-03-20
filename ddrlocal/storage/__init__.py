@@ -91,40 +91,6 @@ def disk_space(mount_path):
         cache.set(DISK_SPACE_CACHE_KEY, space, DISK_SPACE_TIMEOUT)
     return space
 
-def media_base_target():
-    """Returns current target of MEDIA_BASE or None if not set.
-    
-    If the path you provide to os.path.realpath is missing realpath will return
-    the path you give it.  If the symlink is missing we need to indicate that.
-    """
-    if os.path.exists(settings.MEDIA_BASE):
-        return os.path.realpath(settings.MEDIA_BASE)
-    return None
-
-def _find_devicefile(df_h, path):
-    """Looks in "df -h" for line containing path and returns devicefile
-    """
-    path_parent = os.path.dirname(path)
-    devicefileline = None
-    for line in df_h.split('\n'):
-        if line and ((path in line) or (path_parent in line)):
-            devicefileline = line
-    if devicefileline:
-        return devicefileline.split(' ', 1)[0]
-    return None
-
-def devicefile_from_path( path ):
-    """Extract devicefile and label from plain filesystem path.
-    
-    >>> path = '/media/ddrworkstation/ddr'
-    'ddrworkstation','ddrworkstation'
-    
-    @param path: string
-    @returns: devicefile,label
-    """
-    r = envoy.run('df -h')
-    return _find_devicefile(r.std_out, path)
-
 def add_media_symlink(target):
     """Creates symlink to base_path in /var/www/media/
 
@@ -172,8 +138,6 @@ def rm_media_symlink():
         os.remove(link)
     else:
         logger.debug('could not remove %s (-> %s): %s' % (link, os.path.realpath(link), codes))
-
-
 
 def _mount_common(request, device):
     # save label,mount_path in session
