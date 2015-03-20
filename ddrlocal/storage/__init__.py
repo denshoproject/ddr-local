@@ -9,10 +9,7 @@ from django.contrib import messages
 from django.core.cache import cache
 
 from DDR import docstore
-from DDR.storage import devices as devices_ddr
-from DDR.storage import mounted_devices as mounted_devices_ddr
-from DDR.storage import disk_space as disk_space_ddr, drive_label
-from DDR.storage import device_type, status
+from DDR import storage as ddrstorage
 
 
 STORAGE_MESSAGES = {
@@ -78,15 +75,15 @@ def base_path(request=None):
     return path
 
 def devices():
-    return devices_ddr(symlink=settings.MEDIA_BASE)
+    return ddrstorage.devices(symlink=settings.MEDIA_BASE)
 
 def mounted_devices():
-    return mounted_devices_ddr()
+    return ddrstorage.mounted_devices()
 
 def disk_space(mount_path):
     space = cache.get(DISK_SPACE_CACHE_KEY)
     if mount_path and os.path.exists(mount_path) and not space:
-        space = disk_space_ddr(mount_path)
+        space = ddrstorage.disk_space(mount_path)
         cache.set(DISK_SPACE_CACHE_KEY, space, DISK_SPACE_TIMEOUT)
     return space
 
@@ -160,7 +157,7 @@ def mount_usb( request, device ):
     """
     logger.debug('mount_usb(devicefile=%s, label=%s)' % (device['devicefile'], device['label']))
     logger.debug('device: %s' % device)
-    mount_path = mount(device['devicefile'], device['label'])
+    mount_path = ddrstorage.mount(device['devicefile'], device['label'])
     logger.debug('mount_path: %s' % mount_path)
     if mount_path:
         rm_media_symlink()
@@ -216,7 +213,7 @@ def unmount_usb(request, device):
     @param device: dict containing device info. See DDR.storage.devices.
     """
     logger.debug('unmount(%s, %s)' % (device['devicefile'], device['label']))
-    unmounted = umount(device['devicefile'])
+    unmounted = ddrstorage.umount(device['devicefile'])
     logger.debug('unmounted: %s' % unmounted)
     rm_media_symlink()
     _unmount_common(request)
