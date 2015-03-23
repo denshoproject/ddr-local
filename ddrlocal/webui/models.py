@@ -24,7 +24,6 @@ from DDR.models import Collection as DDRCollection
 from DDR.models import Entity as DDREntity
 from DDR.models import File
 from DDR.models import COLLECTION_FILES_PREFIX, ENTITY_FILES_PREFIX
-from DDR.storage import storage_status
 
 from storage import base_path
 
