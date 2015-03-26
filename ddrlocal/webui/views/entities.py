@@ -96,7 +96,7 @@ def tagmanager_prefilled_terms( entity_terms, all_terms ):
     @param entity_terms: list of terms
     @returns: list of terms for the term IDs
     """
-    regex = re.compile('([\d]+)')
+    regex = re.compile('\[([\d]+)\]')  # get only numbers inside brackets
     entity_term_ids = []
     for term in entity_terms:
         match = regex.search(term)
