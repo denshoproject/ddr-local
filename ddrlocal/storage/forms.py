@@ -3,6 +3,10 @@ import os
 from django import forms
 
 
+
+class StorageForm(forms.Form):
+    device = forms.CharField(max_length=10, required=True, widget=forms.HiddenInput)
+
 class MountForm(forms.Form):
     which = forms.CharField(max_length=10, required=True, initial='mount', widget=forms.HiddenInput)
     device = forms.ChoiceField(label='Removable Devices', required=True, choices=[], widget=forms.RadioSelect)

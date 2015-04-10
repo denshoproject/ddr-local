@@ -8,10 +8,8 @@ from django.conf import settings
 from django.contrib import messages
 from django.core.cache import cache
 
-from DDR import commands
 from DDR import docstore
-from DDR.storage import disk_space as disk_space_ddr, drive_label, storage_type
-from DDR.storage import storage_type, status
+from DDR import storage as ddrstorage
 
 
 STORAGE_MESSAGES = {
@@ -76,46 +74,18 @@ def base_path(request=None):
             cache.set(key, path, BASE_PATH_TIMEOUT)
     return path
 
+def devices():
+    return ddrstorage.devices(symlink=settings.MEDIA_BASE)
+
+def mounted_devices():
+    return ddrstorage.mounted_devices()
+
 def disk_space(mount_path):
     space = cache.get(DISK_SPACE_CACHE_KEY)
-    if mount_path and not space:
-        space = disk_space_ddr(mount_path)
+    if mount_path and os.path.exists(mount_path) and not space:
+        space = ddrstorage.disk_space(mount_path)
         cache.set(DISK_SPACE_CACHE_KEY, space, DISK_SPACE_TIMEOUT)
     return space
-
-def media_base_target():
-    """Returns current target of MEDIA_BASE or None if not set.
-    
-    If the path you provide to os.path.realpath is missing realpath will return
-    the path you give it.  If the symlink is missing we need to indicate that.
-    """
-    if os.path.exists(settings.MEDIA_BASE):
-        return os.path.realpath(settings.MEDIA_BASE)
-    return None
-
-def _find_devicefile(df_h, path):
-    """Looks in "df -h" for line containing path and returns devicefile
-    """
-    path_parent = os.path.dirname(path)
-    devicefileline = None
-    for line in df_h.split('\n'):
-        if line and ((path in line) or (path_parent in line)):
-            devicefileline = line
-    if devicefileline:
-        return devicefileline.split(' ', 1)[0]
-    return None
-
-def devicefile_from_path( path ):
-    """Extract devicefile and label from plain filesystem path.
-    
-    >>> path = '/media/ddrworkstation/ddr'
-    'ddrworkstation','ddrworkstation'
-    
-    @param path: string
-    @returns: devicefile,label
-    """
-    r = envoy.run('df -h')
-    return _find_devicefile(r.std_out, path)
 
 def add_media_symlink(target):
     """Creates symlink to base_path in /var/www/media/
@@ -165,14 +135,12 @@ def rm_media_symlink():
     else:
         logger.debug('could not remove %s (-> %s): %s' % (link, os.path.realpath(link), codes))
 
-
-
-def _mount_common(request, devicefile, label, mount_path):
+def _mount_common(request, device):
     # save label,mount_path in session
     logger.debug('saving session...')
-    request.session['storage_devicefile'] = devicefile
-    request.session['storage_label'] = label
-    request.session['storage_mount_path'] = mount_path
+    request.session['storage_devicefile'] = device['devicefile']
+    request.session['storage_label'] = device['label']
+    request.session['storage_mount_path'] = device['mountpath']
     logger.debug('storage_devicefile: %s' % request.session['storage_devicefile'])
     logger.debug('storage_label     : %s' % request.session['storage_label'])
     logger.debug('storage_mount_path: %s' % request.session['storage_mount_path'])
@@ -180,54 +148,53 @@ def _mount_common(request, devicefile, label, mount_path):
     logger.debug('caching base_path')
     bp = base_path(request)
     # update elasticsearch alias
-    docstore.set_alias(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, label)
+    docstore.set_alias(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, device['label'])
     # remove disk space data from cache
     cache.delete(DISK_SPACE_CACHE_KEY)
 
-def mount_usb( request, devicefile, label ):
+def mount_usb( request, device ):
     """Mounts requested device, adds /var/www/ddr/media symlink, gives feedback.
     """
-    logger.debug('mount_usb(devicefile=%s, label=%s)' % (devicefile, label))
-    if not (devicefile and label):
-        messages.error(request, STORAGE_MESSAGES['MOUNT_ERR_MISSING_INFO'].format(devicefile, label))
-        return None
-    stat,mount_path = commands.mount(devicefile, label)
-    logger.debug('stat: %s' % stat)
+    logger.debug('mount_usb(devicefile=%s, label=%s)' % (device['devicefile'], device['label']))
+    logger.debug('device: %s' % device)
+    mount_path = ddrstorage.mount(device['devicefile'], device['label'])
     logger.debug('mount_path: %s' % mount_path)
     if mount_path:
         rm_media_symlink()
-        basepath = base_path()
-        logger.debug('basepath %s' % basepath)
-        add_media_symlink(basepath)
-        _mount_common(request, devicefile, label, mount_path)
-        messages.success(request, STORAGE_MESSAGES['MOUNT_SUCCESS'].format(label))
+        if device.get('mountpath'):
+            add_media_symlink(device['mountpath'])
+            _mount_common(request, device['devicefile'], device['label'], device['mountpath'])
+            msg = STORAGE_MESSAGES['MOUNT_SUCCESS'].format(device['label'])
+            messages.success(request, msg)
     elif mount_path == False:
-        messages.warning(request, STORAGE_MESSAGES['MOUNT_FAIL_PATH'].format(devicefile, label, stat, mount_path))
+        msg = STORAGE_MESSAGES['MOUNT_FAIL_PATH'].format(
+            device['devicefile'], device['label'], stat, mount_path)
+        messages.warning(request, msg)
     else:
-        messages.error(request, STORAGE_MESSAGES['MOUNT_FAIL'].format(devicefile, label, stat, mount_path))
+        msg = STORAGE_MESSAGES['MOUNT_FAIL'].format(
+            device['devicefile'], device['label'], stat, mount_path)
+        messages.error(request, msg)
     return mount_path
 
-def mount_filepath( request, mount_path, label ):
+def mount_vhd( request, device ):
     """
     @param request: Django request object; used to access session.
     @param mount_path: Absolute path to mounted device; "/ddr" will be appended.
     """
-    logger.debug('mount_filepath(%s, %s)' % (mount_path, label))
-    devicefile = devicefile_from_path(mount_path)
-    logger.debug('devicefile: %s' % devicefile)
+    logger.debug('mount_vhd(%s, %s)' % (device['mountpath'], device['label']))
+    logger.debug('device: %s' % device)
     rm_media_symlink()
-    add_media_symlink(mount_path)
-    _mount_common(request, devicefile, label, mount_path)
+    add_media_symlink(device['mountpath'])
+    _mount_common(request, device['devicefile'], device['label'], device['mountpath'])
     MB = settings.MEDIA_BASE
     if os.path.exists(MB) and os.path.islink(MB) and os.access(MB,os.W_OK):
-        messages.success(request, '<strong>%s</strong> is now the active device.' % mount_path)
+        messages.success(request, '<strong>%s</strong> is now the active device.' % device['mountpath'])
     else:
-        messages.error(request, 'Could not make <strong>%s</strong> the active device.' % mount_path)
-    return mount_path
+        messages.error(request, 'Could not make <strong>%s</strong> the active device.' % device['mountpath'])
+    return device['mountpath']
 
 
 def _unmount_common(request):
-    rm_media_symlink()
     # remove label,mount_path from session,
     # regardless of whether unmount worked
     def _session_rm(request, key):
@@ -239,24 +206,88 @@ def _unmount_common(request):
     # remove space data from cache
     cache.delete(DISK_SPACE_CACHE_KEY)
     
-def unmount_usb( request, devicefile, label ):
+def unmount_usb(request, device):
     """Removes /var/www/ddr/media symlink, unmounts requested device, gives feedback.
     
     @param request: Django request object; used to access session.
-    @param devicefile: 
-    @param label: Device label
+    @param device: dict containing device info. See DDR.storage.devices.
     """
-    logger.debug('unmount(%s, %s)' % (devicefile, label))
-    unmounted = None
-    if devicefile:
-        stat,unmounted = commands.umount(devicefile)
-        logger.debug('stat: %s' % stat)
-        logger.debug('unmounted: %s' % unmounted)
-        _unmount_common(request)
+    logger.debug('unmount(%s, %s)' % (device['devicefile'], device['label']))
+    unmounted = ddrstorage.umount(device['devicefile'])
+    logger.debug('unmounted: %s' % unmounted)
+    rm_media_symlink()
+    _unmount_common(request)
     if unmounted:
-        messages.success(request, STORAGE_MESSAGES['UNMOUNT_SUCCESS'].format(label))
+        msg = STORAGE_MESSAGES['UNMOUNT_SUCCESS'].format(device['label'])
+        messages.success(request, msg)
     elif unmounted == False:
-        messages.warning(request, STORAGE_MESSAGES['UNMOUNT_FAIL_1'].format(devicefile, label, stat, mounted))
+        msg = STORAGE_MESSAGES['UNMOUNT_FAIL_1'].format(
+            device['devicefile'], device['label'], stat, mounted)
+        messages.warning(request, msg)
     else:
-        messages.error(request, STORAGE_MESSAGES['UNMOUNT_FAIL'].format(devicefile, label, stat, mounted))
+        msg = STORAGE_MESSAGES['UNMOUNT_FAIL'].format(
+            devicefile, label, stat, mounted)
+        messages.error(request, msg)
     return unmounted
+
+def unmount(request, devicetype, devicefile):
+    device = None
+    for d in devices():
+        if d['devicefile'] == devicefile:
+            device = d
+    if not device:
+        raise Exception('Device %s not in list of devices' % devicefile)
+    
+    if device['devicetype'] == 'vhd':
+        assert False
+    
+    elif device['devicetype'] == 'usb':
+        unmount_usb(request, device)
+        return 'ok', 'unmounted'
+
+def mount(request, devicetype, devicefile):
+    device = None
+    for d in devices():
+        if d['devicefile'] == devicefile:
+            device = d
+    if not device:
+        raise Exception('Device %s not in list of devices' % devicefile)
+    
+    if device['devicetype'] == 'vhd':
+        return 0,mount_vhd(request, device)
+    
+    elif device['devicetype'] == 'usb':
+        return 0,mount_usb(request, device)
+    
+    assert False
+
+def link(request, devicetype, devicefile):
+    device = None
+    for d in devices():
+        if d['devicefile'] == devicefile:
+            device = d
+    if not device:
+        raise Exception('Device %s not in list of devices' % devicefile)
+    
+    rm_media_symlink()
+    add_media_symlink(device['basepath'])
+    _mount_common(request, device)
+
+    if os.path.exists(settings.MEDIA_BASE):
+        return 'ok','Device %s has been linked.' % device['label']
+    return 'err','Device %s could not be linked.' % device['label']
+
+def unlink(request, devicetype, devicefile):
+    device = None
+    for d in devices():
+        if d['devicefile'] == devicefile:
+            device = d
+    if not device:
+        raise Exception('Device %s not in list of devices' % devicefile)
+    
+    rm_media_symlink()
+    _unmount_common(request)
+    
+    if os.path.exists(settings.MEDIA_BASE):
+        return 'err','Device %s could not be unlinked.' % device['label']
+    return 'ok','Device %s has been unlinked.' % device['label']

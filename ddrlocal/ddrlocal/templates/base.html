@@ -125,11 +125,13 @@ form td { padding-bottom:20px; }
   
   <span id="store_info">
     <span id="storage-type" class="label {{ storage.type_label }}" title="{{ storage.more_info }}">
-      {{ storage.disk_label }}
+      {{ storage.label }}
     </span>
-    {% if storage.disk_space %}
+    {% if storage.used and storage.free %}
     <span id="storage-space" class="label {{ storage.space_label }}">
-      {{ storage.disk_space }}
+      {{ storage.used|filesizeformat }} used
+      ({{ storage.percent }}%)
+      {{ storage.free|filesizeformat }} free
     </span>
     {% endif %}
     {% if storage.status %}
