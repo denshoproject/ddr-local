@@ -2,8 +2,6 @@ import logging
 logger = logging.getLogger(__name__)
 import os
 
-import envoy
-
 from django.conf import settings
 from django.contrib import messages
 from django.core.cache import cache
@@ -47,8 +45,8 @@ def base_path(request=None):
     to use a different device.
     
     MEDIA_ROOT, which is used by the rest of the application and by
-    the www server, uses the symlink managed by add_media_symlink() and
-    rm_media_symlink().
+    the www server, uses the symlink managed by ddrstorage.link() and
+    ddrstorage.unlink().
     
     Expected result: '/media/WD5000BMV-2/ddr' or similar.
     
@@ -87,54 +85,6 @@ def disk_space(mount_path):
         cache.set(DISK_SPACE_CACHE_KEY, space, DISK_SPACE_TIMEOUT)
     return space
 
-def add_media_symlink(target):
-    """Creates symlink to base_path in /var/www/media/
-
-    We don't know the USB HDD name in advance, so we can't specify a path
-    to the real media directory in the nginx config.  This func adds a symlink
-    from /var/www/media/ to the ddr/ directory of the USB HDD.
-    
-    @param target: absolute path to link target
-    """
-    link = settings.MEDIA_BASE
-    link_parent = os.path.split(link)[0]
-    logger.debug('add_media_symlink: %s -> %s' % (link, target))
-    if target and link and link_parent:
-        s = []
-        if os.path.exists(target):          s.append('1')
-        else:                               s.append('0')
-        if os.path.exists(link_parent):     s.append('1')
-        else:                               s.append('0')
-        if os.access(link_parent, os.W_OK): s.append('1')
-        else:                               s.append('0')
-        s = ''.join(s)
-        logger.debug('s: %s' % s)
-        if s == '111':
-            logger.debug('symlink target=%s, link=%s' % (target, link))
-            os.symlink(target, link)
-
-def rm_media_symlink():
-    """Remove the media symlink (see add_media_symlink).
-    
-    Removes normal symlinks (codes='111') as well as symlinks that point
-    to nonexistent targets, such as when a USB drive is linked-to but the
-    drive goes away when a VM is shut down (codes='010').
-    """
-    link = settings.MEDIA_BASE
-    s = []
-    if os.path.exists(link):     s.append('1') 
-    else:                        s.append('0')
-    if os.path.islink(link):     s.append('1') 
-    else:                        s.append('0')
-    if os.access(link, os.W_OK): s.append('1') 
-    else:                        s.append('0')
-    codes = ''.join(s)
-    if codes in ['111', '010']:
-        logger.debug('removing %s (-> %s): %s' % (link, os.path.realpath(link), codes))
-        os.remove(link)
-    else:
-        logger.debug('could not remove %s (-> %s): %s' % (link, os.path.realpath(link), codes))
-
 def _mount_common(request, device):
     # save label,mount_path in session
     logger.debug('saving session...')
@@ -160,9 +110,9 @@ def mount_usb( request, device ):
     mount_path = ddrstorage.mount(device['devicefile'], device['label'])
     logger.debug('mount_path: %s' % mount_path)
     if mount_path:
-        rm_media_symlink()
+        ddrstorage.unlink()
         if device.get('mountpath'):
-            add_media_symlink(device['mountpath'])
+            ddrstorage.link(device['mountpath'])
             _mount_common(request, device['devicefile'], device['label'], device['mountpath'])
             msg = STORAGE_MESSAGES['MOUNT_SUCCESS'].format(device['label'])
             messages.success(request, msg)
@@ -183,8 +133,8 @@ def mount_vhd( request, device ):
     """
     logger.debug('mount_vhd(%s, %s)' % (device['mountpath'], device['label']))
     logger.debug('device: %s' % device)
-    rm_media_symlink()
-    add_media_symlink(device['mountpath'])
+    ddrstorage.unlink()
+    ddrstorage.link(device['mountpath'])
     _mount_common(request, device['devicefile'], device['label'], device['mountpath'])
     MB = settings.MEDIA_BASE
     if os.path.exists(MB) and os.path.islink(MB) and os.access(MB,os.W_OK):
@@ -192,7 +142,6 @@ def mount_vhd( request, device ):
     else:
         messages.error(request, 'Could not make <strong>%s</strong> the active device.' % device['mountpath'])
     return device['mountpath']
-
 
 def _unmount_common(request):
     # remove label,mount_path from session,
@@ -215,7 +164,7 @@ def unmount_usb(request, device):
     logger.debug('unmount(%s, %s)' % (device['devicefile'], device['label']))
     unmounted = ddrstorage.umount(device['devicefile'])
     logger.debug('unmounted: %s' % unmounted)
-    rm_media_symlink()
+    ddrstorage.unlink()
     _unmount_common(request)
     if unmounted:
         msg = STORAGE_MESSAGES['UNMOUNT_SUCCESS'].format(device['label'])
@@ -269,8 +218,8 @@ def link(request, devicetype, devicefile):
     if not device:
         raise Exception('Device %s not in list of devices' % devicefile)
     
-    rm_media_symlink()
-    add_media_symlink(device['basepath'])
+    ddrstorage.unlink()
+    ddrstorage.link(device['basepath'])
     _mount_common(request, device)
 
     if os.path.exists(settings.MEDIA_BASE):
@@ -285,7 +234,7 @@ def unlink(request, devicetype, devicefile):
     if not device:
         raise Exception('Device %s not in list of devices' % devicefile)
     
-    rm_media_symlink()
+    ddrstorage.unlink()
     _unmount_common(request)
     
     if os.path.exists(settings.MEDIA_BASE):
