@@ -20,7 +20,7 @@ def index( request ):
     # put form data for each action button in devices
     for device in devices:
         device['action_forms'] = []
-        for action in device['actions']:
+        for action in device.get('actions'):
             form = {
                 'url': reverse(
                     'storage-operation', args=(action, device['devicetype'],)),
