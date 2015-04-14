@@ -20,7 +20,7 @@ def index( request ):
     # put form data for each action button in devices
     for device in devices:
         device['action_forms'] = []
-        for action in device['actions']:
+        for action in device.get('actions'):
             form = {
                 'url': reverse(
                     'storage-operation', args=(action, device['devicetype'],)),
@@ -44,6 +44,7 @@ def operation( request, opcode, devicetype ):
         form = StorageForm(request.POST)
         if form.is_valid():
             devicefile = form.cleaned_data['device']
+            basepath = form.cleaned_data['basepath']
             
             if opcode == 'mount':
                 mount_in_bkgnd.apply_async((devicetype, devicefile,), countdown=2)
@@ -52,9 +53,9 @@ def operation( request, opcode, devicetype ):
             elif opcode == 'unmount':
                 status,msg = storage.unmount(request, devicetype, devicefile)
             elif opcode == 'link':
-                status,msg = storage.link(request, devicetype, devicefile)
+                status,msg = storage.link(request, devicetype, basepath)
             elif opcode == 'unlink':
-                status,msg = storage.unlink(request, devicetype, devicefile)
+                status,msg = storage.unlink(request, devicetype, basepath)
             
             #if status == 'ok':
             #    messages.success(request, msg)

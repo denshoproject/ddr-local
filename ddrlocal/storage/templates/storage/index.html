@@ -43,6 +43,7 @@
       <form name="actions" action="{{ form.url }}" method="post">
         {% csrf_token %}
         <input type="hidden" name="device" value="{{ device.devicefile }}" />
+        <input type="hidden" name="basepath" value="{{ device.basepath }}" />
         <button class="btn btn-default btn-xs" type="submit">{{ form.action }}</button>
       </form>
       {% endfor %}
