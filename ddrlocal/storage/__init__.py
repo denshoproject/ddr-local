@@ -126,12 +126,12 @@ def mount_usb( request, device ):
         messages.error(request, msg)
     return mount_path
 
-def mount_vhd( request, device ):
+def mount_hdd( request, device ):
     """
     @param request: Django request object; used to access session.
     @param mount_path: Absolute path to mounted device; "/ddr" will be appended.
     """
-    logger.debug('mount_vhd(%s, %s)' % (device['mountpath'], device['label']))
+    logger.debug('mount_hdd(%s, %s)' % (device['mountpath'], device['label']))
     logger.debug('device: %s' % device)
     ddrstorage.unlink()
     ddrstorage.link(device['mountpath'])
@@ -187,7 +187,7 @@ def unmount(request, devicetype, devicefile):
     if not device:
         raise Exception('Device %s not in list of devices' % devicefile)
     
-    if device['devicetype'] == 'vhd':
+    if device['devicetype'] == 'hdd':
         assert False
     
     elif device['devicetype'] == 'usb':
@@ -202,8 +202,8 @@ def mount(request, devicetype, devicefile):
     if not device:
         raise Exception('Device %s not in list of devices' % devicefile)
     
-    if device['devicetype'] == 'vhd':
-        return 0,mount_vhd(request, device)
+    if device['devicetype'] == 'hdd':
+        return 0,mount_hdd(request, device)
     
     elif device['devicetype'] == 'usb':
         return 0,mount_usb(request, device)
