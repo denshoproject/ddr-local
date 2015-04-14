@@ -207,16 +207,14 @@ def mount(request, devicetype, devicefile):
     
     elif device['devicetype'] == 'usb':
         return 0,mount_usb(request, device)
-    
-    assert False
 
-def link(request, devicetype, devicefile):
+def link(request, devicetype, basepath):
     device = None
     for d in devices():
-        if d['devicefile'] == devicefile:
+        if d.get('basepath') == basepath:
             device = d
     if not device:
-        raise Exception('Device %s not in list of devices' % devicefile)
+        raise Exception('No device with basepath %s.' % basepath)
     
     ddrstorage.unlink()
     ddrstorage.link(device['basepath'])
@@ -226,13 +224,13 @@ def link(request, devicetype, devicefile):
         return 'ok','Device %s has been linked.' % device['label']
     return 'err','Device %s could not be linked.' % device['label']
 
-def unlink(request, devicetype, devicefile):
+def unlink(request, devicetype, basepath):
     device = None
     for d in devices():
-        if d['devicefile'] == devicefile:
+        if d.get('basepath') == basepath:
             device = d
     if not device:
-        raise Exception('Device %s not in list of devices' % devicefile)
+        raise Exception('No device with basepath %s.' % basepath)
     
     ddrstorage.unlink()
     _unmount_common(request)

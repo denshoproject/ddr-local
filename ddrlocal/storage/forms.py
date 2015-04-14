@@ -5,7 +5,8 @@ from django import forms
 
 
 class StorageForm(forms.Form):
-    device = forms.CharField(max_length=10, required=True, widget=forms.HiddenInput)
+    device = forms.CharField(max_length=50, required=True, widget=forms.HiddenInput)
+    basepath = forms.CharField(max_length=255, required=False, widget=forms.HiddenInput)
 
 class MountForm(forms.Form):
     which = forms.CharField(max_length=10, required=True, initial='mount', widget=forms.HiddenInput)
