@@ -31,7 +31,9 @@
       <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
       {% endif %}
     </td>
-    <td>{{ device.label }}</td>
+    <td>
+        {% if device.linked %}<a href="{% url "webui-collections" %}">{{ device.label }}</a>{% else %}{{ device.label }}{% endif %}
+    </td>
     <td>{{ device.devicetype }}</td>
     <td>
       {% if device.mounted %}mounted{% endif %}{% if device.mounted and device.linked %},{% endif %}
