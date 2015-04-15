@@ -36,8 +36,7 @@
     </td>
     <td>{{ device.devicetype }}</td>
     <td>
-      {% if device.mounted %}mounted{% endif %}{% if device.mounted and device.linked %},{% endif %}
-      {% if device.linked %}linked{% endif %}
+      {{ device.state|join:", " }}
     </td>
     <td>
 

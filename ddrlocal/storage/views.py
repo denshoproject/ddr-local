@@ -17,6 +17,15 @@ def index( request ):
     """Interface for mounting/unmounting drives and setting active device
     """
     devices = storage.devices()
+    # device state
+    for device in devices:
+        device['state'] = []
+        if device['mounted']:
+            device['state'].append('mounted')
+        if device['mounting']:
+            device['state'].append('mounting')
+        if device['linked']:
+            device['state'].append('linked')
     # put form data for each action button in devices
     for device in devices:
         device['action_forms'] = []
