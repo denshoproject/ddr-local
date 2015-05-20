@@ -22,6 +22,7 @@ from django.template.loader import get_template
 
 from DDR import commands
 from DDR import docstore
+from DDR import dvcs
 from DDR import idservice
 from DDR.models import Identity
 from DDR.models import write_json
@@ -162,6 +163,7 @@ def git_status( request, repo, org, cid ):
     collection = Collection.from_id_parts(repo,org,cid)
     alert_if_conflicted(request, collection)
     gitstatus = collection.gitstatus()
+    remotes = dvcs.remotes(collection.path)
     return render_to_response(
         'webui/collections/git-status.html',
         {'repo': repo,
@@ -171,6 +173,7 @@ def git_status( request, repo, org, cid ):
          'status': gitstatus['status'],
          'astatus': gitstatus['annex_status'],
          'timestamp': gitstatus['timestamp'],
+         'remotes': remotes,
          },
         context_instance=RequestContext(request, processors=[])
     )

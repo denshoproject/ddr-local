@@ -36,6 +36,16 @@ updated: {{ timestamp }}
 {{ astatus }}
 </pre>
 
+<h3>git remotes</h3>
+<table class="table table-compact">
+{% for remote in remotes %}
+  <tr>
+    <td>{{ remote.name }}</td>
+    <td>{{ remote.url }}</td>
+  </tr>
+{% endfor %}
+</table>
+
     </div><!-- .span12 -->
   </div><!-- .row-fluid -->
 
