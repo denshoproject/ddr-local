@@ -14,7 +14,6 @@ from webui.tasks import session_tasks_list
 def sitewide(request):
     """Variables that need to be inserted into all templates.
     """
-    SUPERVISORD_URL = 'http://%s:%s/' % (request.META['HTTP_HOST'], settings.SUPERVISORD_PORT)
     # logout redirect - chop off edit/new/batch URLs if present
     logout_next = '?'.join([request.META['PATH_INFO'], request.META['QUERY_STRING']])
     if logout_next.find('edit') > -1:    logout_next = logout_next.split('edit')[0]
@@ -34,7 +33,7 @@ def sitewide(request):
         'git_mail': request.session.get('git_mail', None),
         'celery_tasks': session_tasks_list(request),
         'celery_status_url': reverse("webui-task-status"),
-        'supervisord_url': SUPERVISORD_URL,
+        'supervisord_url': settings.SUPERVISORD_URL,
         'munin_url': settings.MUNIN_URL,
         'logout_next': logout_next,
         'workbench_url': settings.WORKBENCH_URL,
