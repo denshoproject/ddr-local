@@ -12,6 +12,8 @@
 <div class="muted" id="expert">
   <span><a class="muted" href="{{ entity.gitweb_url }}" target="git">git</a></span>
   <span class="bullsep">&bull;</span>
+  <span><a class="muted" href="{{ entity.fs_url }}" target="fs">fs</a></span>
+  <span class="bullsep">&bull;</span>
   <span>
     <a class="muted" href="{% url "webui-entity-json" repo org cid eid %}">json</a>
 {% if username %}

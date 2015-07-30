@@ -244,7 +244,12 @@ class Collection( DDRCollection ):
         """Returns local gitweb URL for collection directory.
         """
         return '%s/?p=%s/.git;a=tree' % (settings.GITWEB_URL, self.id)
-
+    
+    def fs_url( self ):
+        """URL of the collection directory browsable via Nginx.
+        """
+        return settings.MEDIA_URL + self.path.replace(settings.MEDIA_ROOT, '')
+        
     def cache_delete( self ):
         cache.delete(COLLECTION_FETCH_CACHE_KEY % self.id)
         cache.delete(COLLECTION_STATUS_CACHE_KEY % self.id)
@@ -437,6 +442,11 @@ class Entity( DDREntity ):
             os.path.dirname(self.json_path_rel)
         )
     
+    def fs_url( self ):
+        """URL of the entity directory browsable via Nginx.
+        """
+        return settings.MEDIA_URL + os.path.dirname(self.json_path).replace(settings.MEDIA_ROOT, '')
+    
     def model_def_commits(self):
         """Assesses document's relation to model defs in 'ddr' repo.
         
@@ -616,6 +626,11 @@ class DDRFile( File ):
             os.path.basename(self.collection_path),
             os.path.dirname(self.json_path_rel)
         )
+    
+    def fs_url( self ):
+        """URL of the files directory browsable via Nginx.
+        """
+        return settings.MEDIA_URL + self.entity_files_path.replace(settings.MEDIA_ROOT, '')
     
     def model_def_commits(self):
         """Assesses document's relation to model defs in 'ddr' repo.
