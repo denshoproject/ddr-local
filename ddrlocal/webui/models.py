@@ -240,6 +240,11 @@ class Collection( DDRCollection ):
         """
         return '{}/cgit.cgi/{}/'.format(settings.CGIT_URL, self.uid)
     
+    def gitweb_url( self ):
+        """Returns local gitweb URL for collection directory.
+        """
+        return '%s/?p=%s/.git;a=tree' % (settings.GITWEB_URL, self.id)
+
     def cache_delete( self ):
         cache.delete(COLLECTION_FETCH_CACHE_KEY % self.id)
         cache.delete(COLLECTION_STATUS_CACHE_KEY % self.id)
@@ -423,6 +428,15 @@ class Entity( DDREntity ):
     def url( self ):
         return reverse('webui-entity', args=[self.repo, self.org, self.cid, self.eid])
     
+    def gitweb_url( self ):
+        """Returns local gitweb URL for entity directory.
+        """
+        return '%s/?p=%s/.git;a=tree;f=%s;hb=HEAD' % (
+            settings.GITWEB_URL,
+            self.parent_uid,
+            os.path.dirname(self.json_path_rel)
+        )
+    
     def model_def_commits(self):
         """Assesses document's relation to model defs in 'ddr' repo.
         
@@ -593,6 +607,15 @@ class DDRFile( File ):
             stub = os.path.join(self.entity_files_path.replace(settings.MEDIA_ROOT,''), self.access_rel)
             return '%s%s' % (settings.MEDIA_URL, stub)
         return None
+    
+    def gitweb_url( self ):
+        """Returns local gitweb URL for files directory.
+        """
+        return '%s/?p=%s/.git;a=tree;f=%s;hb=HEAD' % (
+            settings.GITWEB_URL,
+            os.path.basename(self.collection_path),
+            os.path.dirname(self.json_path_rel)
+        )
     
     def model_def_commits(self):
         """Assesses document's relation to model defs in 'ddr' repo.

@@ -1,4 +1,5 @@
 SHELL = /bin/sh
+DEBIAN_CODENAME := $(shell lsb_release -sc)
 
 PACKAGE_SERVER=tank.densho.org
 
@@ -126,7 +127,15 @@ install-misc-tools:
 	apt-get --assume-yes install ack-grep byobu elinks htop mg multitail
 
 
-install-daemons: install-elasticsearch install-redis install-munin install-nginx
+install-daemons: install-elasticsearch install-redis install-cgit install-munin install-nginx
+
+install-cgit:
+	@echo ""
+	@echo "gitweb/cgit ------------------------------------------------------------"
+	apt-get --assume-yes install gitweb fcgiwrap
+#ifeq ($(DEBIAN_CODENAME), jessie)
+# 	apt-get --assume-yes install cgit
+#endif
 
 install-munin:
 	@echo ""
@@ -370,6 +379,8 @@ install-configs:
 	chown root.root /etc/supervisor/conf.d/gunicorn_ddrlocal.conf
 	chmod 644 /etc/supervisor/conf.d/celeryd.conf
 	chmod 644 /etc/supervisor/conf.d/gunicorn_ddrlocal.conf
+# gitweb
+	cp /usr/local/src/ddr-local/debian/conf/gitweb.conf /etc/
 
 uninstall-configs:
 	-rm /etc/nginx/sites-available/ddrlocal.conf
@@ -377,6 +388,7 @@ uninstall-configs:
 	-rm /etc/munin/munin.conf
 	-rm /etc/supervisor/conf.d/celeryd.conf
 	-rm /etc/supervisor/conf.d/gunicorn_ddrlocal.conf
+	-rm /etc/gitweb.conf
 	-rm /usr/local/src/ddr-local/ddrlocal/ddrlocal/settings.py
 	-rm /etc/ddr/ddr.cfg
 

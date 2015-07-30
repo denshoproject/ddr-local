@@ -10,6 +10,8 @@
 
 {% if file %}
 <div class="muted" id="expert">
+  <span><a class="muted" href="{{ file.gitweb_url }}" target="git">git</a></span>
+  <span class="bullsep">&bull;</span>
   <span>
     <a class="muted" href="{% url "webui-file-json" repo org cid eid role sha1 %}">json</a>
 {% if username %}

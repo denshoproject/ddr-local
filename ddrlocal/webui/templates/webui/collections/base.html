@@ -55,11 +55,15 @@
 
 {% if collection %}
 <div class="muted" id="expert">
+
+  <span><a class="muted" href="{{ collection.gitweb_url }}" target="git">git</a></span>
+  <span class="bullsep">&bull;</span>
+  
+  <span><a class="muted" href="{% url "webui-collection-json" repo org cid %}">json</a></span>
+  <span class="bullsep">&bull;</span>
   csv (<span
   ><a class="muted" href="{% url "webui-collection-export-entities" repo org cid %}">objects</a></span>,<span
   ><a class="muted" href="{% url "webui-collection-export-files" repo org cid %}">files</a></span>)
-  <span class="bullsep">&bull;</span>
-  <span><a class="muted" href="{% url "webui-collection-json" repo org cid %}">json</a></span>
   <span class="bullsep">&bull;</span>
   <span>
    <a class="muted" href="{% url "webui-collection-ead-xml" repo org cid %}">ead.xml</a>
