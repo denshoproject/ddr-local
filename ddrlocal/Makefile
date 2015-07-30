@@ -82,6 +82,7 @@ howto-install:
 	@echo "- make enable-bkgnd"
 	@echo "- make syncdb"
 	@echo "- make restart"
+	@echo "- [make clear-munin-logs]"
 
 
 
@@ -125,7 +126,36 @@ install-misc-tools:
 	apt-get --assume-yes install ack-grep byobu elinks htop mg multitail
 
 
-install-daemons: install-nginx install-redis install-elasticsearch
+install-daemons: install-elasticsearch install-redis install-munin install-nginx
+
+install-munin:
+	@echo ""
+	@echo "Munin ------------------------------------------------------------------"
+	apt-get --assume-yes install munin munin-node libwww-perl
+	if test -d /usr/local/src/munin-monitoring; \
+	then cd /usr/local/src/munin-monitoring && git pull; \
+	else cd /usr/local/src && git clone https://github.com/munin-monitoring/contrib.git /usr/local/src/munin-monitoring; \
+	fi
+	-rm /etc/munin/plugins/exim_*
+	-rm /etc/munin/plugins/entropy
+	-rm /etc/munin/plugins/fail2ban
+	-rm /etc/munin/plugins/if_err_*
+	-rm /etc/munin/plugins/munin_stats
+	-rm /etc/munin/plugins/nfsd
+	-rm /etc/munin/plugins/nfsd4
+	-rm /etc/munin/plugins/ntp_*
+	cd /etc/munin/plugins/
+	-ln -s /usr/share/munin/plugins/nginx_request /etc/munin/plugins/nginx_request
+	-ln -s /usr/share/munin/plugins/nginx_status /etc/munin/plugins/nginx_status
+	-ln -s /usr/local/src/munin-monitoring/plugins/redis/redis_ /etc/munin/plugins/redis_
+#- celery
+#- Elasticsearch
+#- ping gitolite
+
+clear-munin-logs:
+# NOTE: This erases Munin history!
+	rm -Rf /var/cache/munin/www/*
+
 
 install-nginx:
 	@echo ""
@@ -328,6 +358,10 @@ install-configs:
 	chmod 644 /etc/nginx/sites-available/ddrlocal.conf
 	-ln -s /etc/nginx/sites-available/ddrlocal.conf /etc/nginx/sites-enabled/ddrlocal.conf
 	-rm /etc/nginx/sites-enabled/default
+# munin settings
+	cp /usr/local/src/ddr-local/debian/conf/munin.conf /etc/munin
+	chown root.root /etc/munin/munin.conf
+	chmod 644 /etc/munin/munin.conf
 # supervisord
 	cp /usr/local/src/ddr-local/debian/conf/supervisord.conf /etc/supervisor/
 	cp /usr/local/src/ddr-local/debian/conf/celeryd.conf /etc/supervisor/conf.d/
@@ -340,6 +374,7 @@ install-configs:
 uninstall-configs:
 	-rm /etc/nginx/sites-available/ddrlocal.conf
 	-rm /etc/nginx/sites-enabled/ddrlocal.conf
+	-rm /etc/munin/munin.conf
 	-rm /etc/supervisor/conf.d/celeryd.conf
 	-rm /etc/supervisor/conf.d/gunicorn_ddrlocal.conf
 	-rm /usr/local/src/ddr-local/ddrlocal/ddrlocal/settings.py
@@ -364,7 +399,7 @@ reload-supervisor:
 	supervisorctl reload
 
 
-restart: restart-elasticsearch restart-redis restart-nginx restart-supervisor
+restart: restart-elasticsearch restart-redis restart-nginx restart-munin restart-supervisor
 
 restart-elasticsearch:
 	/etc/init.d/elasticsearch restart
@@ -374,6 +409,10 @@ restart-redis:
 
 restart-nginx:
 	/etc/init.d/nginx restart
+
+restart-munin:
+	/etc/init.d/munin-node restart
+	/etc/init.d/munin restart
 
 restart-supervisor:
 	/etc/init.d/supervisor restart

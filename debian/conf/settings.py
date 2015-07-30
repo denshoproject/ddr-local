@@ -73,6 +73,7 @@ THUMBNAIL_OPTIONS    = config.get('cmdln','thumbnail_options')
 
 SUPERVISORD_URL      = config.get('local','supervisord_url')
 SUPERVISORD_PROCS    = ['ddrlocal', 'celery']
+MUNIN_URL            = config.get('local','munin_url')
 SECRET_KEY           = config.get('local','secret_key')
 LANGUAGE_CODE        = config.get('local','language_code')
 TIME_ZONE            = config.get('local','time_zone')

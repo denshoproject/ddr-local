@@ -33,6 +33,7 @@ def sitewide(request):
         'git_mail': request.session.get('git_mail', None),
         'celery_tasks': session_tasks_list(request),
         'celery_status_url': reverse("webui-task-status"),
+        'munin_url': settings.MUNIN_URL,
         'logout_next': logout_next,
         'workbench_url': settings.WORKBENCH_URL,
     }
