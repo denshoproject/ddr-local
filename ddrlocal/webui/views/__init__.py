@@ -2,6 +2,7 @@ from datetime import datetime
 import json
 import logging
 logger = logging.getLogger(__name__)
+import os
 
 from django.conf import settings
 from django.contrib import messages
@@ -15,6 +16,7 @@ from DDR import commands
 from DDR import idservice
 
 from webui import WEBUI_MESSAGES
+from webui import gitstatus
 from webui.decorators import ddrview
 from webui.forms import LoginForm, TaskDismissForm
 from webui.tasks import dismiss_session_task, session_tasks_list
@@ -107,6 +109,22 @@ def logout( request ):
     return HttpResponseRedirect(redirect_uri)
 
 
+def gitstatus_queue(request):
+    text = None
+    try:
+        path = gitstatus.queue_path(settings.MEDIA_BASE)
+        assert os.path.exists(path)
+        with open(path, 'r') as f:
+            text = f.read()
+    except AssertionError:
+        text = None
+    return render_to_response(
+        'webui/gitstatus-queue.html',
+        {
+            'text': text,
+        },
+        context_instance=RequestContext(request, processors=[])
+    )
 
 def tasks( request ):
     """Show pending/successful/failed tasks; UI for dismissing tasks.

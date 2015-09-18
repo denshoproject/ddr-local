@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+
+{% block title %}gitstatus-queue{% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+<li class="active">gitstatus-queue</li>
+{% endblock breadcrumbs %}
+
+
+{% block headmeta %}
+<meta http-equiv="refresh" content="30;URL=">
+{% endblock %}
+
+
+{% block content %}
+
+  <div class="row-fluid">
+    <div class="span12">
+
+<h1>gitstatus-queue</h1>
+
+{% if text %}
+<pre>{{ text }}</pre>
+{% else %}
+<p>
+No queue file.
+</p>
+{% endif %}
+
+    </div><!-- .span12 -->
+  </div><!-- .row-fluid -->
+
+{% endblock content %}

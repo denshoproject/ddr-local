@@ -5,10 +5,14 @@ urlpatterns = patterns(
     '',
     url(r'^login/$', 'webui.views.login', name='webui-login'),
     url(r'^logout/$', 'webui.views.logout', name='webui-logout'),
+    
+    # admin
 
     url(r'^task-status/$', 'webui.views.task_status', name='webui-task-status'),
     url(r'^tasks/(?P<task_id>[-\w]+)/dismiss/$', 'webui.views.task_dismiss', name='webui-tasks-dismiss'),
     url(r'^tasks/$', 'webui.views.tasks', name='webui-tasks'),
+    
+    url(r'^gitstatus-queue/$', 'webui.views.gitstatus_queue', name='webui-gitstatus-queue'),
     
     url(r'^restart/$', TemplateView.as_view(template_name="webui/restart-park.html"), name='webui-restart'),
     url(r'^supervisord/procinfo.html$', 'webui.views.supervisord.procinfo_html', name='webui-supervisord-procinfo-html'),
