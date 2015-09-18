@@ -547,7 +547,8 @@ def update_store( base_dir, delta, minimum, local=False ):
                     collection_path = response
                 if collection_path:
                     timestamp,elapsed,status,annex_status,syncstatus = update(base_dir, collection_path)
-                    collection_id = Identity.id_from_path(collection_path)
+                    # TODO use Identifier
+                    collection_id = os.path.basename(collection_path)
                     queue = queue_mark_updated(queue, collection_id, delta, minimum)
                     queue_write(base_dir, queue)
                     messages.append('%s updated' % (collection_path))
