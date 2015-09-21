@@ -52,8 +52,9 @@ from xmlforms.models import XMLModel
 
 def alert_if_conflicted(request, collection):
     if collection.repo_conflicted():
-        url = reverse('webui-merge', args=[collection.repo,collection.org,collection.cid])
+        url = reverse('webui-merge', args=collection.idparts)
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_CONFLICTED'].format(collection.id, url))
+    
 
 
 # views ----------------------------------------------------------------
@@ -207,7 +208,7 @@ def sync( request, repo, org, cid ):
     alert_if_conflicted(request, collection)
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-        return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+        return HttpResponseRedirect(collection.absolute_url())
     if request.method == 'POST':
         form = SyncConfirmForm(request.POST)
         form_is_valid = form.is_valid()
@@ -220,11 +221,11 @@ def sync( request, repo, org, cid ):
             task = {'task_id': result.task_id,
                     'action': 'webui-collection-sync',
                     'collection_id': collection.id,
-                    'collection_url': collection.url(),
+                    'collection_url': collection.absolute_url(),
                     'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
             celery_tasks[result.task_id] = task
             request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
-            return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+            return HttpResponseRedirect(collection.absolute_url())
         #else:
         #    assert False
     else:
@@ -284,7 +285,7 @@ def new( request, repo, org ):
         collection.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
         gitstatus_update.apply_async((collection_path,), countdown=2)
         # positive feedback
-        return HttpResponseRedirect( reverse('webui-collection-edit', args=[repo,org,cid]) )
+        return HttpResponseRedirect( reverse('webui-collection-edit', args=collection.idparts) )
     # something happened...
     logger.error('Could not create new collecion!')
     messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_ERR_CREATE'])
@@ -359,11 +360,11 @@ def edit( request, repo, org, cid ):
     collection.model_def_fields()
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-        return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+        return HttpResponseRedirect(collection.absolute_url())
     collection.repo_fetch()
     if collection.repo_behind():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
-        return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+        return HttpResponseRedirect(collection.absolute_url())
     if request.method == 'POST':
         form = DDRForm(request.POST, fields=collectionmodule.FIELDS)
         if form.is_valid():
@@ -382,7 +383,7 @@ def edit( request, repo, org, cid ):
             # commit files, delete cache, update search index, update git status
             collection_edit(request, collection, updated_files, git_name, git_mail)
             
-            return HttpResponseRedirect(collection.url())
+            return HttpResponseRedirect(collection.absolute_url())
         
     else:
         form = DDRForm(collection.form_prep(), fields=collectionmodule.FIELDS)
@@ -409,9 +410,9 @@ def csv_export( request, repo, org, cid, model=None ):
     csv_path = export_csv_path(collection.path, model)
     csv_filename = os.path.basename(csv_path)
     if model == 'entity':
-        file_url = reverse('webui-collection-csv-entities', args=[repo,org,cid])
+        file_url = reverse('webui-collection-csv-entities', args=collection.idparts)
     elif model == 'file':
-        file_url = reverse('webui-collection-csv-files', args=[repo,org,cid])
+        file_url = reverse('webui-collection-csv-files', args=collection.idparts)
     # do it
     result = csv_export_model.apply_async( (collection.path,model), countdown=2)
     # add celery task_id to session
@@ -420,14 +421,14 @@ def csv_export( request, repo, org, cid, model=None ):
     task = {'task_id': result.task_id,
             'action': 'webui-csv-export-model',
             'collection_id': collection.id,
-            'collection_url': collection.url(),
+            'collection_url': collection.absolute_url(),
             'things': things[model],
             'file_name': csv_filename,
             'file_url': file_url,
             'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
     celery_tasks[result.task_id] = task
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
-    return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+    return HttpResponseRedirect(collection.absolute_url())
 
 @storage_required
 def csv_download( request, repo, org, cid, model=None ):
@@ -472,7 +473,7 @@ def edit_ead( request, repo, org, cid ):
     collection = Collection.from_request(request)
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-        return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+        return HttpResponseRedirect(collection.absolute_url())
     ead_path_rel = 'ead.xml'
     ead_path_abs = os.path.join(collection.path, ead_path_rel)
     #
@@ -495,7 +496,7 @@ def edit_ead( request, repo, org, cid ):
                     messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
                 else:
                     messages.success(request, 'Collection metadata updated')
-                    return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+                    return HttpResponseRedirect(collection.absolute_url())
             else:
                 messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     else:
@@ -548,7 +549,7 @@ def edit_xml( request, repo, org, cid, slug, Form, FIELDS ):
                 messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
             else:
                 messages.success(request, '<{}> updated'.format(slug))
-                return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+                return HttpResponseRedirect(collection.absolute_url())
     else:
         form = Form(fields=fields)
     # template
@@ -603,4 +604,4 @@ def unlock( request, repo, org, cid, task_id ):
     if task_id and collection.locked() and (task_id == collection.locked()):
         collection.unlock(task_id)
         messages.success(request, 'Collection <b>%s</b> unlocked.' % collection.id)
-    return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+    return HttpResponseRedirect(collection.absolute_url())

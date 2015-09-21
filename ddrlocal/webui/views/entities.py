@@ -229,7 +229,7 @@ def files( request, repo, org, cid, eid, role ):
         files = entity.files_master()
     duplicates = entity.detect_file_duplicates(role)
     if duplicates:
-        url = reverse('webui-entity-files-dedupe', args=[repo,org,cid,eid])
+        url = reverse('webui-entity-files-dedupe', args=entity.idparts)
         messages.error(request, 'Duplicate files detected. <a href="%s">More info</a>' % url)
     # paginate
     thispage = request.GET.get('page', 1)
@@ -311,11 +311,11 @@ def new( request, repo, org, cid ):
     collection = Collection.from_request(request)
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-        return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+        return HttpResponseRedirect(collection.absolute_url())
     collection.repo_fetch()
     if collection.repo_behind():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
-        return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+        return HttpResponseRedirect(collection.absolute_url())
     
     # get new entity ID
     try:
@@ -327,7 +327,7 @@ def new( request, repo, org, cid ):
         logger.error(str(e.args))
         messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_ERR_NO_IDS'])
         messages.error(request, e)
-        return HttpResponseRedirect(reverse('webui-collection', args=[repo,org,cid]))
+        return HttpResponseRedirect(collection.absolute_url())
     new_entity_id = entity_ids[0]
     eidentifier = Identifier.from_id(new_entity_id)
     
@@ -364,12 +364,12 @@ def new( request, repo, org, cid ):
         entity.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
         gitstatus_update.apply_async((collection.path,), countdown=2)
         # positive feedback
-        return HttpResponseRedirect(reverse('webui-entity-edit', args=[repo,org,cid,eid]))
+        return HttpResponseRedirect(reverse('webui-entity-edit', args=entity.idparts))
     
     # something happened...
     logger.error('Could not create new entity!')
     messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_ERR_CREATE'])
-    return HttpResponseRedirect(reverse('webui-collection', args=[repo,org,cid]))
+    return HttpResponseRedirect(collection.absolute_url())
 
 @ddrview
 @login_required
@@ -384,11 +384,11 @@ def newexpert( request, repo, org, cid ):
     collection = Collection.from_request(request)
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+        return HttpResponseRedirect(entity.absolute_url())
     collection.repo_fetch()
     if collection.repo_behind():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
-        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+        return HttpResponseRedirect(entity.absolute_url())
     
     if request.method == 'POST':
         form = NewEntityForm(request.POST)
@@ -413,7 +413,7 @@ def newexpert( request, repo, org, cid ):
                     collection, entity_id,
                     git_name, git_mail
                 )
-                return HttpResponseRedirect(reverse('webui-collection-entities', args=[repo,org,cid]))
+                return HttpResponseRedirect(reverse('webui-collection-entities', args=collection.idparts))
             
     else:
         data = {
@@ -449,14 +449,14 @@ def edit( request, repo, org, cid, eid ):
     collection = entity.collection()
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+        return HttpResponseRedirect(entity.absolute_url())
     collection.repo_fetch()
     if collection.repo_behind():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
-        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+        return HttpResponseRedirect(entity.absolute_url())
     if entity.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
-        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+        return HttpResponseRedirect(entity.absolute_url())
     #
     # load topics choices data
     # TODO This should be baked into models somehow.
@@ -487,7 +487,7 @@ def edit( request, repo, org, cid, eid ):
                 git_name, git_mail, settings.AGENT
             )
             
-            return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+            return HttpResponseRedirect(entity.absolute_url())
     else:
         form = DDRForm(entity.form_prep(), fields=entitymodule.FIELDS)
     
@@ -542,14 +542,14 @@ def edit_json( request, repo, org, cid, eid ):
     collection = entity.collection()
     #if collection.locked():
     #    messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-    #    return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+    #    return HttpResponseRedirect(entity.absolute_url())
     #collection.repo_fetch()
     #if collection.repo_behind():
     #    messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
-    #    return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+    #    return HttpResponseRedirect(entity.absolute_url())
     #if entity.locked():
     #    messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
-    #    return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+    #    return HttpResponseRedirect(entity.absolute_url())
     #
     if request.method == 'POST':
         form = JSONForm(request.POST)
@@ -571,7 +571,7 @@ def edit_json( request, repo, org, cid, eid ):
                 else:
                     gitstatus_update.apply_async((collection.path,), countdown=2)
                     messages.success(request, WEBUI_MESSAGES['VIEWS_ENT_UPDATED'])
-                    return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+                    return HttpResponseRedirect(entity.absolute_url())
             else:
                 messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     else:
@@ -601,10 +601,10 @@ def delete( request, repo, org, cid, eid, confirm=False ):
     collection = entity.collection()
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+        return HttpResponseRedirect(entity.absolute_url())
     if entity.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
-        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+        return HttpResponseRedirect(entity.absolute_url())
     git_name = request.session.get('git_name')
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
@@ -617,7 +617,7 @@ def delete( request, repo, org, cid, eid, confirm=False ):
                                      git_name, git_mail,
                                      collection, entity,
                                      settings.AGENT)
-            return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+            return HttpResponseRedirect(collection.absolute_url())
     else:
         form = DeleteEntityForm()
     return render_to_response(
@@ -643,8 +643,7 @@ def files_dedupe( request, repo, org, cid, eid ):
     collection = entity.collection()
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-        return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
-    entity = Entity.from_id_parts(repo,org,cid,eid)
+        return HttpResponseRedirect(collection.absolute_url())
     duplicate_masters = entity.detect_file_duplicates('master')
     duplicate_mezzanines = entity.detect_file_duplicates('mezzanine')
     duplicates = duplicate_masters + duplicate_mezzanines
@@ -672,7 +671,7 @@ def files_dedupe( request, repo, org, cid, eid ):
                 gitstatus_update.apply_async((collection.path,), countdown=2)
                 # positive feedback
                 messages.success(request, success_msg)
-                return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+                return HttpResponseRedirect(entity.absolute_url())
     else:
         data = {}
         form = RmDuplicatesForm()
@@ -707,14 +706,14 @@ def edit_mets_xml( request, repo, org, cid, eid ):
     collection = entity.collection()
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+        return HttpResponseRedirect(entity.absolute_url())
     collection.repo_fetch()
     if collection.repo_behind():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
-        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+        return HttpResponseRedirect(entity.absolute_url())
     if entity.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
-        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+        return HttpResponseRedirect(entity.absolute_url())
     #
     if request.method == 'POST':
         form = UpdateForm(request.POST)
@@ -737,7 +736,7 @@ def edit_mets_xml( request, repo, org, cid, eid ):
                     messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
                 else:
                     messages.success(request, WEBUI_MESSAGES['VIEWS_ENT_UPDATED'])
-                    return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+                    return HttpResponseRedirect(entity.absolute_url())
             else:
                 messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     else:
@@ -793,7 +792,7 @@ def edit_xml( request, repo, org, cid, eid, slug, Form, FIELDS, namespaces=None 
                 messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
             else:
                 messages.success(request, '<{}> updated'.format(slug))
-                return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+                return HttpResponseRedirect(entity.absolute_url())
     else:
         form = Form(fields=fields, namespaces=namespaces)
     # template
@@ -837,4 +836,4 @@ def unlock( request, repo, org, cid, eid, task_id ):
     if task_id and entity.locked() and (task_id == entity.locked()):
         entity.unlock(task_id)
         messages.success(request, 'Object <b>%s</b> unlocked.' % entity.id)
-    return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+    return HttpResponseRedirect(entity.absolute_url())

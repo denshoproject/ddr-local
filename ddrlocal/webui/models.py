@@ -236,16 +236,16 @@ class Collection( DDRCollection ):
         """
         return gitstatus.path(self.path)
     
-    def url( self ):
+    def absolute_url( self ):
         """Returns relative URL in context of webui app.
         
         TODO Move to webui.models
         
         >>> c = DDRLocalCollection('/tmp/ddr-testing-123')
-        >>> c.url()
+        >>> c.absolute_url()
         '/ui/ddr-testing-123/'
         """
-        return reverse('webui-collection', args=[self.repo, self.org, self.cid])
+        return reverse('webui-collection', args=self.idparts)
     
     def cgit_url( self ):
         """Returns cgit URL for collection.
@@ -330,7 +330,7 @@ class Collection( DDRCollection ):
         return gitstatus.sync_status( self, git_status, timestamp, cache_set, force )
     
     def sync_status_url( self ):
-        return reverse('webui-collection-sync-status-ajax',args=(self.repo,self.org,self.cid))
+        return reverse('webui-collection-sync-status-ajax', args=self.idparts)
     
     def gitstatus( self, force=False ):
         return gitstatus.read(settings.MEDIA_BASE, self.path)
@@ -452,8 +452,8 @@ class Entity( DDREntity ):
             Identity.json_path_from_dir('entity', entity_abs)
         )
     
-    def url( self ):
-        return reverse('webui-entity', args=[self.repo, self.org, self.cid, self.eid])
+    def absolute_url( self ):
+        return reverse('webui-entity', args=self.idparts)
     
     def gitweb_url( self ):
         """Returns local gitweb URL for entity directory.
@@ -638,8 +638,8 @@ class DDRFile( File ):
         """
         return DDRFile.from_identifier(Identifier.from_request(request))
     
-    def url( self ):
-        return reverse('webui-file', args=[self.repo, self.org, self.cid, self.eid, self.role, self.sha1[:10]])
+    def absolute_url( self ):
+        return reverse('webui-file', args=self.idparts)
     
     def media_url( self ):
         if self.path_rel:
