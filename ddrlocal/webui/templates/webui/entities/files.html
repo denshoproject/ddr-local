@@ -5,7 +5,7 @@
 {% block title %}files | {{ entity.id }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{{ entity.url }}">{{ entity.eid }}</a></li>
+<li><a href="{{ entity.absolute_url }}">{{ entity.eid }}</a></li>
 <li class="active">Files</li>
 {% endblock breadcrumbs %}
 
@@ -20,7 +20,7 @@
 
 
       <ul class="nav nav-tabs" id="tabs">
-        <li><a href="{{ entity.url }}">Object Metadata</a></li>
+        <li><a href="{{ entity.absolute_url }}">Object Metadata</a></li>
         <li {% if role == "master" %}class="active"{% endif %}><a href="{% url "webui-entity-files" repo org cid eid "master" %}">Master Files</a></li>
         <li {% if role == "mezzanine" %}class="active"{% endif %}><a href="{% url "webui-entity-files" repo org cid eid "mezzanine" %}">Mezzanine Files</a></li>
       </ul>
@@ -69,16 +69,16 @@ or <a class="btn btn-primary btn-mini" href="{% if role == "master" %}{% url "we
 {% if username and models_valid %}
     <td>
 {% if entity.locked or collection.locked or collection.repo_behind or collection.repo_conflicted %}
-      <a class="btn btn-xs disabled" href="{{ file.url }}edit/"><span class="glyphicon glyphicon-edit"></span> Edit</a>
-      <a class="btn btn-xs disabled" href="{{ file.url }}delete/"><span class="glyphicon glyphicon-trash"></span> Delete</a>
+      <a class="btn btn-xs disabled" href="{{ file.absolute_url }}edit/"><span class="glyphicon glyphicon-edit"></span> Edit</a>
+      <a class="btn btn-xs disabled" href="{{ file.absolute_url }}delete/"><span class="glyphicon glyphicon-trash"></span> Delete</a>
 {% else %}
-      <a class="btn btn-primary btn-xs" href="{{ file.url }}edit/"><span class="glyphicon glyphicon-edit icon-white"></span> Edit</a>
-      <a class="btn btn-primary btn-xs" href="{{ file.url }}delete/"><span class="glyphicon glyphicon-trash icon-white"></span> Delete</a>
+      <a class="btn btn-primary btn-xs" href="{{ file.absolute_url }}edit/"><span class="glyphicon glyphicon-edit icon-white"></span> Edit</a>
+      <a class="btn btn-primary btn-xs" href="{{ file.absolute_url }}delete/"><span class="glyphicon glyphicon-trash icon-white"></span> Delete</a>
 {% endif %}{# conflicted #}
     </td>
 {% endif %}{#username #}
     <td>
-      <a href="{{ file.url }}">{{ file.basename }}</a>
+      <a href="{{ file.absolute_url }}">{{ file.basename }}</a>
       ({{ file.size|filesizeformat }})
     </td>
     <td>

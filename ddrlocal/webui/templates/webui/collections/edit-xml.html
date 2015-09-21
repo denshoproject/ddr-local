@@ -4,7 +4,7 @@
 {% block title %}{{ slug }} | {{ collection_uid }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{{ collection.url }}">{{ collection.id }}</a></li>
+<li><a href="{{ collection.absolute_url }}">{{ collection.id }}</a></li>
 <li class="active">{{ slug }}</li>
 {% endblock breadcrumbs %}
 

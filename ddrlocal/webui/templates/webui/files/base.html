@@ -1,7 +1,7 @@
 {% extends "webui/entities/base.html" %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{{ entity.url }}">{{ entity.eid }}</a></li>
+<li><a href="{{ entity.absolute_url }}">{{ entity.eid }}</a></li>
 {% endblock breadcrumbs %}
 
 

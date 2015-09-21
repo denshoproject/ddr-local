@@ -6,7 +6,7 @@
 
 {% block breadcrumbs %}{{ block.super }}
 <li><a href="{% url "webui-entity-files" repo org cid eid role %}">{{ role }}</a></li>
-<li><a href="{{ file.url }}">{{ file.sha1|slice:":10" }}</a></li>
+<li><a href="{{ file.absolute_url }}">{{ file.sha1|slice:":10" }}</a></li>
 <li class="active">Delete</li>
 {% endblock breadcrumbs %}
 
@@ -34,7 +34,7 @@
     <td>
 <button class="btn btn-danger btn-mini" type="submit" value="Delete">Delete</button>
 &nbsp;
-<a href="{{ file.url }}">Cancel</a>
+<a href="{{ file.absolute_url }}">Cancel</a>
     </td>
   </tr>
 </form>

@@ -5,7 +5,7 @@
 {% block title %}Delete | {{ entity.id }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{{ entity.url }}">{{ entity.id }}</a></li>
+<li><a href="{{ entity.absolute_url }}">{{ entity.id }}</a></li>
 <li class="active">Delete</li>
 {% endblock breadcrumbs %}
 
@@ -33,7 +33,7 @@
     <td>
 <button class="btn btn-danger btn-mini" type="submit" value="Delete">Delete</button>
 &nbsp;
-<a href="{{ entity.url }}">Cancel</a>
+<a href="{{ entity.absolute_url }}">Cancel</a>
     </td>
   </tr>
 </form>

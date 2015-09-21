@@ -48,7 +48,7 @@
 {% else %}
 <p>
 <a id="delete" class="btn btn-mini btn-primary" href="{% url "webui-file-delete" repo org cid eid role sha1 %}"><span class="glyphicon glyphicon-trash"></span> Delete</a>
-<a class="btn btn-primary btn-mini" href="{{ file.url }}edit/"><span class="glyphicon glyphicon-edit"></span> Edit</a>
+<a class="btn btn-primary btn-mini" href="{{ file.absolute_url }}edit/"><span class="glyphicon glyphicon-edit"></span> Edit</a>
 </p>
 {% endif %}
 {% endif %}{#username #}

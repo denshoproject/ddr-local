@@ -4,7 +4,7 @@
 {% block title %}eadheader | {{ collection_uid }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{{ collection.url }}">{{ collection.id }}</a></li>
+<li><a href="{{ collection.absolute_url }}">{{ collection.id }}</a></li>
 <li class="active">eadheader</li>
 {% endblock breadcrumbs %}
 
