@@ -215,7 +215,7 @@ def detail( request, repo, org, cid, eid ):
          'collection': collection,
          'entity': entity,
          'tasks': tasks,
-         'unlock_task_id': entity.locked(),},
+         'entity_unlock_url': entity.unlock_url(entity.locked()),},
         context_instance=RequestContext(request, processors=[])
     )
 

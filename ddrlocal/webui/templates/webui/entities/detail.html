@@ -86,13 +86,13 @@
 
 
 {% block footer %}{{ block.super }}
-{% if unlock_task_id %}
+{% if entity_unlock_url %}
 <!-- click to remove entity lock file -->
 <div>
   <a id="unlock-unlock" class="muted" href="">unlock</a>
   <span id="unlock-confirm" style="display:none;">
     are you sure?
-    <a id="unlock-confirm-yes" href="{% url "webui-entity-unlock" repo org cid eid unlock_task_id %}">yes</a>
+    <a id="unlock-confirm-yes" href="{{ entity_unlock_url }}">yes</a>
     <a id="unlock-confirm-no" href="">no</a>
   </span>
 </div>
@@ -106,7 +106,7 @@
 <script>
   $(function () {
 
-  {% if unlock_task_id %}
+  {% if entity_unlock_url %}
     /* unlock link */
     $('a#unlock-unlock').click(function() {
       $('span#unlock-confirm').show(); return false;

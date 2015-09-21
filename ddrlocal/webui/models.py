@@ -281,6 +281,13 @@ class Collection( DDRCollection ):
         """Returns local gitweb URL for collection directory.
         """
         return '%s/?p=%s/.git;a=tree' % (settings.GITWEB_URL, self.id)
+    
+    def unlock_url(self, unlock_task_id):
+        if unlock_task_id:
+            args = [a for a in self.idparts]
+            args.append(unlock_task_id)
+            return reverse('webui-collection-unlock', args=args)
+        return None
         
     def cache_delete( self ):
         cache.delete(COLLECTION_FETCH_CACHE_KEY % self.id)
@@ -491,6 +498,13 @@ class Entity( DDREntity ):
         """URL of the entity directory browsable via Nginx.
         """
         return settings.MEDIA_URL + os.path.dirname(self.json_path).replace(settings.MEDIA_ROOT, '')
+    
+    def unlock_url(self, unlock_task_id):
+        if unlock_task_id:
+            args = [a for a in self.idparts]
+            args.append(unlock_task_id)
+            return reverse('webui-entity-unlock', args=args)
+        return None
     
     def collection(self):
         return Collection.from_identifier(self.identifier.collection())

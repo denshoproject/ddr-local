@@ -109,7 +109,7 @@ def detail( request, repo, org, cid ):
          'org': org,
          'cid': cid,
          'collection': collection,
-         'unlock_task_id': collection.locked(),},
+         'collection_unlock_url': collection.unlock_url(collection.locked()),},
         context_instance=RequestContext(request, processors=[])
     )
 
