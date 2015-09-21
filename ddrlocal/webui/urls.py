@@ -39,12 +39,6 @@ urlpatterns = patterns(
 
     url(r'^collections/$', 'webui.views.collections.collections', name='webui-collections'),
 
-    url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/edit/ead/$', 'webui.views.collections.edit_ead', name='webui-collection-edit-ead'),
-    url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/edit/overview/$', 'webui.views.collections.edit_overview', name='webui-collection-edit-overview'),
-    url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/edit/admininfo/$', 'webui.views.collections.edit_admininfo', name='webui-collection-edit-admininfo'),
-    url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/edit/bioghist/$', 'webui.views.collections.edit_bioghist', name='webui-collection-edit-bioghist'),
-    url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/edit/scopecontent/$', 'webui.views.collections.edit_scopecontent', name='webui-collection-edit-scopecontent'),
-    url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/edit/adjunctdesc/$', 'webui.views.collections.edit_adjunctdesc', name='webui-collection-edit-adjunctdesc'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/edit/$', 'webui.views.collections.edit', name='webui-collection-edit'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/sync/$', 'webui.views.collections.sync', name='webui-collection-sync'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/unlock/(?P<task_id>[\w\d-]+)/$', 'webui.views.collections.unlock', name='webui-collection-unlock'),
@@ -69,8 +63,6 @@ urlpatterns = patterns(
 
     url(r'^vocab/(?P<field>[\w]+)/$', 'webui.views.entities.edit_vocab_terms', name='webui-entity-vocab-terms'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/entity.json/edit/$', 'webui.views.entities.edit_json', name='webui-entity-edit-json'),
-    url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/mets.xml/edit/$', 'webui.views.entities.edit_mets_xml', name='webui-entity-edit-mets-xml'),
-    url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/mets/edit/$', 'webui.views.entities.edit_mets', name='webui-entity-edit-mets'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/delete/$', 'webui.views.entities.delete', name='webui-entity-delete'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/edit/$', 'webui.views.entities.edit', name='webui-entity-edit'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-(?P<eid>[\d]+)/unlock/(?P<task_id>[\w\d-]+)/$', 'webui.views.entities.unlock', name='webui-entity-unlock'),

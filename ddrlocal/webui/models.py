@@ -250,7 +250,6 @@ class Collection( DDRCollection ):
     def admin_url(self): return reverse('webui-collection-admin', args=self.idparts)
     def changelog_url(self): return reverse('webui-collection-changelog', args=self.idparts)
     def ead_xml_url(self): return reverse('webui-collection-ead-xml', args=self.idparts)
-    def edit_ead_url(self): return reverse('webui-collection-edit-ead', args=self.idparts)
     def edit_url(self): return reverse('webui-collection-edit', args=self.idparts)
     def entities_url(self): return reverse('webui-collection-entities', args=self.idparts)
     def export_entities_url(self): return reverse('webui-collection-export-entities', args=self.idparts)
@@ -481,7 +480,6 @@ class Entity( DDREntity ):
     def delete_url(self): return reverse('webui-entity-delete', args=self.idparts)
     def edit_url(self): return reverse('webui-entity-edit', args=self.idparts)
     def edit_json_url(self): return reverse('webui-entity-edit-json', args=self.idparts)
-    def edit_mets_xml_url(self): return reverse('webui-entity-edit-mets-xml', args=self.idparts)
     def json_url(self): return reverse('webui-entity-json', args=self.idparts)
     def mets_xml_url(self): return reverse('webui-entity-mets-xml', args=self.idparts)
     
