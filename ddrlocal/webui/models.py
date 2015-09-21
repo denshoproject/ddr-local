@@ -199,16 +199,12 @@ class Collection( DDRCollection ):
         return "<webui.models.Collection %s>" % (self.id)
     
     @staticmethod
-    def from_json(collection_abs):
-        """Instantiates a Collection object, loads data from collection.json.
-        
-        @param collection_abs: Absolute path, without .json file.
+    def from_json(path_abs):
+        """
+        @param path_abs: Absolute path, without .json file.
         @returns: Collection
         """
-        return from_json(
-            Collection,
-            Identity.json_path_from_dir('collection', collection_abs)
-        )
+        return from_json(Collection, path_abs)
     
     @staticmethod
     def from_identifier(identifier):
@@ -461,15 +457,12 @@ class Entity( DDREntity ):
         return Entity.from_identifier(Identifier.from_request(request))
     
     @staticmethod
-    def from_json(entity_abs):
+    def from_json(path_abs):
         """
-        @param entity_abs: Absolute path, without .json file.
+        @param path_abs: Absolute path, without .json file.
         @returns: Entity
         """
-        return from_json(
-            Entity,
-            Identity.json_path_from_dir('entity', entity_abs)
-        )
+        return from_json(Entity, path_abs)
     
     def absolute_url( self ):
         return reverse('webui-entity', args=self.idparts)
