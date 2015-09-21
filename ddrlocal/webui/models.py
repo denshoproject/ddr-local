@@ -17,7 +17,6 @@ from django.db import models
 from DDR import commands
 from DDR import docstore
 from DDR import dvcs
-from DDR.models import Identity
 from DDR.models import Module
 from DDR.models import read_json, write_json, from_json
 from DDR.models import Collection as DDRCollection

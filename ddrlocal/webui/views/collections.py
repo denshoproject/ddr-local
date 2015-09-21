@@ -24,7 +24,6 @@ from DDR import commands
 from DDR import docstore
 from DDR import dvcs
 from DDR import idservice
-from DDR.models import Identity
 from DDR.models import write_json
 
 if settings.REPO_MODELS_PATH not in sys.path:

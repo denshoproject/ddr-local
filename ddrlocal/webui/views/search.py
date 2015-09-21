@@ -19,6 +19,7 @@ from elasticsearch import Elasticsearch
 
 from DDR import docstore, models
 from webui import tasks
+from webui.models import Identifier
 from webui.decorators import search_index
 from webui.forms.search import SearchForm, IndexConfirmForm, DropConfirmForm
 
@@ -33,12 +34,13 @@ def kosher( query ):
             return False
     return True
 
-def make_object_url( parts ):
+def make_object_url(object_id):
     """Takes a list of object ID parts and returns URL for that object.
     """
-    if len(parts) == 6: return reverse('webui-file', args=parts)
-    elif len(parts) == 4: return reverse('webui-entity', args=parts)
-    elif len(parts) == 3: return reverse('webui-collection', args=parts)
+    i = Identifier.from_id(object_id)
+    if i.model == 'file': return reverse('webui-file', args=i.parts)
+    elif i.model == 'entity': return reverse('webui-entity', args=i.parts)
+    elif i.model == 'collection': return reverse('webui-collection', args=i.parts)
     return None
 
 
@@ -47,10 +49,7 @@ def massage_query_results( results, thispage, size ):
     results = None
     for o in objects:
         if not o.get('placeholder',False):
-            # add URL
-            parts = models.Identity.split_object_id(o['id'])
-            parts = parts[1:]
-            o['absolute_url'] = make_object_url(parts)
+            o['absolute_url'] = make_object_url(o['id'])
     return objects
 
 

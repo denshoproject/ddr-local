@@ -471,10 +471,8 @@ TASK_STATUS_MESSAGES['webui-file-edit'] = {
 
 def entity_file_edit(request, collection, file_, git_name, git_mail):
     # start tasks
-    file_id = models.Identity.make_object_id(
-        'file', file_.repo, file_.org, file_.cid, file_.eid, file_.role, file_.sha1)
     result = file_edit.apply_async(
-        (collection.path, file_id, git_name, git_mail),
+        (collection.path, file_.id, git_name, git_mail),
         countdown=2)
     # lock collection
     lockstatus = collection.lock(result.task_id)
@@ -485,7 +483,7 @@ def entity_file_edit(request, collection, file_, git_name, git_mail):
         'task_id': result.task_id,
         'action': 'webui-file-edit',
         'file_url': file_.absolute_url(),
-        'file_id': file_id,
+        'file_id': file_.id,
         'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
 
@@ -511,9 +509,8 @@ def file_edit(collection_path, file_id, git_name, git_mail):
     """
     logger.debug('file_edit(%s,%s,%s,%s)' % (git_name, git_mail, collection_path, file_id))
     
-    model,repo,org,cid,eid,role,sha1 = models.Identity.split_object_id(file_id)
-    entity = Entity.from_json(Entity.entity_path(None,repo,org,cid,eid))
-    file_ = entity.file(repo, org, cid, eid, role, sha1)
+    identifier = Identifier.from_id(file_id)
+    file_ = File.from_identifier(identifier)
     
     gitstatus.lock(settings.MEDIA_BASE, 'file_edit')
     exit,status = file_.save(git_name, git_mail)
