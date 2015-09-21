@@ -38,8 +38,8 @@ Clone the collection.::
     # Excerpt from the ddr manpage:
     #     -u USER, --user USER  User name
     #     -m MAIL, --mail MAIL  User e-mail address
-    #     -i CID, --cid CID     A valid DDR collection UID
-    #     --dest DEST           Absolute path to which repo will be cloned (includes collection UID)
+    #     -i CID, --cid CID     A valid DDR collection ID
+    #     --dest DEST           Absolute path to which repo will be cloned (includes collection ID)
      
     $ ddr clone -u gjost -m gjost@densho.org -i ddr-densho-242 --dest /var/www/media/base/ddr-densho-242
 
@@ -692,15 +692,15 @@ def import_entities( csv_path, collection_path, git_name, git_mail ):
             rowd = make_row_dict(headers, row)
             
             # create new entity
-            entity_uid = rowd['id']
-            entity_path = os.path.join(collection_path, COLLECTION_FILES_PREFIX, entity_uid)
+            entity_id = rowd['id']
+            entity_path = os.path.join(collection_path, COLLECTION_FILES_PREFIX, entity_id)
             
             # write entity.json template to entity location
             write_json(Entity(entity_path).dump_json(template=True),
                        TEMPLATE_EJSON)
             # commit files
             exit,status = commands.entity_create(git_name, git_mail,
-                                                 collection.path, entity_uid,
+                                                 collection.path, entity_id,
                                                  [collection.json_path_rel, collection.ead_path_rel],
                                                  [TEMPLATE_EJSON, TEMPLATE_METS],
                                                  agent=AGENT)
