@@ -353,7 +353,7 @@ def collection_edit(request, collection, updated_files, git_name, git_mail):
     celery_tasks[result.task_id] = {
         'task_id': result.task_id,
         'action': 'webui-collection-edit',
-        'collection_url': collection.url(),
+        'collection_url': collection.absolute_url(),
         'collection_id': collection.id,
         'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
@@ -414,7 +414,7 @@ def collection_entity_newexpert(request, collection, entity_id, git_name, git_ma
     celery_tasks[result.task_id] = {
         'task_id': result.task_id,
         'action': 'webui-entity-newexpert',
-        'collection_url': collection.url(),
+        'collection_url': collection.absolute_url(),
         'collection_id': collection.id,
         'entity_url': entity_url,
         'entity_id': entity_id,
@@ -484,7 +484,7 @@ def entity_file_edit(request, collection, file_, git_name, git_mail):
     celery_tasks[result.task_id] = {
         'task_id': result.task_id,
         'action': 'webui-file-edit',
-        'file_url': file_.url(),
+        'file_url': file_.absolute_url(),
         'file_id': file_id,
         'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
@@ -545,9 +545,9 @@ def collection_entity_edit(request, collection, entity, updated_files, git_name,
     celery_tasks[result.task_id] = {
         'task_id': result.task_id,
         'action': 'webui-entity-edit',
-        'collection_url': collection.url(),
+        'collection_url': collection.absolute_url(),
         'collection_id': collection.id,
-        'entity_url': entity.url(),
+        'entity_url': entity.absolute_url(),
         'entity_id': entity.id,
         'updated_files': updated_files,
         'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
@@ -618,9 +618,9 @@ def collection_delete_entity(request, git_name, git_mail, collection, entity, ag
     celery_tasks[result.task_id] = {
         'task_id': result.task_id,
         'action': 'webui-entity-delete',
-        'collection_url': collection.url(),
+        'collection_url': collection.absolute_url(),
         'collection_id': collection.id,
-        'entity_url': entity.url(),
+        'entity_url': entity.absolute_url(),
         'entity_id': entity.id,
         'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
@@ -683,10 +683,10 @@ def entity_delete_file(request, git_name, git_mail, collection, entity, file_, a
     celery_tasks[result.task_id] = {
         'task_id': result.task_id,
         'action': 'webui-file-delete',
-        'entity_url': entity.url(),
+        'entity_url': entity.absolute_url(),
         'entity_id': entity.id,
         'filename': file_.basename,
-        'file_url': file_.url(),
+        'file_url': file_.absolute_url(),
         'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
 
