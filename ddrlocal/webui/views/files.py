@@ -32,7 +32,8 @@ from webui.decorators import ddrview
 from webui.forms import DDRForm
 from webui.forms.files import NewFileDDRForm, NewAccessFileForm, DeleteFileForm
 from webui.forms.files import shared_folder_files
-from webui.models import Collection, Entity
+from webui.models import Collection, Entity, DDRFile
+from webui.models import Identifier
 from webui.tasks import entity_add_file, entity_add_access
 from webui.tasks import entity_file_edit, entity_delete_file
 from webui.tasks import gitstatus_update
@@ -80,9 +81,9 @@ def prep_newfile_form_fields(FIELDS):
 def detail( request, repo, org, cid, eid, role, sha1 ):
     """Add file to entity.
     """
-    collection = Collection.from_id_parts(repo,org,cid)
-    entity = Entity.from_id_parts(repo,org,cid,eid)
-    file_ = entity.file(repo, org, cid, eid, role, sha1)
+    file_ = DDRFile.from_request(request)
+    entity = file_.parent()
+    collection = file_.collection()
     file_.model_def_commits()
     file_.model_def_fields()
     formdata = {'path':file_.path_rel}
@@ -104,8 +105,7 @@ def detail( request, repo, org, cid, eid, role, sha1 ):
 
 @storage_required
 def file_json( request, repo, org, cid, eid, role, sha1 ):
-    entity = Entity.from_id_parts(repo,org,cid,eid)
-    file_ = entity.file(repo, org, cid, eid, role, sha1)
+    file_ = DDRFile.from_request(request)
     if file_.json_path and os.path.exists(file_.json_path):
         return HttpResponse(file_.dump_json(), content_type="application/json")
     messages.success(request, 'no JSON file. sorry.')
@@ -117,8 +117,9 @@ def file_json( request, repo, org, cid, eid, role, sha1 ):
 def browse( request, repo, org, cid, eid, role='master' ):
     """Browse for a file in vbox shared folder.
     """
-    collection = Collection.from_id_parts(repo,org,cid)
-    entity = Entity.from_id_parts(repo,org,cid,eid)
+    file_ = DDRFile.from_request(request)
+    entity = file_.parent()
+    collection = file_.collection()
     path = request.GET.get('path')
     home = None
     parent = None
@@ -169,8 +170,8 @@ def new( request, repo, org, cid, eid, role='master' ):
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    collection = Collection.from_id_parts(repo,org,cid)
-    entity = Entity.from_id_parts(repo,org,cid,eid)
+    entity = Entity.from_request(request)
+    collection = entity.collection()
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
@@ -262,8 +263,9 @@ def new_access( request, repo, org, cid, eid, role, sha1 ):
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    collection = Collection.from_id_parts(repo,org,cid)
-    entity = Entity.from_id_parts(repo,org,cid,eid)
+    file_ = DDRFile.from_request(request)
+    entity = file_.parent()
+    collection = file_.collection()
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
@@ -318,8 +320,8 @@ def new_access( request, repo, org, cid, eid, role, sha1 ):
 def batch( request, repo, org, cid, eid, role='master' ):
     """Add multiple files to entity.
     """
-    collection = Collection.from_id_parts(repo,org,cid)
-    entity = Entity.from_id_parts(repo,org,cid,eid)
+    entity = Entity.from_request(request)
+    collection = entity.collection()
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
@@ -345,8 +347,9 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    collection = Collection.from_id_parts(repo,org,cid)
-    entity = Entity.from_id_parts(repo,org,cid,eid)
+    file_ = DDRFile.from_request(request)
+    entity = file_.parent()
+    collection = file_.collection()
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
@@ -396,11 +399,11 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
 @storage_required
 def delete( request, repo, org, cid, eid, role, sha1 ):
     try:
-        entity = Entity.from_id_parts(repo,org,cid,eid)
-        file_ = entity.file(repo, org, cid, eid, role, sha1)
+        file_ = DDRFile.from_request(request)
+        entity = file_.parent()
+        collection = file_.collection()
     except:
         raise Http404
-    collection = Collection.from_id_parts(repo,org,cid)
     if entity.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
         return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )

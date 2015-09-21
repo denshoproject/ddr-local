@@ -41,6 +41,7 @@ from webui.forms import DDRForm
 from webui.forms.collections import NewCollectionForm, UpdateForm, SyncConfirmForm
 from webui import gitolite
 from webui.models import Collection, COLLECTION_STATUS_CACHE_KEY, COLLECTION_STATUS_TIMEOUT
+from webui.models import Identifier
 from webui.tasks import collection_new_expert, collection_edit, collection_sync
 from webui.tasks import csv_export_model, export_csv_path, gitstatus_update
 from webui.views.decorators import login_required
@@ -68,11 +69,17 @@ def collections( request ):
     collections = []
     collection_status_urls = []
     for object_id in gitolite.get_repos_orgs():
-        model,repo,org = Identity.split_object_id(object_id)
+        identifier = Identifier.from_request(request)
+        # TODO Identifier: Organization object instead of repo and org
+        repo,org = identifier.parts.values()
+        collection_paths = commands.collections_local(
+            settings.MEDIA_BASE, repo, org
+        )
         colls = []
-        for collection_path in commands.collections_local(settings.MEDIA_BASE, repo, org):
+        for collection_path in collection_paths:
             if collection_path:
-                collection = Collection.from_json(collection_path)
+                identifier = Identifier.from_path(collection_path)
+                collection = Collection.from_identifier(identifier)
                 colls.append(collection)
                 gitstatus = collection.gitstatus()
                 if gitstatus and gitstatus.get('sync_status'):
@@ -91,7 +98,7 @@ def collections( request ):
 
 @storage_required
 def detail( request, repo, org, cid ):
-    collection = Collection.from_id_parts(repo,org,cid)
+    collection = Collection.from_request(request)
     collection.model_def_commits()
     collection.model_def_fields()
     alert_if_conflicted(request, collection)
@@ -107,7 +114,7 @@ def detail( request, repo, org, cid ):
 
 @storage_required
 def entities( request, repo, org, cid ):
-    collection = Collection.from_id_parts(repo,org,cid)
+    collection = Collection.from_request(request)
     alert_if_conflicted(request, collection)
     entities = collection.entities(quick=True)
     # paginate
@@ -128,7 +135,7 @@ def entities( request, repo, org, cid ):
 
 @storage_required
 def changelog( request, repo, org, cid ):
-    collection = Collection.from_id_parts(repo,org,cid)
+    collection = Collection.from_request(request)
     alert_if_conflicted(request, collection)
     return render_to_response(
         'webui/collections/changelog.html',
@@ -141,14 +148,14 @@ def changelog( request, repo, org, cid ):
 
 @storage_required
 def collection_json( request, repo, org, cid ):
-    collection = Collection.from_id_parts(repo,org,cid)
+    collection = Collection.from_request(request)
     alert_if_conflicted(request, collection)
     return HttpResponse(json.dumps(collection.json().data), content_type="application/json")
 
 @ddrview
 @storage_required
 def sync_status_ajax( request, repo, org, cid ):
-    collection = Collection.from_id_parts(repo,org,cid)
+    collection = Collection.from_request(request)
     gitstatus = collection.gitstatus()
     if gitstatus:
         sync_status = gitstatus['sync_status']
@@ -160,7 +167,7 @@ def sync_status_ajax( request, repo, org, cid ):
 @ddrview
 @storage_required
 def git_status( request, repo, org, cid ):
-    collection = Collection.from_id_parts(repo,org,cid)
+    collection = Collection.from_request(request)
     alert_if_conflicted(request, collection)
     gitstatus = collection.gitstatus()
     remotes = dvcs.remotes(collection.path)
@@ -180,7 +187,7 @@ def git_status( request, repo, org, cid ):
 
 @storage_required
 def ead_xml( request, repo, org, cid ):
-    collection = Collection.from_id_parts(repo,org,cid)
+    collection = Collection.from_request(request)
     alert_if_conflicted(request, collection)
     soup = BeautifulSoup(collection.ead().xml, 'xml')
     return HttpResponse(soup.prettify(), content_type="application/xml")
@@ -190,7 +197,7 @@ def ead_xml( request, repo, org, cid ):
 @storage_required
 def sync( request, repo, org, cid ):
     try:
-        collection = Collection.from_id_parts(repo,org,cid)
+        collection = Collection.from_request(request)
     except:
         raise Http404
     git_name = request.session.get('git_name')
@@ -257,10 +264,9 @@ def new( request, repo, org ):
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_ERR_NO_IDS'])
         messages.error(request, e)
         return HttpResponseRedirect(reverse('webui-collections'))
-    new_collection_id = collection_ids[0]
-    cid = Identity.split_object_id(new_collection_id)[-1]
+    identifier = Identifier.from_id(collection_ids[0], settings.MEDIA_BASE)
     # create the new collection repo
-    collection_path = Collection.collection_path(request,repo,org,cid)
+    collection_path = identifier.path_abs()
     # collection.json template
     write_json(Collection(collection_path).dump_json(template=True),
                settings.TEMPLATE_CJSON)
@@ -274,7 +280,7 @@ def new( request, repo, org ):
         messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
     else:
         # update search index
-        collection = Collection.from_json(collection_path)
+        collection = Collection.from_identifier(identifier)
         collection.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
         gitstatus_update.apply_async((collection_path,), countdown=2)
         # positive feedback
@@ -299,8 +305,13 @@ def newexpert( request, repo, org ):
         form = NewCollectionForm(request.POST)
         if form.is_valid():
 
-            cid = str(form.cleaned_data['cid'])
-            collection_id = '-'.join([repo, org, cid])
+            idparts = {
+                'model':'collection',
+                'repo':repo, 'org':org,
+                'cid':str(form.cleaned_data['cid'])
+            }
+            identifier = Identifier.from_idparts(idparts)
+            collection_id = identifier.id
             collection_ids = [
                 os.path.basename(cpath)
                 for cpath
@@ -343,7 +354,7 @@ def edit( request, repo, org, cid ):
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    collection = Collection.from_id_parts(repo,org,cid)
+    collection = Collection.from_request(request)
     collection.model_def_commits()
     collection.model_def_fields()
     if collection.locked():
@@ -393,7 +404,7 @@ def csv_export( request, repo, org, cid, model=None ):
     """
     if (not model) or (not (model in ['entity','file'])):
         raise Http404
-    collection = Collection.from_id_parts(repo,org,cid)
+    collection = Collection.from_request(request)
     things = {'entity':'objects', 'file':'files'}
     csv_path = export_csv_path(collection.path, model)
     csv_filename = os.path.basename(csv_path)
@@ -426,7 +437,7 @@ def csv_download( request, repo, org, cid, model=None ):
     File must be readable by Python csv module.
     If all that is true then it must be a legal CSV file.
     """
-    collection = Collection.from_id_parts(repo,org,cid)
+    collection = Collection.from_request(request)
     path = export_csv_path(collection.path, model)
     filename = os.path.basename(path)
     if not os.path.exists(path):
@@ -458,7 +469,7 @@ def edit_ead( request, repo, org, cid ):
     - write contents of field to EAD.xml
     - commands.update
     """
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
+    collection = Collection.from_request(request)
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
@@ -511,8 +522,9 @@ def edit_xml( request, repo, org, cid, slug, Form, FIELDS ):
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    collection_path = Collection.collection_path(request,repo,org,cid)
-    collection_id = Identity.id_from_path(collection_path)
+    identifier = Identifier.from_request(request)
+    collection_path = identifier.path_abs()
+    collection_id = identifier.id
     ead_path_rel = 'ead.xml'
     ead_path_abs = os.path.join(collection_path, ead_path_rel)
     with open(ead_path_abs, 'r') as f:
@@ -587,7 +599,7 @@ def unlock( request, repo, org, cid, task_id ):
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    collection = Collection.from_id_parts(repo,org,cid)
+    collection = Collection.from_request(request)
     if task_id and collection.locked() and (task_id == collection.locked()):
         collection.unlock(task_id)
         messages.success(request, 'Collection <b>%s</b> unlocked.' % collection.id)

@@ -4,6 +4,7 @@ logger = logging.getLogger(__name__)
 from django import forms
 
 class NewCollectionForm(forms.Form):
+    # TODO build form from Identifier.parts
     repo = forms.CharField(max_length=100)
     org = forms.CharField(max_length=100)
     cid = forms.IntegerField()

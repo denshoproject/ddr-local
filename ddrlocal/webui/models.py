@@ -24,6 +24,7 @@ from DDR.models import Collection as DDRCollection
 from DDR.models import Entity as DDREntity
 from DDR.models import File
 from DDR.models import COLLECTION_FILES_PREFIX, ENTITY_FILES_PREFIX
+from DDR.models.identifier import Identifier as DDRIdentifier
 
 if settings.REPO_MODELS_PATH not in sys.path:
     sys.path.append(settings.REPO_MODELS_PATH)
@@ -172,6 +173,24 @@ def post_json(hosts, index, json_path):
 # functions relating to inheritance ------------------------------------
 
 
+class Identifier(DDRIdentifier):
+
+    def __repr__(self):
+        return "<webui.models.Identifier %s:%s>" % (self.model, self.id)
+    
+    @staticmethod
+    def from_id(object_id):
+        return DDRIdentifier.from_id(object_id, settings.MEDIA_BASE)
+    
+    @staticmethod
+    def from_request(request):
+        object_id = [
+            part
+            for part in request.META['PATH_INFO'].split(os.path.sep)
+            if part
+        ][1]
+        return DDRIdentifier.from_id(object_id, settings.MEDIA_BASE)
+
 
 class Collection( DDRCollection ):
     
@@ -179,24 +198,6 @@ class Collection( DDRCollection ):
         """Returns string representation of object.
         """
         return "<webui.models.Collection %s>" % (self.id)
-    
-    @staticmethod
-    def collection_path(request, repo, org, cid):
-        """Returns absolute path to collection repo directory.
-        
-        >>> DDRLocalCollection.collection_path(None, 'ddr', 'testing', 123)
-        '/var/www/media/base/ddr-testing-123'
-        """
-        return Identity.path_from_id(
-            Identity.make_object_id('collection', repo, org, cid),
-            settings.MEDIA_BASE
-        )
-    
-    @staticmethod
-    def from_id_parts(repo, org, cid):
-        object_id = Identity.make_object_id('collection', repo, org, cid)
-        path = Identity.path_from_id(object_id, settings.MEDIA_BASE)
-        return Collection.from_json(path)
     
     @staticmethod
     def from_json(collection_abs):
@@ -209,6 +210,23 @@ class Collection( DDRCollection ):
             Collection,
             Identity.json_path_from_dir('collection', collection_abs)
         )
+    
+    @staticmethod
+    def from_identifier(identifier):
+        """Instantiates a Collection object, loads data from collection.json.
+        
+        @param identifier: Identifier
+        @returns: Collection
+        """
+        return from_json(Collection, identifier.path_abs('json'))
+    
+    @staticmethod
+    def from_request(request):
+        """
+        @param request: Request
+        @returns: Collection
+        """
+        return Collection.from_identifier(Identifier.from_request(request))
     
     def gitstatus_path( self ):
         """Returns absolute path to collection .gitstatus cache file.
@@ -407,17 +425,21 @@ class Entity( DDREntity ):
         return "<webui.models.Entity %s>" % (self.id)
     
     @staticmethod
-    def entity_path(request, repo, org, cid, eid):
-        return Identity.path_from_id(
-            Identity.make_object_id('entity', repo, org, cid, eid),
-            settings.MEDIA_BASE
-        )
+    def from_identifier(identifier):
+        """Instantiates an Entity object, loads data from entity.json.
+        
+        @param identifier: Identifier
+        @returns: Entity
+        """
+        return from_json(Entity, identifier.path_abs('json'))
     
     @staticmethod
-    def from_id_parts(repo, org, cid, eid):
-        object_id = Identity.make_object_id('entity', repo, org, cid, eid)
-        path = Identity.path_from_id(object_id, settings.MEDIA_BASE)
-        return Entity.from_json(path)
+    def from_request(request):
+        """
+        @param request: Request
+        @returns: Entity
+        """
+        return Entity.from_identifier(Identifier.from_request(request))
     
     @staticmethod
     def from_json(entity_abs):
@@ -438,7 +460,7 @@ class Entity( DDREntity ):
         """
         return '%s/?p=%s/.git;a=tree;f=%s;hb=HEAD' % (
             settings.GITWEB_URL,
-            self.parent_uid,
+            self.parent_id,
             os.path.dirname(self.json_path_rel)
         )
     
@@ -446,6 +468,12 @@ class Entity( DDREntity ):
         """URL of the entity directory browsable via Nginx.
         """
         return settings.MEDIA_URL + os.path.dirname(self.json_path).replace(settings.MEDIA_ROOT, '')
+    
+    def collection(self):
+        return Collection.from_identifier(self.identifier.collection())
+    
+    def parent(self):
+        return Collection.from_identifier(self.identifier.parent())
     
     def model_def_commits(self):
         """Assesses document's relation to model defs in 'ddr' repo.
@@ -499,12 +527,8 @@ class Entity( DDREntity ):
         self._file_objects = []
         for f in self.files:
             if f and f.get('path_rel',None):
-                path_abs = Identity.path_from_id(
-                    Identity.id_from_path(f['path_rel']),
-                    settings.MEDIA_BASE
-                )
-                file_ = DDRFile(path_abs=path_abs)
-                file_.load_json(read_json(file_.json_path))
+                identifier = Identifier.from_id(os.path.splitext(f['path_rel'])[0])
+                file_ = DDRFile.from_identifier(identifier)
                 self._file_objects.append(file_)
         # keep track of how many times this gets loaded...
         self._file_objects_loaded = self._file_objects_loaded + 1
@@ -513,8 +537,7 @@ class Entity( DDREntity ):
     def create(collection, entity_id, git_name, git_mail, agent=settings.AGENT):
         """create new entity given an entity ID
         """
-        repo,org,cid,eid = entity_id.split('-')
-        entity_path = Entity.entity_path(None, repo, org, cid, eid)
+        entity_path = Identifier.from_id(entity_id).path_abs()
         
         # write entity.json template to entity location and commit
         write_json(Entity(entity_path).dump_json(template=True),
@@ -597,11 +620,23 @@ class DDRFile( File ):
         return "<webui.models.DDRFile %s>" % (self.id)
     
     @staticmethod
-    def file_path(request, repo, org, cid, eid, role, sha1):
-        return Identity.path_from_id(
-            Identity.make_object_id('file', repo, org, cid, eid, role, sha1),
-            settings.MEDIA_BASE
-        )
+    def from_identifier(identifier):
+        """Instantiates a File object, loads data from FILE.json.
+        
+        @param identifier: Identifier
+        @returns: File
+        """
+        file_ = DDRFile(path_abs=identifier.path_abs())
+        file_.load_json(read_json(file_.json_path))
+        return file_
+    
+    @staticmethod
+    def from_request(request):
+        """
+        @param request: Request
+        @returns: DDRFile
+        """
+        return DDRFile.from_identifier(Identifier.from_request(request))
     
     def url( self ):
         return reverse('webui-file', args=[self.repo, self.org, self.cid, self.eid, self.role, self.sha1[:10]])
@@ -631,6 +666,12 @@ class DDRFile( File ):
         """URL of the files directory browsable via Nginx.
         """
         return settings.MEDIA_URL + self.entity_files_path.replace(settings.MEDIA_ROOT, '')
+    
+    def collection(self):
+        return Collection.from_identifier(self.identifier.collection())
+    
+    def parent(self):
+        return Entity.from_identifier(self.identifier.parent())
     
     def model_def_commits(self):
         """Assesses document's relation to model defs in 'ddr' repo.
@@ -680,13 +721,10 @@ class DDRFile( File ):
         @param git_name: str
         @param git_mail: str
         """
-        collection = Collection.from_json(self.collection_path)
-        entity_id = Identity.make_object_id(
-            'entity', self.repo, self.org, self.cid, self.eid)
-        
+        collection = self.collection()
         exit,status = commands.entity_update(
             git_name, git_mail,
-            collection.path, entity_id,
+            collection.path, self.parent_id,
             [self.json_path],
             agent=settings.AGENT)
         collection.cache_delete()
