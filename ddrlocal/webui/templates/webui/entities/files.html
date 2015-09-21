@@ -66,17 +66,19 @@ or <a class="btn btn-primary btn-mini" href="{% if role == "master" %}{% url "we
 
 {% for file in page.object_list %}
   <tr>
+
 {% if username and models_valid %}
     <td>
 {% if entity.locked or collection.locked or collection.repo_behind or collection.repo_conflicted %}
-      <a class="btn btn-xs disabled" href="{{ file.absolute_url }}edit/"><span class="glyphicon glyphicon-edit"></span> Edit</a>
-      <a class="btn btn-xs disabled" href="{{ file.absolute_url }}delete/"><span class="glyphicon glyphicon-trash"></span> Delete</a>
+      <a class="btn btn-xs disabled" href="{{ file.edit_url }}"><span class="glyphicon glyphicon-edit"></span> Edit</a>
+      <a class="btn btn-xs disabled" href="{{ file.delete_url }}"><span class="glyphicon glyphicon-trash"></span> Delete</a>
 {% else %}
-      <a class="btn btn-primary btn-xs" href="{{ file.absolute_url }}edit/"><span class="glyphicon glyphicon-edit icon-white"></span> Edit</a>
-      <a class="btn btn-primary btn-xs" href="{{ file.absolute_url }}delete/"><span class="glyphicon glyphicon-trash icon-white"></span> Delete</a>
+      <a class="btn btn-primary btn-xs" href="{{ file.edit_url }}"><span class="glyphicon glyphicon-edit icon-white"></span> Edit</a>
+      <a class="btn btn-primary btn-xs" href="{{ file.delete_url }}"><span class="glyphicon glyphicon-trash icon-white"></span> Delete</a>
 {% endif %}{# conflicted #}
     </td>
 {% endif %}{#username #}
+
     <td>
       <a href="{{ file.absolute_url }}">{{ file.basename }}</a>
       ({{ file.size|filesizeformat }})

@@ -247,6 +247,20 @@ class Collection( DDRCollection ):
         """
         return reverse('webui-collection', args=self.idparts)
     
+    def admin_url(self): return reverse('webui-collection-admin', args=self.idparts)
+    def changelog_url(self): return reverse('webui-collection-changelog', args=self.idparts)
+    def ead_xml_url(self): return reverse('webui-collection-ead-xml', args=self.idparts)
+    def edit_ead_url(self): return reverse('webui-collection-edit-ead', args=self.idparts)
+    def edit_url(self): return reverse('webui-collection-edit', args=self.idparts)
+    def entities_url(self): return reverse('webui-collection-entities', args=self.idparts)
+    def export_entities_url(self): return reverse('webui-collection-export-entities', args=self.idparts)
+    def export_files_url(self): return reverse('webui-collection-export-files', args=self.idparts)
+    def git_status_url(self): return reverse('webui-collection-git-status', args=self.idparts)
+    def json_url(self): return reverse('webui-collection-json', args=self.idparts)
+    def merge_url(self): return reverse('webui-merge-raw', args=self.idparts)
+    def new_entity_url(self): return reverse('webui-entity-new', args=self.idparts)
+    def sync_url(self): return reverse('webui-collection-sync', args=self.idparts)
+    
     def cgit_url( self ):
         """Returns cgit URL for collection.
         
@@ -258,15 +272,15 @@ class Collection( DDRCollection ):
         """
         return '{}/cgit.cgi/{}/'.format(settings.CGIT_URL, self.uid)
     
-    def gitweb_url( self ):
-        """Returns local gitweb URL for collection directory.
-        """
-        return '%s/?p=%s/.git;a=tree' % (settings.GITWEB_URL, self.id)
-    
     def fs_url( self ):
         """URL of the collection directory browsable via Nginx.
         """
         return settings.MEDIA_URL + self.path.replace(settings.MEDIA_ROOT, '')
+    
+    def gitweb_url( self ):
+        """Returns local gitweb URL for collection directory.
+        """
+        return '%s/?p=%s/.git;a=tree' % (settings.GITWEB_URL, self.id)
         
     def cache_delete( self ):
         cache.delete(COLLECTION_FETCH_CACHE_KEY % self.id)
@@ -455,6 +469,15 @@ class Entity( DDREntity ):
     def absolute_url( self ):
         return reverse('webui-entity', args=self.idparts)
     
+    def addfilelog_url(self): return reverse('webui-entity-addfilelog', args=self.idparts)
+    def changelog_url(self): return reverse('webui-entity-changelog', args=self.idparts)
+    def delete_url(self): return reverse('webui-entity-delete', args=self.idparts)
+    def edit_url(self): return reverse('webui-entity-edit', args=self.idparts)
+    def edit_json_url(self): return reverse('webui-entity-edit-json', args=self.idparts)
+    def edit_mets_xml_url(self): return reverse('webui-entity-edit-mets-xml', args=self.idparts)
+    def json_url(self): return reverse('webui-entity-json', args=self.idparts)
+    def mets_xml_url(self): return reverse('webui-entity-mets-xml', args=self.idparts)
+    
     def gitweb_url( self ):
         """Returns local gitweb URL for entity directory.
         """
@@ -640,6 +663,10 @@ class DDRFile( File ):
     
     def absolute_url( self ):
         return reverse('webui-file', args=self.idparts)
+
+    def delete_url(self): return reverse('webui-file-delete', args=self.idparts)
+    def json_url(self): return reverse('webui-file-json', args=self.idparts)
+    def edit_url(self): return reverse('webui-file-edit', args=self.idparts)
     
     def media_url( self ):
         if self.path_rel:

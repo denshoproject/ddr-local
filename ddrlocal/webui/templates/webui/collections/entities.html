@@ -36,7 +36,7 @@
 </p>
 {% else %}
 <p>
-<a href="{% url "webui-entity-new" repo org cid %}" class="btn btn-primary btn-small"><span class="glyphicon glyphicon-plus icon-white"></span> New object</a>
+<a href="{{ collection.new_entity_url }}" class="btn btn-primary btn-small"><span class="glyphicon glyphicon-plus icon-white"></span> New object</a>
 </p>
 {% endif %}{# conflicted #}
 {% endif %}{#username #}

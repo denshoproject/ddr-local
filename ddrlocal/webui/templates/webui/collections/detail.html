@@ -21,7 +21,7 @@
 
       <ul class="nav nav-tabs" id="tabs">
         <li class="active"><a href="#">Collection Metadata</a></li>
-        <li><a href="{% url "webui-collection-entities" repo org cid %}">Objects</a></li>
+        <li><a href="{{ collection.entities_url }}">Objects</a></li>
       </ul>
 
 
@@ -56,7 +56,7 @@
 </p>
 {% else %}
 <p>
-<a class="btn btn-mini btn-primary" href="{% url "webui-collection-edit" repo org cid %}"><span class="glyphicon glyphicon-edit icon-white"></span> Edit</a>
+<a class="btn btn-mini btn-primary" href="{{ collection.edit_url }}"><span class="glyphicon glyphicon-edit icon-white"></span> Edit</a>
 </p>
 {% endif %}{# conflicted #}
 {% endif %}{#username #}

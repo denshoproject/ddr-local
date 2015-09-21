@@ -24,7 +24,7 @@ The following files are conflicted and must be fixed:
 </h3>
 <ul>
 {% for file in unmerged %}
-   <li><a href="{% url "webui-merge-raw" repo org cid %}?filename={{ file }}">{{ file }}</a></li>
+   <li><a href="{{ collection.merge_url }}?filename={{ file }}">{{ file }}</a></li>
 {% endfor %}
 </ul>
 {% else %}
