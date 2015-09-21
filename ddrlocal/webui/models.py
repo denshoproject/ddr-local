@@ -485,6 +485,11 @@ class Entity( DDREntity ):
     def json_url(self): return reverse('webui-entity-json', args=self.idparts)
     def mets_xml_url(self): return reverse('webui-entity-mets-xml', args=self.idparts)
     
+    def fs_url( self ):
+        """URL of the entity directory browsable via Nginx.
+        """
+        return settings.MEDIA_URL + os.path.dirname(self.json_path).replace(settings.MEDIA_ROOT, '')
+    
     def gitweb_url( self ):
         """Returns local gitweb URL for entity directory.
         """
@@ -493,11 +498,6 @@ class Entity( DDREntity ):
             self.parent_id,
             os.path.dirname(self.json_path_rel)
         )
-    
-    def fs_url( self ):
-        """URL of the entity directory browsable via Nginx.
-        """
-        return settings.MEDIA_URL + os.path.dirname(self.json_path).replace(settings.MEDIA_ROOT, '')
     
     def unlock_url(self, unlock_task_id):
         if unlock_task_id:
@@ -682,17 +682,16 @@ class DDRFile( File ):
     def json_url(self): return reverse('webui-file-json', args=self.idparts)
     def edit_url(self): return reverse('webui-file-edit', args=self.idparts)
     
-    def media_url( self ):
-        if self.path_rel:
-            stub = os.path.join(self.entity_files_path.replace(settings.MEDIA_ROOT,''), self.path_rel)
-            return '%s%s' % (settings.MEDIA_URL, stub)
-        return None
-    
     def access_url( self ):
         if self.access_rel:
             stub = os.path.join(self.entity_files_path.replace(settings.MEDIA_ROOT,''), self.access_rel)
             return '%s%s' % (settings.MEDIA_URL, stub)
         return None
+    
+    def fs_url( self ):
+        """URL of the files directory browsable via Nginx.
+        """
+        return settings.MEDIA_URL + self.entity_files_path.replace(settings.MEDIA_ROOT, '')
     
     def gitweb_url( self ):
         """Returns local gitweb URL for files directory.
@@ -703,10 +702,11 @@ class DDRFile( File ):
             os.path.dirname(self.json_path_rel)
         )
     
-    def fs_url( self ):
-        """URL of the files directory browsable via Nginx.
-        """
-        return settings.MEDIA_URL + self.entity_files_path.replace(settings.MEDIA_ROOT, '')
+    def media_url( self ):
+        if self.path_rel:
+            stub = os.path.join(self.entity_files_path.replace(settings.MEDIA_ROOT,''), self.path_rel)
+            return '%s%s' % (settings.MEDIA_URL, stub)
+        return None
     
     def collection(self):
         return Collection.from_identifier(self.identifier.collection())
