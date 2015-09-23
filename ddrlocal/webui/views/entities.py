@@ -218,17 +218,14 @@ def detail( request, repo, org, cid, eid ):
     )
 
 @storage_required
-def files( request, repo, org, cid, eid, role ):
+def children( request, repo, org, cid, eid, role ):
     entity = Entity.from_request(request)
     collection = entity.collection()
-    if role == 'mezzanine':
-        files = entity.files_mezzanine()
-    else:
-        files = entity.files_master()
     duplicates = entity.detect_file_duplicates(role)
     if duplicates:
         url = reverse('webui-entity-files-dedupe', args=entity.idparts)
         messages.error(request, 'Duplicate files detected. <a href="%s">More info</a>' % url)
+    files = entity.children(role)
     # paginate
     thispage = request.GET.get('page', 1)
     paginator = Paginator(files, settings.RESULTS_PER_PAGE)
@@ -408,7 +405,7 @@ def newexpert( request, repo, org, cid ):
                     collection, entity_id,
                     git_name, git_mail
                 )
-                return HttpResponseRedirect(reverse('webui-collection-entities', args=collection.idparts))
+                return HttpResponseRedirect(reverse('webui-collection-children', args=collection.idparts))
             
     else:
         data = {

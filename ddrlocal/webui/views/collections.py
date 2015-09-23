@@ -113,13 +113,13 @@ def detail( request, repo, org, cid ):
     )
 
 @storage_required
-def entities( request, repo, org, cid ):
+def children( request, repo, org, cid ):
     collection = Collection.from_request(request)
     alert_if_conflicted(request, collection)
-    entities = collection.entities(quick=True)
+    objects = collection.children(quick=True)
     # paginate
     thispage = request.GET.get('page', 1)
-    paginator = Paginator(entities, settings.RESULTS_PER_PAGE)
+    paginator = Paginator(objects, settings.RESULTS_PER_PAGE)
     page = paginator.page(thispage)
     return render_to_response(
         'webui/collections/entities.html',

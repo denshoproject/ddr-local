@@ -206,6 +206,19 @@ class Collection( DDRCollection ):
         @returns: Collection
         """
         return Collection.from_identifier(Identifier.from_request(request))
+
+    def parent(self):
+        return None
+    
+    def children(self, quick=None):
+        """Returns list of the Collection's Entity objects.
+        @param quick: Boolean List only titles and IDs
+        """
+        objects = super(Collection, self).children(quick=quick)
+        for o in objects:
+            oid = Identifier.from_id(o.id)
+            o.absolute_url = reverse('webui-entity', args=oid.parts.values())
+        return objects
     
     def gitstatus_path( self ):
         """Returns absolute path to collection .gitstatus cache file.
@@ -228,9 +241,9 @@ class Collection( DDRCollection ):
     
     def admin_url(self): return reverse('webui-collection-admin', args=self.idparts)
     def changelog_url(self): return reverse('webui-collection-changelog', args=self.idparts)
+    def children_url(self): return reverse('webui-collection-children', args=self.idparts)
     def ead_xml_url(self): return reverse('webui-collection-ead-xml', args=self.idparts)
     def edit_url(self): return reverse('webui-collection-edit', args=self.idparts)
-    def entities_url(self): return reverse('webui-collection-entities', args=self.idparts)
     def export_entities_url(self): return reverse('webui-collection-export-entities', args=self.idparts)
     def export_files_url(self): return reverse('webui-collection-export-files', args=self.idparts)
     def git_status_url(self): return reverse('webui-collection-git-status', args=self.idparts)
@@ -451,6 +464,15 @@ class Entity( DDREntity ):
         """
         return Entity.from_identifier(Identifier.from_request(request))
     
+    def collection(self):
+        return Collection.from_identifier(self.identifier.collection())
+    
+#    def parent(self):
+#        return Collection.from_identifier(self.identifier.parent())
+
+#    def children(self, role=None, quiet=None):
+#        return []
+    
     def absolute_url( self ):
         return reverse('webui-entity', args=self.idparts)
     
@@ -461,6 +483,11 @@ class Entity( DDREntity ):
     def edit_json_url(self): return reverse('webui-entity-edit-json', args=self.idparts)
     def json_url(self): return reverse('webui-entity-json', args=self.idparts)
     def mets_xml_url(self): return reverse('webui-entity-mets-xml', args=self.idparts)
+    
+    def children_url(self, role):
+        args = [a for a in self.idparts]
+        args.append(role)
+        return reverse('webui-entity-children', args=args)
     
     def fs_url( self ):
         """URL of the entity directory browsable via Nginx.
@@ -482,12 +509,6 @@ class Entity( DDREntity ):
             args.append(unlock_task_id)
             return reverse('webui-entity-unlock', args=args)
         return None
-    
-    def collection(self):
-        return Collection.from_identifier(self.identifier.collection())
-    
-    def parent(self):
-        return Collection.from_identifier(self.identifier.parent())
     
     def model_def_commits(self):
         """Assesses document's relation to model defs in 'ddr' repo.
@@ -661,6 +682,12 @@ class DDRFile( File ):
         """
         return DDRFile.from_identifier(Identifier.from_request(request))
     
+    def collection(self):
+        return Collection.from_identifier(self.identifier.collection())
+    
+    def parent(self):
+        return Entity.from_identifier(self.identifier.parent())
+    
     def absolute_url( self ):
         return reverse('webui-file', args=self.idparts)
 
@@ -693,12 +720,6 @@ class DDRFile( File ):
             stub = os.path.join(self.entity_files_path.replace(settings.MEDIA_ROOT,''), self.path_rel)
             return '%s%s' % (settings.MEDIA_URL, stub)
         return None
-    
-    def collection(self):
-        return Collection.from_identifier(self.identifier.collection())
-    
-    def parent(self):
-        return Entity.from_identifier(self.identifier.parent())
     
     def model_def_commits(self):
         """Assesses document's relation to model defs in 'ddr' repo.

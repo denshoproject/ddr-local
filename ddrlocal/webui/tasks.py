@@ -222,6 +222,7 @@ class FileAddDebugTask(Task):
     
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
         entity = args[2]
+        collection = entity.collection()
         log = entity.addfile_logger()
         log.ok('DDRTask.AFTER_RETURN')
         log.ok('task_id: %s' % task_id)
@@ -234,8 +235,6 @@ class FileAddDebugTask(Task):
         else:
             log.not_ok(lockstatus)
         log.ok( 'END task_id %s\n' % task_id)
-        collection_path = Collection.collection_path(None,entity.repo,entity.org,entity.cid)
-        collection = Collection.from_json(collection_path)
         collection.cache_delete()
         gitstatus.update(settings.MEDIA_BASE, collection_path)
         gitstatus.unlock(settings.MEDIA_BASE, 'entity_add_file')
