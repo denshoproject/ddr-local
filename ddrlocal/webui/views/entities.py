@@ -212,6 +212,7 @@ def detail( request, repo, org, cid, eid ):
          'eid': entity.eid,
          'collection': collection,
          'entity': entity,
+         'children_urls': entity.children_urls(),
          'tasks': tasks,
          'entity_unlock_url': entity.unlock_url(entity.locked()),},
         context_instance=RequestContext(request, processors=[])
@@ -239,6 +240,9 @@ def children( request, repo, org, cid, eid, role ):
          'role': role,
          'collection': collection,
          'entity': entity,
+         'children_urls': entity.children_urls(active=role),
+         'browse_url': entity.file_browse_url(role),
+         'batch_url': entity.file_browse_url(role),
          'paginator': paginator,
          'page': page,
          'thispage': thispage,},

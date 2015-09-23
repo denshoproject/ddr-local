@@ -45,6 +45,9 @@ from webui import COLLECTION_STATUS_TIMEOUT
 from webui import COLLECTION_ANNEX_STATUS_TIMEOUT
 from webui.identifier import Identifier
 
+# TODO get roles from somewhere (Identifier?)
+FILE_ROLES = ['master', 'mezzanine',]
+
 
 def repo_models_valid(request):
     """Displays alerts if repo_models are absent or undefined
@@ -488,6 +491,34 @@ class Entity( DDREntity ):
         args = [a for a in self.idparts]
         args.append(role)
         return reverse('webui-entity-children', args=args)
+    
+    def file_batch_url(self, role):
+        args = [a for a in self.idparts]
+        args.append(role)
+        return reverse('webui-file-batch', args=args)
+    
+    def file_browse_url(self, role):
+        args = [a for a in self.idparts]
+        args.append(role)
+        return reverse('webui-file-browse', args=args)
+    
+    def children_urls(self, active=None):
+        return [
+            {'url': self.children_url(role), 'name': role, 'active': role == active}
+            for role in FILE_ROLES
+        ]
+    
+    def file_batch_urls(self, active=None):
+        return [
+            {'url': self.file_batch_url(role), 'name': role, 'active': role == active}
+            for role in FILE_ROLES
+        ]
+    
+    def file_browse_urls(self, active=None):
+        return [
+            {'url': self.file_browse_url(role), 'name': role, 'active': role == active}
+            for role in FILE_ROLES
+        ]
     
     def fs_url( self ):
         """URL of the entity directory browsable via Nginx.

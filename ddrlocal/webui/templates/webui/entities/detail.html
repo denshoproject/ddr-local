@@ -21,8 +21,9 @@
 
       <ul class="nav nav-tabs" id="tabs">
         <li class="active"><a href="#">Object Metadata</a></li>
-        <li><a href="{% url "webui-entity-files" repo org cid eid "master" %}">Master Files</a></li>
-        <li><a href="{% url "webui-entity-files" repo org cid eid "mezzanine" %}">Mezzanine Files</a></li>
+{% for role in children_urls %}
+        <li><a href="{{ role.url }}">{{ role.name|capfirst }} Files</a></li>
+{% endfor %}
       </ul>
 
 
