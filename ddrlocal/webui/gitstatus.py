@@ -48,7 +48,7 @@ from DDR.storage import is_writable
 from ddrlocal.models import DDRLocalCollection as Collection
 from webui import COLLECTION_STATUS_TIMEOUT
 from webui import gitolite
-from webui.models import Identifier
+from webui.identifier import Identifier
 
 
 def log(msg):

@@ -19,9 +19,9 @@ from elasticsearch import Elasticsearch
 
 from DDR import docstore, models
 from webui import tasks
-from webui.models import Identifier
 from webui.decorators import search_index
 from webui.forms.search import SearchForm, IndexConfirmForm, DropConfirmForm
+from webui.identifier import Identifier
 
 BAD_CHARS = ('{', '}', '[', ']')
 

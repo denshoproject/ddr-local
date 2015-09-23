@@ -23,6 +23,7 @@ from webui import GITOLITE_INFO_CACHE_KEY
 from webui import gitolite
 from webui import gitstatus
 from webui.models import Collection, Entity, DDRFile, post_json
+from webui.identifier import Identifier
 
 from DDR import docstore
 from DDR import dvcs

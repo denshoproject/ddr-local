@@ -40,7 +40,7 @@ from webui.forms import DDRForm
 from webui.forms.collections import NewCollectionForm, UpdateForm, SyncConfirmForm
 from webui import gitolite
 from webui.models import Collection, COLLECTION_STATUS_CACHE_KEY, COLLECTION_STATUS_TIMEOUT
-from webui.models import Identifier
+from webui.identifier import Identifier
 from webui.tasks import collection_new_expert, collection_edit, collection_sync
 from webui.tasks import csv_export_model, export_csv_path, gitstatus_update
 from webui.views.decorators import login_required

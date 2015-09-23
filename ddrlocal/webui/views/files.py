@@ -33,7 +33,7 @@ from webui.forms import DDRForm
 from webui.forms.files import NewFileDDRForm, NewAccessFileForm, DeleteFileForm
 from webui.forms.files import shared_folder_files
 from webui.models import Collection, Entity, DDRFile
-from webui.models import Identifier
+from webui.identifier import Identifier
 from webui.tasks import entity_add_file, entity_add_access
 from webui.tasks import entity_file_edit, entity_delete_file
 from webui.tasks import gitstatus_update

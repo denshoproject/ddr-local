@@ -37,10 +37,10 @@ from webui import WEBUI_MESSAGES
 from webui.decorators import ddrview
 from webui.forms import DDRForm
 from webui.forms.entities import NewEntityForm, JSONForm, UpdateForm, DeleteEntityForm, RmDuplicatesForm
+from webui.identifier import Identifier
 from webui.mets import NAMESPACES, NAMESPACES_XPATH
 from webui.mets import METS_FIELDS, MetsForm
 from webui.models import Collection, Entity
-from webui.models import Identifier
 from webui.tasks import collection_entity_newexpert, collection_entity_edit, collection_delete_entity
 from webui.tasks import gitstatus_update
 from webui.views.decorators import login_required
