@@ -58,9 +58,8 @@ def merge( request, repo, org, cid ):
     Decides how to merge the various files in a merge conflict.
     Sends user around to different editors and things until everything is merged.
     """
-    collection_path = Collection.collection_path(request,repo,org,cid)
-    repository = dvcs.repository(collection_path)
-    collection = Collection.from_json(collection_path)
+    collection = Collection.from_request(request)
+    repository = dvcs.repository(collection.path_abs)
     task_id = collection.locked()
     status = commands.status(collection_path)
     ahead = collection.repo_ahead()

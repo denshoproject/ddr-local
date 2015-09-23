@@ -308,7 +308,7 @@ class CollectionNewExpertTask(Task):
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
         logger.debug('CollectionNewExpertTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
         collection_path = args[0]
-        collection = Collection.from_json(collection_path)
+        collection = Collection.from_identifier(Identifier.from_path(collection_path))
         lockstatus = collection.unlock(task_id)
         gitstatus.update(settings.MEDIA_BASE, collection_path)
         gitstatus.unlock(settings.MEDIA_BASE, 'collection_newexpert')
@@ -364,7 +364,7 @@ class CollectionEditTask(Task):
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
         logger.debug('CollectionEditTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
         collection_path = args[0]
-        collection = Collection.from_json(collection_path)
+        collection = Collection.from_identifier(Identifier.from_path(collection_path))
         lockstatus = collection.unlock(task_id)
         gitstatus.update(settings.MEDIA_BASE, collection_path)
         gitstatus.unlock(settings.MEDIA_BASE, 'collection_edit')
@@ -380,7 +380,7 @@ def collection_save(collection_path, updated_files, git_name, git_mail):
     logger.debug('collection_save(%s,%s,%s,%s)' % (
         git_name, git_mail, collection_path, updated_files))
     
-    collection = Collection.from_json(collection_path)
+    collection = Collection.from_identifier(Identifier.from_path(collection_path))
     
     gitstatus.lock(settings.MEDIA_BASE, 'collection_edit')
     exit,status = collection.save(updated_files, git_name, git_mail)
@@ -433,7 +433,7 @@ class EntityNewExpertTask(Task):
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
         logger.debug('EntityNewExpertTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
         collection_path = args[0]
-        collection = Collection.from_json(collection_path)
+        collection = Collection.from_identifier(Identifier.from_path(collection_path))
         lockstatus = collection.unlock(task_id)
         gitstatus.update(settings.MEDIA_BASE, collection_path)
         gitstatus.unlock(settings.MEDIA_BASE, 'entity_newexpert')
@@ -450,7 +450,7 @@ def entity_newexpert(collection_path, entity_id, git_name, git_mail):
     logger.debug('collection_entity_newexpert(%s,%s,%s,%s)' % (
         collection_path, entity_id, git_name, git_mail))
     
-    collection = Collection.from_json(collection_path)
+    collection = Collection.from_identifier(Identifier.from_path(collection_path))
     
     gitstatus.lock(settings.MEDIA_BASE, 'entity_newexpert')
     entity = Entity.create(collection, entity_id, git_name, git_mail)
@@ -493,7 +493,7 @@ class FileEditTask(Task):
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
         logger.debug('FileEditTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
         collection_path = args[0]
-        collection = Collection.from_json(collection_path)
+        collection = Collection.from_identifier(Identifier.from_path(collection_path))
         lockstatus = collection.unlock(task_id)
         gitstatus.update(settings.MEDIA_BASE, collection_path)
         gitstatus.unlock(settings.MEDIA_BASE, 'file_edit')
@@ -508,14 +508,11 @@ def file_edit(collection_path, file_id, git_name, git_mail):
     @param git_mail: Email of git committer.
     """
     logger.debug('file_edit(%s,%s,%s,%s)' % (git_name, git_mail, collection_path, file_id))
-    
-    identifier = Identifier.from_id(file_id)
-    file_ = File.from_identifier(identifier)
-    
+    fidentifier = Identifier.from_id(file_id)
+    file_ = DDRFile.from_identifier(fidentifier)
     gitstatus.lock(settings.MEDIA_BASE, 'file_edit')
     exit,status = file_.save(git_name, git_mail)
     gitstatus_update.apply_async((collection_path,), countdown=2)
-    
     return status,collection_path,file_id
 
 # ----------------------------------------------------------------------
@@ -562,7 +559,7 @@ class EntityEditTask(Task):
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
         logger.debug('EntityEditTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
         collection_path = args[0]
-        collection = Collection.from_json(collection_path)
+        collection = Collection.from_identifier(Identifier.from_path(collection_path))
         lockstatus = collection.unlock(task_id)
         gitstatus.update(settings.MEDIA_BASE, collection_path)
         gitstatus.unlock(settings.MEDIA_BASE, 'entity_edit')
@@ -579,16 +576,11 @@ def entity_edit(collection_path, entity_id, updated_files, git_name, git_mail, a
     """
     logger.debug('collection_entity_edit(%s,%s,%s,%s,%s)' % (
         git_name, git_mail, collection_path, entity_id, agent))
-    
-    collection = Collection.from_json(collection_path)
-    repo,org,cid,eid = entity_id.split('-')
-    entity_path = Entity.entity_path(None,repo,org,cid,eid)
-    entity = Entity.from_json(entity_path)
-    
+    collection = Collection.from_identifier(Identifier.from_path(collection_path))
+    entity = Entity.from_identifier(Identifier.from_id(entity_id))
     gitstatus.lock(settings.MEDIA_BASE, 'entity_edit')
     exit,status = entity.save_part2(updated_files, collection, git_name, git_mail)
     gitstatus_update.apply_async((collection.path,), countdown=2)
-
     return status,collection_path,entity_id
 
 # ------------------------------------------------------------------------
@@ -634,7 +626,7 @@ class DeleteEntityTask(Task):
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
         logger.debug('DeleteEntityTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
         collection_path = args[2]
-        collection = Collection.from_json(collection_path)
+        collection = Collection.from_identifier(Identifier.from_path(collection_path))
         lockstatus = collection.unlock(task_id)
         gitstatus.update(settings.MEDIA_BASE, collection_path)
         gitstatus.unlock(settings.MEDIA_BASE, 'delete_entity')
@@ -699,7 +691,7 @@ class DeleteFileTask(Task):
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
         logger.debug('DeleteFileTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
         collection_path = args[2]
-        collection = Collection.from_json(collection_path)
+        collection = Collection.from_identifier(Identifier.from_path(collection_path))
         lockstatus = collection.unlock(task_id)
         gitstatus.update(settings.MEDIA_BASE, collection_path)
         gitstatus.unlock(settings.MEDIA_BASE, 'delete_file')
@@ -718,9 +710,8 @@ def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, 
     gitstatus.lock(settings.MEDIA_BASE, 'delete_file')
     # TODO rm_files list should come from the File model
     file_id = os.path.splitext(file_basename)[0]
-    repo,org,cid,eid,role,sha1 = file_id.split('-')
-    entity = Entity.from_json(Entity.entity_path(None,repo,org,cid,eid))
-    file_ = entity.file(repo, org, cid, eid, role, sha1)
+    file_ = DDRFile.from_identifier(Identifier.from_id(file_id))
+    entity = Entity.from_identifier(Identifier.from_id(entity_id))
     rm_files = file_.files_rel(collection_path)
     logger.debug('rm_files: %s' % rm_files)
     # remove file from entity.json
@@ -750,7 +741,7 @@ class CollectionSyncDebugTask(Task):
     
     def after_return(self, status, retval, task_id, args, kwargs, cinfo):
         collection_path = args[2]
-        collection = Collection.from_json(collection_path)
+        collection = Collection.from_identifier(Identifier.from_path(collection_path))
         # NOTE: collection is locked immediately after collection_sync task
         #       starts in webui.views.collections.sync
         collection.unlock(task_id)
@@ -770,7 +761,7 @@ def collection_sync( git_name, git_mail, collection_path ):
     gitstatus.lock(settings.MEDIA_BASE, 'collection_sync')
     exit,status = sync(git_name, git_mail, collection_path)
     # update search index
-    collection = Collection.from_json(collection_path)
+    collection = Collection.from_identifier(Identifier.from_path(collection_path))
     collection.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
     return collection_path
 

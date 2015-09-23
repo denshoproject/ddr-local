@@ -554,7 +554,8 @@ class Entity( DDREntity ):
         self._file_objects = []
         for f in self.files:
             if f and f.get('path_rel',None):
-                identifier = Identifier.from_id(os.path.splitext(f['path_rel'])[0])
+                fid = os.path.splitext(f['path_rel'])[0]
+                identifier = Identifier.from_id(fid)
                 file_ = DDRFile.from_identifier(identifier)
                 self._file_objects.append(file_)
         # keep track of how many times this gets loaded...

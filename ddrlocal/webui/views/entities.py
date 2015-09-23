@@ -340,7 +340,7 @@ def new( request, repo, org, cid ):
                                          agent=settings.AGENT)
     
     # load Entity object, inherit values from parent, write back to file
-    entity = Entity.from_json(entity_path)
+    entity = Entity.from_identifier(eidentifier)
     entity.inherit(collection)
     entity.write_json()
     updated_files = [entity.json_path]
