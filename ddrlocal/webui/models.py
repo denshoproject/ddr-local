@@ -199,25 +199,28 @@ class Collection( DDRCollection ):
         return "<webui.models.Collection %s>" % (self.id)
     
     @staticmethod
-    def from_json(path_abs):
-        """
-        @param path_abs: Absolute path, without .json file.
+    def from_json(path_abs, identifier=None):
+        """Instantiates a Collection object from specified collection.json.
+        
+        @param path_abs: Absolute path to .json file.
+        @param identifier: [optional] Identifier
         @returns: Collection
         """
-        return from_json(Collection, path_abs)
+        return from_json(Collection, path_abs, identifier)
     
     @staticmethod
     def from_identifier(identifier):
-        """Instantiates a Collection object, loads data from collection.json.
+        """Instantiates a Collection object using data from Identidier.
         
         @param identifier: Identifier
         @returns: Collection
         """
-        return from_json(Collection, identifier.path_abs('json'))
+        return from_json(Collection, identifier.path_abs('json'), identifier)
     
     @staticmethod
     def from_request(request):
-        """
+        """Instantiates a Collection object using django.http.HttpRequest.
+        
         @param request: Request
         @returns: Collection
         """
@@ -440,29 +443,32 @@ class Entity( DDREntity ):
         return "<webui.models.Entity %s>" % (self.id)
     
     @staticmethod
+    def from_json(path_abs, identifier=None):
+        """Instantiates an Entity object from specified entity.json.
+        
+        @param path_abs: Absolute path to .json file.
+        @param identifier: [optional] Identifier
+        @returns: Entity
+        """
+        return from_json(Entity, path_abs, identifier)
+    
+    @staticmethod
     def from_identifier(identifier):
         """Instantiates an Entity object, loads data from entity.json.
         
         @param identifier: Identifier
         @returns: Entity
         """
-        return from_json(Entity, identifier.path_abs('json'))
+        return from_json(Entity, identifier.path_abs('json'), identifier)
     
     @staticmethod
     def from_request(request):
-        """
+        """Instantiates an Entity object using django.http.HttpRequest.
+        
         @param request: Request
         @returns: Entity
         """
         return Entity.from_identifier(Identifier.from_request(request))
-    
-    @staticmethod
-    def from_json(path_abs):
-        """
-        @param path_abs: Absolute path, without .json file.
-        @returns: Entity
-        """
-        return from_json(Entity, path_abs)
     
     def absolute_url( self ):
         return reverse('webui-entity', args=self.idparts)
@@ -648,19 +654,27 @@ class DDRFile( File ):
         return "<webui.models.DDRFile %s>" % (self.id)
     
     @staticmethod
+    def from_json(path_abs, identifier=None):
+        """Instantiates a File object from specified *.json.
+        
+        @param path_abs: Absolute path to .json file.
+        @returns: DDRFile
+        """
+        return from_json(DDRFile, path_abs, identifier)
+    
+    @staticmethod
     def from_identifier(identifier):
         """Instantiates a File object, loads data from FILE.json.
         
         @param identifier: Identifier
         @returns: File
         """
-        file_ = DDRFile(path_abs=identifier.path_abs())
-        file_.load_json(read_json(file_.json_path))
-        return file_
+        return DDRFile.from_json(identifier.path_abs('json'), identifier)
     
     @staticmethod
     def from_request(request):
-        """
+        """Instantiates a DDRFile object using django.http.HttpRequest.
+        
         @param request: Request
         @returns: DDRFile
         """
