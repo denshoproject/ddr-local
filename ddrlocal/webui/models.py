@@ -177,11 +177,6 @@ def post_json(hosts, index, json_path):
 
 class Collection( DDRCollection ):
     
-    def __repr__(self):
-        """Returns string representation of object.
-        """
-        return "<webui.models.Collection %s>" % (self.id)
-    
     @staticmethod
     def from_json(path_abs, identifier=None):
         """Instantiates a Collection object from specified collection.json.
@@ -434,11 +429,6 @@ class Collection( DDRCollection ):
 
 class Entity( DDREntity ):
     
-    def __repr__(self):
-        """Returns string representation of object.
-        """
-        return "<webui.models.Entity %s>" % (self.id)
-    
     @staticmethod
     def from_json(path_abs, identifier=None):
         """Instantiates an Entity object from specified entity.json.
@@ -680,11 +670,6 @@ class Entity( DDREntity ):
 
 
 class DDRFile( File ):
-    
-    def __repr__(self):
-        """Returns string representation of object.
-        """
-        return "<webui.models.DDRFile %s>" % (self.id)
     
     @staticmethod
     def from_json(path_abs, identifier=None):
