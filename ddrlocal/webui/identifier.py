@@ -45,16 +45,17 @@ class Identifier(DDRIdentifier):
         """
         lineage = self.lineage()[:-2]  # start with collection
         cid = lineage.pop()
-        def make_crumb(i):
-            return {
+        crumb = {
+            'url': reverse('webui-%s' % cid.model, kwargs=cid.parts),
+            'label': cid.id,
+        }
+        crumbs = [crumb]
+        lineage.reverse()
+        for i in lineage:
+            crumb = {
                 'url': reverse('webui-%s' % i.model, kwargs=i.parts),
                 'label': i.parts.values()[-1],
             }
-        crumbs = [
-            make_crumb(cid)
-        ]
-        lineage.reverse()
-        for i in lineage:
-            crumbs.append(make_crumb(i))
+            crumbs.append(crumb)
         return crumbs
 

@@ -1,0 +1,3 @@
+{% for crumb in breadcrumbs %}
+<li>{% if crumb.url %}<a href="{{ crumb.url }}">{% endif %}{{ crumb.label }}</a></li>
+{% endfor %}

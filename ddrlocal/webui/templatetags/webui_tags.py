@@ -21,6 +21,15 @@ def file( obj ):
     t = template.loader.get_template('webui/files/list-object.html')
     return t.render(template.Context({'object':obj}))
 
+def breadcrumbs( obj ):
+    identifier = obj.identifier
+    breadcrumbs = identifier.breadcrumbs()
+    t = template.loader.get_template('webui/breadcrumbs.html')
+    return t.render(template.Context({
+        'breadcrumbs': breadcrumbs,
+    }))
+
 register.simple_tag(collection)
 register.simple_tag(entity)
 register.simple_tag(file)
+register.simple_tag(breadcrumbs)
