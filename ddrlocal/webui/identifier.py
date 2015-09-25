@@ -1,6 +1,7 @@
 import os
 
 from django.conf import settings
+from django.core.urlresolvers import reverse
 from django.http import HttpRequest
 
 from DDR.models.identifier import Identifier as DDRIdentifier
@@ -29,3 +30,31 @@ class Identifier(DDRIdentifier):
     
     def __repr__(self):
         return "<webui.models.Identifier %s:%s>" % (self.model, self.id)
+
+    def breadcrumbs(self):
+        """Returns list of URLs,titles for printing object breadcrumbs.
+        
+        >>> i = Identifier(id='ddr-test-123-456-master-acbde12345')
+        >>> i.breadcrumbs()
+        [
+          {'url:'/ui/ddr-testing-300/', 'label':'ddr-testing-300'},
+          {'url:'/ui/ddr-testing-300-1/', 'label':'1'},
+          {'url:'/ui/ddr-testing-300-1/master/', 'label':'master'},
+          {'url:'', 'label':'37409ecadb'},
+        ]
+        """
+        lineage = self.lineage()[:-2]  # start with collection
+        cid = lineage.pop()
+        def make_crumb(i):
+            return {
+                'url': reverse('webui-%s' % i.model, kwargs=i.parts),
+                'label': i.parts.values()[-1],
+            }
+        crumbs = [
+            make_crumb(cid)
+        ]
+        lineage.reverse()
+        for i in lineage:
+            crumbs.append(make_crumb(i))
+        return crumbs
+
