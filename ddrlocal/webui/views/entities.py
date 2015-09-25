@@ -325,7 +325,7 @@ def new( request, repo, org, cid ):
         messages.error(request, e)
         return HttpResponseRedirect(collection.absolute_url())
     new_entity_id = entity_ids[0]
-    eidentifier = Identifier.from_id(new_entity_id)
+    eidentifier = Identifier(id=new_entity_id)
     
     # create new entity
     entity_path = eidentifier.path_abs()

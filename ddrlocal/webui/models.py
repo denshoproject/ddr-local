@@ -208,7 +208,7 @@ class Collection( DDRCollection ):
         @param request: Request
         @returns: Collection
         """
-        return Collection.from_identifier(Identifier.from_request(request))
+        return Collection.from_identifier(Identifier(request))
 
     def parent(self):
         return None
@@ -219,7 +219,7 @@ class Collection( DDRCollection ):
         """
         objects = super(Collection, self).children(quick=quick)
         for o in objects:
-            oid = Identifier.from_id(o.id)
+            oid = Identifier(id=o.id)
             o.absolute_url = reverse('webui-entity', args=oid.parts.values())
         return objects
     
@@ -465,7 +465,7 @@ class Entity( DDREntity ):
         @param request: Request
         @returns: Entity
         """
-        return Entity.from_identifier(Identifier.from_request(request))
+        return Entity.from_identifier(Identifier(request))
     
     def collection(self):
         return Collection.from_identifier(self.identifier.collection())
@@ -594,7 +594,7 @@ class Entity( DDREntity ):
         for f in self.files:
             if f and f.get('path_rel',None):
                 fid = os.path.splitext(f['path_rel'])[0]
-                identifier = Identifier.from_id(fid)
+                identifier = Identifier(id=fid)
                 file_ = DDRFile.from_identifier(identifier)
                 self._file_objects.append(file_)
         # keep track of how many times this gets loaded...
@@ -604,7 +604,7 @@ class Entity( DDREntity ):
     def create(collection, entity_id, git_name, git_mail, agent=settings.AGENT):
         """create new entity given an entity ID
         """
-        entity_path = Identifier.from_id(entity_id).path_abs()
+        entity_path = Identifier(id=entity_id).path_abs()
         
         # write entity.json template to entity location and commit
         write_json(Entity(entity_path).dump_json(template=True),
@@ -711,7 +711,7 @@ class DDRFile( File ):
         @param request: Request
         @returns: DDRFile
         """
-        return DDRFile.from_identifier(Identifier.from_request(request))
+        return DDRFile.from_identifier(Identifier(request))
     
     def collection(self):
         return Collection.from_identifier(self.identifier.collection())

@@ -37,7 +37,7 @@ def kosher( query ):
 def make_object_url(object_id):
     """Takes a list of object ID parts and returns URL for that object.
     """
-    i = Identifier.from_id(object_id)
+    i = Identifier(id=object_id)
     if i.model == 'file': return reverse('webui-file', args=i.parts)
     elif i.model == 'entity': return reverse('webui-entity', args=i.parts)
     elif i.model == 'collection': return reverse('webui-collection', args=i.parts)

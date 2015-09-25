@@ -69,7 +69,7 @@ def collections( request ):
     collections = []
     collection_status_urls = []
     for object_id in gitolite.get_repos_orgs():
-        identifier = Identifier.from_request(request)
+        identifier = Identifier(request)
         # TODO Identifier: Organization object instead of repo and org
         repo,org = identifier.parts.values()
         collection_paths = commands.collections_local(
@@ -78,7 +78,7 @@ def collections( request ):
         colls = []
         for collection_path in collection_paths:
             if collection_path:
-                identifier = Identifier.from_path(collection_path)
+                identifier = Identifier(path=collection_path)
                 collection = Collection.from_identifier(identifier)
                 colls.append(collection)
                 gitstatus = collection.gitstatus()
@@ -264,7 +264,7 @@ def new( request, repo, org ):
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_ERR_NO_IDS'])
         messages.error(request, e)
         return HttpResponseRedirect(reverse('webui-collections'))
-    identifier = Identifier.from_id(collection_ids[0], settings.MEDIA_BASE)
+    identifier = Identifier(id=collection_ids[0], base_path=settings.MEDIA_BASE)
     # create the new collection repo
     collection_path = identifier.path_abs()
     # collection.json template
@@ -310,7 +310,7 @@ def newexpert( request, repo, org ):
                 'repo':repo, 'org':org,
                 'cid':str(form.cleaned_data['cid'])
             }
-            identifier = Identifier.from_idparts(idparts)
+            identifier = Identifier(parts=idparts)
             collection_id = identifier.id
             collection_ids = [
                 os.path.basename(cpath)

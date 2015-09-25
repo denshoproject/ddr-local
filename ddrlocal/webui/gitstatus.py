@@ -182,7 +182,7 @@ def sync_status( collection_path, git_status, timestamp, cache_set=False, force=
     @param cache_set: Run git-status if data is not cached
     """
     # IMPORTANT: DO NOT call collection.gitstatus() it will loop
-    collection_id = Identifier.from_path(collection_path)
+    collection_id = Identifier(path=collection_path)
     key = COLLECTION_SYNC_STATUS_CACHE_KEY % collection_id
     data = cache.get(key)
     if force or (not data and cache_set):
@@ -479,7 +479,7 @@ def next_repo( queue, local=False ):
         # choose first collection that is not locked
         for timestamp,cid in collections:
             if datetime.now() > timestamp:
-                collection = Collection.from_identifier(Identifier.from_id(cid))
+                collection = Collection.from_identifier(Identifier(id=cid))
                 if not collection.locked():
                     return collection.path_abs
             if (not next_available) or (timestamp < next_available):
@@ -488,7 +488,7 @@ def next_repo( queue, local=False ):
         # global lock - just take the first collection
         for timestamp,cid in collections:
             if datetime.now() > timestamp:
-                identifier = Identifier.from_id(cid)
+                identifier = Identifier(id=cid)
                 return identifier.path_abs
             if (not next_available) or (timestamp < next_available):
                 next_available = timestamp
