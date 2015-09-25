@@ -29,8 +29,8 @@ class Identifier(DDRIdentifier):
         super(Identifier, self).__init__(*args, **kwargs)
     
     def __repr__(self):
-        return "<webui.models.Identifier %s:%s>" % (self.model, self.id)
-
+        return "<%s.%s %s:%s>" % (self.__module__, self.__class__.__name__, self.model, self.id)
+    
     def breadcrumbs(self):
         """Returns list of URLs,titles for printing object breadcrumbs.
         
