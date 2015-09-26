@@ -19,6 +19,7 @@ from DDR import docstore
 from DDR import dvcs
 from DDR.models import Module
 from DDR.models import read_json, write_json, from_json
+from DDR.models import Stub as DDRStub
 from DDR.models import Collection as DDRCollection
 from DDR.models import Entity as DDREntity
 from DDR.models import File
@@ -174,6 +175,11 @@ def post_json(hosts, index, json_path):
 
 # functions relating to inheritance ------------------------------------
 
+
+class Stub(DDRStub):
+
+    def parent(self, stubs=False):
+        return self.identifier.parent(stubs).object()
 
 class Collection( DDRCollection ):
     

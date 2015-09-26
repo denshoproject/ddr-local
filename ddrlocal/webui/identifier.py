@@ -6,6 +6,15 @@ from django.http import HttpRequest
 
 from DDR.models.identifier import Identifier as DDRIdentifier
 
+MODEL_CLASSES = {
+    'file':         {'module': 'webui.models', 'class':'DDRFile'},
+    'file-role':    {'module': 'webui.models', 'class':'Stub'},
+    'entity':       {'module': 'webui.models', 'class':'Entity'},
+    'collection':   {'module': 'webui.models', 'class':'Collection'},
+    'organization': {'module': 'webui.models', 'class':'Stub'},
+    'repository':   {'module': 'webui.models', 'class':'Stub'},
+}
+
 
 class Identifier(DDRIdentifier):
 
@@ -31,9 +40,15 @@ class Identifier(DDRIdentifier):
     def __repr__(self):
         return "<%s.%s %s:%s>" % (self.__module__, self.__class__.__name__, self.model, self.id)
     
-    def parent(self):
-        if self.parent_id():
-            return Identifier(id=self.parent_id(), base_path=self.basepath)
+    def object_class(self, mappings=MODEL_CLASSES):
+        """Identifier's object class according to mappings.
+        """
+        return super(Identifier, self).object_class(mappings=MODEL_CLASSES)
+    
+    def parent(self, stubs=False):
+        pid = self.parent_id(stubs)
+        if pid:
+            return Identifier(id=pid, base_path=self.basepath)
         return None
     
     def breadcrumbs(self):
@@ -48,7 +63,7 @@ class Identifier(DDRIdentifier):
           {'url:'', 'label':'37409ecadb'},
         ]
         """
-        lineage = self.lineage()[:-2]  # start with collection
+        lineage = self.lineage(stubs=True)[:-2]  # start with collection
         cid = lineage.pop()
         crumb = {
             'url': reverse('webui-%s' % cid.model, kwargs=cid.parts),
