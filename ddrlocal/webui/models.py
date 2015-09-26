@@ -486,7 +486,7 @@ class Entity( DDREntity ):
     def children_url(self, role):
         args = [a for a in self.idparts]
         args.append(role)
-        return reverse('webui-entity-children', args=args)
+        return reverse('webui-file-role', args=args)
     
     def file_batch_url(self, role):
         args = [a for a in self.idparts]
