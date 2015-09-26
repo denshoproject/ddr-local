@@ -116,9 +116,10 @@ def file_json( request, repo, org, cid, eid, role, sha1 ):
 def browse( request, repo, org, cid, eid, role='master' ):
     """Browse for a file in vbox shared folder.
     """
-    file_ = DDRFile.from_request(request)
-    entity = file_.parent()
-    collection = file_.collection()
+    identifier = Identifier(request)
+    file_role = identifier.object()
+    entity = file_role.parent(stubs=True)
+    collection = entity.collection()
     path = request.GET.get('path')
     home = None
     parent = None
@@ -147,13 +148,9 @@ def browse( request, repo, org, cid, eid, role='master' ):
                 listdir.append(attribs)
     return render_to_response(
         'webui/files/browse.html',
-        {'repo': repo,
-         'org': org,
-         'cid': cid,
-         'eid': eid,
-         'collection': collection,
+        {'collection': collection,
          'entity': entity,
-         'role': role,
+         'file_role': file_role,
          'listdir': listdir,
          'parent': parent,
          'home': home,},
