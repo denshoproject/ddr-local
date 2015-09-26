@@ -45,6 +45,9 @@ class Identifier(DDRIdentifier):
         """
         return super(Identifier, self).object_class(mappings=MODEL_CLASSES)
     
+    def object(self, mappings=MODEL_CLASSES):
+        return super(Identifier, self).object_class(mappings).from_identifier(self)
+    
     def parent(self, stubs=False):
         pid = self.parent_id(stubs)
         if pid:
