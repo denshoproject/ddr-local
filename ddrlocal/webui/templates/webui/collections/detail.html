@@ -1,10 +1,10 @@
 {% extends "webui/collections/base.html" %}
-
+{% load webui_tags %}
 
 {% block title %}{{ collection.id }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li class="active">{{ collection.id }}</li>
+{% breadcrumbs collection %}
 {% endblock breadcrumbs %}
 
 

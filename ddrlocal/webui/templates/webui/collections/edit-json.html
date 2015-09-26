@@ -1,11 +1,10 @@
 {% extends "webui/collections/base.html" %}
-
+{% load webui_tags %}
 
 {% block title %}EDIT | {{ collection.title }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{{ collection.absolute_url }}">{{ collection.id }}</a></li>
-<li class="active">Edit</li>
+{% breadcrumbs collection "Edit" %}
 {% endblock breadcrumbs %}
 
 

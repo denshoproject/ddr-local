@@ -1,12 +1,11 @@
 {% extends "webui/entities/base.html" %}
-{% load thumbnail %}
+{% load thumbnail webui_tags %}
 
 
 {% block title %}Delete | {{ entity.id }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{{ entity.absolute_url }}">{{ entity.id }}</a></li>
-<li class="active">Delete</li>
+{% breadcrumbs entity "Delete" %}
 {% endblock breadcrumbs %}
 
 

@@ -1,11 +1,10 @@
 {% extends "webui/entities/base.html" %}
-
+{% load webui_tags %}
 
 {% block title %}addfiles.log | {{ entity.title }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{{ entity.absolute_url }}">{{ entity.eid }}</a></li>
-<li class="active">addfiles.log</li>
+{% breadcrumbs entity "addfiles.log" %}
 {% endblock breadcrumbs %}
 
 
