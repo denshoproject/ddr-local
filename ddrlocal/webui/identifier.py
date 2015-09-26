@@ -31,6 +31,11 @@ class Identifier(DDRIdentifier):
     def __repr__(self):
         return "<%s.%s %s:%s>" % (self.__module__, self.__class__.__name__, self.model, self.id)
     
+    def parent(self):
+        if self.parent_id():
+            return Identifier(id=self.parent_id(), base_path=self.basepath)
+        return None
+    
     def breadcrumbs(self):
         """Returns list of URLs,titles for printing object breadcrumbs.
         
