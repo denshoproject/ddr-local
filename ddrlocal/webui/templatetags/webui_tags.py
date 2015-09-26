@@ -21,9 +21,9 @@ def file( obj ):
     t = template.loader.get_template('webui/files/list-object.html')
     return t.render(template.Context({'object':obj}))
 
-def breadcrumbs( obj ):
+def breadcrumbs(obj, endpoint=''):
     identifier = obj.identifier
-    breadcrumbs = identifier.breadcrumbs()
+    breadcrumbs = identifier.breadcrumbs(endpoint)
     t = template.loader.get_template('webui/breadcrumbs.html')
     return t.render(template.Context({
         'breadcrumbs': breadcrumbs,

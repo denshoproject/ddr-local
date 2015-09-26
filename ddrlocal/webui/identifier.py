@@ -54,7 +54,7 @@ class Identifier(DDRIdentifier):
             return Identifier(id=pid, base_path=self.basepath)
         return None
     
-    def breadcrumbs(self):
+    def breadcrumbs(self, endpoint=''):
         """Returns list of URLs,titles for printing object breadcrumbs.
         
         >>> i = Identifier(id='ddr-test-123-456-master-acbde12345')
@@ -80,5 +80,12 @@ class Identifier(DDRIdentifier):
                 'label': i.parts.values()[-1],
             }
             crumbs.append(crumb)
+        if endpoint:
+            crumb = {
+                'url': '',
+                'label': endpoint,
+            }
+            crumbs.append(crumb)
+        # endpoint is never linked
+        crumbs[-1]['url'] = ''
         return crumbs
-
