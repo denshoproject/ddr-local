@@ -370,7 +370,7 @@ def edit( request, repo, org, cid ):
             
             collection.form_post(form)
             collection.write_json()
-            collection.dump_ead()
+            collection.write_ead()
             updated_files = [collection.json_path, collection.ead_path,]
             
             # if inheritable fields selected, propagate changes to child objects

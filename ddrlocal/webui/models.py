@@ -644,7 +644,7 @@ class Entity( DDREntity ):
         self.form_post(form)
         # write
         self.write_json()
-        self.dump_mets()
+        self.write_mets()
         updated_files = [self.json_path, self.mets_path,]
         inheritables = self.selected_inheritables(form.cleaned_data)
         modified_ids,modified_files = self.update_inheritables(inheritables, form.cleaned_data)

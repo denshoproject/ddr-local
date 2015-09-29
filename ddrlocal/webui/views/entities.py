@@ -649,7 +649,7 @@ def files_dedupe( request, repo, org, cid, eid ):
             entity.rm_file_duplicates()
             # update metadata files
             entity.write_json()
-            entity.dump_mets()
+            entity.write_mets()
             updated_files = [entity.json_path, entity.mets_path,]
             success_msg = WEBUI_MESSAGES['VIEWS_ENT_UPDATED']
             exit,status = commands.entity_update(git_name, git_mail,
