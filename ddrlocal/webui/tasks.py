@@ -526,10 +526,10 @@ TASK_STATUS_MESSAGES['webui-entity-edit'] = {
     #'REVOKED': '',
 }
 
-def collection_entity_edit(request, collection, entity, updated_files, git_name, git_mail, agent):
+def collection_entity_edit(request, collection, entity, updated_files, form_data, git_name, git_mail, agent):
     # start tasks
     result = entity_edit.apply_async(
-        (collection.path, entity.id, updated_files, git_name, git_mail, agent),
+        (collection.path, entity.id, updated_files, form_data, git_name, git_mail, agent),
         countdown=2)
     # lock collection
     lockstatus = collection.lock(result.task_id)
@@ -565,7 +565,7 @@ class EntityEditTask(Task):
         gitstatus.unlock(settings.MEDIA_BASE, 'entity_edit')
 
 @task(base=EntityEditTask, name='webui-entity-edit')
-def entity_edit(collection_path, entity_id, updated_files, git_name, git_mail, agent=''):
+def entity_edit(collection_path, entity_id, updated_files, form_data, git_name, git_mail, agent=''):
     """The time-consuming parts of entity-edit.
     
     @param collection_path: str Absolute path to collection
@@ -579,7 +579,7 @@ def entity_edit(collection_path, entity_id, updated_files, git_name, git_mail, a
     collection = Collection.from_identifier(Identifier(path=collection_path))
     entity = Entity.from_identifier(Identifier(id=entity_id))
     gitstatus.lock(settings.MEDIA_BASE, 'entity_edit')
-    exit,status = entity.save_part2(updated_files, collection, git_name, git_mail)
+    exit,status = entity.save_part2(collection, updated_files, form_data, git_name, git_mail)
     gitstatus_update.apply_async((collection.path,), countdown=2)
     return status,collection_path,entity_id
 

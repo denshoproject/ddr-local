@@ -630,29 +630,8 @@ class Entity( DDREntity ):
         docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
         
         return entity
-        
-    def save_part1( self, form ):
-        """Save entity part 1: the fast parts
-        
-        Write changes to disk; propagate inheritable values to child objects.
-        These steps are relatively quick, can be done during request-response.
-        
-        @param form: Django form object
-        @returns: list of paths
-        """
-        # run module_functions on raw form data
-        self.form_post(form)
-        # write
-        self.write_json()
-        self.write_mets()
-        updated_files = [self.json_path, self.mets_path,]
-        inheritables = self.selected_inheritables(form.cleaned_data)
-        modified_ids,modified_files = self.update_inheritables(inheritables, form.cleaned_data)
-        if modified_files:
-            updated_files = updated_files + modified_files
-        return updated_files
     
-    def save_part2( self, updated_files, collection, git_name, git_mail ):
+    def save_part2( self, collection, updated_files, form_data, git_name, git_mail ):
         """Save entity part 2: the slow parts
         
         Commit files, delete cache, update search index.
@@ -663,11 +642,17 @@ class Entity( DDREntity ):
         @param git_name: str
         @param git_mail: str
         """
+        inheritables = self.selected_inheritables(form_data)
+        modified_ids,modified_files = self.update_inheritables(inheritables, form_data)
+        if modified_files:
+            updated_files = updated_files + modified_files
+        
         exit,status = commands.entity_update(
             git_name, git_mail,
             collection.path, self.id,
             updated_files,
             agent=settings.AGENT)
+        
         collection.cache_delete()
         with open(self.json_path, 'r') as f:
             document = json.loads(f.read())
@@ -801,5 +786,4 @@ class DDRFile( File ):
         with open(self.json_path, 'r') as f:
             document = json.loads(f.read())
         docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
-        
         return exit,status
