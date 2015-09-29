@@ -96,7 +96,10 @@ def model_def_fields(document, module):
     @param document
     @param module
     """
-    added,removed = super(module, document).model_def_fields()
+    try:
+        added,removed = super(module, document).model_def_fields()
+    except ValueError:
+        return
     # 'File.path_rel' is created when instantiating Files,
     # is not part of model definitions.
     def rm_path_rel(fields):
