@@ -615,7 +615,7 @@ class Entity( DDREntity ):
         # load new entity, inherit values from parent, write and commit
         entity = Entity.from_json(entity_path)
         entity.inherit(collection)
-        entity.dump_json()
+        entity.write_json()
         updated_files = [entity.json_path]
         exit,status = commands.entity_update(
             git_name, git_mail,
@@ -643,7 +643,7 @@ class Entity( DDREntity ):
         # run module_functions on raw form data
         self.form_post(form)
         # write
-        self.dump_json()
+        self.write_json()
         self.dump_mets()
         updated_files = [self.json_path, self.mets_path,]
         inheritables = self.selected_inheritables(form.cleaned_data)
