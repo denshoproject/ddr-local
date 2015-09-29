@@ -4,7 +4,7 @@ from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.http import HttpRequest
 
-from DDR.models.identifier import Identifier as DDRIdentifier
+from DDR.identifier import Identifier as DDRIdentifier
 
 MODEL_CLASSES = {
     'file':         {'module': 'webui.models', 'class':'DDRFile'},
