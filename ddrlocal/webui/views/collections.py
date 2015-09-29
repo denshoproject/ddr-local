@@ -104,10 +104,7 @@ def detail( request, repo, org, cid ):
     alert_if_conflicted(request, collection)
     return render_to_response(
         'webui/collections/detail.html',
-        {'repo': repo,
-         'org': org,
-         'cid': cid,
-         'collection': collection,
+        {'collection': collection,
          'collection_unlock_url': collection.unlock_url(collection.locked()),},
         context_instance=RequestContext(request, processors=[])
     )
@@ -123,10 +120,7 @@ def children( request, repo, org, cid ):
     page = paginator.page(thispage)
     return render_to_response(
         'webui/collections/entities.html',
-        {'repo': repo,
-         'org': org,
-         'cid': cid,
-         'collection': collection,
+        {'collection': collection,
          'paginator': paginator,
          'page': page,
          'thispage': thispage,},
@@ -139,10 +133,7 @@ def changelog( request, repo, org, cid ):
     alert_if_conflicted(request, collection)
     return render_to_response(
         'webui/collections/changelog.html',
-        {'repo': repo,
-         'org': org,
-         'cid': cid,
-         'collection': collection,},
+        {'collection': collection,},
         context_instance=RequestContext(request, processors=[])
     )
 
@@ -173,10 +164,7 @@ def git_status( request, repo, org, cid ):
     remotes = dvcs.remotes(collection.path)
     return render_to_response(
         'webui/collections/git-status.html',
-        {'repo': repo,
-         'org': org,
-         'cid': cid,
-         'collection': collection,
+        {'collection': collection,
          'status': gitstatus['status'],
          'astatus': gitstatus['annex_status'],
          'timestamp': gitstatus['timestamp'],
@@ -231,10 +219,7 @@ def sync( request, repo, org, cid ):
         form = SyncConfirmForm()
     return render_to_response(
         'webui/collections/sync-confirm.html',
-        {'repo': collection.repo,
-         'org': collection.org,
-         'cid': collection.cid,
-         'collection': collection,
+        {'collection': collection,
          'form': form,},
         context_instance=RequestContext(request, processors=[])
     )
@@ -339,9 +324,7 @@ def newexpert( request, repo, org ):
         form = NewCollectionForm(data)
     return render_to_response(
         'webui/collections/new.html',
-        {'repo': repo,
-         'org': org,
-         'form': form,
+        {'form': form,
          },
         context_instance=RequestContext(request, processors=[])
     )
@@ -388,10 +371,7 @@ def edit( request, repo, org, cid ):
         form = DDRForm(collection.form_prep(), fields=collectionmodule.FIELDS)
     return render_to_response(
         'webui/collections/edit-json.html',
-        {'repo': repo,
-         'org': org,
-         'cid': cid,
-         'collection': collection,
+        {'collection': collection,
          'form': form,
          },
         context_instance=RequestContext(request, processors=[])

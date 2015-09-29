@@ -206,11 +206,7 @@ def detail( request, repo, org, cid, eid ):
     tasks = request.session.get('celery-tasks', [])
     return render_to_response(
         'webui/entities/detail.html',
-        {'repo': entity.repo,
-         'org': entity.org,
-         'cid': entity.cid,
-         'eid': entity.eid,
-         'collection': collection,
+        {'collection': collection,
          'entity': entity,
          'children_urls': entity.children_urls(),
          'tasks': tasks,
@@ -233,12 +229,7 @@ def children( request, repo, org, cid, eid, role ):
     page = paginator.page(thispage)
     return render_to_response(
         'webui/entities/files.html',
-        {'repo': entity.repo,
-         'org': entity.org,
-         'cid': entity.cid,
-         'eid': entity.eid,
-         'role': role,
-         'collection': collection,
+        {'collection': collection,
          'entity': entity,
          'children_urls': entity.children_urls(active=role),
          'browse_url': entity.file_browse_url(role),
@@ -255,11 +246,7 @@ def addfile_log( request, repo, org, cid, eid ):
     collection = entity.collection()
     return render_to_response(
         'webui/entities/addfiles-log.html',
-        {'repo': entity.repo,
-         'org': entity.org,
-         'cid': entity.cid,
-         'eid': entity.eid,
-         'collection': collection,
+        {'collection': collection,
          'entity': entity,},
         context_instance=RequestContext(request, processors=[])
     )
@@ -270,11 +257,7 @@ def changelog( request, repo, org, cid, eid ):
     collection = entity.collection()
     return render_to_response(
         'webui/entities/changelog.html',
-        {'repo': entity.repo,
-         'org': entity.org,
-         'cid': entity.cid,
-         'eid': entity.eid,
-         'collection': collection,
+        {'collection': collection,
          'entity': entity,},
         context_instance=RequestContext(request, processors=[])
     )
@@ -500,11 +483,7 @@ def edit( request, repo, org, cid, eid ):
     facility_legacy = tagmanager_legacy_terms(entity.facility, facility_terms)
     return render_to_response(
         'webui/entities/edit-json.html',
-        {'repo': entity.repo,
-         'org': entity.org,
-         'cid': entity.cid,
-         'eid': entity.eid,
-         'collection': collection,
+        {'collection': collection,
          'entity': entity,
          'form': form,
          # data for TagManager
@@ -579,11 +558,7 @@ def edit_json( request, repo, org, cid, eid ):
         form = JSONForm({'json': entity.dump_json(),})
     return render_to_response(
         'webui/entities/edit-raw.html',
-        {'repo': entity.repo,
-         'org': entity.org,
-         'cid': entity.cid,
-         'eid': entity.eid,
-         'entity': entity,
+        {'entity': entity,
          'form': form,},
         context_instance=RequestContext(request, processors=[])
     )
@@ -622,11 +597,7 @@ def delete( request, repo, org, cid, eid, confirm=False ):
         form = DeleteEntityForm()
     return render_to_response(
         'webui/entities/delete.html',
-        {'repo': entity.repo,
-         'org': entity.org,
-         'cid': entity.cid,
-         'eid': entity.eid,
-         'entity': entity,
+        {'entity': entity,
          'form': form,
          },
         context_instance=RequestContext(request, processors=[])
@@ -677,11 +648,7 @@ def files_dedupe( request, repo, org, cid, eid ):
         form = RmDuplicatesForm()
     return render_to_response(
         'webui/entities/files-dedupe.html',
-        {'repo': entity.repo,
-         'org': entity.org,
-         'cid': entity.cid,
-         'eid': entity.eid,
-         'collection': collection,
+        {'collection': collection,
          'entity': entity,
          'duplicates': duplicates,
          'form': form,},

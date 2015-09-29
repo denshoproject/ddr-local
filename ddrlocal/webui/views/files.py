@@ -89,14 +89,9 @@ def detail( request, repo, org, cid, eid, role, sha1 ):
     formdata = {'path':file_.path_rel}
     return render_to_response(
         'webui/files/detail.html',
-        {'repo': file_.repo,
-         'org': file_.org,
-         'cid': file_.cid,
-         'eid': file_.eid,
-         'role': file_.role,
-         'sha1': file_.sha1,
-         'collection': collection,
+        {'collection': collection,
          'entity': entity,
+         'role': role,
          'file': file_,
          'new_access_form': NewAccessFileForm(formdata),},
         context_instance=RequestContext(request, processors=[])
@@ -233,13 +228,9 @@ def new( request, repo, org, cid, eid, role='master' ):
         form = NewFileDDRForm(data, fields=FIELDS, path_choices=shared_folder_files())
     return render_to_response(
         'webui/files/new.html',
-        {'repo': entity.repo,
-         'org': entity.org,
-         'cid': entity.cid,
-         'eid': entity.eid,
-         'role': role,
-         'collection': collection,
+        {'collection': collection,
          'entity': entity,
+         'role': role,
          'form': form,
          'path': path,},
         context_instance=RequestContext(request, processors=[])
@@ -372,14 +363,9 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
         form = DDRForm(file_.form_prep(), fields=filemodule.FIELDS)
     return render_to_response(
         'webui/files/edit-json.html',
-        {'repo': file_.repo,
-         'org': file_.org,
-         'cid': file_.cid,
-         'eid': file_.eid,
-         'role': file_.role,
-         'sha1': file_.sha1,
-         'collection': collection,
+        {'collection': collection,
          'entity': entity,
+         'role': role,
          'file': file_,
          'form': form,
          },
@@ -416,13 +402,8 @@ def delete( request, repo, org, cid, eid, role, sha1 ):
         form = DeleteFileForm()
     return render_to_response(
         'webui/files/delete.html',
-        {'repo': file_.repo,
-         'org': file_.org,
-         'cid': file_.cid,
-         'eid': file_.eid,
-         'role': file_.role,
-         'sha1': file_.sha1,
-         'file': file_,
+        {'file': file_,
+         'role': role,
          'form': form,
          },
         context_instance=RequestContext(request, processors=[])
