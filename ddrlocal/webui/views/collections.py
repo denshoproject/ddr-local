@@ -69,7 +69,7 @@ def collections( request ):
     collections = []
     collection_status_urls = []
     for object_id in gitolite.get_repos_orgs():
-        identifier = Identifier(request)
+        identifier = Identifier(object_id)
         # TODO Identifier: Organization object instead of repo and org
         repo,org = identifier.parts.values()
         collection_paths = commands.collections_local(
