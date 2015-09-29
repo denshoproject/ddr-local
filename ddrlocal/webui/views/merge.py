@@ -61,7 +61,7 @@ def merge( request, repo, org, cid ):
     collection = Collection.from_request(request)
     repository = dvcs.repository(collection.path_abs)
     task_id = collection.locked()
-    status = commands.status(collection_path)
+    status = commands.status(collection.path)
     ahead = collection.repo_ahead()
     behind = collection.repo_behind()
     diverged = collection.repo_diverged()
@@ -92,13 +92,13 @@ def merge( request, repo, org, cid ):
             which = 'merge'
         elif diverged and staged:
             which = 'commit'
-        form = MergeCommitForm({'path':collection_path, 'which':which,})
+        form = MergeCommitForm({'path':collection.path, 'which':which,})
     return render_to_response(
         'webui/merge/index.html',
         {'repo': repo,
          'org': org,
          'cid': cid,
-         'collection_path': collection_path,
+         'collection_path': collection.path,
          'collection': collection,
          'status': status,
          'conflicted': conflicted,
@@ -120,10 +120,10 @@ def edit_auto( request, repo, org, cid ):
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    collection_path = Collection.collection_path(request,repo,org,cid)
+    collection = Collection.from_request(request)
     
     filename = request.GET.get('filename', None)
-    filepath = os.path.join(collection_path, filename)
+    filepath = os.path.join(collection.path, filename)
     with open(filepath, 'r') as f:
         text = f.read()
     merged = dvcs.automerge_conflicted(text, 'left')
@@ -144,14 +144,14 @@ def edit_raw( request, repo, org, cid ):
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    collection_path = Collection.collection_path(request,repo,org,cid)
-    repository = dvcs.repository(collection_path)
+    collection = Collection.from_request(request)
+    repository = dvcs.repository(collection.path)
     filename = ''
     if request.method == 'POST':
         filename = request.POST.get('filename', None)
     elif request.method == 'GET':
         filename = request.GET.get('filename', None)
-    filepath = os.path.join(collection_path, filename)
+    filepath = os.path.join(collection.path, filename)
     
     if request.method == 'POST':
         form = MergeRawForm(request.POST)
@@ -180,8 +180,8 @@ def edit_raw( request, repo, org, cid ):
 def edit_json( request, repo, org, cid ):
     """
     """
-    collection_path = Collection.collection_path(request,repo,org,cid)
-    repository = dvcs.repository(collection_path)
+    collection = Collection.from_request(request)
+    repository = dvcs.repository(collection.path)
     
     filename = ''
     if request.method == 'POST':
@@ -191,7 +191,7 @@ def edit_json( request, repo, org, cid ):
     
     fields = []
     if filename:
-        path = os.path.join(collection_path, filename)
+        path = os.path.join(collection.path, filename)
         with open(path, 'r') as f:
             txt = f.read()
         fields = dvcs.conflicting_fields(txt)
