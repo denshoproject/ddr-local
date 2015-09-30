@@ -29,7 +29,7 @@
     <td>{% if x.isdir %}<span class="glyphicon glyphicon-folder-close"></span>{% endif %}</td>
     <td>
       {% if x.isdir %}<a href="?path={{ x.rel }}">{{ x.basename }}</a>
-      {% else %}<a href="{% url "webui-file-new" repo org cid eid role %}?path={{ x.path }}">{{ x.basename }}</a>
+      {% else %}<a href="{{ new_file_url }}?path={{ x.path }}">{{ x.basename }}</a>
       {% endif %}
     </td>
     <td>
@@ -39,6 +39,12 @@
   </tr>
 {% endfor %}
 </table>
+
+{% if not listdir %}
+<p>
+No files present in shared folder ({{ shared_folder }}).
+</p>
+{% endif %}
 
     </div><!-- .span12 -->
   </div><!-- .row-fluid -->

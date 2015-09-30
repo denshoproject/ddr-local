@@ -486,6 +486,11 @@ class Entity( DDREntity ):
     def json_url(self): return reverse('webui-entity-json', args=self.idparts)
     def mets_xml_url(self): return reverse('webui-entity-mets-xml', args=self.idparts)
     
+    def new_file_url(self, role):
+        args = [a for a in self.idparts]
+        args.append(role)
+        return reverse('webui-file-new', args=args)
+    
     def children_url(self, role):
         args = [a for a in self.idparts]
         args.append(role)

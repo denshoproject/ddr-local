@@ -146,6 +146,8 @@ def browse( request, repo, org, cid, eid, role='master' ):
         {'collection': collection,
          'entity': entity,
          'file_role': file_role,
+         'new_file_url': entity.new_file_url(role),
+         'shared_folder': settings.VIRTUALBOX_SHARED_FOLDER,
          'listdir': listdir,
          'parent': parent,
          'home': home,},
@@ -160,7 +162,8 @@ def new( request, repo, org, cid, eid, role='master' ):
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    entity = Entity.from_request(request)
+    file_role = Identifier(request).object()
+    entity = file_role.parent(stubs=True)
     collection = entity.collection()
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
@@ -230,7 +233,7 @@ def new( request, repo, org, cid, eid, role='master' ):
         'webui/files/new.html',
         {'collection': collection,
          'entity': entity,
-         'role': role,
+         'file_role': file_role,
          'form': form,
          'path': path,},
         context_instance=RequestContext(request, processors=[])
