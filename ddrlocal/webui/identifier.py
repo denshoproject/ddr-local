@@ -54,6 +54,9 @@ class Identifier(DDRIdentifier):
             return Identifier(id=pid, base_path=self.basepath)
         return None
     
+    def child(self, model, idparts, base_path=settings.MEDIA_BASE):
+        return super(Identifier, self).child(model, idparts, base_path=base_path)
+    
     def breadcrumbs(self, endpoint=''):
         """Returns list of URLs,titles for printing object breadcrumbs.
         
