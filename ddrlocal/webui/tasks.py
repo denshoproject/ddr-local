@@ -25,12 +25,10 @@ from webui import gitstatus
 from webui.models import Collection, Entity, DDRFile
 from webui.identifier import Identifier
 
+from DDR import commands
 from DDR import docstore
 from DDR import dvcs
 from DDR import models
-from DDR.commands import entity_destroy, file_destroy
-from DDR.commands import sync
-
 
 
 TASK_STATUSES = ['STARTED', 'PENDING', 'SUCCESS', 'FAILURE', 'RETRY', 'REVOKED',]
@@ -643,7 +641,7 @@ def delete_entity( git_name, git_mail, collection_path, entity_id, agent='' ):
     gitstatus.lock(settings.MEDIA_BASE, 'delete_entity')
     logger.debug('collection_delete_entity(%s,%s,%s,%s,%s)' % (git_name, git_mail, collection_path, entity_id, agent))
     # remove the entity
-    status,message = entity_destroy(git_name, git_mail, collection_path, entity_id, agent)
+    status,message = commands.entity_destroy(git_name, git_mail, collection_path, entity_id, agent)
     # update search index
     docstore.delete(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, entity_id)
     return status,message,collection_path,entity_id
@@ -748,7 +746,7 @@ def collection_sync( git_name, git_mail, collection_path ):
     @return collection_path: Absolute path to collection.
     """
     gitstatus.lock(settings.MEDIA_BASE, 'collection_sync')
-    exit,status = sync(git_name, git_mail, collection_path)
+    exit,status = commands.sync(git_name, git_mail, collection_path)
     # update search index
     collection = Collection.from_identifier(Identifier(path=collection_path))
     collection.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
