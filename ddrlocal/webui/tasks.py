@@ -708,24 +708,13 @@ def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, 
     """
     logger.debug('delete_file(%s,%s,%s,%s,%s,%s)' % (git_name, git_mail, collection_path, entity_id, file_basename, agent))
     gitstatus.lock(settings.MEDIA_BASE, 'delete_file')
-    # TODO rm_files list should come from the File model
     file_id = os.path.splitext(file_basename)[0]
-    file_ = DDRFile.from_identifier(Identifier(id=file_id))
-    entity = Entity.from_identifier(Identifier(id=entity_id))
-    rm_files = file_.files_rel(collection_path)
-    logger.debug('rm_files: %s' % rm_files)
-    # remove file from entity.json
-    # TODO move this to commands.file_destroy or models.Entity
-    for f in entity.files:
-        if f['path_rel'] == file_basename:
-            entity.files.remove(f)
-    entity.write_json()
-    updated_files = ['entity.json']
-    logger.debug('updated_files: %s' % updated_files)
-    # remove the file itself
-    status,message = file_destroy(git_name, git_mail, collection_path, entity_id, rm_files, updated_files, agent)
-    # update search index
-    docstore.delete(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, file_id)
+    file_ = DDRFile.from_identifier(Identifier(file_id))
+    entity = Entity.from_identifier(Identifier(entity_id))
+    logger.debug('delete from repository')
+    status,message = entity.rm_file(file_, git_name, git_mail, agent)
+    logger.debug('delete from search index')
+    docstore.delete(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, file_.id)
     return status,message,collection_path,file_basename
 
 
