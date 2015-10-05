@@ -688,6 +688,7 @@ class DDRFile( File ):
     def delete_url(self): return reverse('webui-file-delete', args=self.idparts)
     def json_url(self): return reverse('webui-file-json', args=self.idparts)
     def edit_url(self): return reverse('webui-file-edit', args=self.idparts)
+    def new_access_url(self): return reverse('webui-file-new-access', args=self.idparts)
     
     def access_url( self ):
         if self.access_rel:

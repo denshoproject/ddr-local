@@ -133,7 +133,7 @@
 
 {% if username %}
 {% if file.present %}
-<form name="new-access" action="{% url "webui-file-new-access" file.repo file.org file.cid file.eid file.role file.sha1 %}" method="post">{% csrf_token %}
+<form name="new-access" action="{{ new_access_url }}" method="post">{% csrf_token %}
 {{ new_access_form.as_p }}
 <button class="btn btn-primary btn-mini" type="submit" value="Generate New Access File">Generate New Access File</button>
 </form>

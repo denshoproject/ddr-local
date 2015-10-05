@@ -93,6 +93,7 @@ def detail( request, repo, org, cid, eid, role, sha1 ):
          'entity': entity,
          'role': role,
          'file': file_,
+         'new_access_url': file_.new_access_url,
          'new_access_form': NewAccessFileForm(formdata),},
         context_instance=RequestContext(request, processors=[])
     )
