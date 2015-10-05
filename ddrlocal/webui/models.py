@@ -160,21 +160,6 @@ def form_post(document, module, form):
     if hasattr(document, 'record_lastmod'):
         document.record_lastmod = datetime.now()
 
-def post_json(hosts, index, json_path):
-    """Post current .json to docstore.
-    
-    @param hosts: list of dicts containing host information.
-    @param index: Name of the target index.
-    @param json_path: Absolute path to .json file.
-    @returns: JSON dict with status code and response
-    """
-    status = docstore.post(
-        hosts, index,
-        json.loads(read_json(json_path)),
-        private_ok=True)
-    logging.debug(str(status))
-    return status
-
 
 # functions relating to inheritance ------------------------------------
 
@@ -388,9 +373,6 @@ class Collection( DDRCollection ):
         """
         form_post(self, collectionmodule, form)
     
-    def post_json(self, hosts, index):
-        return post_json(hosts, index, self.json_path)
-    
     @staticmethod
     def create(collection_path, git_name, git_mail):
         """create new entity given an entity ID
@@ -584,9 +566,6 @@ class Entity( DDREntity ):
         """
         form_post(self, entitymodule, form)
     
-    def post_json(self, hosts, index):
-        return post_json(hosts, index, self.json_path)
-    
     def load_file_objects( self ):
         """Replaces list of file info dicts with list of DDRFile objects
         
@@ -769,9 +748,6 @@ class DDRFile( File ):
         @param form: DDRForm object
         """
         form_post(self, filemodule, form)
-    
-    def post_json(self, hosts, index):
-        return post_json(hosts, index, self.json_path)
     
     def save( self, git_name, git_mail ):
         """Perform file-save functions.
