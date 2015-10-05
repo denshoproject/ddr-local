@@ -236,7 +236,7 @@ class FileAddDebugTask(Task):
             log.not_ok(lockstatus)
         log.ok( 'END task_id %s\n' % task_id)
         collection.cache_delete()
-        gitstatus.update(settings.MEDIA_BASE, collection_path)
+        gitstatus.update(settings.MEDIA_BASE, collection.path)
         gitstatus.unlock(settings.MEDIA_BASE, 'entity_add_file')
 
 @task(base=FileAddDebugTask, name='entity-add-file')
@@ -435,7 +435,7 @@ class EntityNewExpertTask(Task):
         collection_path = args[0]
         collection = Collection.from_identifier(Identifier(path=collection_path))
         lockstatus = collection.unlock(task_id)
-        gitstatus.update(settings.MEDIA_BASE, collection_path)
+        gitstatus.update(settings.MEDIA_BASE, collection.path)
         gitstatus.unlock(settings.MEDIA_BASE, 'entity_newexpert')
 
 @task(base=EntityNewExpertTask, name='webui-entity-newexpert')

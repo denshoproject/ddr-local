@@ -182,14 +182,15 @@ def sync_status( collection_path, git_status, timestamp, cache_set=False, force=
     @param cache_set: Run git-status if data is not cached
     """
     # IMPORTANT: DO NOT call collection.gitstatus() it will loop
-    collection_id = Identifier(path=collection_path)
+    cidentifier = Identifier(collection_path)
+    collection_id = cidentifier.id
     key = COLLECTION_SYNC_STATUS_CACHE_KEY % collection_id
     data = cache.get(key)
     if force or (not data and cache_set):
         status = 'unknown'
         btn = 'muted'
         # we're just getting this so we can call Collection.locked
-        disposable_collection = Collection(path=collection_path)
+        disposable_collection = Collection.from_identifier(cidentifier)
         # now:
         if   dvcs.ahead(git_status): status = 'ahead'; btn = 'warning'
         elif dvcs.behind(git_status): status = 'behind'; btn = 'warning'
