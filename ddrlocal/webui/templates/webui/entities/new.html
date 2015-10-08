@@ -1,10 +1,10 @@
 {% extends "webui/entities/base.html" %}
-
+{% load webui_tags %}
 
 {% block title %}New Object{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li class="active">New Object</li>
+{% breadcrumbs collection "New Object" %}
 {% endblock breadcrumbs %}
 
 

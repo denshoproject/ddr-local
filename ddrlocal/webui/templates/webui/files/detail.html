@@ -1,12 +1,11 @@
 {% extends "webui/files/base.html" %}
-{% load thumbnail %}
+{% load thumbnail webui_tags %}
 
 
 {% block title %}{{ entity.title }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{% url "webui-entity-files" repo org cid eid role %}">{{ role }}</a></li>
-<li>{{ file.sha1|slice:":10" }}</li>
+{% breadcrumbs file %}
 {% endblock breadcrumbs %}
 
 
@@ -47,8 +46,8 @@
 </p>
 {% else %}
 <p>
-<a id="delete" class="btn btn-mini btn-primary" href="{% url "webui-file-delete" repo org cid eid role sha1 %}"><span class="glyphicon glyphicon-trash"></span> Delete</a>
-<a class="btn btn-primary btn-mini" href="{{ file.url }}edit/"><span class="glyphicon glyphicon-edit"></span> Edit</a>
+<a id="delete" class="btn btn-mini btn-primary" href="{{ file.delete_url }}"><span class="glyphicon glyphicon-trash"></span> Delete</a>
+<a class="btn btn-primary btn-mini" href="{{ file.absolute_url }}edit/"><span class="glyphicon glyphicon-edit"></span> Edit</a>
 </p>
 {% endif %}
 {% endif %}{#username #}
@@ -134,7 +133,7 @@
 
 {% if username %}
 {% if file.present %}
-<form name="new-access" action="{% url "webui-file-new-access" file.repo file.org file.cid file.eid file.role file.sha1 %}" method="post">{% csrf_token %}
+<form name="new-access" action="{{ new_access_url }}" method="post">{% csrf_token %}
 {{ new_access_form.as_p }}
 <button class="btn btn-primary btn-mini" type="submit" value="Generate New Access File">Generate New Access File</button>
 </form>

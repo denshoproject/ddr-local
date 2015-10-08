@@ -1,11 +1,10 @@
 {% extends "webui/files/base.html" %}
-
+{% load webui_tags %}
 
 {% block title %}{{ entity.title }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{% url "webui-entity-files" repo org cid eid role %}">{{ role }}</a></li>
-<li class="active">Add file</li>
+{% breadcrumbs file_role "Add file" %}
 {% endblock breadcrumbs %}
 
 
@@ -30,7 +29,7 @@
     <td>{% if x.isdir %}<span class="glyphicon glyphicon-folder-close"></span>{% endif %}</td>
     <td>
       {% if x.isdir %}<a href="?path={{ x.rel }}">{{ x.basename }}</a>
-      {% else %}<a href="{% url "webui-file-new" repo org cid eid role %}?path={{ x.path }}">{{ x.basename }}</a>
+      {% else %}<a href="{{ new_file_url }}?path={{ x.path }}">{{ x.basename }}</a>
       {% endif %}
     </td>
     <td>
@@ -40,6 +39,12 @@
   </tr>
 {% endfor %}
 </table>
+
+{% if not listdir %}
+<p>
+No files present in shared folder ({{ shared_folder }}).
+</p>
+{% endif %}
 
     </div><!-- .span12 -->
   </div><!-- .row-fluid -->

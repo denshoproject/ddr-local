@@ -1,11 +1,11 @@
 {% extends "webui/entities/base.html" %}
-{% load thumbnail %}
+{% load thumbnail webui_tags %}
 
 
 {% block title %}{{ entity.id }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li class="active">{{ entity.eid }}</li>
+{% breadcrumbs entity %}
 {% endblock breadcrumbs %}
 
 
@@ -21,8 +21,9 @@
 
       <ul class="nav nav-tabs" id="tabs">
         <li class="active"><a href="#">Object Metadata</a></li>
-        <li><a href="{% url "webui-entity-files" repo org cid eid "master" %}">Master Files</a></li>
-        <li><a href="{% url "webui-entity-files" repo org cid eid "mezzanine" %}">Mezzanine Files</a></li>
+{% for role in children_urls %}
+        <li><a href="{{ role.url }}">{{ role.name|capfirst }} Files</a></li>
+{% endfor %}
       </ul>
 
 
@@ -58,8 +59,8 @@
 </p>
 {% else %}
 <p>
-<a id="delete" class="btn btn-primary btn-mini" href="{% url "webui-entity-delete" repo org cid eid %}"><span class="glyphicon glyphicon-trash"></span> Delete</a>
-<a class="btn btn-primary btn-mini" href="{% url "webui-entity-edit" repo org cid eid %}"><span class="glyphicon glyphicon-edit icon-white"></span> Edit</a>
+<a id="delete" class="btn btn-primary btn-mini" href="{{ entity.delete_url }}"><span class="glyphicon glyphicon-trash"></span> Delete</a>
+<a class="btn btn-primary btn-mini" href="{{ entity.edit_url }}"><span class="glyphicon glyphicon-edit icon-white"></span> Edit</a>
 </p>
 {% endif %}{# conflicted #}
 {% endif %}{#username #}
@@ -68,7 +69,7 @@
 <dl class="dl-horizontal">
   <dt>Collection</dt>
   <dd><p>
-  <a href="{{ collection.url }}">{{ collection.id }}: {% if collection.title %}{{ collection.title }}{% endif %}</a>
+  <a href="{{ collection.absolute_url }}">{{ collection.id }}: {% if collection.title %}{{ collection.title }}{% endif %}</a>
   </p></dd>
 {% for lv in entity.labels_values %}
   {% if lv.value %}<dt>{{ lv.label }}</dt><dd>{{ lv.value|safe|linebreaks }}</dd>{% endif %}
@@ -86,13 +87,13 @@
 
 
 {% block footer %}{{ block.super }}
-{% if unlock_task_id %}
+{% if entity_unlock_url %}
 <!-- click to remove entity lock file -->
 <div>
   <a id="unlock-unlock" class="muted" href="">unlock</a>
   <span id="unlock-confirm" style="display:none;">
     are you sure?
-    <a id="unlock-confirm-yes" href="{% url "webui-entity-unlock" repo org cid eid unlock_task_id %}">yes</a>
+    <a id="unlock-confirm-yes" href="{{ entity_unlock_url }}">yes</a>
     <a id="unlock-confirm-no" href="">no</a>
   </span>
 </div>
@@ -106,7 +107,7 @@
 <script>
   $(function () {
 
-  {% if unlock_task_id %}
+  {% if entity_unlock_url %}
     /* unlock link */
     $('a#unlock-unlock').click(function() {
       $('span#unlock-confirm').show(); return false;

@@ -22,14 +22,13 @@ from migration.densho import export_entities, export_files, export_csv_path
 from webui import GITOLITE_INFO_CACHE_KEY
 from webui import gitolite
 from webui import gitstatus
-from webui.models import Collection, Entity, DDRFile, post_json
+from webui.models import Collection, Entity, DDRFile
+from webui.identifier import Identifier
 
+from DDR import commands
 from DDR import docstore
 from DDR import dvcs
 from DDR import models
-from DDR.commands import entity_destroy, file_destroy
-from DDR.commands import sync
-
 
 
 TASK_STATUSES = ['STARTED', 'PENDING', 'SUCCESS', 'FAILURE', 'RETRY', 'REVOKED',]
@@ -221,6 +220,7 @@ class FileAddDebugTask(Task):
     
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
         entity = args[2]
+        collection = entity.collection()
         log = entity.addfile_logger()
         log.ok('DDRTask.AFTER_RETURN')
         log.ok('task_id: %s' % task_id)
@@ -233,10 +233,8 @@ class FileAddDebugTask(Task):
         else:
             log.not_ok(lockstatus)
         log.ok( 'END task_id %s\n' % task_id)
-        collection_path = Collection.collection_path(None,entity.repo,entity.org,entity.cid)
-        collection = Collection.from_json(collection_path)
         collection.cache_delete()
-        gitstatus.update(settings.MEDIA_BASE, collection_path)
+        gitstatus.update(settings.MEDIA_BASE, collection.path)
         gitstatus.unlock(settings.MEDIA_BASE, 'entity_add_file')
 
 @task(base=FileAddDebugTask, name='entity-add-file')
@@ -253,7 +251,7 @@ def entity_add_file( git_name, git_mail, entity, src_path, role, data, agent='' 
     gitstatus.lock(settings.MEDIA_BASE, 'entity_add_file')
     file_,repo,log = entity.add_file(src_path, role, data, git_name, git_mail, agent)
     file_,repo,log = entity.add_file_commit(file_, repo, log, git_name, git_mail, agent)
-    post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, file_.json_path)
+    file_.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
     return file_.__dict__
 
 @task(base=FileAddDebugTask, name='entity-add-access')
@@ -308,7 +306,7 @@ class CollectionNewExpertTask(Task):
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
         logger.debug('CollectionNewExpertTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
         collection_path = args[0]
-        collection = Collection.from_json(collection_path)
+        collection = Collection.from_identifier(Identifier(path=collection_path))
         lockstatus = collection.unlock(task_id)
         gitstatus.update(settings.MEDIA_BASE, collection_path)
         gitstatus.unlock(settings.MEDIA_BASE, 'collection_newexpert')
@@ -353,7 +351,7 @@ def collection_edit(request, collection, updated_files, git_name, git_mail):
     celery_tasks[result.task_id] = {
         'task_id': result.task_id,
         'action': 'webui-collection-edit',
-        'collection_url': collection.url(),
+        'collection_url': collection.absolute_url(),
         'collection_id': collection.id,
         'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
@@ -364,7 +362,7 @@ class CollectionEditTask(Task):
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
         logger.debug('CollectionEditTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
         collection_path = args[0]
-        collection = Collection.from_json(collection_path)
+        collection = Collection.from_identifier(Identifier(path=collection_path))
         lockstatus = collection.unlock(task_id)
         gitstatus.update(settings.MEDIA_BASE, collection_path)
         gitstatus.unlock(settings.MEDIA_BASE, 'collection_edit')
@@ -380,7 +378,7 @@ def collection_save(collection_path, updated_files, git_name, git_mail):
     logger.debug('collection_save(%s,%s,%s,%s)' % (
         git_name, git_mail, collection_path, updated_files))
     
-    collection = Collection.from_json(collection_path)
+    collection = Collection.from_identifier(Identifier(path=collection_path))
     
     gitstatus.lock(settings.MEDIA_BASE, 'collection_edit')
     exit,status = collection.save(updated_files, git_name, git_mail)
@@ -414,7 +412,7 @@ def collection_entity_newexpert(request, collection, entity_id, git_name, git_ma
     celery_tasks[result.task_id] = {
         'task_id': result.task_id,
         'action': 'webui-entity-newexpert',
-        'collection_url': collection.url(),
+        'collection_url': collection.absolute_url(),
         'collection_id': collection.id,
         'entity_url': entity_url,
         'entity_id': entity_id,
@@ -433,9 +431,9 @@ class EntityNewExpertTask(Task):
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
         logger.debug('EntityNewExpertTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
         collection_path = args[0]
-        collection = Collection.from_json(collection_path)
+        collection = Collection.from_identifier(Identifier(path=collection_path))
         lockstatus = collection.unlock(task_id)
-        gitstatus.update(settings.MEDIA_BASE, collection_path)
+        gitstatus.update(settings.MEDIA_BASE, collection.path)
         gitstatus.unlock(settings.MEDIA_BASE, 'entity_newexpert')
 
 @task(base=EntityNewExpertTask, name='webui-entity-newexpert')
@@ -450,7 +448,7 @@ def entity_newexpert(collection_path, entity_id, git_name, git_mail):
     logger.debug('collection_entity_newexpert(%s,%s,%s,%s)' % (
         collection_path, entity_id, git_name, git_mail))
     
-    collection = Collection.from_json(collection_path)
+    collection = Collection.from_identifier(Identifier(path=collection_path))
     
     gitstatus.lock(settings.MEDIA_BASE, 'entity_newexpert')
     entity = Entity.create(collection, entity_id, git_name, git_mail)
@@ -471,10 +469,8 @@ TASK_STATUS_MESSAGES['webui-file-edit'] = {
 
 def entity_file_edit(request, collection, file_, git_name, git_mail):
     # start tasks
-    file_id = models.Identity.make_object_id(
-        'file', file_.repo, file_.org, file_.cid, file_.eid, file_.role, file_.sha1)
     result = file_edit.apply_async(
-        (collection.path, file_id, git_name, git_mail),
+        (collection.path, file_.id, git_name, git_mail),
         countdown=2)
     # lock collection
     lockstatus = collection.lock(result.task_id)
@@ -484,8 +480,8 @@ def entity_file_edit(request, collection, file_, git_name, git_mail):
     celery_tasks[result.task_id] = {
         'task_id': result.task_id,
         'action': 'webui-file-edit',
-        'file_url': file_.url(),
-        'file_id': file_id,
+        'file_url': file_.absolute_url(),
+        'file_id': file_.id,
         'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
 
@@ -495,7 +491,7 @@ class FileEditTask(Task):
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
         logger.debug('FileEditTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
         collection_path = args[0]
-        collection = Collection.from_json(collection_path)
+        collection = Collection.from_identifier(Identifier(path=collection_path))
         lockstatus = collection.unlock(task_id)
         gitstatus.update(settings.MEDIA_BASE, collection_path)
         gitstatus.unlock(settings.MEDIA_BASE, 'file_edit')
@@ -510,15 +506,11 @@ def file_edit(collection_path, file_id, git_name, git_mail):
     @param git_mail: Email of git committer.
     """
     logger.debug('file_edit(%s,%s,%s,%s)' % (git_name, git_mail, collection_path, file_id))
-    
-    model,repo,org,cid,eid,role,sha1 = models.Identity.split_object_id(file_id)
-    entity = Entity.from_json(Entity.entity_path(None,repo,org,cid,eid))
-    file_ = entity.file(repo, org, cid, eid, role, sha1)
-    
+    fidentifier = Identifier(id=file_id)
+    file_ = DDRFile.from_identifier(fidentifier)
     gitstatus.lock(settings.MEDIA_BASE, 'file_edit')
     exit,status = file_.save(git_name, git_mail)
     gitstatus_update.apply_async((collection_path,), countdown=2)
-    
     return status,collection_path,file_id
 
 # ----------------------------------------------------------------------
@@ -532,10 +524,10 @@ TASK_STATUS_MESSAGES['webui-entity-edit'] = {
     #'REVOKED': '',
 }
 
-def collection_entity_edit(request, collection, entity, updated_files, git_name, git_mail, agent):
+def collection_entity_edit(request, collection, entity, updated_files, form_data, git_name, git_mail, agent):
     # start tasks
     result = entity_edit.apply_async(
-        (collection.path, entity.id, updated_files, git_name, git_mail, agent),
+        (collection.path, entity.id, updated_files, form_data, git_name, git_mail, agent),
         countdown=2)
     # lock collection
     lockstatus = collection.lock(result.task_id)
@@ -545,9 +537,9 @@ def collection_entity_edit(request, collection, entity, updated_files, git_name,
     celery_tasks[result.task_id] = {
         'task_id': result.task_id,
         'action': 'webui-entity-edit',
-        'collection_url': collection.url(),
+        'collection_url': collection.absolute_url(),
         'collection_id': collection.id,
-        'entity_url': entity.url(),
+        'entity_url': entity.absolute_url(),
         'entity_id': entity.id,
         'updated_files': updated_files,
         'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
@@ -565,13 +557,13 @@ class EntityEditTask(Task):
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
         logger.debug('EntityEditTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
         collection_path = args[0]
-        collection = Collection.from_json(collection_path)
+        collection = Collection.from_identifier(Identifier(path=collection_path))
         lockstatus = collection.unlock(task_id)
         gitstatus.update(settings.MEDIA_BASE, collection_path)
         gitstatus.unlock(settings.MEDIA_BASE, 'entity_edit')
 
 @task(base=EntityEditTask, name='webui-entity-edit')
-def entity_edit(collection_path, entity_id, updated_files, git_name, git_mail, agent=''):
+def entity_edit(collection_path, entity_id, updated_files, form_data, git_name, git_mail, agent=''):
     """The time-consuming parts of entity-edit.
     
     @param collection_path: str Absolute path to collection
@@ -582,16 +574,11 @@ def entity_edit(collection_path, entity_id, updated_files, git_name, git_mail, a
     """
     logger.debug('collection_entity_edit(%s,%s,%s,%s,%s)' % (
         git_name, git_mail, collection_path, entity_id, agent))
-    
-    collection = Collection.from_json(collection_path)
-    repo,org,cid,eid = entity_id.split('-')
-    entity_path = Entity.entity_path(None,repo,org,cid,eid)
-    entity = Entity.from_json(entity_path)
-    
+    collection = Collection.from_identifier(Identifier(path=collection_path))
+    entity = Entity.from_identifier(Identifier(id=entity_id))
     gitstatus.lock(settings.MEDIA_BASE, 'entity_edit')
-    exit,status = entity.save_part2(updated_files, collection, git_name, git_mail)
+    exit,status = entity.save_part2(collection, updated_files, form_data, git_name, git_mail)
     gitstatus_update.apply_async((collection.path,), countdown=2)
-
     return status,collection_path,entity_id
 
 # ------------------------------------------------------------------------
@@ -618,9 +605,9 @@ def collection_delete_entity(request, git_name, git_mail, collection, entity, ag
     celery_tasks[result.task_id] = {
         'task_id': result.task_id,
         'action': 'webui-entity-delete',
-        'collection_url': collection.url(),
+        'collection_url': collection.absolute_url(),
         'collection_id': collection.id,
-        'entity_url': entity.url(),
+        'entity_url': entity.absolute_url(),
         'entity_id': entity.id,
         'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
@@ -637,7 +624,7 @@ class DeleteEntityTask(Task):
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
         logger.debug('DeleteEntityTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
         collection_path = args[2]
-        collection = Collection.from_json(collection_path)
+        collection = Collection.from_identifier(Identifier(path=collection_path))
         lockstatus = collection.unlock(task_id)
         gitstatus.update(settings.MEDIA_BASE, collection_path)
         gitstatus.unlock(settings.MEDIA_BASE, 'delete_entity')
@@ -654,7 +641,7 @@ def delete_entity( git_name, git_mail, collection_path, entity_id, agent='' ):
     gitstatus.lock(settings.MEDIA_BASE, 'delete_entity')
     logger.debug('collection_delete_entity(%s,%s,%s,%s,%s)' % (git_name, git_mail, collection_path, entity_id, agent))
     # remove the entity
-    status,message = entity_destroy(git_name, git_mail, collection_path, entity_id, agent)
+    status,message = commands.entity_destroy(git_name, git_mail, collection_path, entity_id, agent)
     # update search index
     docstore.delete(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, entity_id)
     return status,message,collection_path,entity_id
@@ -683,10 +670,10 @@ def entity_delete_file(request, git_name, git_mail, collection, entity, file_, a
     celery_tasks[result.task_id] = {
         'task_id': result.task_id,
         'action': 'webui-file-delete',
-        'entity_url': entity.url(),
+        'entity_url': entity.absolute_url(),
         'entity_id': entity.id,
         'filename': file_.basename,
-        'file_url': file_.url(),
+        'file_url': file_.absolute_url(),
         'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
 
@@ -702,7 +689,7 @@ class DeleteFileTask(Task):
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
         logger.debug('DeleteFileTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
         collection_path = args[2]
-        collection = Collection.from_json(collection_path)
+        collection = Collection.from_identifier(Identifier(path=collection_path))
         lockstatus = collection.unlock(task_id)
         gitstatus.update(settings.MEDIA_BASE, collection_path)
         gitstatus.unlock(settings.MEDIA_BASE, 'delete_file')
@@ -719,25 +706,13 @@ def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, 
     """
     logger.debug('delete_file(%s,%s,%s,%s,%s,%s)' % (git_name, git_mail, collection_path, entity_id, file_basename, agent))
     gitstatus.lock(settings.MEDIA_BASE, 'delete_file')
-    # TODO rm_files list should come from the File model
     file_id = os.path.splitext(file_basename)[0]
-    repo,org,cid,eid,role,sha1 = file_id.split('-')
-    entity = Entity.from_json(Entity.entity_path(None,repo,org,cid,eid))
-    file_ = entity.file(repo, org, cid, eid, role, sha1)
-    rm_files = file_.files_rel(collection_path)
-    logger.debug('rm_files: %s' % rm_files)
-    # remove file from entity.json
-    # TODO move this to commands.file_destroy or models.Entity
-    for f in entity.files:
-        if f['path_rel'] == file_basename:
-            entity.files.remove(f)
-    entity.write_json()
-    updated_files = ['entity.json']
-    logger.debug('updated_files: %s' % updated_files)
-    # remove the file itself
-    status,message = file_destroy(git_name, git_mail, collection_path, entity_id, rm_files, updated_files, agent)
-    # update search index
-    docstore.delete(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, file_id)
+    file_ = DDRFile.from_identifier(Identifier(file_id))
+    entity = Entity.from_identifier(Identifier(entity_id))
+    logger.debug('delete from repository')
+    status,message = entity.rm_file(file_, git_name, git_mail, agent)
+    logger.debug('delete from search index')
+    docstore.delete(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, file_.id)
     return status,message,collection_path,file_basename
 
 
@@ -753,7 +728,7 @@ class CollectionSyncDebugTask(Task):
     
     def after_return(self, status, retval, task_id, args, kwargs, cinfo):
         collection_path = args[2]
-        collection = Collection.from_json(collection_path)
+        collection = Collection.from_identifier(Identifier(path=collection_path))
         # NOTE: collection is locked immediately after collection_sync task
         #       starts in webui.views.collections.sync
         collection.unlock(task_id)
@@ -771,9 +746,9 @@ def collection_sync( git_name, git_mail, collection_path ):
     @return collection_path: Absolute path to collection.
     """
     gitstatus.lock(settings.MEDIA_BASE, 'collection_sync')
-    exit,status = sync(git_name, git_mail, collection_path)
+    exit,status = commands.sync(git_name, git_mail, collection_path)
     # update search index
-    collection = Collection.from_json(collection_path)
+    collection = Collection.from_identifier(Identifier(path=collection_path))
     collection.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
     return collection_path
 

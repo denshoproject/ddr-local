@@ -24,7 +24,6 @@ from DDR import commands
 from DDR import docstore
 from DDR import dvcs
 from DDR import idservice
-from DDR.models import Identity
 from DDR.models import write_json
 
 if settings.REPO_MODELS_PATH not in sys.path:
@@ -41,6 +40,7 @@ from webui.forms import DDRForm
 from webui.forms.collections import NewCollectionForm, UpdateForm, SyncConfirmForm
 from webui import gitolite
 from webui.models import Collection, COLLECTION_STATUS_CACHE_KEY, COLLECTION_STATUS_TIMEOUT
+from webui.identifier import Identifier
 from webui.tasks import collection_new_expert, collection_edit, collection_sync
 from webui.tasks import csv_export_model, export_csv_path, gitstatus_update
 from webui.views.decorators import login_required
@@ -51,8 +51,9 @@ from xmlforms.models import XMLModel
 
 def alert_if_conflicted(request, collection):
     if collection.repo_conflicted():
-        url = reverse('webui-merge', args=[collection.repo,collection.org,collection.cid])
+        url = reverse('webui-merge', args=collection.idparts)
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_CONFLICTED'].format(collection.id, url))
+    
 
 
 # views ----------------------------------------------------------------
@@ -68,11 +69,17 @@ def collections( request ):
     collections = []
     collection_status_urls = []
     for object_id in gitolite.get_repos_orgs():
-        model,repo,org = Identity.split_object_id(object_id)
+        identifier = Identifier(object_id)
+        # TODO Identifier: Organization object instead of repo and org
+        repo,org = identifier.parts.values()
+        collection_paths = commands.collections_local(
+            settings.MEDIA_BASE, repo, org
+        )
         colls = []
-        for collection_path in commands.collections_local(settings.MEDIA_BASE, repo, org):
+        for collection_path in collection_paths:
             if collection_path:
-                collection = Collection.from_json(collection_path)
+                identifier = Identifier(path=collection_path)
+                collection = Collection.from_identifier(identifier)
                 colls.append(collection)
                 gitstatus = collection.gitstatus()
                 if gitstatus and gitstatus.get('sync_status'):
@@ -91,35 +98,29 @@ def collections( request ):
 
 @storage_required
 def detail( request, repo, org, cid ):
-    collection = Collection.from_id_parts(repo,org,cid)
+    collection = Collection.from_request(request)
     collection.model_def_commits()
     collection.model_def_fields()
     alert_if_conflicted(request, collection)
     return render_to_response(
         'webui/collections/detail.html',
-        {'repo': repo,
-         'org': org,
-         'cid': cid,
-         'collection': collection,
-         'unlock_task_id': collection.locked(),},
+        {'collection': collection,
+         'collection_unlock_url': collection.unlock_url(collection.locked()),},
         context_instance=RequestContext(request, processors=[])
     )
 
 @storage_required
-def entities( request, repo, org, cid ):
-    collection = Collection.from_id_parts(repo,org,cid)
+def children( request, repo, org, cid ):
+    collection = Collection.from_request(request)
     alert_if_conflicted(request, collection)
-    entities = collection.entities(quick=True)
+    objects = collection.children(quick=True)
     # paginate
     thispage = request.GET.get('page', 1)
-    paginator = Paginator(entities, settings.RESULTS_PER_PAGE)
+    paginator = Paginator(objects, settings.RESULTS_PER_PAGE)
     page = paginator.page(thispage)
     return render_to_response(
         'webui/collections/entities.html',
-        {'repo': repo,
-         'org': org,
-         'cid': cid,
-         'collection': collection,
+        {'collection': collection,
          'paginator': paginator,
          'page': page,
          'thispage': thispage,},
@@ -128,27 +129,24 @@ def entities( request, repo, org, cid ):
 
 @storage_required
 def changelog( request, repo, org, cid ):
-    collection = Collection.from_id_parts(repo,org,cid)
+    collection = Collection.from_request(request)
     alert_if_conflicted(request, collection)
     return render_to_response(
         'webui/collections/changelog.html',
-        {'repo': repo,
-         'org': org,
-         'cid': cid,
-         'collection': collection,},
+        {'collection': collection,},
         context_instance=RequestContext(request, processors=[])
     )
 
 @storage_required
 def collection_json( request, repo, org, cid ):
-    collection = Collection.from_id_parts(repo,org,cid)
+    collection = Collection.from_request(request)
     alert_if_conflicted(request, collection)
     return HttpResponse(json.dumps(collection.json().data), content_type="application/json")
 
 @ddrview
 @storage_required
 def sync_status_ajax( request, repo, org, cid ):
-    collection = Collection.from_id_parts(repo,org,cid)
+    collection = Collection.from_request(request)
     gitstatus = collection.gitstatus()
     if gitstatus:
         sync_status = gitstatus['sync_status']
@@ -160,16 +158,13 @@ def sync_status_ajax( request, repo, org, cid ):
 @ddrview
 @storage_required
 def git_status( request, repo, org, cid ):
-    collection = Collection.from_id_parts(repo,org,cid)
+    collection = Collection.from_request(request)
     alert_if_conflicted(request, collection)
     gitstatus = collection.gitstatus()
     remotes = dvcs.remotes(collection.path)
     return render_to_response(
         'webui/collections/git-status.html',
-        {'repo': repo,
-         'org': org,
-         'cid': cid,
-         'collection': collection,
+        {'collection': collection,
          'status': gitstatus['status'],
          'astatus': gitstatus['annex_status'],
          'timestamp': gitstatus['timestamp'],
@@ -180,7 +175,7 @@ def git_status( request, repo, org, cid ):
 
 @storage_required
 def ead_xml( request, repo, org, cid ):
-    collection = Collection.from_id_parts(repo,org,cid)
+    collection = Collection.from_request(request)
     alert_if_conflicted(request, collection)
     soup = BeautifulSoup(collection.ead().xml, 'xml')
     return HttpResponse(soup.prettify(), content_type="application/xml")
@@ -190,7 +185,7 @@ def ead_xml( request, repo, org, cid ):
 @storage_required
 def sync( request, repo, org, cid ):
     try:
-        collection = Collection.from_id_parts(repo,org,cid)
+        collection = Collection.from_request(request)
     except:
         raise Http404
     git_name = request.session.get('git_name')
@@ -200,7 +195,7 @@ def sync( request, repo, org, cid ):
     alert_if_conflicted(request, collection)
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-        return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+        return HttpResponseRedirect(collection.absolute_url())
     if request.method == 'POST':
         form = SyncConfirmForm(request.POST)
         form_is_valid = form.is_valid()
@@ -213,21 +208,18 @@ def sync( request, repo, org, cid ):
             task = {'task_id': result.task_id,
                     'action': 'webui-collection-sync',
                     'collection_id': collection.id,
-                    'collection_url': collection.url(),
+                    'collection_url': collection.absolute_url(),
                     'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
             celery_tasks[result.task_id] = task
             request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
-            return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+            return HttpResponseRedirect(collection.absolute_url())
         #else:
         #    assert False
     else:
         form = SyncConfirmForm()
     return render_to_response(
         'webui/collections/sync-confirm.html',
-        {'repo': collection.repo,
-         'org': collection.org,
-         'cid': collection.cid,
-         'collection': collection,
+        {'collection': collection,
          'form': form,},
         context_instance=RequestContext(request, processors=[])
     )
@@ -257,10 +249,9 @@ def new( request, repo, org ):
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_ERR_NO_IDS'])
         messages.error(request, e)
         return HttpResponseRedirect(reverse('webui-collections'))
-    new_collection_id = collection_ids[0]
-    cid = Identity.split_object_id(new_collection_id)[-1]
+    identifier = Identifier(id=collection_ids[0], base_path=settings.MEDIA_BASE)
     # create the new collection repo
-    collection_path = Collection.collection_path(request,repo,org,cid)
+    collection_path = identifier.path_abs()
     # collection.json template
     write_json(Collection(collection_path).dump_json(template=True),
                settings.TEMPLATE_CJSON)
@@ -274,11 +265,11 @@ def new( request, repo, org ):
         messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
     else:
         # update search index
-        collection = Collection.from_json(collection_path)
+        collection = Collection.from_identifier(identifier)
         collection.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
         gitstatus_update.apply_async((collection_path,), countdown=2)
         # positive feedback
-        return HttpResponseRedirect( reverse('webui-collection-edit', args=[repo,org,cid]) )
+        return HttpResponseRedirect( reverse('webui-collection-edit', args=collection.idparts) )
     # something happened...
     logger.error('Could not create new collecion!')
     messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_ERR_CREATE'])
@@ -299,8 +290,13 @@ def newexpert( request, repo, org ):
         form = NewCollectionForm(request.POST)
         if form.is_valid():
 
-            cid = str(form.cleaned_data['cid'])
-            collection_id = '-'.join([repo, org, cid])
+            idparts = {
+                'model':'collection',
+                'repo':repo, 'org':org,
+                'cid':str(form.cleaned_data['cid'])
+            }
+            identifier = Identifier(parts=idparts)
+            collection_id = identifier.id
             collection_ids = [
                 os.path.basename(cpath)
                 for cpath
@@ -328,9 +324,7 @@ def newexpert( request, repo, org ):
         form = NewCollectionForm(data)
     return render_to_response(
         'webui/collections/new.html',
-        {'repo': repo,
-         'org': org,
-         'form': form,
+        {'form': form,
          },
         context_instance=RequestContext(request, processors=[])
     )
@@ -343,23 +337,23 @@ def edit( request, repo, org, cid ):
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    collection = Collection.from_id_parts(repo,org,cid)
+    collection = Collection.from_request(request)
     collection.model_def_commits()
     collection.model_def_fields()
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-        return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+        return HttpResponseRedirect(collection.absolute_url())
     collection.repo_fetch()
     if collection.repo_behind():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
-        return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+        return HttpResponseRedirect(collection.absolute_url())
     if request.method == 'POST':
         form = DDRForm(request.POST, fields=collectionmodule.FIELDS)
         if form.is_valid():
             
             collection.form_post(form)
             collection.write_json()
-            collection.dump_ead()
+            collection.write_ead()
             updated_files = [collection.json_path, collection.ead_path,]
             
             # if inheritable fields selected, propagate changes to child objects
@@ -371,16 +365,13 @@ def edit( request, repo, org, cid ):
             # commit files, delete cache, update search index, update git status
             collection_edit(request, collection, updated_files, git_name, git_mail)
             
-            return HttpResponseRedirect(collection.url())
+            return HttpResponseRedirect(collection.absolute_url())
         
     else:
         form = DDRForm(collection.form_prep(), fields=collectionmodule.FIELDS)
     return render_to_response(
         'webui/collections/edit-json.html',
-        {'repo': repo,
-         'org': org,
-         'cid': cid,
-         'collection': collection,
+        {'collection': collection,
          'form': form,
          },
         context_instance=RequestContext(request, processors=[])
@@ -393,14 +384,14 @@ def csv_export( request, repo, org, cid, model=None ):
     """
     if (not model) or (not (model in ['entity','file'])):
         raise Http404
-    collection = Collection.from_id_parts(repo,org,cid)
+    collection = Collection.from_request(request)
     things = {'entity':'objects', 'file':'files'}
     csv_path = export_csv_path(collection.path, model)
     csv_filename = os.path.basename(csv_path)
     if model == 'entity':
-        file_url = reverse('webui-collection-csv-entities', args=[repo,org,cid])
+        file_url = reverse('webui-collection-csv-entities', args=collection.idparts)
     elif model == 'file':
-        file_url = reverse('webui-collection-csv-files', args=[repo,org,cid])
+        file_url = reverse('webui-collection-csv-files', args=collection.idparts)
     # do it
     result = csv_export_model.apply_async( (collection.path,model), countdown=2)
     # add celery task_id to session
@@ -409,14 +400,14 @@ def csv_export( request, repo, org, cid, model=None ):
     task = {'task_id': result.task_id,
             'action': 'webui-csv-export-model',
             'collection_id': collection.id,
-            'collection_url': collection.url(),
+            'collection_url': collection.absolute_url(),
             'things': things[model],
             'file_name': csv_filename,
             'file_url': file_url,
             'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
     celery_tasks[result.task_id] = task
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
-    return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+    return HttpResponseRedirect(collection.absolute_url())
 
 @storage_required
 def csv_download( request, repo, org, cid, model=None ):
@@ -426,7 +417,7 @@ def csv_download( request, repo, org, cid, model=None ):
     File must be readable by Python csv module.
     If all that is true then it must be a legal CSV file.
     """
-    collection = Collection.from_id_parts(repo,org,cid)
+    collection = Collection.from_request(request)
     path = export_csv_path(collection.path, model)
     filename = os.path.basename(path)
     if not os.path.exists(path):
@@ -448,138 +439,6 @@ def csv_download( request, repo, org, cid, model=None ):
 @ddrview
 @login_required
 @storage_required
-def edit_ead( request, repo, org, cid ):
-    """
-    on GET
-    - reads contents of EAD.xml
-    - puts in form, in textarea
-    - user edits XML
-    on POST
-    - write contents of field to EAD.xml
-    - commands.update
-    """
-    collection = Collection.from_json(Collection.collection_path(request,repo,org,cid))
-    if collection.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-        return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
-    ead_path_rel = 'ead.xml'
-    ead_path_abs = os.path.join(collection.path, ead_path_rel)
-    #
-    if request.method == 'POST':
-        form = UpdateForm(request.POST)
-        if form.is_valid():
-            git_name = request.session.get('git_name')
-            git_mail = request.session.get('git_mail')
-            if git_name and git_mail:
-                xml = form.cleaned_data['xml']
-                # TODO validate XML
-                with open(ead_path_abs, 'w') as f:
-                    f.write(xml)
-                
-                exit,status = commands.update(git_name, git_mail,
-                                              collection.path, [ead_path_rel],
-                                              agent=settings.AGENT)
-                
-                if exit:
-                    messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
-                else:
-                    messages.success(request, 'Collection metadata updated')
-                    return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
-            else:
-                messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    else:
-        with open(ead_path_abs, 'r') as f:
-            xml = f.read()
-        form = UpdateForm({'xml':xml,})
-    return render_to_response(
-        'webui/collections/edit-ead.html',
-        {'repo': repo,
-         'org': org,
-         'cid': cid,
-         'collection_uid': collection.id,
-         'collection': collection,
-         'form': form,},
-        context_instance=RequestContext(request, processors=[])
-    )
-
-@login_required
-@storage_required
-def edit_xml( request, repo, org, cid, slug, Form, FIELDS ):
-    """Edit the contents of <archdesc>.
-    """
-    git_name = request.session.get('git_name')
-    git_mail = request.session.get('git_mail')
-    if not git_name and git_mail:
-        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    collection_path = Collection.collection_path(request,repo,org,cid)
-    collection_id = Identity.id_from_path(collection_path)
-    ead_path_rel = 'ead.xml'
-    ead_path_abs = os.path.join(collection_path, ead_path_rel)
-    with open(ead_path_abs, 'r') as f:
-        xml = f.read()
-    fields = Form.prep_fields(FIELDS, xml)
-    #
-    if request.method == 'POST':
-        form = Form(request.POST, fields=fields)
-        if form.is_valid():
-            form_fields = form.fields
-            cleaned_data = form.cleaned_data
-            xml_new = Form.process(xml, fields, form)
-            # TODO validate XML
-            with open(ead_path_abs, 'w') as fnew:
-                fnew.write(xml_new)
-            # TODO validate XML
-            exit,status = commands.update(git_name, git_mail,
-                                          collection_path, [ead_path_rel],
-                                          agent=settings.AGENT)
-            if exit:
-                messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
-            else:
-                messages.success(request, '<{}> updated'.format(slug))
-                return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
-    else:
-        form = Form(fields=fields)
-    # template
-    try:
-        tf = 'webui/collections/edit-{}.html'.format(slug)
-        t = get_template(tf)
-        template_filename = tf
-    except:
-        template_filename = 'webui/collections/edit-xml.html'
-    return render_to_response(
-        template_filename,
-        {'repo': repo,
-         'org': org,
-         'cid': cid,
-         'collection_uid': collection_id,
-         'slug': slug,
-         'form': form,},
-        context_instance=RequestContext(request, processors=[])
-    )
-
-def edit_overview( request, repo, org, cid ):
-    return edit_xml(request, repo, org, cid,
-                    slug='overview', Form=CollectionOverviewForm, FIELDS=COLLECTION_OVERVIEW_FIELDS)
-
-def edit_admininfo( request, repo, org, cid ):
-    return edit_xml(request, repo, org, cid,
-                    slug='admininfo', Form=AdminInfoForm, FIELDS=ADMIN_INFO_FIELDS)
-
-def edit_bioghist( request, repo, org, cid ):
-    return edit_xml(request, repo, org, cid,
-                    slug='bioghist', Form=BiogHistForm, FIELDS=BIOG_HIST_FIELDS)
-
-def edit_scopecontent( request, repo, org, cid ):
-    return edit_xml(request, repo, org, cid,
-                    slug='scopecontent', Form=ScopeContentForm, FIELDS=SCOPE_CONTENT_FIELDS)
-
-def edit_adjunctdesc( request, repo, org, cid ):
-    return edit_xml(request, repo, org, cid,
-                    slug='descgrp', Form=AdjunctDescriptiveForm, FIELDS=ADJUNCT_DESCRIPTIVE_FIELDS)
-
-@ddrview
-@login_required
-@storage_required
 def unlock( request, repo, org, cid, task_id ):
     """Provides a way to remove collection lockfile through the web UI.
     """
@@ -587,8 +446,8 @@ def unlock( request, repo, org, cid, task_id ):
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    collection = Collection.from_id_parts(repo,org,cid)
+    collection = Collection.from_request(request)
     if task_id and collection.locked() and (task_id == collection.locked()):
         collection.unlock(task_id)
         messages.success(request, 'Collection <b>%s</b> unlocked.' % collection.id)
-    return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+    return HttpResponseRedirect(collection.absolute_url())

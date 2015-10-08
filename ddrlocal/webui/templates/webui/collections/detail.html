@@ -1,10 +1,10 @@
 {% extends "webui/collections/base.html" %}
-
+{% load webui_tags %}
 
 {% block title %}{{ collection.id }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li class="active">{{ collection.id }}</li>
+{% breadcrumbs collection %}
 {% endblock breadcrumbs %}
 
 
@@ -21,7 +21,7 @@
 
       <ul class="nav nav-tabs" id="tabs">
         <li class="active"><a href="#">Collection Metadata</a></li>
-        <li><a href="{% url "webui-collection-entities" repo org cid %}">Objects</a></li>
+        <li><a href="{{ collection.children_url }}">Objects</a></li>
       </ul>
 
 
@@ -56,7 +56,7 @@
 </p>
 {% else %}
 <p>
-<a class="btn btn-mini btn-primary" href="{% url "webui-collection-edit" repo org cid %}"><span class="glyphicon glyphicon-edit icon-white"></span> Edit</a>
+<a class="btn btn-mini btn-primary" href="{{ collection.edit_url }}"><span class="glyphicon glyphicon-edit icon-white"></span> Edit</a>
 </p>
 {% endif %}{# conflicted #}
 {% endif %}{#username #}
@@ -78,13 +78,13 @@
 
 
 {% block footer %}{{ block.super }}
-{% if unlock_task_id %}
+{% if collection_unlock_url %}
 <!-- click to remove collection lock file -->
 <div>
   <a id="unlock-unlock" class="muted" href="">unlock</a>
   <span id="unlock-confirm" style="display:none;">
     are you sure?
-    <a id="unlock-confirm-yes" href="{% url "webui-collection-unlock" repo org cid unlock_task_id %}">yes</a>
+    <a id="unlock-confirm-yes" href="{{ collection_unlock_url }}">yes</a>
     <a id="unlock-confirm-no" href="">no</a>
   </span>
 </div>

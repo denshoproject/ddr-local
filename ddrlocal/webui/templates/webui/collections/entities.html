@@ -5,8 +5,7 @@
 {% block title %}Objects | {{ collection.id }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{{ collection.url }}">{{ collection.id }}</a></li>
-<li class="active">Objects</li>
+{% breadcrumbs collection "Objects" %}
 {% endblock breadcrumbs %}
 
 
@@ -22,7 +21,7 @@
 
 
       <ul class="nav nav-tabs" id="tabs">
-        <li><a href="{{ collection.url }}">Collection Metadata</a></li>
+        <li><a href="{{ collection.absolute_url }}">Collection Metadata</a></li>
         <li class="active"><a href="#">Objects</a></li>
       </ul>
 
@@ -36,7 +35,7 @@
 </p>
 {% else %}
 <p>
-<a href="{% url "webui-entity-new" repo org cid %}" class="btn btn-primary btn-small"><span class="glyphicon glyphicon-plus icon-white"></span> New object</a>
+<a href="{{ collection.new_entity_url }}" class="btn btn-primary btn-small"><span class="glyphicon glyphicon-plus icon-white"></span> New object</a>
 </p>
 {% endif %}{# conflicted #}
 {% endif %}{#username #}
@@ -49,7 +48,7 @@
 
 <ul>
 {% for entity in page.object_list %}
-  <li><a href="{% url "webui-entity" entity.repo entity.org entity.cid entity.eid %}">{{ entity.id }} {% if entity.title %}&mdash; {{ entity.title }}{% endif %}</a></li>
+  <li><a href="{{ entity.absolute_url }}">{{ entity.id }} {% if entity.title %}&mdash; {{ entity.title }}{% endif %}</a></li>
 {% endfor %}
 </ul>
 

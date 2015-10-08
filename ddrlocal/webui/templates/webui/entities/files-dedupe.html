@@ -1,12 +1,11 @@
 {% extends "webui/entities/base.html" %}
-{% load thumbnail %}
+{% load thumbnail webui_tags %}
 
 
 {% block title %}{{ entity.id }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{{ entity.url }}">{{ entity.id }}</a></li>
-<li class="active">Remove duplicate files</li>
+{% breadcrumbs entity "Remove duplicate files" %}
 {% endblock breadcrumbs %}
 
 
@@ -48,7 +47,7 @@ If you don't care about the metadata, feel free to just click and remove the dup
 </p>
 <input class="btn btn-danger" type="submit" value="Remove Duplicates" />
 &nbsp;
-<a href="{{ entity.url }}">Cancel</a>
+<a href="{{ entity.absolute_url }}">Cancel</a>
 </form>
 
  

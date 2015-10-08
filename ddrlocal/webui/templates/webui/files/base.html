@@ -1,10 +1,5 @@
 {% extends "webui/entities/base.html" %}
 
-{% block breadcrumbs %}{{ block.super }}
-<li><a href="{{ entity.url }}">{{ entity.eid }}</a></li>
-{% endblock breadcrumbs %}
-
-
 
 {% block footer %}
 
@@ -15,9 +10,9 @@
   <span><a class="muted" href="{{ file.fs_url }}" target="fs">fs</a></span>
   <span class="bullsep">&bull;</span>
   <span>
-    <a class="muted" href="{% url "webui-file-json" repo org cid eid role sha1 %}">json</a>
+    <a class="muted" href="{{ file.json_url }}">json</a>
 {% if username %}
-    <a class="muted" href="{# url "webui-file-edit-json" repo org cid eid role sha1 #}">(edit)</a>
+    <a class="muted" href="{{ file.edit_json_url }}">(edit)</a>
   </span>
   <span class="bullsep">&bull;&bull;</span>
   <span>

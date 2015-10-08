@@ -9,7 +9,7 @@
 {% block indicators %}
 {% if username %}
   {% if collection %}
-    <form name="collection-sync" action="{% url "webui-collection-sync" repo org cid %}" method="POST">
+    <form name="collection-sync" action="{{ collection.sync_url }}" method="POST">
       {% csrf_token %}
       <span id="sync-status" class="label label-default">sync status</span>
     {% if collection.locked %}
@@ -62,23 +62,20 @@
   <span><a class="muted" href="{{ collection.fs_url }}" target="fs">fs</a></span>
   <span class="bullsep">&bull;</span>
   
-  <span><a class="muted" href="{% url "webui-collection-json" repo org cid %}">json</a></span>
+  <span><a class="muted" href="{{ collection.json_url }}">json</a></span>
   <span class="bullsep">&bull;</span>
   csv (<span
-  ><a class="muted" href="{% url "webui-collection-export-entities" repo org cid %}">objects</a></span>,<span
-  ><a class="muted" href="{% url "webui-collection-export-files" repo org cid %}">files</a></span>)
+  ><a class="muted" href="{{ collection.export_entities_url }}">objects</a></span>,<span
+  ><a class="muted" href="{{ collection.export_files_url }}">files</a></span>)
   <span class="bullsep">&bull;</span>
   <span>
-   <a class="muted" href="{% url "webui-collection-ead-xml" repo org cid %}">ead.xml</a>
-{% if username %}
-   <a class="muted" href="{% url "webui-collection-edit-ead" repo org cid %}">(edit)</a>
-{% endif %}
+   <a class="muted" href="{{ collection.ead_xml_url }}">ead.xml</a>
   </span>
   <span class="bullsep">&bull;</span>
-  <span><a class="muted" href="{% url "webui-collection-changelog" repo org cid %}">changelog</a></span>
+  <span><a class="muted" href="{{ collection.changelog_url }}">changelog</a></span>
 {% if username %}
   <span class="bullsep">&bull;</span>
-  <span><a class="muted" href="{% url "webui-collection-git-status" repo org cid %}">git status</a></span>
+  <span><a class="muted" href="{{ collection.git_status_url }}">git status</a></span>
   <span class="bullsep">&bull;&bull;</span>
   <span><a class="muted" href="{{ workbench_url }}" target="workbench">workbench</a></span>
   <span class="bullsep">&bull;</span>

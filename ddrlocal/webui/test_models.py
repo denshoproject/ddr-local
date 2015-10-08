@@ -65,7 +65,6 @@ def test_form_post():
     assert document.title == "NEW TITLE"
     assert document.description == "NEW DESCRIPTION"    
 
-# TODO post_json
 # TODO _child_jsons
 # TODO _selected_inheritables
 # TODO _selected_field_values
@@ -97,7 +96,6 @@ def test_form_post():
 # TODO Collection.model_def_fields
 # TODO Collection.form_prep
 # TODO Collection.form_post
-# TODO Collection.post_json
 
 # TODO Entity.__repr__
 # TODO Entity.entity_path
@@ -109,7 +107,6 @@ def test_form_post():
 # TODO Entity.model_def_fields
 # TODO Entity.form_prep
 # TODO Entity.form_post
-# TODO Entity.post_json
 # TODO Entity.load_file_objects
 
 # TODO DDRFile.__repr__
@@ -121,4 +118,3 @@ def test_form_post():
 # TODO DDRFile.model_def_fields
 # TODO DDRFile.form_prep
 # TODO DDRFile.form_post
-# TODO DDRFile.post_json

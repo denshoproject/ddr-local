@@ -44,11 +44,11 @@ from django.conf import settings
 from django.core.cache import cache
 
 from DDR import dvcs
-from DDR.models import Identity
 from DDR.storage import is_writable
 from ddrlocal.models import DDRLocalCollection as Collection
 from webui import COLLECTION_STATUS_TIMEOUT
 from webui import gitolite
+from webui.identifier import Identifier
 
 
 def log(msg):
@@ -182,14 +182,15 @@ def sync_status( collection_path, git_status, timestamp, cache_set=False, force=
     @param cache_set: Run git-status if data is not cached
     """
     # IMPORTANT: DO NOT call collection.gitstatus() it will loop
-    collection_id = Identity.id_from_path(collection_path)
+    cidentifier = Identifier(collection_path)
+    collection_id = cidentifier.id
     key = COLLECTION_SYNC_STATUS_CACHE_KEY % collection_id
     data = cache.get(key)
     if force or (not data and cache_set):
         status = 'unknown'
         btn = 'muted'
         # we're just getting this so we can call Collection.locked
-        disposable_collection = Collection(path=collection_path)
+        disposable_collection = Collection.from_identifier(cidentifier)
         # now:
         if   dvcs.ahead(git_status): status = 'ahead'; btn = 'warning'
         elif dvcs.behind(git_status): status = 'behind'; btn = 'warning'
@@ -479,19 +480,17 @@ def next_repo( queue, local=False ):
         # choose first collection that is not locked
         for timestamp,cid in collections:
             if datetime.now() > timestamp:
-                cpath = Identity.path_from_id(cid, settings.MEDIA_BASE)
-                collection = Collection.from_json(cpath)
+                collection = Collection.from_identifier(Identifier(id=cid))
                 if not collection.locked():
-                    collection_path = cpath
-                    return collection_path
+                    return collection.path_abs
             if (not next_available) or (timestamp < next_available):
                 next_available = timestamp
     else:
         # global lock - just take the first collection
         for timestamp,cid in collections:
             if datetime.now() > timestamp:
-                collection_path = Identity.path_from_id(cid, settings.MEDIA_BASE)
-                return collection_path
+                identifier = Identifier(id=cid)
+                return identifier.path_abs
             if (not next_available) or (timestamp < next_available):
                 next_available = timestamp
     return ('notready',next_available)

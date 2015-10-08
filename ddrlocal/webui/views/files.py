@@ -32,7 +32,8 @@ from webui.decorators import ddrview
 from webui.forms import DDRForm
 from webui.forms.files import NewFileDDRForm, NewAccessFileForm, DeleteFileForm
 from webui.forms.files import shared_folder_files
-from webui.models import Collection, Entity
+from webui.models import Collection, Entity, DDRFile
+from webui.identifier import Identifier
 from webui.tasks import entity_add_file, entity_add_access
 from webui.tasks import entity_file_edit, entity_delete_file
 from webui.tasks import gitstatus_update
@@ -80,36 +81,30 @@ def prep_newfile_form_fields(FIELDS):
 def detail( request, repo, org, cid, eid, role, sha1 ):
     """Add file to entity.
     """
-    collection = Collection.from_id_parts(repo,org,cid)
-    entity = Entity.from_id_parts(repo,org,cid,eid)
-    file_ = entity.file(repo, org, cid, eid, role, sha1)
+    file_ = DDRFile.from_request(request)
+    entity = file_.parent()
+    collection = file_.collection()
     file_.model_def_commits()
     file_.model_def_fields()
     formdata = {'path':file_.path_rel}
     return render_to_response(
         'webui/files/detail.html',
-        {'repo': file_.repo,
-         'org': file_.org,
-         'cid': file_.cid,
-         'eid': file_.eid,
-         'role': file_.role,
-         'sha1': file_.sha1,
-         'collection_uid': collection.id,
-         'collection': collection,
+        {'collection': collection,
          'entity': entity,
+         'role': role,
          'file': file_,
+         'new_access_url': file_.new_access_url,
          'new_access_form': NewAccessFileForm(formdata),},
         context_instance=RequestContext(request, processors=[])
     )
 
 @storage_required
 def file_json( request, repo, org, cid, eid, role, sha1 ):
-    entity = Entity.from_id_parts(repo,org,cid,eid)
-    file_ = entity.file(repo, org, cid, eid, role, sha1)
+    file_ = DDRFile.from_request(request)
     if file_.json_path and os.path.exists(file_.json_path):
         return HttpResponse(file_.dump_json(), content_type="application/json")
     messages.success(request, 'no JSON file. sorry.')
-    return HttpResponseRedirect( reverse('webui-file', args=[repo,org,cid,eid,role,sha1]) )
+    return HttpResponseRedirect(file_.absolute_url())
 
 @ddrview
 @login_required
@@ -117,8 +112,10 @@ def file_json( request, repo, org, cid, eid, role, sha1 ):
 def browse( request, repo, org, cid, eid, role='master' ):
     """Browse for a file in vbox shared folder.
     """
-    collection = Collection.from_id_parts(repo,org,cid)
-    entity = Entity.from_id_parts(repo,org,cid,eid)
+    identifier = Identifier(request)
+    file_role = identifier.object()
+    entity = file_role.parent(stubs=True)
+    collection = entity.collection()
     path = request.GET.get('path')
     home = None
     parent = None
@@ -147,14 +144,11 @@ def browse( request, repo, org, cid, eid, role='master' ):
                 listdir.append(attribs)
     return render_to_response(
         'webui/files/browse.html',
-        {'repo': repo,
-         'org': org,
-         'cid': cid,
-         'eid': eid,
-         'collection_uid': collection.id,
-         'collection': collection,
+        {'collection': collection,
          'entity': entity,
-         'role': role,
+         'file_role': file_role,
+         'new_file_url': entity.new_file_url(role),
+         'shared_folder': settings.VIRTUALBOX_SHARED_FOLDER,
          'listdir': listdir,
          'parent': parent,
          'home': home,},
@@ -169,17 +163,18 @@ def new( request, repo, org, cid, eid, role='master' ):
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    collection = Collection.from_id_parts(repo,org,cid)
-    entity = Entity.from_id_parts(repo,org,cid,eid)
+    file_role = Identifier(request).object()
+    entity = file_role.parent(stubs=True)
+    collection = entity.collection()
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+        return HttpResponseRedirect(entity.absolute_url())
     if collection.repo_behind():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
-        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+        return HttpResponseRedirect(entity.absolute_url())
     if entity.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
-        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+        return HttpResponseRedirect(entity.absolute_url())
     #
     path = request.GET.get('path', None)
     FIELDS = prep_newfile_form_fields(filemodule.FIELDS_NEW)
@@ -223,7 +218,7 @@ def new( request, repo, org, cid, eid, role='master' ):
             # feedback
 #            messages.success(request, WEBUI_MESSAGES['VIEWS_FILES_UPLOADING'] % (os.path.basename(src_path), result))
             # redirect to entity
-            return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+        return HttpResponseRedirect(entity.absolute_url())
     else:
         if not path:
             messages.error(request, 'specify a path')
@@ -237,14 +232,9 @@ def new( request, repo, org, cid, eid, role='master' ):
         form = NewFileDDRForm(data, fields=FIELDS, path_choices=shared_folder_files())
     return render_to_response(
         'webui/files/new.html',
-        {'repo': entity.repo,
-         'org': entity.org,
-         'cid': entity.cid,
-         'eid': entity.eid,
-         'role': role,
-         'collection_uid': collection.id,
-         'collection': collection,
+        {'collection': collection,
          'entity': entity,
+         'file_role': file_role,
          'form': form,
          'path': path,},
         context_instance=RequestContext(request, processors=[])
@@ -262,19 +252,19 @@ def new_access( request, repo, org, cid, eid, role, sha1 ):
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    collection = Collection.from_id_parts(repo,org,cid)
-    entity = Entity.from_id_parts(repo,org,cid,eid)
+    file_ = DDRFile.from_request(request)
+    entity = file_.parent()
+    collection = file_.collection()
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+        return HttpResponseRedirect(entity.absolute_url())
     collection.repo_fetch()
     if collection.repo_behind():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
-        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+        return HttpResponseRedirect(entity.absolute_url())
     if entity.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
-        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
-    file_ = entity.file(repo, org, cid, eid, role, sha1)
+        return HttpResponseRedirect(entity.absolute_url())
     #
     if request.method == 'POST':
         form = NewAccessFileForm(request.POST)
@@ -301,7 +291,7 @@ def new_access( request, repo, org, cid, eid, role, sha1 ):
             task = {'task_id': result.task_id,
                     'action': 'webui-file-new-access',
                     'filename': os.path.basename(src_path),
-                    'file_url': file_.url(),
+                    'file_url': file_.absolute_url(),
                     'entity_id': entity.id,
                     'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
             celery_tasks[result.task_id] = task
@@ -310,7 +300,7 @@ def new_access( request, repo, org, cid, eid, role, sha1 ):
             # feedback
             messages.success(request, WEBUI_MESSAGES['VIEWS_FILES_NEWACCESS'] % os.path.basename(src_path))
     # redirect to entity
-    return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+    return HttpResponseRedirect(entity.absolute_url())
 
 @ddrview
 @login_required
@@ -318,18 +308,18 @@ def new_access( request, repo, org, cid, eid, role, sha1 ):
 def batch( request, repo, org, cid, eid, role='master' ):
     """Add multiple files to entity.
     """
-    collection = Collection.from_id_parts(repo,org,cid)
-    entity = Entity.from_id_parts(repo,org,cid,eid)
+    entity = Entity.from_request(request)
+    collection = entity.collection()
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+        return HttpResponseRedirect(entity.absolute_url())
     collection.repo_fetch()
     if collection.repo_behind():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
-        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+        return HttpResponseRedirect(entity.absolute_url())
     if entity.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
-        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+        return HttpResponseRedirect(entity.absolute_url())
     return render_to_response(
         'webui/files/new.html',
         {'collection': collection,
@@ -345,19 +335,19 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    collection = Collection.from_id_parts(repo,org,cid)
-    entity = Entity.from_id_parts(repo,org,cid,eid)
+    file_ = DDRFile.from_request(request)
+    entity = file_.parent()
+    collection = file_.collection()
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+        return HttpResponseRedirect(entity.absolute_url())
     collection.repo_fetch()
     if collection.repo_behind():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
-        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+        return HttpResponseRedirect(entity.absolute_url())
     if entity.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
-        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
-    file_ = entity.file(repo, org, cid, eid, role, sha1)
+        return HttpResponseRedirect(entity.absolute_url())
     file_.model_def_commits()
     file_.model_def_fields()
     #
@@ -371,20 +361,15 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
             # commit files, delete cache, update search index, update git status
             entity_file_edit(request, collection, file_, git_name, git_mail)
             
-            return HttpResponseRedirect( file_.url() )
+            return HttpResponseRedirect( file_.absolute_url() )
             
     else:
         form = DDRForm(file_.form_prep(), fields=filemodule.FIELDS)
     return render_to_response(
         'webui/files/edit-json.html',
-        {'repo': file_.repo,
-         'org': file_.org,
-         'cid': file_.cid,
-         'eid': file_.eid,
-         'role': file_.role,
-         'sha1': file_.sha1,
-         'collection': collection,
+        {'collection': collection,
          'entity': entity,
+         'role': role,
          'file': file_,
          'form': form,
          },
@@ -396,17 +381,17 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
 @storage_required
 def delete( request, repo, org, cid, eid, role, sha1 ):
     try:
-        entity = Entity.from_id_parts(repo,org,cid,eid)
-        file_ = entity.file(repo, org, cid, eid, role, sha1)
+        file_ = DDRFile.from_request(request)
+        entity = file_.parent()
+        collection = file_.collection()
     except:
         raise Http404
-    collection = Collection.from_id_parts(repo,org,cid)
     if entity.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
-        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+        return HttpResponseRedirect(entity.absolute_url())
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-        return HttpResponseRedirect( reverse('webui-entity', args=[repo,org,cid,eid]) )
+        return HttpResponseRedirect(entity.absolute_url())
     git_name = request.session.get('git_name')
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
@@ -416,18 +401,13 @@ def delete( request, repo, org, cid, eid, role, sha1 ):
         form = DeleteFileForm(request.POST)
         if form.is_valid() and form.cleaned_data['confirmed']:
             entity_delete_file(request, git_name, git_mail, collection, entity, file_, settings.AGENT)
-            return HttpResponseRedirect( reverse('webui-collection', args=[repo,org,cid]) )
+            return HttpResponseRedirect(collection.absolute_url())
     else:
         form = DeleteFileForm()
     return render_to_response(
         'webui/files/delete.html',
-        {'repo': file_.repo,
-         'org': file_.org,
-         'cid': file_.cid,
-         'eid': file_.eid,
-         'role': file_.role,
-         'sha1': file_.sha1,
-         'file': file_,
+        {'file': file_,
+         'role': role,
          'form': form,
          },
         context_instance=RequestContext(request, processors=[])

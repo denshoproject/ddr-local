@@ -1,10 +1,5 @@
 {% extends "webui/collections/base.html" %}
 
-{% block breadcrumbs %}{{ block.super }}
-<li><a href="{{ collection.url }}">{{ collection.id }}</a></li>
-{% endblock breadcrumbs %}
-
-
 
 {% block footer %}
 
@@ -15,23 +10,20 @@
   <span><a class="muted" href="{{ entity.fs_url }}" target="fs">fs</a></span>
   <span class="bullsep">&bull;</span>
   <span>
-    <a class="muted" href="{% url "webui-entity-json" repo org cid eid %}">json</a>
+    <a class="muted" href="{{ entity.json_url }}">json</a>
 {% if username %}
-    <a class="muted" href="{% url "webui-entity-edit-json" repo org cid eid %}">(edit)</a>
+    <a class="muted" href="{{ entity.edit_json_url }}">(edit)</a>
 {% endif %}{#username #}
   </span>
   <span class="bullsep">&bull;</span>
   <span>
-    <a class="muted" href="{% url "webui-entity-mets-xml" repo org cid eid %}">mets.xml</a>
-{% if username %}
-    <a class="muted" href="{% url "webui-entity-edit-mets-xml" repo org cid eid %}">(edit)</a>
-{% endif %}{#username #}
+    <a class="muted" href="{{ entity.mets_xml_url }}">mets.xml</a>
   </span>
   <span class="bullsep">&bull;</span>
-  <span><a class="muted" href="{% url "webui-entity-changelog" repo org cid eid %}">changelog</a></span>
+  <span><a class="muted" href="{{ entity.changelog_url }}">changelog</a></span>
 {% if username %}
   <span class="bullsep">&bull;</span>
-  <span><a class="muted" href="{% url "webui-entity-addfilelog" repo org cid eid %}">addfile.log</a></span>
+  <span><a class="muted" href="{{ entity.addfile_url }}">addfile.log</a></span>
   <span class="bullsep">&bull;&bull;</span>
   <span>
   {{ entity.path }}

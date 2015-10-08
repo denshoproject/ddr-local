@@ -1,12 +1,10 @@
 {% extends "webui/collections/base.html" %}
-{% load thumbnail %}
-
+{% load thumbnail webui_tags%}
 
 {% block title %}Sync | {{ collection.id }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li><a href="{{ collection.url }}">{{ collection.id }}</a></li>
-<li class="active">Sync</li>
+{% breadcrumbs collection "Sync" %}
 {% endblock breadcrumbs %}
 
 
@@ -51,7 +49,7 @@ Yes, I do indeed want to sync this collection.
 /
 &nbsp;
 &nbsp;
-<a href="{{ collection.url }}" class="btn btn-primary btn-mini">Cancel sync</a>
+<a href="{{ collection.absolute_url }}" class="btn btn-primary btn-mini">Cancel sync</a>
     </td>
   </tr>
 </form>
