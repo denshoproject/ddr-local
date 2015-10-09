@@ -266,6 +266,8 @@ def entity_add_access( git_name, git_mail, entity, ddrfile, agent='' ):
     """
     gitstatus.lock(settings.MEDIA_BASE, 'entity_add_access')
     file_,repo,log = entity.add_access(ddrfile, git_name, git_mail, agent)
+    file_,repo,log = entity.add_file_commit(file_, repo, log, git_name, git_mail, agent)
+    file_.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
     return file_.__dict__
 
 

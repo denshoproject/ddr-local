@@ -298,7 +298,7 @@ def new_access( request, repo, org, cid, eid, role, sha1 ):
             #del request.session[settings.CELERY_TASKS_SESSION_KEY]
             request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
             # feedback
-            messages.success(request, WEBUI_MESSAGES['VIEWS_FILES_NEWACCESS'] % os.path.basename(src_path))
+            #messages.success(request, WEBUI_MESSAGES['VIEWS_FILES_NEWACCESS'] % os.path.basename(src_path))
     # redirect to entity
     return HttpResponseRedirect(entity.absolute_url())
 
