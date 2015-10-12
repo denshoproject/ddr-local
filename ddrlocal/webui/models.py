@@ -25,17 +25,6 @@ from DDR.models import Entity as DDREntity
 from DDR.models import File
 from DDR.models import COLLECTION_FILES_PREFIX, ENTITY_FILES_PREFIX
 
-if settings.REPO_MODELS_PATH not in sys.path:
-    sys.path.append(settings.REPO_MODELS_PATH)
-try:
-    from repo_models import collection as collectionmodule
-    from repo_models import entity as entitymodule
-    from repo_models import files as filemodule
-except ImportError:
-    from DDR.models import collectionmodule
-    from DDR.models import entitymodule
-    from DDR.models import filemodule
-
 from webui import gitstatus
 from webui import WEBUI_MESSAGES
 from webui import COLLECTION_FETCH_CACHE_KEY
@@ -44,7 +33,7 @@ from webui import COLLECTION_ANNEX_STATUS_CACHE_KEY
 from webui import COLLECTION_FETCH_TIMEOUT
 from webui import COLLECTION_STATUS_TIMEOUT
 from webui import COLLECTION_ANNEX_STATUS_TIMEOUT
-from webui.identifier import Identifier
+from webui.identifier import Identifier, MODULES
 
 # TODO get roles from somewhere (Identifier?)
 FILE_ROLES = ['master', 'mezzanine',]
@@ -69,10 +58,11 @@ def repo_models_valid(request):
     if added:
         valid = False
     else:
-        cvalid,cmsg = Module(collectionmodule).is_valid()
-        evalid,emsg = Module(entitymodule).is_valid()
-        fvalid,fmsg = Module(filemodule).is_valid()
-        if not (cvalid and evalid and fvalid):
+        valid_modules = [
+            Module(module).is_valid()
+            for model,module in MODULES.iteritems()
+        ]
+        if not (valid_modules):
             valid = False
             messages.error(request, UNDEFINED_MSG)
     return valid

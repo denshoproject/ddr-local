@@ -26,13 +26,6 @@ from DDR import dvcs
 from DDR import idservice
 from DDR.models import write_json
 
-if settings.REPO_MODELS_PATH not in sys.path:
-    sys.path.append(settings.REPO_MODELS_PATH)
-try:
-    from repo_models import collection as collectionmodule
-except ImportError:
-    from DDR.models import collectionmodule
-
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
 from webui.decorators import ddrview, search_index
