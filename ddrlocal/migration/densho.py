@@ -115,8 +115,9 @@ import doctest
 
 from django.conf import settings
 
+from DDR import find_meta_files
 from DDR import commands
-from DDR.models import Module, metadata_files
+from DDR.models import Module
 from webui.models import Collection, Entity
 from ddrlocal.models import DDRLocalEntity, DDRLocalFile
 
@@ -845,7 +846,7 @@ def export_entities( collection_path, csv_path ):
     fieldnames.remove('files')
     print(fieldnames)
     paths = []
-    for path in metadata_files(basedir=collection_path, recursive=True):
+    for path in find_meta_files(basedir=collection_path, recursive=True):
         if os.path.basename(path) == 'entity.json':
             paths.append(path)
     
@@ -905,7 +906,7 @@ def export_files( collection_path, csv_path ):
     fieldnames = [field['name'] for field in filemodule.FILE_FIELDS]
     print(fieldnames)
     paths = []
-    for path in metadata_files(basedir=collection_path, recursive=True):
+    for path in find_meta_files(basedir=collection_path, recursive=True):
         if ('master' in path) or ('mezzanine' in path):
             paths.append(path)
     
