@@ -364,14 +364,14 @@ class Collection( DDRCollection ):
         
         @returns data: dict object as used by Django Form object.
         """
-        return form_prep(self, collectionmodule)
+        return form_prep(self, self.identifier.fields_module())
     
     def form_post(self, form):
         """Apply formpost_{field} functions to process cleaned_data from DDRForm
         
         @param form: DDRForm object
         """
-        form_post(self, collectionmodule, form)
+        form_post(self, self.identifier.fields_module(), form)
     
     @staticmethod
     def create(collection_path, git_name, git_mail):
@@ -554,7 +554,7 @@ class Entity( DDREntity ):
         
         @returns data: dict object as used by Django Form object.
         """
-        data = form_prep(self, entitymodule)
+        data = form_prep(self, self.identifier.fields_module())
         if not data.get('record_created', None):
             data['record_created'] = datetime.now()
         if not data.get('record_lastmod', None):
@@ -566,7 +566,7 @@ class Entity( DDREntity ):
         
         @param form: DDRForm object
         """
-        form_post(self, entitymodule, form)
+        form_post(self, self.identifier.fields_module(), form)
     
     def load_file_objects( self ):
         """Replaces list of file info dicts with list of DDRFile objects
@@ -745,14 +745,14 @@ class DDRFile( File ):
         
         @returns data: dict object as used by Django Form object.
         """
-        return form_prep(self, filemodule)
+        return form_prep(self, self.identifier.fields_module())
     
     def form_post(self, form):
         """Apply formpost_{field} functions to process cleaned_data from DDRForm
         
         @param form: DDRForm object
         """
-        form_post(self, filemodule, form)
+        form_post(self, self.identifier.fields_module(), form)
     
     def save( self, git_name, git_mail ):
         """Perform file-save functions.

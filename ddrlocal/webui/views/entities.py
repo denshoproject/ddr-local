@@ -429,6 +429,7 @@ def edit( request, repo, org, cid, eid ):
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     entity = Entity.from_request(request)
+    module = entity.identifier.fields_module()
     collection = entity.collection()
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
@@ -448,7 +449,7 @@ def edit( request, repo, org, cid, eid ):
     entity.model_def_commits()
     entity.model_def_fields()
     if request.method == 'POST':
-        form = DDRForm(request.POST, fields=entitymodule.FIELDS)
+        form = DDRForm(request.POST, fields=module.FIELDS)
         if form.is_valid():
             # run module_functions on raw form data
             entity.form_post(form)
@@ -478,7 +479,7 @@ def edit( request, repo, org, cid, eid ):
             
             return HttpResponseRedirect(entity.absolute_url())
     else:
-        form = DDRForm(entity.form_prep(), fields=entitymodule.FIELDS)
+        form = DDRForm(entity.form_prep(), fields=module.FIELDS)
     
     topics_prefilled = tagmanager_prefilled_terms(entity.topics, topics_terms)
     facility_prefilled = tagmanager_prefilled_terms(entity.facility, facility_terms)

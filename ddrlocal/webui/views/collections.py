@@ -338,6 +338,7 @@ def edit( request, repo, org, cid ):
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     collection = Collection.from_request(request)
+    module = collection.identifier.fields_module()
     collection.model_def_commits()
     collection.model_def_fields()
     if collection.locked():
@@ -348,7 +349,7 @@ def edit( request, repo, org, cid ):
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
         return HttpResponseRedirect(collection.absolute_url())
     if request.method == 'POST':
-        form = DDRForm(request.POST, fields=collectionmodule.FIELDS)
+        form = DDRForm(request.POST, fields=module.FIELDS)
         if form.is_valid():
             
             collection.form_post(form)
@@ -368,7 +369,7 @@ def edit( request, repo, org, cid ):
             return HttpResponseRedirect(collection.absolute_url())
         
     else:
-        form = DDRForm(collection.form_prep(), fields=collectionmodule.FIELDS)
+        form = DDRForm(collection.form_prep(), fields=module.FIELDS)
     return render_to_response(
         'webui/collections/edit-json.html',
         {'collection': collection,

@@ -333,6 +333,7 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     file_ = DDRFile.from_request(request)
+    module = file_.identifier.fields_module()
     entity = file_.parent()
     collection = file_.collection()
     if collection.locked():
@@ -349,7 +350,7 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
     file_.model_def_fields()
     #
     if request.method == 'POST':
-        form = DDRForm(request.POST, fields=filemodule.FIELDS)
+        form = DDRForm(request.POST, fields=module.FIELDS)
         if form.is_valid():
             
             file_.form_post(form)
@@ -361,7 +362,7 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
             return HttpResponseRedirect( file_.absolute_url() )
             
     else:
-        form = DDRForm(file_.form_prep(), fields=filemodule.FIELDS)
+        form = DDRForm(file_.form_prep(), fields=module.FIELDS)
     return render_to_response(
         'webui/files/edit-json.html',
         {'collection': collection,
