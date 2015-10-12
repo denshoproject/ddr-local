@@ -643,7 +643,13 @@ def delete_entity( git_name, git_mail, collection_path, entity_id, agent='' ):
     gitstatus.lock(settings.MEDIA_BASE, 'delete_entity')
     logger.debug('collection_delete_entity(%s,%s,%s,%s,%s)' % (git_name, git_mail, collection_path, entity_id, agent))
     # remove the entity
-    status,message = commands.entity_destroy(git_name, git_mail, collection_path, entity_id, agent)
+    collection = Collection.from_identifier(Identifier(collection_path))
+    entity = Entity.from_identifier(Identifier(entity_id))
+    status,message = commands.entity_destroy(
+        git_name, git_mail,
+        collection, entity,
+        agent
+    )
     # update search index
     docstore.delete(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, entity_id)
     return status,message,collection_path,entity_id
@@ -711,8 +717,15 @@ def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, 
     file_id = os.path.splitext(file_basename)[0]
     file_ = DDRFile.from_identifier(Identifier(file_id))
     entity = Entity.from_identifier(Identifier(entity_id))
+    collection = Collection.from_identifier(Identifier(path=collection_path))
     logger.debug('delete from repository')
-    status,message = entity.rm_file(file_, git_name, git_mail, agent)
+    rm_files,updated_files = entity.prep_rm_file(file_)
+    status,message = commands.file_destroy(
+        git_name, git_mail,
+        collection, entity,
+        rm_files, updated_files,
+        agent
+    )
     logger.debug('delete from search index')
     docstore.delete(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, file_.id)
     return status,message,collection_path,file_basename
@@ -748,7 +761,11 @@ def collection_sync( git_name, git_mail, collection_path ):
     @return collection_path: Absolute path to collection.
     """
     gitstatus.lock(settings.MEDIA_BASE, 'collection_sync')
-    exit,status = commands.sync(git_name, git_mail, collection_path)
+    collection = Collection.from_identifier(Identifier(path=collection_path))
+    exit,status = commands.sync(
+        git_name, git_mail,
+        collection
+    )
     # update search index
     collection = Collection.from_identifier(Identifier(path=collection_path))
     collection.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)

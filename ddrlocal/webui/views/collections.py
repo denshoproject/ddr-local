@@ -253,10 +253,12 @@ def new( request, repo, org ):
     # collection.json template
     write_json(Collection(collection_path).dump_json(template=True),
                settings.TEMPLATE_CJSON)
-    exit,status = commands.create(git_name, git_mail,
-                                  collection_path,
-                                  [settings.TEMPLATE_CJSON, settings.TEMPLATE_EAD],
-                                  agent=settings.AGENT)
+    exit,status = commands.create(
+        git_name, git_mail,
+        identifier,
+        [settings.TEMPLATE_CJSON, settings.TEMPLATE_EAD],
+        agent=settings.AGENT
+    )
     if exit:
         logger.error(exit)
         logger.error(status)

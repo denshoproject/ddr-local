@@ -382,11 +382,13 @@ class Collection( DDRCollection ):
                    settings.TEMPLATE_CJSON)
         templates = [settings.TEMPLATE_CJSON, settings.TEMPLATE_EAD]
         agent = settings.AGENT
-        
+
+        cidentifier = Identifier(collection_path)
         exit,status = commands.create(
-            git_name, git_mail, collection_path, templates, agent)
+            git_name, git_mail, cidentifier, templates, agent
+        )
         
-        collection = Collection.from_json(collection_path)
+        collection = Collection.from_identifier(cidentifier)
         
         # [delete cache], update search index
         #collection.cache_delete()
@@ -409,7 +411,7 @@ class Collection( DDRCollection ):
         """
         exit,status = commands.update(
             git_name, git_mail,
-            self.path, updated_files,
+            self, updated_files,
             agent=settings.AGENT)
         self.cache_delete()
         with open(self.json_path, 'r') as f:
@@ -588,14 +590,15 @@ class Entity( DDREntity ):
     def create(collection, entity_id, git_name, git_mail, agent=settings.AGENT):
         """create new entity given an entity ID
         """
-        entity_path = Identifier(id=entity_id).path_abs()
+        eidentifier = Identifier(id=entity_id)
+        entity_path = eidentifier.path_abs()
         
         # write entity.json template to entity location and commit
         write_json(Entity(entity_path).dump_json(template=True),
                    settings.TEMPLATE_EJSON)
         exit,status = commands.entity_create(
             git_name, git_mail,
-            collection.path, entity_id,
+            collection, eidentifier,
             [collection.json_path_rel, collection.ead_path_rel],
             [settings.TEMPLATE_EJSON, settings.TEMPLATE_METS],
             agent=agent)
@@ -607,7 +610,7 @@ class Entity( DDREntity ):
         updated_files = [entity.json_path]
         exit,status = commands.entity_update(
             git_name, git_mail,
-            collection.path, entity.id,
+            collection, entity,
             updated_files,
             agent=agent)
 
@@ -637,7 +640,7 @@ class Entity( DDREntity ):
         
         exit,status = commands.entity_update(
             git_name, git_mail,
-            collection.path, self.id,
+            collection, self,
             updated_files,
             agent=settings.AGENT)
         
@@ -763,9 +766,10 @@ class DDRFile( File ):
         @param git_mail: str
         """
         collection = self.collection()
+        entity = self.parent()
         exit,status = commands.entity_update(
             git_name, git_mail,
-            collection.path, self.parent_id,
+            collection, entity,
             [self.json_path],
             agent=settings.AGENT)
         collection.cache_delete()

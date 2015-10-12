@@ -317,21 +317,25 @@ def new( request, repo, org, cid ):
                settings.TEMPLATE_EJSON)
     
     # commit files
-    exit,status = commands.entity_create(git_name, git_mail,
-                                         collection.path, eidentifier.id,
-                                         [collection.json_path_rel, collection.ead_path_rel],
-                                         [settings.TEMPLATE_EJSON, settings.TEMPLATE_METS],
-                                         agent=settings.AGENT)
+    exit,status = commands.entity_create(
+        git_name, git_mail,
+        collection, eidentifier,
+        [collection.json_path_rel, collection.ead_path_rel],
+        [settings.TEMPLATE_EJSON, settings.TEMPLATE_METS],
+        agent=settings.AGENT
+    )
     
     # load Entity object, inherit values from parent, write back to file
     entity = Entity.from_identifier(eidentifier)
     entity.inherit(collection)
     entity.write_json()
     updated_files = [entity.json_path]
-    exit,status = commands.entity_update(git_name, git_mail,
-                                         entity.parent_path, entity.id,
-                                         updated_files,
-                                         agent=settings.AGENT)
+    exit,status = commands.entity_update(
+        git_name, git_mail,
+        collection, entity,
+        updated_files,
+        agent=settings.AGENT
+    )
     
     collection.cache_delete()
     if exit:
@@ -540,10 +544,12 @@ def edit_json( request, repo, org, cid, eid ):
                 json_text = form.cleaned_data['json']
                 write_json(json_text, entity.json_path)
                 
-                exit,status = commands.entity_update(git_name, git_mail,
-                                                     entity.parent_path, entity.id,
-                                                     [entity.json_path],
-                                                     agent=settings.AGENT)
+                exit,status = commands.entity_update(
+                    git_name, git_mail,
+                    collection, entity,
+                    [entity.json_path],
+                    agent=settings.AGENT
+                )
                 
                 collection.cache_delete()
                 if exit:
@@ -629,10 +635,12 @@ def files_dedupe( request, repo, org, cid, eid ):
             entity.write_mets()
             updated_files = [entity.json_path, entity.mets_path,]
             success_msg = WEBUI_MESSAGES['VIEWS_ENT_UPDATED']
-            exit,status = commands.entity_update(git_name, git_mail,
-                                                 entity.parent_path, entity.id,
-                                                 updated_files,
-                                                 agent=settings.AGENT)
+            exit,status = commands.entity_update(
+                git_name, git_mail,
+                collection, entity,
+                updated_files,
+                agent=settings.AGENT
+            )
             collection.cache_delete()
             if exit:
                 messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
