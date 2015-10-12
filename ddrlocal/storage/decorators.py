@@ -10,6 +10,7 @@ from django.http import HttpResponseRedirect
 from django.utils.decorators import available_attrs
 
 from DDR import commands
+from webui import models
 
 from storage import STORAGE_MESSAGES
 from storage import base_path
@@ -59,7 +60,7 @@ def storage_required(func):
             elif (type(repos_orgs) == type([])):
                 repo,org = repos_orgs[0].split('-')
                 try:
-                    collections = commands.collections_local(basepath, repo, org)
+                    collections = models.Collection.collection_paths(settings.MEDIA_BASE, repo, org)
                     readable = True
                 except:
                     messages.error(request, 'ERROR: Could not get collections list.')

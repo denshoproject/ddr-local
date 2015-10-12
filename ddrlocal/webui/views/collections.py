@@ -72,9 +72,7 @@ def collections( request ):
         identifier = Identifier(object_id)
         # TODO Identifier: Organization object instead of repo and org
         repo,org = identifier.parts.values()
-        collection_paths = commands.collections_local(
-            settings.MEDIA_BASE, repo, org
-        )
+        collection_paths = Collection.collection_paths(settings.MEDIA_BASE, repo, org)
         colls = []
         for collection_path in collection_paths:
             if collection_path:
@@ -300,7 +298,7 @@ def newexpert( request, repo, org ):
             collection_ids = [
                 os.path.basename(cpath)
                 for cpath
-                in commands.collections_local(settings.MEDIA_BASE, repo, org)
+                in Collection.collection_paths(settings.MEDIA_BASE, repo, org)
             ]
             already_exists = False
             if collection_id in collection_ids:
