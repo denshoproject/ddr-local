@@ -17,8 +17,9 @@ from django.db import models
 from DDR import commands
 from DDR import docstore
 from DDR import dvcs
+from DDR import fileio
 from DDR.models import Module
-from DDR.models import read_json, write_json, from_json
+from DDR.models import from_json
 from DDR.models import Stub as DDRStub
 from DDR.models import Collection as DDRCollection
 from DDR.models import Entity as DDREntity
@@ -368,7 +369,7 @@ class Collection( DDRCollection ):
         """create new entity given an entity ID
         """
         # write collection.json template to collection location and commit
-        write_json(Collection(collection_path).dump_json(template=True),
+        fileio.write_text(Collection(collection_path).dump_json(template=True),
                    settings.TEMPLATE_CJSON)
         templates = [settings.TEMPLATE_CJSON, settings.TEMPLATE_EAD]
         agent = settings.AGENT
@@ -584,7 +585,7 @@ class Entity( DDREntity ):
         entity_path = eidentifier.path_abs()
         
         # write entity.json template to entity location and commit
-        write_json(Entity(entity_path).dump_json(template=True),
+        fileio.write_text(Entity(entity_path).dump_json(template=True),
                    settings.TEMPLATE_EJSON)
         exit,status = commands.entity_create(
             git_name, git_mail,

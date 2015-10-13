@@ -23,8 +23,8 @@ from django.template.loader import get_template
 from DDR import commands
 from DDR import docstore
 from DDR import dvcs
+from DDR import fileio
 from DDR import idservice
-from DDR.models import write_json
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
@@ -244,8 +244,10 @@ def new( request, repo, org ):
     # create the new collection repo
     collection_path = identifier.path_abs()
     # collection.json template
-    write_json(Collection(collection_path).dump_json(template=True),
-               settings.TEMPLATE_CJSON)
+    fileio.write_text(
+        Collection(collection_path).dump_json(template=True),
+        settings.TEMPLATE_CJSON
+    )
     exit,status = commands.create(
         git_name, git_mail,
         identifier,

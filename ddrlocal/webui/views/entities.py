@@ -22,8 +22,8 @@ from django.template import RequestContext
 
 from DDR import commands
 from DDR import docstore
+from DDR import fileio
 from DDR import idservice
-from DDR.models import write_json
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
@@ -306,8 +306,10 @@ def new( request, repo, org, cid ):
     # create new entity
     entity_path = eidentifier.path_abs()
     # write entity.json template to entity location
-    write_json(Entity(entity_path).dump_json(template=True),
-               settings.TEMPLATE_EJSON)
+    fileio.write_text(
+        Entity(entity_path).dump_json(template=True),
+        settings.TEMPLATE_EJSON
+    )
     
     # commit files
     exit,status = commands.entity_create(
@@ -536,7 +538,7 @@ def edit_json( request, repo, org, cid, eid ):
             git_mail = request.session.get('git_mail')
             if git_name and git_mail:
                 json_text = form.cleaned_data['json']
-                write_json(json_text, entity.json_path)
+                fileio.write_text(json_text, entity.json_path)
                 
                 exit,status = commands.entity_update(
                     git_name, git_mail,

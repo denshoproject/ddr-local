@@ -117,6 +117,7 @@ from django.conf import settings
 
 from DDR import find_meta_files
 from DDR import commands
+from DDR import fileio
 from DDR.models import Module
 from webui.models import Collection, Entity
 from ddrlocal.models import DDRLocalEntity, DDRLocalFile
@@ -697,8 +698,10 @@ def import_entities( csv_path, collection_path, git_name, git_mail ):
             entity_path = os.path.join(collection_path, COLLECTION_FILES_PREFIX, entity_id)
             
             # write entity.json template to entity location
-            write_json(Entity(entity_path).dump_json(template=True),
-                       TEMPLATE_EJSON)
+            fileio.write_text(
+                Entity(entity_path).dump_json(template=True),
+                TEMPLATE_EJSON
+            )
             # commit files
             exit,status = commands.entity_create(git_name, git_mail,
                                                  collection.path, entity_id,
