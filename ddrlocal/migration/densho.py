@@ -117,7 +117,7 @@ from django.conf import settings
 
 from DDR import commands
 from DDR import fileio
-from DDR.models import Module
+from DDR import modules
 from DDR import util
 from webui.models import Collection, Entity
 from ddrlocal.models import DDRLocalEntity, DDRLocalFile
@@ -864,7 +864,7 @@ def export_entities( collection_path, csv_path ):
             entity_dir = os.path.dirname(path)
             entity_id = os.path.basename(entity_dir)
             entity = DDRLocalEntity.from_json(entity_dir)
-            # seealso DDR.models.__init__.Module.function
+            # seealso DDR.modules.Module.function
             values = []
             for f in entitymodule.ENTITY_FIELDS:
                 value = ''
@@ -872,7 +872,7 @@ def export_entities( collection_path, csv_path ):
                     key = f['name']
                     label = f['form']['label']
                     # run csvexport_* functions on field data if present
-                    val = Module(entitymodule).function(
+                    val = modules.Module(entitymodule).function(
                         'csvexport_%s' % key,
                         getattr(entity, f['name'])
                     )
@@ -926,14 +926,14 @@ def export_files( collection_path, csv_path ):
             file_id = os.path.splitext(filename)[0]
             file_ = DDRLocalFile.from_json(path)
             if file_:
-                # seealso DDR.models.__init__.Module.function
+                # seealso DDR.modules.Module.function
                 values = []
                 for f in filemodule.FILE_FIELDS:
                     value = ''
                     if hasattr(file_, f['name']):
                         key = f['name']
                         # run csvexport_* functions on field data if present
-                        val = Module(filemodule).function(
+                        val = modules.Module(filemodule).function(
                             'csvexport_%s' % key,
                             getattr(file_, f['name'])
                         )

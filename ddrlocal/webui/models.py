@@ -18,7 +18,7 @@ from DDR import commands
 from DDR import docstore
 from DDR import dvcs
 from DDR import fileio
-from DDR.models import Module
+from DDR import modules
 from DDR.models import from_json
 from DDR.models import Stub as DDRStub
 from DDR.models import Collection as DDRCollection
@@ -43,7 +43,7 @@ FILE_ROLES = ['master', 'mezzanine',]
 def repo_models_valid(request):
     """Displays alerts if repo_models are absent or undefined
     
-    Wrapper around DDR.models.Module.is_valid
+    Wrapper around DDR.modules.Module.is_valid
     
     @param request
     @returns: boolean
@@ -60,7 +60,7 @@ def repo_models_valid(request):
         valid = False
     else:
         valid_modules = [
-            Module(module).is_valid()
+            modules.Module(module).is_valid()
             for model,module in MODULES.iteritems()
         ]
         if not (valid_modules):
@@ -120,7 +120,7 @@ def form_prep(document, module):
         if hasattr(document, f['name']) and f.get('form',None):
             key = f['name']
             # run formprep_* functions on field data if present
-            value = Module(module).function(
+            value = modules.Module(module).function(
                 'formprep_%s' % key,
                 getattr(document, f['name'])
             )
@@ -142,7 +142,7 @@ def form_post(document, module, form):
         if hasattr(document, f['name']) and f.get('form',None):
             key = f['name']
             # run formpost_* functions on field data if present
-            cleaned_data = Module(module).function(
+            cleaned_data = modules.Module(module).function(
                 'formpost_%s' % key,
                 form.cleaned_data[key]
             )
