@@ -251,7 +251,9 @@ def entity_add_file( git_name, git_mail, entity, src_path, role, data, agent='' 
     gitstatus.lock(settings.MEDIA_BASE, 'entity_add_file')
     file_,repo,log = entity.add_file(src_path, role, data, git_name, git_mail, agent)
     file_,repo,log = entity.add_file_commit(file_, repo, log, git_name, git_mail, agent)
-    file_.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+    log.ok('Updating Elasticsearch')
+    result = file_.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+    log.ok('| %s' % result)
     return file_.__dict__
 
 @task(base=FileAddDebugTask, name='entity-add-access')
