@@ -16,6 +16,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import Http404, get_object_or_404, render_to_response
 from django.template import RequestContext
 
+from DDR.ingest import addfile_logger
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
 from webui.decorators import ddrview
@@ -185,7 +186,7 @@ def new( request, repo, org, cid, eid, role='master' ):
                 (git_name, git_mail, entity, src_path, role, data, settings.AGENT),
                 countdown=2)
             result_dict = result.__dict__
-            log = entity.addfile_logger()
+            log = addfile_logger(entity)
             log.ok('START task_id %s' % result.task_id)
             log.ok('ddrlocal.webui.file.new')
             log.ok('Locking %s' % entity.id)
