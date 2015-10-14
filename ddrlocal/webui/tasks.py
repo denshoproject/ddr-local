@@ -856,28 +856,10 @@ def session_tasks( request ):
             if (ctask['status'] != 'FAILURE') and ctask['result']:
                 r = ctask['result']
                 if type(r) == type({}):
-                    if r.get('sha1', None):
-                        url = reverse('webui-file',
-                                      args=[ctask['result']['repo'],
-                                            ctask['result']['org'],
-                                            ctask['result']['cid'],
-                                            ctask['result']['eid'],
-                                            ctask['result']['role'],
-                                            ctask['result']['sha1'],])
-                        ctask['file_url'] = url
-                    elif r.get('eid', None):
-                        url = reverse('webui-entity',
-                                      args=[ctask['result']['repo'],
-                                            ctask['result']['org'],
-                                            ctask['result']['cid'],
-                                            ctask['result']['eid'],])
-                        ctask['entity_url'] = url
-                    elif r.get('cid', None):
-                        url = reverse('webui-collection',
-                                      args=[ctask['result']['repo'],
-                                            ctask['result']['org'],
-                                            ctask['result']['cid'],])
-                        ctask['collection_url'] = url
+                    if r.get('id', None):
+                        oid = Identifier(r['id'])
+                        object_url = reverse('webui-%s' % oid.model, args=oid.parts.values())
+                        ctask['%s_url' % oid.model] = object_url
             tasks[task['id']] = ctask
     # pretty status messages
     for task_id in tasks.keys():
