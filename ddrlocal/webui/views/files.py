@@ -186,7 +186,7 @@ def new( request, repo, org, cid, eid, role='master' ):
                 (git_name, git_mail, entity, src_path, role, data, settings.AGENT),
                 countdown=2)
             result_dict = result.__dict__
-            log = addfile_logger(entity)
+            log = addfile_logger(entity.identifier)
             log.ok('START task_id %s' % result.task_id)
             log.ok('ddrlocal.webui.file.new')
             log.ok('Locking %s' % entity.id)
@@ -269,7 +269,7 @@ def new_access( request, repo, org, cid, eid, role, sha1 ):
                 (git_name, git_mail, entity, file_),
                 countdown=2)
             result_dict = result.__dict__
-            log = entity.addfile_logger()
+            log = addfile_logger(entity.identifier)
             log.ok('START task_id %s' % result.task_id)
             log.ok('ddrlocal.webui.file.new_access')
             log.ok('Locking %s' % entity.id)

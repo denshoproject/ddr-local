@@ -29,6 +29,7 @@ from DDR import commands
 from DDR import docstore
 from DDR import dvcs
 from DDR import models
+from DDR.ingest import addfile_logger
 
 
 TASK_STATUSES = ['STARTED', 'PENDING', 'SUCCESS', 'FAILURE', 'RETRY', 'REVOKED',]
@@ -210,18 +211,18 @@ class FileAddDebugTask(Task):
         
     def on_failure(self, exc, task_id, args, kwargs, einfo):
         entity = args[2]
-        log = entity.addfile_logger()
+        log = addfile_logger(entity.identifier)
         log.not_ok('DDRTask.ON_FAILURE')
     
     def on_success(self, retval, task_id, args, kwargs):
         entity = args[2]
-        log = entity.addfile_logger()
+        log = addfile_logger(entity.identifier)
         log.ok('DDRTask.ON_SUCCESS')
     
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
         entity = args[2]
         collection = entity.collection()
-        log = entity.addfile_logger()
+        log = addfile_logger(entity.identifier)
         log.ok('DDRTask.AFTER_RETURN')
         log.ok('task_id: %s' % task_id)
         log.ok('status: %s' % status)
