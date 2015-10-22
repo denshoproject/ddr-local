@@ -55,7 +55,8 @@ WEBUI_MESSAGES = {
     'VIEWS_FILES_NEWACCESS': 'Generating access file for <strong>%s</strong>.', # filename
     
     # webui.models.model_def_commits
-    'MODEL_DEF_COMMITS_STATUS_128': ('warning', "Module model definitions not committed."),
+    'MODEL_DEF_COMMITS_STATUS_128': ('warning', "Missing model definitions commit info."),
+    'MODEL_DEF_COMMITS_STATUS_256': ('warning', "Missing document commit info."),
     'MODEL_DEF_COMMITS_STATUS_-1':  ('info', "Document model definitions OLDER than module's."),
     'MODEL_DEF_COMMITS_STATUS_0':   ('info', "Document model definitions SAME as module's."),
     'MODEL_DEF_COMMITS_STATUS_1':   ('info', "Document model definitions NEWER than module's."),

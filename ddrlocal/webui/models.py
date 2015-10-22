@@ -68,29 +68,37 @@ def repo_models_valid(request):
             messages.error(request, UNDEFINED_MSG)
     return valid
 
-def model_def_commits(document, module):
+def model_def_commits(document):
     """
     Wrapper around DDR.models.model_def_commits
     
-    @param document
-    @param module
+    @param document: Collection, Entity, DDRFile
     """
-    status = super(module, document).model_def_commits()
+    module = modules.Module(document.identifier.fields_module())
+    document_commit = module.document_commit(document)
+    module_commit = module.module_commit()
+    if document_commit and module_commit:
+        status = module.cmp_model_definition_commits(
+            document_commit,
+            module_commit
+        )
+    elif document_commit and not module_commit:
+        status = 128
+    elif module_commit and not document_commit:
+        status = 256
     alert,msg = WEBUI_MESSAGES['MODEL_DEF_COMMITS_STATUS_%s' % status]
     document.model_def_commits_alert = alert
     document.model_def_commits_msg = msg
 
-def model_def_fields(document, module):
+def model_def_fields(document):
     """
     Wrapper around DDR.models.model_def_fields
-    
-    @param document
-    @param module
     """
-    try:
-        added,removed = super(module, document).model_def_fields()
-    except ValueError:
-        return
+    module = document.identifier.fields_module()
+    json_text = fileio.read_text(document.json_path)
+    result = modules.Module(module).cmp_model_definition_fields(json_text)
+    added = result['added']
+    removed = result['removed']
     # 'File.path_rel' is created when instantiating Files,
     # is not part of model definitions.
     def rm_path_rel(fields):
@@ -337,7 +345,7 @@ class Collection( DDRCollection ):
         .model_def_commits_alert
         .model_def_commits_msg
         """
-        model_def_commits(self, Collection)
+        return model_def_commits(self)
     
     def model_def_fields(self):
         """From POV of document, indicates fields added/removed in model defs
@@ -348,7 +356,7 @@ class Collection( DDRCollection ):
         .model_def_fields_added_msg
         .model_def_fields_removed_msg
         """
-        model_def_fields(self, Collection)
+        model_def_fields(self)
     
     def form_prep(self):
         """Apply formprep_{field} functions to prep data dict to pass into DDRForm object.
@@ -527,7 +535,7 @@ class Entity( DDREntity ):
         .model_def_commits_alert
         .model_def_commits_msg
         """
-        model_def_commits(self, Entity)
+        return model_def_commits(self)
     
     def model_def_fields(self):
         """From POV of document, indicates fields added/removed in model defs
@@ -538,7 +546,7 @@ class Entity( DDREntity ):
         .model_def_fields_added_msg
         .model_def_fields_removed_msg
         """
-        model_def_fields(self, Entity)
+        model_def_fields(self)
     
     def form_prep(self):
         """Apply formprep_{field} functions to prep data dict to pass into DDRForm object.
@@ -718,7 +726,7 @@ class DDRFile( File ):
         .model_def_commits_alert
         .model_def_commits_msg
         """
-        model_def_commits(self, DDRFile)
+        return model_def_commits(self)
     
     def model_def_fields(self):
         """From POV of document, indicates fields added/removed in model defs
@@ -729,7 +737,7 @@ class DDRFile( File ):
         .model_def_fields_added_msg
         .model_def_fields_removed_msg
         """
-        model_def_fields(self, DDRFile)
+        model_def_fields(self)
     
     def form_prep(self):
         """Apply formprep_{field} functions to prep data dict to pass into DDRForm object.
