@@ -78,15 +78,18 @@ def model_def_commits(document):
     document_commit = module.document_commit(document)
     module_commit = module.module_commit()
     if document_commit and module_commit:
-        status = module.cmp_model_definition_commits(
+        result = module.cmp_model_definition_commits(
             document_commit,
             module_commit
         )
+        op = result['op']
     elif document_commit and not module_commit:
-        status = 128
+        op = '-m'
     elif module_commit and not document_commit:
-        status = 256
-    alert,msg = WEBUI_MESSAGES['MODEL_DEF_COMMITS_STATUS_%s' % status]
+        op = '-d'
+    else:
+        op = '--'
+    alert,msg = WEBUI_MESSAGES['MODEL_DEF_COMMITS_STATUS_%s' % op]
     document.model_def_commits_alert = alert
     document.model_def_commits_msg = msg
 
