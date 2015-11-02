@@ -29,6 +29,7 @@ from DDR import commands
 from DDR import docstore
 from DDR import dvcs
 from DDR import models
+from DDR.ingest import addfile_logger
 
 
 TASK_STATUSES = ['STARTED', 'PENDING', 'SUCCESS', 'FAILURE', 'RETRY', 'REVOKED',]
@@ -210,18 +211,18 @@ class FileAddDebugTask(Task):
         
     def on_failure(self, exc, task_id, args, kwargs, einfo):
         entity = args[2]
-        log = entity.addfile_logger()
+        log = addfile_logger(entity.identifier)
         log.not_ok('DDRTask.ON_FAILURE')
     
     def on_success(self, retval, task_id, args, kwargs):
         entity = args[2]
-        log = entity.addfile_logger()
+        log = addfile_logger(entity.identifier)
         log.ok('DDRTask.ON_SUCCESS')
     
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
         entity = args[2]
         collection = entity.collection()
-        log = entity.addfile_logger()
+        log = addfile_logger(entity.identifier)
         log.ok('DDRTask.AFTER_RETURN')
         log.ok('task_id: %s' % task_id)
         log.ok('status: %s' % status)
@@ -251,7 +252,9 @@ def entity_add_file( git_name, git_mail, entity, src_path, role, data, agent='' 
     gitstatus.lock(settings.MEDIA_BASE, 'entity_add_file')
     file_,repo,log = entity.add_file(src_path, role, data, git_name, git_mail, agent)
     file_,repo,log = entity.add_file_commit(file_, repo, log, git_name, git_mail, agent)
-    file_.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+    log.ok('Updating Elasticsearch')
+    result = file_.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+    log.ok('| %s' % result)
     return file_.__dict__
 
 @task(base=FileAddDebugTask, name='entity-add-access')
@@ -643,7 +646,13 @@ def delete_entity( git_name, git_mail, collection_path, entity_id, agent='' ):
     gitstatus.lock(settings.MEDIA_BASE, 'delete_entity')
     logger.debug('collection_delete_entity(%s,%s,%s,%s,%s)' % (git_name, git_mail, collection_path, entity_id, agent))
     # remove the entity
-    status,message = commands.entity_destroy(git_name, git_mail, collection_path, entity_id, agent)
+    collection = Collection.from_identifier(Identifier(collection_path))
+    entity = Entity.from_identifier(Identifier(entity_id))
+    status,message = commands.entity_destroy(
+        git_name, git_mail,
+        collection, entity,
+        agent
+    )
     # update search index
     docstore.delete(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, entity_id)
     return status,message,collection_path,entity_id
@@ -711,8 +720,15 @@ def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, 
     file_id = os.path.splitext(file_basename)[0]
     file_ = DDRFile.from_identifier(Identifier(file_id))
     entity = Entity.from_identifier(Identifier(entity_id))
+    collection = Collection.from_identifier(Identifier(path=collection_path))
     logger.debug('delete from repository')
-    status,message = entity.rm_file(file_, git_name, git_mail, agent)
+    rm_files,updated_files = entity.prep_rm_file(file_)
+    status,message = commands.file_destroy(
+        git_name, git_mail,
+        collection, entity,
+        rm_files, updated_files,
+        agent
+    )
     logger.debug('delete from search index')
     docstore.delete(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, file_.id)
     return status,message,collection_path,file_basename
@@ -748,7 +764,11 @@ def collection_sync( git_name, git_mail, collection_path ):
     @return collection_path: Absolute path to collection.
     """
     gitstatus.lock(settings.MEDIA_BASE, 'collection_sync')
-    exit,status = commands.sync(git_name, git_mail, collection_path)
+    collection = Collection.from_identifier(Identifier(path=collection_path))
+    exit,status = commands.sync(
+        git_name, git_mail,
+        collection
+    )
     # update search index
     collection = Collection.from_identifier(Identifier(path=collection_path))
     collection.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
@@ -837,28 +857,10 @@ def session_tasks( request ):
             if (ctask['status'] != 'FAILURE') and ctask['result']:
                 r = ctask['result']
                 if type(r) == type({}):
-                    if r.get('sha1', None):
-                        url = reverse('webui-file',
-                                      args=[ctask['result']['repo'],
-                                            ctask['result']['org'],
-                                            ctask['result']['cid'],
-                                            ctask['result']['eid'],
-                                            ctask['result']['role'],
-                                            ctask['result']['sha1'],])
-                        ctask['file_url'] = url
-                    elif r.get('eid', None):
-                        url = reverse('webui-entity',
-                                      args=[ctask['result']['repo'],
-                                            ctask['result']['org'],
-                                            ctask['result']['cid'],
-                                            ctask['result']['eid'],])
-                        ctask['entity_url'] = url
-                    elif r.get('cid', None):
-                        url = reverse('webui-collection',
-                                      args=[ctask['result']['repo'],
-                                            ctask['result']['org'],
-                                            ctask['result']['cid'],])
-                        ctask['collection_url'] = url
+                    if r.get('id', None):
+                        oid = Identifier(r['id'])
+                        object_url = reverse('webui-%s' % oid.model, args=oid.parts.values())
+                        ctask['%s_url' % oid.model] = object_url
             tasks[task['id']] = ctask
     # pretty status messages
     for task_id in tasks.keys():

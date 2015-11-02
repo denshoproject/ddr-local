@@ -15,7 +15,8 @@ from django.shortcuts import Http404, get_object_or_404, render_to_response
 from django.template import RequestContext
 from django.template.loader import get_template
 
-from DDR import commands, dvcs
+from DDR import commands
+from DDR import dvcs
 
 from storage.decorators import storage_required
 from webui.decorators import ddrview
@@ -61,7 +62,7 @@ def merge( request, repo, org, cid ):
     collection = Collection.from_request(request)
     repository = dvcs.repository(collection.path_abs)
     task_id = collection.locked()
-    status = commands.status(collection.path)
+    status = commands.status(collection)
     ahead = collection.repo_ahead()
     behind = collection.repo_behind()
     diverged = collection.repo_diverged()

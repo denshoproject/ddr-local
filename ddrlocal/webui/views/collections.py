@@ -23,15 +23,8 @@ from django.template.loader import get_template
 from DDR import commands
 from DDR import docstore
 from DDR import dvcs
+from DDR import fileio
 from DDR import idservice
-from DDR.models import write_json
-
-if settings.REPO_MODELS_PATH not in sys.path:
-    sys.path.append(settings.REPO_MODELS_PATH)
-try:
-    from repo_models import collection as collectionmodule
-except ImportError:
-    from DDR.models import collectionmodule
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
@@ -72,9 +65,7 @@ def collections( request ):
         identifier = Identifier(object_id)
         # TODO Identifier: Organization object instead of repo and org
         repo,org = identifier.parts.values()
-        collection_paths = commands.collections_local(
-            settings.MEDIA_BASE, repo, org
-        )
+        collection_paths = Collection.collection_paths(settings.MEDIA_BASE, repo, org)
         colls = []
         for collection_path in collection_paths:
             if collection_path:
@@ -253,12 +244,16 @@ def new( request, repo, org ):
     # create the new collection repo
     collection_path = identifier.path_abs()
     # collection.json template
-    write_json(Collection(collection_path).dump_json(template=True),
-               settings.TEMPLATE_CJSON)
-    exit,status = commands.create(git_name, git_mail,
-                                  collection_path,
-                                  [settings.TEMPLATE_CJSON, settings.TEMPLATE_EAD],
-                                  agent=settings.AGENT)
+    fileio.write_text(
+        Collection(collection_path).dump_json(template=True),
+        settings.TEMPLATE_CJSON
+    )
+    exit,status = commands.create(
+        git_name, git_mail,
+        identifier,
+        [settings.TEMPLATE_CJSON, settings.TEMPLATE_EAD],
+        agent=settings.AGENT
+    )
     if exit:
         logger.error(exit)
         logger.error(status)
@@ -300,7 +295,7 @@ def newexpert( request, repo, org ):
             collection_ids = [
                 os.path.basename(cpath)
                 for cpath
-                in commands.collections_local(settings.MEDIA_BASE, repo, org)
+                in Collection.collection_paths(settings.MEDIA_BASE, repo, org)
             ]
             already_exists = False
             if collection_id in collection_ids:
@@ -338,6 +333,7 @@ def edit( request, repo, org, cid ):
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     collection = Collection.from_request(request)
+    module = collection.identifier.fields_module()
     collection.model_def_commits()
     collection.model_def_fields()
     if collection.locked():
@@ -348,7 +344,7 @@ def edit( request, repo, org, cid ):
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
         return HttpResponseRedirect(collection.absolute_url())
     if request.method == 'POST':
-        form = DDRForm(request.POST, fields=collectionmodule.FIELDS)
+        form = DDRForm(request.POST, fields=module.FIELDS)
         if form.is_valid():
             
             collection.form_post(form)
@@ -368,7 +364,7 @@ def edit( request, repo, org, cid ):
             return HttpResponseRedirect(collection.absolute_url())
         
     else:
-        form = DDRForm(collection.form_prep(), fields=collectionmodule.FIELDS)
+        form = DDRForm(collection.form_prep(), fields=module.FIELDS)
     return render_to_response(
         'webui/collections/edit-json.html',
         {'collection': collection,

@@ -20,16 +20,21 @@ TEMPLATE_DEBUG = DEBUG
 import ConfigParser
 from datetime import timedelta
 import logging
+import sys
 
 os.environ['USER'] = 'ddr'
 
 AGENT = 'ddr-local'
 
-from DDR import CONFIG_FILES, NoConfigError
+from DDR.config import CONFIG_FILES, NoConfigError
 config = ConfigParser.ConfigParser()
 configs_read = config.read(CONFIG_FILES)
 if not configs_read:
     raise NoConfigError('No config file!')
+
+REPO_MODELS_PATH = config.get('cmdln','repo_models_path')
+if REPO_MODELS_PATH not in sys.path:
+    sys.path.append(REPO_MODELS_PATH)
 
 # The following settings are in debian/config/ddr.cfg.
 # See that file for comments on the settings.
@@ -51,7 +56,6 @@ WORKBENCH_NEWENT_URL = config.get('workbench','workbench_newent_url')
 MEDIA_BASE           = config.get('cmdln','media_base')
 # Location of Repository 'ddr' repo, which should contain repo_models
 # for the Repository.
-REPO_MODELS_PATH     = config.get('cmdln','repo_models_path')
 DATE_FORMAT          = config.get('cmdln','date_format')
 TIME_FORMAT          = config.get('cmdln','time_format')
 DATETIME_FORMAT      = config.get('cmdln','datetime_format')

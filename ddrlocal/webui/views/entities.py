@@ -22,15 +22,8 @@ from django.template import RequestContext
 
 from DDR import commands
 from DDR import docstore
+from DDR import fileio
 from DDR import idservice
-from DDR.models import write_json
-
-if settings.REPO_MODELS_PATH not in sys.path:
-    sys.path.append(settings.REPO_MODELS_PATH)
-try:
-    from repo_models import entity as entitymodule
-except ImportError:
-    from DDR.models import entitymodule
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
@@ -313,25 +306,31 @@ def new( request, repo, org, cid ):
     # create new entity
     entity_path = eidentifier.path_abs()
     # write entity.json template to entity location
-    write_json(Entity(entity_path).dump_json(template=True),
-               settings.TEMPLATE_EJSON)
+    fileio.write_text(
+        Entity(entity_path).dump_json(template=True),
+        settings.TEMPLATE_EJSON
+    )
     
     # commit files
-    exit,status = commands.entity_create(git_name, git_mail,
-                                         collection.path, eidentifier.id,
-                                         [collection.json_path_rel, collection.ead_path_rel],
-                                         [settings.TEMPLATE_EJSON, settings.TEMPLATE_METS],
-                                         agent=settings.AGENT)
+    exit,status = commands.entity_create(
+        git_name, git_mail,
+        collection, eidentifier,
+        [collection.json_path_rel, collection.ead_path_rel],
+        [settings.TEMPLATE_EJSON, settings.TEMPLATE_METS],
+        agent=settings.AGENT
+    )
     
     # load Entity object, inherit values from parent, write back to file
     entity = Entity.from_identifier(eidentifier)
     entity.inherit(collection)
     entity.write_json()
     updated_files = [entity.json_path]
-    exit,status = commands.entity_update(git_name, git_mail,
-                                         entity.parent_path, entity.id,
-                                         updated_files,
-                                         agent=settings.AGENT)
+    exit,status = commands.entity_update(
+        git_name, git_mail,
+        collection, entity,
+        updated_files,
+        agent=settings.AGENT
+    )
     
     collection.cache_delete()
     if exit:
@@ -425,6 +424,7 @@ def edit( request, repo, org, cid, eid ):
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     entity = Entity.from_request(request)
+    module = entity.identifier.fields_module()
     collection = entity.collection()
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
@@ -444,7 +444,7 @@ def edit( request, repo, org, cid, eid ):
     entity.model_def_commits()
     entity.model_def_fields()
     if request.method == 'POST':
-        form = DDRForm(request.POST, fields=entitymodule.FIELDS)
+        form = DDRForm(request.POST, fields=module.FIELDS)
         if form.is_valid():
             # run module_functions on raw form data
             entity.form_post(form)
@@ -474,7 +474,7 @@ def edit( request, repo, org, cid, eid ):
             
             return HttpResponseRedirect(entity.absolute_url())
     else:
-        form = DDRForm(entity.form_prep(), fields=entitymodule.FIELDS)
+        form = DDRForm(entity.form_prep(), fields=module.FIELDS)
     
     topics_prefilled = tagmanager_prefilled_terms(entity.topics, topics_terms)
     facility_prefilled = tagmanager_prefilled_terms(entity.facility, facility_terms)
@@ -538,12 +538,14 @@ def edit_json( request, repo, org, cid, eid ):
             git_mail = request.session.get('git_mail')
             if git_name and git_mail:
                 json_text = form.cleaned_data['json']
-                write_json(json_text, entity.json_path)
+                fileio.write_text(json_text, entity.json_path)
                 
-                exit,status = commands.entity_update(git_name, git_mail,
-                                                     entity.parent_path, entity.id,
-                                                     [entity.json_path],
-                                                     agent=settings.AGENT)
+                exit,status = commands.entity_update(
+                    git_name, git_mail,
+                    collection, entity,
+                    [entity.json_path],
+                    agent=settings.AGENT
+                )
                 
                 collection.cache_delete()
                 if exit:
@@ -629,10 +631,12 @@ def files_dedupe( request, repo, org, cid, eid ):
             entity.write_mets()
             updated_files = [entity.json_path, entity.mets_path,]
             success_msg = WEBUI_MESSAGES['VIEWS_ENT_UPDATED']
-            exit,status = commands.entity_update(git_name, git_mail,
-                                                 entity.parent_path, entity.id,
-                                                 updated_files,
-                                                 agent=settings.AGENT)
+            exit,status = commands.entity_update(
+                git_name, git_mail,
+                collection, entity,
+                updated_files,
+                agent=settings.AGENT
+            )
             collection.cache_delete()
             if exit:
                 messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))

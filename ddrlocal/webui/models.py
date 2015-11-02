@@ -17,24 +17,14 @@ from django.db import models
 from DDR import commands
 from DDR import docstore
 from DDR import dvcs
-from DDR.models import Module
-from DDR.models import read_json, write_json, from_json
+from DDR import fileio
+from DDR import modules
+from DDR.models import from_json
 from DDR.models import Stub as DDRStub
 from DDR.models import Collection as DDRCollection
 from DDR.models import Entity as DDREntity
 from DDR.models import File
 from DDR.models import COLLECTION_FILES_PREFIX, ENTITY_FILES_PREFIX
-
-if settings.REPO_MODELS_PATH not in sys.path:
-    sys.path.append(settings.REPO_MODELS_PATH)
-try:
-    from repo_models import collection as collectionmodule
-    from repo_models import entity as entitymodule
-    from repo_models import files as filemodule
-except ImportError:
-    from DDR.models import collectionmodule
-    from DDR.models import entitymodule
-    from DDR.models import filemodule
 
 from webui import gitstatus
 from webui import WEBUI_MESSAGES
@@ -44,7 +34,7 @@ from webui import COLLECTION_ANNEX_STATUS_CACHE_KEY
 from webui import COLLECTION_FETCH_TIMEOUT
 from webui import COLLECTION_STATUS_TIMEOUT
 from webui import COLLECTION_ANNEX_STATUS_TIMEOUT
-from webui.identifier import Identifier
+from webui.identifier import Identifier, MODULES
 
 # TODO get roles from somewhere (Identifier?)
 FILE_ROLES = ['master', 'mezzanine',]
@@ -53,7 +43,7 @@ FILE_ROLES = ['master', 'mezzanine',]
 def repo_models_valid(request):
     """Displays alerts if repo_models are absent or undefined
     
-    Wrapper around DDR.models.Module.is_valid
+    Wrapper around DDR.modules.Module.is_valid
     
     @param request
     @returns: boolean
@@ -69,37 +59,49 @@ def repo_models_valid(request):
     if added:
         valid = False
     else:
-        cvalid,cmsg = Module(collectionmodule).is_valid()
-        evalid,emsg = Module(entitymodule).is_valid()
-        fvalid,fmsg = Module(filemodule).is_valid()
-        if not (cvalid and evalid and fvalid):
+        valid_modules = [
+            modules.Module(module).is_valid()
+            for model,module in MODULES.iteritems()
+        ]
+        if not (valid_modules):
             valid = False
             messages.error(request, UNDEFINED_MSG)
     return valid
 
-def model_def_commits(document, module):
+def model_def_commits(document):
     """
     Wrapper around DDR.models.model_def_commits
     
-    @param document
-    @param module
+    @param document: Collection, Entity, DDRFile
     """
-    status = super(module, document).model_def_commits()
-    alert,msg = WEBUI_MESSAGES['MODEL_DEF_COMMITS_STATUS_%s' % status]
+    module = modules.Module(document.identifier.fields_module())
+    document_commit = module.document_commit(document)
+    module_commit = module.module_commit()
+    if document_commit and module_commit:
+        result = module.cmp_model_definition_commits(
+            document_commit,
+            module_commit
+        )
+        op = result['op']
+    elif document_commit and not module_commit:
+        op = '-m'
+    elif module_commit and not document_commit:
+        op = '-d'
+    else:
+        op = '--'
+    alert,msg = WEBUI_MESSAGES['MODEL_DEF_COMMITS_STATUS_%s' % op]
     document.model_def_commits_alert = alert
     document.model_def_commits_msg = msg
 
-def model_def_fields(document, module):
+def model_def_fields(document):
     """
     Wrapper around DDR.models.model_def_fields
-    
-    @param document
-    @param module
     """
-    try:
-        added,removed = super(module, document).model_def_fields()
-    except ValueError:
-        return
+    module = document.identifier.fields_module()
+    json_text = fileio.read_text(document.json_path)
+    result = modules.Module(module).cmp_model_definition_fields(json_text)
+    added = result['added']
+    removed = result['removed']
     # 'File.path_rel' is created when instantiating Files,
     # is not part of model definitions.
     def rm_path_rel(fields):
@@ -129,7 +131,7 @@ def form_prep(document, module):
         if hasattr(document, f['name']) and f.get('form',None):
             key = f['name']
             # run formprep_* functions on field data if present
-            value = Module(module).function(
+            value = modules.Module(module).function(
                 'formprep_%s' % key,
                 getattr(document, f['name'])
             )
@@ -151,7 +153,7 @@ def form_post(document, module, form):
         if hasattr(document, f['name']) and f.get('form',None):
             key = f['name']
             # run formpost_* functions on field data if present
-            cleaned_data = Module(module).function(
+            cleaned_data = modules.Module(module).function(
                 'formpost_%s' % key,
                 form.cleaned_data[key]
             )
@@ -346,7 +348,7 @@ class Collection( DDRCollection ):
         .model_def_commits_alert
         .model_def_commits_msg
         """
-        model_def_commits(self, Collection)
+        return model_def_commits(self)
     
     def model_def_fields(self):
         """From POV of document, indicates fields added/removed in model defs
@@ -357,36 +359,38 @@ class Collection( DDRCollection ):
         .model_def_fields_added_msg
         .model_def_fields_removed_msg
         """
-        model_def_fields(self, Collection)
+        model_def_fields(self)
     
     def form_prep(self):
         """Apply formprep_{field} functions to prep data dict to pass into DDRForm object.
         
         @returns data: dict object as used by Django Form object.
         """
-        return form_prep(self, collectionmodule)
+        return form_prep(self, self.identifier.fields_module())
     
     def form_post(self, form):
         """Apply formpost_{field} functions to process cleaned_data from DDRForm
         
         @param form: DDRForm object
         """
-        form_post(self, collectionmodule, form)
+        form_post(self, self.identifier.fields_module(), form)
     
     @staticmethod
     def create(collection_path, git_name, git_mail):
         """create new entity given an entity ID
         """
         # write collection.json template to collection location and commit
-        write_json(Collection(collection_path).dump_json(template=True),
+        fileio.write_text(Collection(collection_path).dump_json(template=True),
                    settings.TEMPLATE_CJSON)
         templates = [settings.TEMPLATE_CJSON, settings.TEMPLATE_EAD]
         agent = settings.AGENT
-        
+
+        cidentifier = Identifier(collection_path)
         exit,status = commands.create(
-            git_name, git_mail, collection_path, templates, agent)
+            git_name, git_mail, cidentifier, templates, agent
+        )
         
-        collection = Collection.from_json(collection_path)
+        collection = Collection.from_identifier(cidentifier)
         
         # [delete cache], update search index
         #collection.cache_delete()
@@ -409,7 +413,7 @@ class Collection( DDRCollection ):
         """
         exit,status = commands.update(
             git_name, git_mail,
-            self.path, updated_files,
+            self, updated_files,
             agent=settings.AGENT)
         self.cache_delete()
         with open(self.json_path, 'r') as f:
@@ -534,7 +538,7 @@ class Entity( DDREntity ):
         .model_def_commits_alert
         .model_def_commits_msg
         """
-        model_def_commits(self, Entity)
+        return model_def_commits(self)
     
     def model_def_fields(self):
         """From POV of document, indicates fields added/removed in model defs
@@ -545,14 +549,14 @@ class Entity( DDREntity ):
         .model_def_fields_added_msg
         .model_def_fields_removed_msg
         """
-        model_def_fields(self, Entity)
+        model_def_fields(self)
     
     def form_prep(self):
         """Apply formprep_{field} functions to prep data dict to pass into DDRForm object.
         
         @returns data: dict object as used by Django Form object.
         """
-        data = form_prep(self, entitymodule)
+        data = form_prep(self, self.identifier.fields_module())
         if not data.get('record_created', None):
             data['record_created'] = datetime.now()
         if not data.get('record_lastmod', None):
@@ -564,7 +568,7 @@ class Entity( DDREntity ):
         
         @param form: DDRForm object
         """
-        form_post(self, entitymodule, form)
+        form_post(self, self.identifier.fields_module(), form)
     
     def load_file_objects( self ):
         """Replaces list of file info dicts with list of DDRFile objects
@@ -588,14 +592,15 @@ class Entity( DDREntity ):
     def create(collection, entity_id, git_name, git_mail, agent=settings.AGENT):
         """create new entity given an entity ID
         """
-        entity_path = Identifier(id=entity_id).path_abs()
+        eidentifier = Identifier(id=entity_id)
+        entity_path = eidentifier.path_abs()
         
         # write entity.json template to entity location and commit
-        write_json(Entity(entity_path).dump_json(template=True),
+        fileio.write_text(Entity(entity_path).dump_json(template=True),
                    settings.TEMPLATE_EJSON)
         exit,status = commands.entity_create(
             git_name, git_mail,
-            collection.path, entity_id,
+            collection, eidentifier,
             [collection.json_path_rel, collection.ead_path_rel],
             [settings.TEMPLATE_EJSON, settings.TEMPLATE_METS],
             agent=agent)
@@ -607,7 +612,7 @@ class Entity( DDREntity ):
         updated_files = [entity.json_path]
         exit,status = commands.entity_update(
             git_name, git_mail,
-            collection.path, entity.id,
+            collection, entity,
             updated_files,
             agent=agent)
 
@@ -637,7 +642,7 @@ class Entity( DDREntity ):
         
         exit,status = commands.entity_update(
             git_name, git_mail,
-            collection.path, self.id,
+            collection, self,
             updated_files,
             agent=settings.AGENT)
         
@@ -724,7 +729,7 @@ class DDRFile( File ):
         .model_def_commits_alert
         .model_def_commits_msg
         """
-        model_def_commits(self, DDRFile)
+        return model_def_commits(self)
     
     def model_def_fields(self):
         """From POV of document, indicates fields added/removed in model defs
@@ -735,21 +740,21 @@ class DDRFile( File ):
         .model_def_fields_added_msg
         .model_def_fields_removed_msg
         """
-        model_def_fields(self, DDRFile)
+        model_def_fields(self)
     
     def form_prep(self):
         """Apply formprep_{field} functions to prep data dict to pass into DDRForm object.
         
         @returns data: dict object as used by Django Form object.
         """
-        return form_prep(self, filemodule)
+        return form_prep(self, self.identifier.fields_module())
     
     def form_post(self, form):
         """Apply formpost_{field} functions to process cleaned_data from DDRForm
         
         @param form: DDRForm object
         """
-        form_post(self, filemodule, form)
+        form_post(self, self.identifier.fields_module(), form)
     
     def save( self, git_name, git_mail ):
         """Perform file-save functions.
@@ -763,9 +768,10 @@ class DDRFile( File ):
         @param git_mail: str
         """
         collection = self.collection()
+        entity = self.parent()
         exit,status = commands.entity_update(
             git_name, git_mail,
-            collection.path, self.parent_id,
+            collection, entity,
             [self.json_path],
             agent=settings.AGENT)
         collection.cache_delete()

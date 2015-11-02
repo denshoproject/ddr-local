@@ -16,16 +16,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import Http404, get_object_or_404, render_to_response
 from django.template import RequestContext
 
-from DDR import commands
-from DDR import docstore
-
-if settings.REPO_MODELS_PATH not in sys.path:
-    sys.path.append(settings.REPO_MODELS_PATH)
-try:
-    from repo_models import files as filemodule
-except ImportError:
-    from DDR.models import filemodule
-
+from DDR.ingest import addfile_logger
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
 from webui.decorators import ddrview
@@ -33,7 +24,8 @@ from webui.forms import DDRForm
 from webui.forms.files import NewFileDDRForm, NewAccessFileForm, DeleteFileForm
 from webui.forms.files import shared_folder_files
 from webui.models import Collection, Entity, DDRFile
-from webui.identifier import Identifier
+from webui.models import MODULES
+from webui.identifier import Identifier, CHILDREN_ALL
 from webui.tasks import entity_add_file, entity_add_access
 from webui.tasks import entity_file_edit, entity_delete_file
 from webui.tasks import gitstatus_update
@@ -163,7 +155,9 @@ def new( request, repo, org, cid, eid, role='master' ):
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    file_role = Identifier(request).object()
+    fidentifier = Identifier(request)
+    file_role = fidentifier.object()
+    module = MODULES[CHILDREN_ALL[fidentifier.model]]
     entity = file_role.parent(stubs=True)
     collection = entity.collection()
     if collection.locked():
@@ -177,7 +171,7 @@ def new( request, repo, org, cid, eid, role='master' ):
         return HttpResponseRedirect(entity.absolute_url())
     #
     path = request.GET.get('path', None)
-    FIELDS = prep_newfile_form_fields(filemodule.FIELDS_NEW)
+    FIELDS = prep_newfile_form_fields(module.FIELDS_NEW)
     if request.method == 'POST':
         form = NewFileDDRForm(request.POST, fields=FIELDS, path_choices=shared_folder_files())
         if form.is_valid():
@@ -192,7 +186,7 @@ def new( request, repo, org, cid, eid, role='master' ):
                 (git_name, git_mail, entity, src_path, role, data, settings.AGENT),
                 countdown=2)
             result_dict = result.__dict__
-            log = entity.addfile_logger()
+            log = addfile_logger(entity.identifier)
             log.ok('START task_id %s' % result.task_id)
             log.ok('ddrlocal.webui.file.new')
             log.ok('Locking %s' % entity.id)
@@ -275,7 +269,7 @@ def new_access( request, repo, org, cid, eid, role, sha1 ):
                 (git_name, git_mail, entity, file_),
                 countdown=2)
             result_dict = result.__dict__
-            log = entity.addfile_logger()
+            log = addfile_logger(entity.identifier)
             log.ok('START task_id %s' % result.task_id)
             log.ok('ddrlocal.webui.file.new_access')
             log.ok('Locking %s' % entity.id)
@@ -336,6 +330,7 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     file_ = DDRFile.from_request(request)
+    module = file_.identifier.fields_module()
     entity = file_.parent()
     collection = file_.collection()
     if collection.locked():
@@ -352,7 +347,7 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
     file_.model_def_fields()
     #
     if request.method == 'POST':
-        form = DDRForm(request.POST, fields=filemodule.FIELDS)
+        form = DDRForm(request.POST, fields=module.FIELDS)
         if form.is_valid():
             
             file_.form_post(form)
@@ -364,7 +359,7 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
             return HttpResponseRedirect( file_.absolute_url() )
             
     else:
-        form = DDRForm(file_.form_prep(), fields=filemodule.FIELDS)
+        form = DDRForm(file_.form_prep(), fields=module.FIELDS)
     return render_to_response(
         'webui/files/edit-json.html',
         {'collection': collection,

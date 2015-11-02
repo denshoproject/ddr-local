@@ -116,7 +116,9 @@ import doctest
 from django.conf import settings
 
 from DDR import commands
-from DDR.models import Module, metadata_files
+from DDR import fileio
+from DDR import modules
+from DDR import util
 from webui.models import Collection, Entity
 from ddrlocal.models import DDRLocalEntity, DDRLocalFile
 
@@ -696,8 +698,10 @@ def import_entities( csv_path, collection_path, git_name, git_mail ):
             entity_path = os.path.join(collection_path, COLLECTION_FILES_PREFIX, entity_id)
             
             # write entity.json template to entity location
-            write_json(Entity(entity_path).dump_json(template=True),
-                       TEMPLATE_EJSON)
+            fileio.write_text(
+                Entity(entity_path).dump_json(template=True),
+                TEMPLATE_EJSON
+            )
             # commit files
             exit,status = commands.entity_create(git_name, git_mail,
                                                  collection.path, entity_id,
@@ -845,7 +849,7 @@ def export_entities( collection_path, csv_path ):
     fieldnames.remove('files')
     print(fieldnames)
     paths = []
-    for path in metadata_files(basedir=collection_path, recursive=True):
+    for path in util.find_meta_files(basedir=collection_path, recursive=True):
         if os.path.basename(path) == 'entity.json':
             paths.append(path)
     
@@ -860,7 +864,7 @@ def export_entities( collection_path, csv_path ):
             entity_dir = os.path.dirname(path)
             entity_id = os.path.basename(entity_dir)
             entity = DDRLocalEntity.from_json(entity_dir)
-            # seealso DDR.models.__init__.Module.function
+            # seealso DDR.modules.Module.function
             values = []
             for f in entitymodule.ENTITY_FIELDS:
                 value = ''
@@ -868,7 +872,7 @@ def export_entities( collection_path, csv_path ):
                     key = f['name']
                     label = f['form']['label']
                     # run csvexport_* functions on field data if present
-                    val = Module(entitymodule).function(
+                    val = modules.Module(entitymodule).function(
                         'csvexport_%s' % key,
                         getattr(entity, f['name'])
                     )
@@ -905,7 +909,7 @@ def export_files( collection_path, csv_path ):
     fieldnames = [field['name'] for field in filemodule.FILE_FIELDS]
     print(fieldnames)
     paths = []
-    for path in metadata_files(basedir=collection_path, recursive=True):
+    for path in util.find_meta_files(basedir=collection_path, recursive=True):
         if ('master' in path) or ('mezzanine' in path):
             paths.append(path)
     
@@ -922,14 +926,14 @@ def export_files( collection_path, csv_path ):
             file_id = os.path.splitext(filename)[0]
             file_ = DDRLocalFile.from_json(path)
             if file_:
-                # seealso DDR.models.__init__.Module.function
+                # seealso DDR.modules.Module.function
                 values = []
                 for f in filemodule.FILE_FIELDS:
                     value = ''
                     if hasattr(file_, f['name']):
                         key = f['name']
                         # run csvexport_* functions on field data if present
-                        val = Module(filemodule).function(
+                        val = modules.Module(filemodule).function(
                             'csvexport_%s' % key,
                             getattr(file_, f['name'])
                         )
