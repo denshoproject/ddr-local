@@ -99,6 +99,15 @@ LOG_FILE             = config.get('local', 'log_file')
 LOG_LEVEL            = config.get('local', 'log_level')
 VOCAB_TERMS_URL      = config.get('local', 'vocab_terms_url')
 CSV_TMPDIR           = '/tmp/ddr/csv'
+
+# ElasticSearch
+DOCSTORE_INDEX       = config.get('local', 'docstore_index')
+ds_host,ds_port      = config.get('local', 'docstore_host').split(':')
+DOCSTORE_HOSTS = [
+    {'host':ds_host, 'port':ds_port}
+]
+RESULTS_PER_PAGE = 20
+
 GITOLITE_INFO_CACHE_TIMEOUT = int(config.get('local', 'gitolite_info_cache_timeout'))
 GITOLITE_INFO_CACHE_CUTOFF  = int(config.get('local', 'gitolite_info_cache_cutoff'))
 GITOLITE_INFO_CHECK_PERIOD  = int(config.get('local', 'gitolite_info_check_period'))
@@ -241,13 +250,6 @@ if GITSTATUS_BACKGROUND_ACTIVE:
         'task': 'webui.tasks.gitstatus_update_store',
         'schedule': timedelta(seconds=60),
     }
-
-# ElasticSearch
-DOCSTORE_HOSTS = [
-    {'host':'192.168.56.101', 'port':9200}
-]
-DOCSTORE_INDEX = 'documents0'
-RESULTS_PER_PAGE = 20
 
 # sorl-thumbnail
 THUMBNAIL_DEBUG = DEBUG
