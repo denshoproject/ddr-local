@@ -1,6 +1,6 @@
 SHELL = /bin/sh
 
-PACKAGE_SERVER=tank.densho.org
+PACKAGE_SERVER=ddr.densho.org/static/ddrlocal
 
 PIP_CACHE_DIR=/usr/local/src/pip-cache
 
