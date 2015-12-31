@@ -1,7 +1,7 @@
 SHELL = /bin/sh
 DEBIAN_CODENAME := $(shell lsb_release -sc)
 
-PACKAGE_SERVER=tank.densho.org
+PACKAGE_SERVER=ddr.densho.org/static/ddrlocal
 
 PIP_CACHE_DIR=/usr/local/src/pip-cache
 
