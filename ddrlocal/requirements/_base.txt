@@ -25,7 +25,7 @@ python-dateutil==2.2          # BSD      python-dateutil (1.5+dfsg-0.1)   python
 envoy==0.0.3                  # MIT      n/a                              n/a                              y
 lxml==3.3.5                   # BSD      python-lxml (2.3.2-1+deb7u1)     python-lxml (3.3.5-1+b1)         y
 pytz==2014.4                  # MIT      python-tz (2012c-1)              python-tz (2012c-1)              y
-requests==2.3.0               # Apache   python-requests (0.12.1-1)       python-requests (2.3.0-1)        y
+requests==2.9.0               # Apache   python-requests (0.12.1-1)       python-requests (2.3.0-1)        y
 sorl-thumbnail==11.12.1b      # BSD      python-sorl-thumbnail (11.12-4)  python-sorl-thumbnail (11.12-6)  y
 
 #-e git://github.com/densho/ddr-cmdln.git#egg=DDR
