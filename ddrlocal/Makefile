@@ -56,7 +56,7 @@ help-all:
 	@echo "install - Do a fresh install"
 	@echo "install-prep    - git-config, add-user, apt-update, install-misc-tools"
 	@echo "install-daemons - install-nginx install-redis install-elasticsearch"
-	@echo "install-ddr     - install-ddr-cmdln install-ddr-local"
+	@echo "install-app     - install-ddr-cmdln install-ddr-local"
 	@echo "install-static  - "
 	@echo "update  - Do an update"
 	@echo "restart - Restart servers"
@@ -87,13 +87,13 @@ howto-install:
 
 
 
-install: install-prep install-daemons install-ddr install-static install-configs
+install: install-prep install-daemons install-app install-static install-configs
 
-update: update-ddr
+update: update-app
 
-uninstall: uninstall-ddr
+uninstall: uninstall-app uninstall-configs
 
-clean: clean-ddr
+clean: clean-app
 
 
 install-prep: ddr-user apt-update install-core git-config install-misc-tools
@@ -190,13 +190,13 @@ install-elasticsearch:
 	/etc/init.d/elasticsearch restart
 
 
-install-ddr: install-ddr-cmdln install-ddr-local install-ddr-manual
+install-app: install-ddr-cmdln install-ddr-local install-ddr-manual
 
-update-ddr: update-ddr-cmdln update-ddr-local update-ddr-manual install-configs
+update-app: update-ddr-cmdln update-ddr-local update-ddr-manual install-configs
 
-uninstall-ddr: uninstall-ddr-cmdln uninstall-ddr-local uninstall-ddr-manual
+uninstall-app: uninstall-ddr-cmdln uninstall-ddr-local uninstall-ddr-manual
 
-clean-ddr: clean-ddr-cmdln clean-ddr-local clean-ddr-manual
+clean-app: clean-ddr-cmdln clean-ddr-local clean-ddr-manual
 
 
 install-ddr-cmdln:
