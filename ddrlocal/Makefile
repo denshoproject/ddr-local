@@ -197,6 +197,7 @@ clear-munin-logs:
 install-nginx:
 	@echo ""
 	@echo "Nginx ------------------------------------------------------------------"
+	apt-get --assume-yes remove apache2
 	apt-get --assume-yes install nginx
 
 install-redis:
