@@ -1,4 +1,4 @@
-SHELL = /bin/sh
+SHELL = /bin/bash
 DEBIAN_CODENAME := $(shell lsb_release -sc)
 
 PACKAGE_SERVER=ddr.densho.org/static/ddrlocal
