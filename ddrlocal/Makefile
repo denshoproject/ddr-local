@@ -1,9 +1,27 @@
-SHELL = /bin/sh
+SHELL = /bin/bash
 DEBIAN_CODENAME := $(shell lsb_release -sc)
 
 PACKAGE_SERVER=ddr.densho.org/static/ddrlocal
 
-PIP_CACHE_DIR=/usr/local/src/pip-cache
+INSTALL_BASE=/usr/local/src
+PIP_CACHE_DIR=$(INSTALL_BASE)/pip-cache
+VIRTUALENV=$(INSTALL_BASE)/env/ddrlocal
+INSTALLDIR=$(INSTALL_BASE)/ddr-local
+SETTINGS=$(INSTALLDIR)/ddrlocal/ddrlocal/settings.py
+
+CONF_BASE=/etc/ddr
+CONF_PRODUCTION=$(CONF_BASE)/ddr.cfg
+CONF_LOCAL=$(CONF_BASE)/local.cfg
+CONF_SECRET=$(CONF_BASE)/ddrlocal-secret-key.txt
+
+SQLITE_BASE=/var/lib/ddr
+LOG_BASE=/var/log/ddr
+
+DDR_REPO_BASE=/var/www/media
+
+MEDIA_BASE=/var/www
+MEDIA_ROOT=$(MEDIA_BASE)/media
+STATIC_ROOT=$(MEDIA_BASE)/static
 
 ELASTICSEARCH=elasticsearch-1.0.1.deb
 MODERNIZR=modernizr-2.6.2.js
@@ -17,6 +35,13 @@ TYPEAHEAD=typeahead-0.10.2
 # wget https://github.com/max-favilli/tagmanager/archive/v3.0.1.tar.gz
 # wget https://github.com/twitter/typeahead.js/archive/v0.10.2.tar.gz
 
+SUPERVISOR_CELERY_CONF=/etc/supervisor/conf.d/celeryd.conf
+SUPERVISOR_CELERYBEAT_CONF=/etc/supervisor/conf.d/celerybeat.conf
+SUPERVISOR_CONF=/etc/supervisor/conf.d/gunicorn_ddrlocal.conf
+NGINX_CONF=/etc/nginx/sites-available/ddrlocal.conf
+NGINX_CONF_LINK=/etc/nginx/sites-enabled/ddrlocal.conf
+MUNIN_CONF=/etc/munin/munin.conf
+GITWEB_CONF=/etc/gitweb.conf
 
 .PHONY: help
 
@@ -56,7 +81,7 @@ help-all:
 	@echo "install - Do a fresh install"
 	@echo "install-prep    - git-config, add-user, apt-update, install-misc-tools"
 	@echo "install-daemons - install-nginx install-redis install-elasticsearch"
-	@echo "install-ddr     - install-ddr-cmdln install-ddr-local"
+	@echo "install-app     - install-ddr-cmdln install-ddr-local"
 	@echo "install-static  - "
 	@echo "update  - Do an update"
 	@echo "restart - Restart servers"
@@ -77,23 +102,26 @@ howto-install:
 	@echo "- ufw enable"
 	@echo "- apt-get install make"
 	@echo "- adduser ddr"
-	@echo "- git clone https://github.com/densho/ddr-local.git /usr/local/src/ddr-local"
-	@echo "- cd /usr/local/src/ddr-local/ddrlocal"
+	@echo "- git clone https://github.com/densho/ddr-local.git $(INSTALLDIR)"
+	@echo "- cd $(INSTALLDIR)/ddrlocal"
 	@echo "- make install"
+	@echo "- [make branch BRANCH=develop]"
+	@echo "- [make install]"
 	@echo "- make enable-bkgnd"
+	@echo "- Place copy of 'ddr' repo in /var/www/media/ddr/ddr."
 	@echo "- make syncdb"
 	@echo "- make restart"
 	@echo "- [make clear-munin-logs]"
 
 
 
-install: install-prep install-daemons install-ddr install-static install-configs
+install: install-prep install-daemons install-app install-static install-configs
 
-update: update-ddr
+update: update-app
 
-uninstall: uninstall-ddr
+uninstall: uninstall-app uninstall-configs
 
-clean: clean-ddr
+clean: clean-app
 
 
 install-prep: ddr-user apt-update install-core git-config install-misc-tools
@@ -141,9 +169,9 @@ install-munin:
 	@echo ""
 	@echo "Munin ------------------------------------------------------------------"
 	apt-get --assume-yes install munin munin-node libwww-perl
-	if test -d /usr/local/src/munin-monitoring; \
-	then cd /usr/local/src/munin-monitoring && git pull; \
-	else cd /usr/local/src && git clone https://github.com/munin-monitoring/contrib.git /usr/local/src/munin-monitoring; \
+	if test -d $(INSTALL_BASE)/munin-monitoring; \
+	then cd $(INSTALL_BASE)/munin-monitoring && git pull; \
+	else cd $(INSTALL_BASE) && git clone https://github.com/munin-monitoring/contrib.git $(INSTALL_BASE)/munin-monitoring; \
 	fi
 	-rm /etc/munin/plugins/exim_*
 	-rm /etc/munin/plugins/entropy
@@ -156,7 +184,7 @@ install-munin:
 	cd /etc/munin/plugins/
 	-ln -s /usr/share/munin/plugins/nginx_request /etc/munin/plugins/nginx_request
 	-ln -s /usr/share/munin/plugins/nginx_status /etc/munin/plugins/nginx_status
-	-ln -s /usr/local/src/munin-monitoring/plugins/redis/redis_ /etc/munin/plugins/redis_
+	-ln -s $(INSTALL_BASE)/munin-monitoring/plugins/redis/redis_ /etc/munin/plugins/redis_
 #- celery
 #- Elasticsearch
 #- ping gitolite
@@ -169,6 +197,7 @@ clear-munin-logs:
 install-nginx:
 	@echo ""
 	@echo "Nginx ------------------------------------------------------------------"
+	apt-get --assume-yes remove apache2
 	apt-get --assume-yes install nginx
 
 install-redis:
@@ -183,109 +212,125 @@ install-elasticsearch:
 	apt-get --assume-yes install openjdk-7-jre
 	wget -nc -P /tmp/downloads http://$(PACKAGE_SERVER)/$(ELASTICSEARCH)
 	gdebi --non-interactive /tmp/downloads/$(ELASTICSEARCH)
-#cp /usr/local/src/ddr-public/debian/conf/elasticsearch.yml /etc/elasticsearch/
+#cp $(INSTALL_BASE)/ddr-public/debian/conf/elasticsearch.yml /etc/elasticsearch/
 #chown root.root /etc/elasticsearch/elasticsearch.yml
 #chmod 644 /etc/elasticsearch/elasticsearch.yml
 # 	@echo "${bldgrn}search engine (re)start${txtrst}"
 	/etc/init.d/elasticsearch restart
 
 
-install-ddr: install-ddr-cmdln install-ddr-local install-ddr-manual
+install-virtualenv:
+	apt-get --assume-yes install python-pip python-virtualenv
+	test -d $(VIRTUALENV) || virtualenv --distribute --setuptools $(VIRTUALENV)
 
-update-ddr: update-ddr-cmdln update-ddr-local update-ddr-manual install-configs
+install-setuptools: install-virtualenv
+	@echo ""
+	@echo "install-setuptools -----------------------------------------------------"
+	apt-get --assume-yes install python-dev
+	source $(VIRTUALENV)/bin/activate; \
+	pip install -U --download-cache=$(PIP_CACHE_DIR) bpython setuptools
 
-uninstall-ddr: uninstall-ddr-cmdln uninstall-ddr-local uninstall-ddr-manual
 
-clean-ddr: clean-ddr-cmdln clean-ddr-local clean-ddr-manual
+install-app: install-ddr-cmdln install-ddr-local install-ddr-manual install-configs install-daemon-configs
+
+update-app: update-ddr-cmdln update-ddr-local update-ddr-manual install-configs install-daemon-configs
+
+uninstall-app: uninstall-ddr-cmdln uninstall-ddr-local uninstall-ddr-manual uninstall-configs uninstall-daemon-configs
+
+clean-app: clean-ddr-cmdln clean-ddr-local clean-ddr-manual
 
 
-install-ddr-cmdln:
+install-ddr-cmdln: install-virtualenv install-setuptools
 	@echo ""
 	@echo "ddr-cmdln --------------------------------------------------------------"
-	apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev libz-dev pmount udisks python-dev python-pip
-	if test -d /usr/local/src/ddr-cmdln; \
-	then cd /usr/local/src/ddr-cmdln && git pull; \
-	else cd /usr/local/src && git clone https://github.com/densho/ddr-cmdln.git; \
+	apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev libz-dev pmount udisks
+	if test -d $(INSTALL_BASE)/ddr-cmdln; \
+	then cd $(INSTALL_BASE)/ddr-cmdln && git pull; \
+	else cd $(INSTALL_BASE) && git clone https://github.com/densho/ddr-cmdln.git; \
 	fi
-	cd /usr/local/src/ddr-cmdln/ddr && python setup.py install
-	cd /usr/local/src/ddr-cmdln/ddr && pip install -U --download-cache=$(PIP_CACHE_DIR) -r /usr/local/src/ddr-cmdln/ddr/requirements/production.txt
-	-mkdir /var/log/ddr
-	chown -R ddr.root /var/log/ddr
-	chmod -R 755 /var/log/ddr
-	-mkdir -p /var/www/media
-	chown -R ddr.root /var/www/media
-	chmod -R 755 /var/www/media
+	source $(VIRTUALENV)/bin/activate; \
+	cd $(INSTALL_BASE)/ddr-cmdln/ddr && python setup.py install
+	source $(VIRTUALENV)/bin/activate; \
+	cd $(INSTALL_BASE)/ddr-cmdln/ddr && pip install -U --download-cache=$(PIP_CACHE_DIR) -r $(INSTALL_BASE)/ddr-cmdln/ddr/requirements/production.txt
+	-mkdir $(LOG_BASE)
+	chown -R ddr.root $(LOG_BASE)
+	chmod -R 755 $(LOG_BASE)
+	-mkdir -p $(MEDIA_ROOT)
+	chown -R ddr.root $(MEDIA_ROOT)
+	chmod -R 755 $(MEDIA_ROOT)
 
 update-ddr-cmdln:
 	@echo ""
 	@echo "ddr-cmdln --------------------------------------------------------------"
-	cd /usr/local/src/ddr-cmdln && git fetch && git pull
-	cd /usr/local/src/ddr-cmdln/ddr && python setup.py install
-	cd /usr/local/src/ddr-cmdln/ddr && pip install -U --download-cache=$(PIP_CACHE_DIR) -r /usr/local/src/ddr-cmdln/ddr/requirements/production.txt
+	cd $(INSTALL_BASE)/ddr-cmdln && git fetch && git pull
+	source $(VIRTUALENV)/bin/activate; \
+	cd $(INSTALL_BASE)/ddr-cmdln/ddr && python setup.py install
+	source $(VIRTUALENV)/bin/activate; \
+	cd $(INSTALL_BASE)/ddr-cmdln/ddr && pip install -U --download-cache=$(PIP_CACHE_DIR) -r $(INSTALL_BASE)/ddr-cmdln/ddr/requirements/production.txt
 
 uninstall-ddr-cmdln:
-	cd /usr/local/src/ddr-cmdln/ddr
-	-pip uninstall -r /usr/local/src/ddr-cmdln/ddr/requirements/production.txt
-	-rm /usr/local/bin/ddrindex
-	-rm /usr/local/bin/ddrdensho255fix
-	-rm /usr/local/bin/ddrmassupdate
-	-rm /usr/local/bin/ddrfilter
-	-rm /usr/local/bin/ddrpubcopy
-	-rm /usr/local/bin/ddr
-	-rm -Rf /usr/local/lib/python2.7/dist-packages/DDR
-	-rm -Rf /usr/local/lib/python2.7/dist-packages/ddr-*
+	cd $(INSTALL_BASE)/ddr-cmdln/ddr
+	source $(VIRTUALENV)/bin/activate; \
+	-pip uninstall -r $(INSTALL_BASE)/ddr-cmdln/ddr/requirements/production.txt
+	-rm /usr/local/bin/ddr*
+	-rm -Rf /usr/local/lib/python2.7/dist-packages/DDR*
+	-rm -Rf /usr/local/lib/python2.7/dist-packages/ddr*
 
 clean-ddr-cmdln:
-	-rm -Rf /usr/local/src/ddr-cmdln/ddr/build
+	-rm -Rf $(INSTALL_BASE)/ddr-cmdln/ddr/build
 
 
-install-ddr-local:
+install-ddr-local: install-virtualenv install-setuptools
 	@echo ""
 	@echo "ddr-local --------------------------------------------------------------"
 	apt-get --assume-yes install imagemagick libexempi3 libssl-dev python-dev libxml2 libxml2-dev libxslt1-dev supervisor
 	git pull
-	pip install -U --download-cache=$(PIP_CACHE_DIR) -r /usr/local/src/ddr-local/ddrlocal/requirements/production.txt
+	source $(VIRTUALENV)/bin/activate; \
+	pip install -U --download-cache=$(PIP_CACHE_DIR) -r $(INSTALLDIR)/ddrlocal/requirements/production.txt
 # logs dir
-	-mkdir /var/log/ddr
-	chown -R ddr.root /var/log/ddr
-	chmod -R 755 /var/log/ddr
+	-mkdir $(LOG_BASE)
+	chown -R ddr.root $(LOG_BASE)
+	chmod -R 755 $(LOG_BASE)
 # sqlite db dir
-	-mkdir /var/lib/ddr
-	chown -R ddr.root /var/lib/ddr
-	chmod -R 755 /var/lib/ddr
+	-mkdir $(SQLITE_BASE)
+	chown -R ddr.root $(SQLITE_BASE)
+	chmod -R 755 $(SQLITE_BASE)
 # media dir
-	-mkdir -p /var/www/media
-	chown -R ddr.root /var/www/media
-	chmod -R 755 /var/www/media
+	-mkdir -p $(MEDIA_ROOT)
+	chown -R ddr.root $(MEDIA_ROOT)
+	chmod -R 755 $(MEDIA_ROOT)
 
 update-ddr-local:
 	@echo ""
 	@echo "ddr-local --------------------------------------------------------------"
 	git fetch && git pull
-	pip install -U --download-cache=$(PIP_CACHE_DIR) -r /usr/local/src/ddr-local/ddrlocal/requirements/production.txt
+	source $(VIRTUALENV)/bin/activate; \
+	pip install -U --download-cache=$(PIP_CACHE_DIR) -r $(INSTALLDIR)/ddrlocal/requirements/production.txt
 
 uninstall-ddr-local:
-	cd /usr/local/src/ddr-local/ddrlocal
-	-pip uninstall -r /usr/local/src/ddr-local/ddrlocal/requirements/production.txt
+	cd $(INSTALLDIR)/ddrlocal
+	source $(VIRTUALENV)/bin/activate; \
+	-pip uninstall -r $(INSTALLDIR)/ddrlocal/requirements/production.txt
 	-rm /usr/local/lib/python2.7/dist-packages/ddrlocal-*
 	-rm -Rf /usr/local/lib/python2.7/dist-packages/ddrlocal
 
 clean-ddr-local:
-	-rm -Rf /usr/local/src/ddr-local/ddrlocal/src
+	-rm -Rf $(INSTALLDIR)/ddrlocal/src
 
 clean-pip:
 	-rm -Rf $(PIP_CACHE_DIR)/*
 
 
 syncdb:
-	cd /usr/local/src/ddr-local/ddrlocal && ./manage.py syncdb --noinput
-	chown -R ddr.root /var/lib/ddr
-	chmod -R 750 /var/lib/ddr
-	chown -R ddr.root /var/log/ddr
-	chmod -R 755 /var/log/ddr
+	source $(VIRTUALENV)/bin/activate; \
+	cd $(INSTALLDIR)/ddrlocal && ./manage.py syncdb --noinput
+	chown -R ddr.root $(SQLITE_BASE)
+	chmod -R 750 $(SQLITE_BASE)
+	chown -R ddr.root $(LOG_BASE)
+	chmod -R 755 $(LOG_BASE)
 
 branch:
-	cd /usr/local/src/ddr-local/ddrlocal; python ./bin/git-checkout-branch.py $(BRANCH)
+	cd $(INSTALLDIR)/ddrlocal; python ./bin/git-checkout-branch.py $(BRANCH)
 
 
 install-static: install-modernizr install-bootstrap install-jquery install-tagmanager install-typeahead
@@ -296,57 +341,57 @@ clean-static: clean-modernizr clean-bootstrap clean-jquery clean-tagmanager clea
 install-modernizr:
 	@echo ""
 	@echo "Modernizr --------------------------------------------------------------"
-	-rm /var/www/static/js/$(MODERNIZR)*
-	wget -nc -P /var/www/static/js http://$(PACKAGE_SERVER)/$(MODERNIZR)
+	-rm $(STATIC_ROOT)/js/$(MODERNIZR)*
+	wget -nc -P $(STATIC_ROOT)/js http://$(PACKAGE_SERVER)/$(MODERNIZR)
 
 clean-modernizr:
-	-rm /var/www/static/js/$(MODERNIZR)*
+	-rm $(STATIC_ROOT)/js/$(MODERNIZR)*
 
 install-bootstrap:
 	@echo ""
 	@echo "Bootstrap --------------------------------------------------------------"
-	wget -nc -P /var/www/static http://$(PACKAGE_SERVER)/$(BOOTSTRAP)
-	7z x -y -o/var/www/static /var/www/static/$(BOOTSTRAP)
+	wget -nc -P $(STATIC_ROOT) http://$(PACKAGE_SERVER)/$(BOOTSTRAP)
+	7z x -y -o$(STATIC_ROOT) $(STATIC_ROOT)/$(BOOTSTRAP)
 
 clean-bootstrap:
-	-rm -Rf /var/www/static/$(BOOTSTRAP)
+	-rm -Rf $(STATIC_ROOT)/$(BOOTSTRAP)
 
 install-jquery:
 	@echo ""
 	@echo "jQuery -----------------------------------------------------------------"
-	wget -nc -P /var/www/static/js http://$(PACKAGE_SERVER)/$(JQUERY)
-	-ln -s /var/www/static/js/$(JQUERY) /var/www/static/js/jquery.js
+	wget -nc -P $(STATIC_ROOT)/js http://$(PACKAGE_SERVER)/$(JQUERY)
+	-ln -s $(STATIC_ROOT)/js/$(JQUERY) $(STATIC_ROOT)/js/jquery.js
 
 clean-jquery:
-	-rm -Rf /var/www/static/js/$(JQUERY)
-	-rm /var/www/static/js/jquery.js
+	-rm -Rf $(STATIC_ROOT)/js/$(JQUERY)
+	-rm $(STATIC_ROOT)/js/jquery.js
 
 install-tagmanager:
 	@echo ""
 	@echo "tagmanager -------------------------------------------------------------"
-	wget -nc -P /var/www/static/ http://$(PACKAGE_SERVER)/$(TAGMANAGER).tgz
-	cd /var/www/static/ && tar xzf /var/www/static/$(TAGMANAGER).tgz
-	chown -R root.root /var/www/static/$(TAGMANAGER)
-	chmod 755 /var/www/static/$(TAGMANAGER)
-	-ln -s /var/www/static/$(TAGMANAGER) /var/www/static/js/tagmanager
+	wget -nc -P $(STATIC_ROOT)/ http://$(PACKAGE_SERVER)/$(TAGMANAGER).tgz
+	cd $(STATIC_ROOT)/ && tar xzf $(STATIC_ROOT)/$(TAGMANAGER).tgz
+	chown -R root.root $(STATIC_ROOT)/$(TAGMANAGER)
+	chmod 755 $(STATIC_ROOT)/$(TAGMANAGER)
+	-ln -s $(STATIC_ROOT)/$(TAGMANAGER) $(STATIC_ROOT)/js/tagmanager
 
 clean-tagmanager:
-	-rm -Rf /var/www/static/$(TAGMANAGER).tgz
-	-rm -Rf /var/www/static/$(TAGMANAGER)
-	-rm /var/www/static/js/tagmanager
+	-rm -Rf $(STATIC_ROOT)/$(TAGMANAGER).tgz
+	-rm -Rf $(STATIC_ROOT)/$(TAGMANAGER)
+	-rm $(STATIC_ROOT)/js/tagmanager
 
 install-typeahead: clean-typeahead
 	@echo ""
 	@echo "typeahead --------------------------------------------------------------"
-	wget -nc -P /var/www/static/ http://$(PACKAGE_SERVER)/$(TYPEAHEAD).tgz
-	cd /var/www/static/ && tar xzf /var/www/static/$(TYPEAHEAD).tgz
-	chown -R root.root /var/www/static/$(TYPEAHEAD)
-	-ln -s /var/www/static/$(TYPEAHEAD) /var/www/static/js/typeahead
+	wget -nc -P $(STATIC_ROOT)/ http://$(PACKAGE_SERVER)/$(TYPEAHEAD).tgz
+	cd $(STATIC_ROOT)/ && tar xzf $(STATIC_ROOT)/$(TYPEAHEAD).tgz
+	chown -R root.root $(STATIC_ROOT)/$(TYPEAHEAD)
+	-ln -s $(STATIC_ROOT)/$(TYPEAHEAD) $(STATIC_ROOT)/js/typeahead
 
 clean-typeahead:
-	-rm -Rf /var/www/static/$(TYPEAHEAD).tgz
-	-rm -Rf /var/www/static/$(TYPEAHEAD)
-	-rm /var/www/static/js/typeahead
+	-rm -Rf $(STATIC_ROOT)/$(TYPEAHEAD).tgz
+	-rm -Rf $(STATIC_ROOT)/$(TYPEAHEAD)
+	-rm $(STATIC_ROOT)/js/typeahead
 
 
 install-configs:
@@ -354,52 +399,58 @@ install-configs:
 	@echo "configuring ddr-local --------------------------------------------------"
 # base settings file
 	-mkdir /etc/ddr
-	cp /usr/local/src/ddr-local/debian/conf/ddr.cfg /etc/ddr/
-	chown root.root /etc/ddr/ddr.cfg
-	chmod 644 /etc/ddr/ddr.cfg
+	cp $(INSTALLDIR)/debian/conf/ddr.cfg $(CONF_PRODUCTION)
+	chown root.root $(CONF_PRODUCTION)
+	chmod 644 $(CONF_PRODUCTION)
 # web app settings
-	cp /usr/local/src/ddr-local/debian/conf/settings.py /usr/local/src/ddr-local/ddrlocal/ddrlocal/
-	chown root.root /usr/local/src/ddr-local/ddrlocal/ddrlocal/settings.py
-	chmod 644 /usr/local/src/ddr-local/ddrlocal/ddrlocal/settings.py
-# nginx settings
-	cp /usr/local/src/ddr-local/debian/conf/ddrlocal.conf /etc/nginx/sites-available
-	chown root.root /etc/nginx/sites-available/ddrlocal.conf
-	chmod 644 /etc/nginx/sites-available/ddrlocal.conf
-	-ln -s /etc/nginx/sites-available/ddrlocal.conf /etc/nginx/sites-enabled/ddrlocal.conf
-	-rm /etc/nginx/sites-enabled/default
-# munin settings
-	cp /usr/local/src/ddr-local/debian/conf/munin.conf /etc/munin
-	chown root.root /etc/munin/munin.conf
-	chmod 644 /etc/munin/munin.conf
-# supervisord
-	cp /usr/local/src/ddr-local/debian/conf/supervisord.conf /etc/supervisor/
-	cp /usr/local/src/ddr-local/debian/conf/celeryd.conf /etc/supervisor/conf.d/
-	cp /usr/local/src/ddr-local/debian/conf/gunicorn_ddrlocal.conf /etc/supervisor/conf.d/
-	chown root.root /etc/supervisor/conf.d/celeryd.conf
-	chown root.root /etc/supervisor/conf.d/gunicorn_ddrlocal.conf
-	chmod 644 /etc/supervisor/conf.d/celeryd.conf
-	chmod 644 /etc/supervisor/conf.d/gunicorn_ddrlocal.conf
-# gitweb
-	cp /usr/local/src/ddr-local/debian/conf/gitweb.conf /etc/
+	cp $(INSTALLDIR)/debian/conf/settings.py $(SETTINGS)
+	chown root.root $(SETTINGS)
+	chmod 644 $(SETTINGS)
 
 uninstall-configs:
-	-rm /etc/nginx/sites-available/ddrlocal.conf
-	-rm /etc/nginx/sites-enabled/ddrlocal.conf
-	-rm /etc/munin/munin.conf
-	-rm /etc/supervisor/conf.d/celeryd.conf
-	-rm /etc/supervisor/conf.d/gunicorn_ddrlocal.conf
-	-rm /etc/gitweb.conf
-	-rm /usr/local/src/ddr-local/ddrlocal/ddrlocal/settings.py
-	-rm /etc/ddr/ddr.cfg
+	-rm $(SETTINGS)
+	-rm $(CONF_PRODUCTION)
+
+
+install-daemon-configs:
+	@echo ""
+	@echo "install-daemon-configs -------------------------------------------------"
+# nginx settings
+	cp $(INSTALLDIR)/debian/conf/ddrlocal.conf $(NGINX_CONF)
+	chown root.root $(NGINX_CONF)
+	chmod 644 $(NGINX_CONF)
+	-ln -s $(NGINX_CONF) $(NGINX_CONF_LINK)
+	-rm /etc/nginx/sites-enabled/default
+# munin settings
+	cp $(INSTALLDIR)/debian/conf/munin.conf $(MUNIN_CONF)
+	chown root.root $(MUNIN_CONF)
+	chmod 644 $(MUNIN_CONF)
+# supervisord
+	cp $(INSTALLDIR)/debian/conf/celeryd.conf $(SUPERVISOR_CELERY_CONF)
+	cp $(INSTALLDIR)/debian/conf/gunicorn_ddrlocal.conf $(SUPERVISOR_CONF)
+	chown root.root $(SUPERVISOR_CELERY_CONF)
+	chown root.root $(SUPERVISOR_CONF)
+	chmod 644 $(SUPERVISOR_CELERY_CONF)
+	chmod 644 $(SUPERVISOR_CONF)
+# gitweb
+	cp $(INSTALLDIR)/debian/conf/gitweb.conf $(GITWEB_CONF)
+
+uninstall-daemon-configs:
+	-rm $(NGINX_CONF)
+	-rm $(NGINX_CONF_LINK)
+	-rm $(MUNIN_CONF)
+	-rm $(SUPERVISOR_CELERY_CONF)
+	-rm $(SUPERVISOR_CONF)
+	-rm $(GITWEB_CONF)
 
 
 enable-bkgnd:
-	cp /usr/local/src/ddr-local/debian/conf/celerybeat.conf /etc/supervisor/conf.d/
-	chown root.root /etc/supervisor/conf.d/celerybeat.conf
-	chmod 644 /etc/supervisor/conf.d/celerybeat.conf
+	cp $(INSTALLDIR)/debian/conf/celerybeat.conf $(SUPERVISOR_CELERYBEAT_CONF)
+	chown root.root $(SUPERVISOR_CELERYBEAT_CONF)
+	chmod 644 $(SUPERVISOR_CELERYBEAT_CONF)
 
 disable-bkgnd:
-	-rm /etc/supervisor/conf.d/celerybeat.conf
+	-rm $(SUPERVISOR_CELERYBEAT_CONF)
 
 
 reload: reload-nginx reload-supervisor
@@ -427,7 +478,8 @@ restart-munin:
 	/etc/init.d/munin restart
 
 restart-supervisor:
-	/etc/init.d/supervisor restart
+	/etc/init.d/supervisor stop
+	/etc/init.d/supervisor start
 
 
 status:
@@ -438,29 +490,29 @@ status:
 
 git-status:
 	@echo "------------------------------------------------------------------------"
-	cd /usr/local/src/ddr-cmdln && git status
+	cd $(INSTALL_BASE)/ddr-cmdln && git status
 	@echo "------------------------------------------------------------------------"
-	cd /usr/local/src/ddr-local && git status
+	cd $(INSTALLDIR) && git status
 
 
 install-ddr-manual:
 	@echo ""
 	@echo "ddr-manual --------------------------------------------------------------"
 	pip install -U --download-cache=$(PIP_CACHE_DIR) sphinx
-	if test -d /usr/local/src/ddr-manual; \
-	then cd /usr/local/src/ddr-manual && git pull; \
-	else cd /usr/local/src && git clone https://github.com/densho/ddr-manual.git; \
+	if test -d $(INSTALL_BASE)/ddr-manual; \
+	then cd $(INSTALL_BASE)/ddr-manual && git pull; \
+	else cd $(INSTALL_BASE) && git clone https://github.com/densho/ddr-manual.git; \
 	fi
-	cd /usr/local/src/ddr-manual && make html
+	cd $(INSTALL_BASE)/ddr-manual && make html
 
 update-ddr-manual:
 	@echo ""
 	@echo "ddr-manual --------------------------------------------------------------"
-	cd /usr/local/src/ddr-manual && git fetch && git pull
-	cd /usr/local/src/ddr-manual && make html
+	cd $(INSTALL_BASE)/ddr-manual && git fetch && git pull
+	cd $(INSTALL_BASE)/ddr-manual && make html
 
 uninstall-ddr-manual:
 	-pip uninstall sphinx
 
 clean-ddr-manual:
-	-rm -Rf /usr/local/src/ddr-manual/build
+	-rm -Rf $(INSTALL_BASE)/ddr-manual/build
