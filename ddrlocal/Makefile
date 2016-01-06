@@ -269,9 +269,8 @@ update-ddr-cmdln:
 	cd $(INSTALL_BASE)/ddr-cmdln/ddr && pip install -U --download-cache=$(PIP_CACHE_DIR) -r $(INSTALL_BASE)/ddr-cmdln/ddr/requirements/production.txt
 
 uninstall-ddr-cmdln:
-	cd $(INSTALL_BASE)/ddr-cmdln/ddr
 	source $(VIRTUALENV)/bin/activate; \
-	-pip uninstall -r $(INSTALL_BASE)/ddr-cmdln/ddr/requirements/production.txt
+	cd $(INSTALL_BASE)/ddr-cmdln/ddr && pip uninstall -y -r $(INSTALL_BASE)/ddr-cmdln/ddr/requirements/production.txt
 	-rm /usr/local/bin/ddr*
 	-rm -Rf /usr/local/lib/python2.7/dist-packages/DDR*
 	-rm -Rf /usr/local/lib/python2.7/dist-packages/ddr*
@@ -308,9 +307,8 @@ update-ddr-local:
 	pip install -U --download-cache=$(PIP_CACHE_DIR) -r $(INSTALLDIR)/ddrlocal/requirements/production.txt
 
 uninstall-ddr-local:
-	cd $(INSTALLDIR)/ddrlocal
 	source $(VIRTUALENV)/bin/activate; \
-	-pip uninstall -r $(INSTALLDIR)/ddrlocal/requirements/production.txt
+	cd $(INSTALLDIR)/ddrlocal && pip uninstall -y -r $(INSTALLDIR)/ddrlocal/requirements/production.txt
 	-rm /usr/local/lib/python2.7/dist-packages/ddrlocal-*
 	-rm -Rf /usr/local/lib/python2.7/dist-packages/ddrlocal
 
@@ -512,7 +510,7 @@ update-ddr-manual:
 	cd $(INSTALL_BASE)/ddr-manual && make html
 
 uninstall-ddr-manual:
-	-pip uninstall sphinx
+	pip uninstall -y sphinx
 
 clean-ddr-manual:
 	-rm -Rf $(INSTALL_BASE)/ddr-manual/build
