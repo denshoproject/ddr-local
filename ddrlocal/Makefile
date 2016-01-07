@@ -129,6 +129,9 @@ install-prep: ddr-user apt-update install-core git-config install-misc-tools
 ddr-user:
 	-addgroup ddr plugdev
 	-addgroup ddr vboxsf
+	if ! grep "bin/activate" /home/ddr/.bashrc ; \
+	then printf "\n\n# ddrlocal: Activate virtualnv on login\nsource /usr/local/src/env/ddrlocal/bin/activate\n" >> /home/ddr/.bashrc; \
+	fi
 
 apt-update:
 	@echo ""
