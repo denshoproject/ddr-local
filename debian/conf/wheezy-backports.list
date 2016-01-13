@@ -1,0 +1,2 @@
+# DDR: So wheezy installs can have same git-annex as jessie installs.
+deb http://http.debian.net/debian wheezy-backports main

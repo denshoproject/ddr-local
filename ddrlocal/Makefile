@@ -1,4 +1,5 @@
 SHELL = /bin/sh
+DEBIAN_CODENAME := $(shell lsb_release -sc)
 
 PACKAGE_SERVER=ddr.densho.org/static/ddrlocal
 
@@ -94,11 +95,16 @@ uninstall: uninstall-ddr
 clean: clean-ddr
 
 
-install-prep: ddr-user apt-update install-core git-config install-misc-tools
+install-prep: ddr-user apt-backports apt-update install-core git-config install-misc-tools
 
 ddr-user:
 	-addgroup ddr plugdev
 	-addgroup ddr vboxsf
+
+apt-backports:
+ifeq "$(DEBIAN_CODENAME)" "wheezy"
+	cp /usr/local/src/ddr-local/debian/conf/wheezy-backports.list /etc/apt/sources.list.d/
+endif
 
 apt-update:
 	@echo ""
@@ -160,10 +166,18 @@ uninstall-ddr: uninstall-ddr-cmdln uninstall-ddr-local uninstall-ddr-manual
 clean-ddr: clean-ddr-cmdln clean-ddr-local clean-ddr-manual
 
 
-install-ddr-cmdln:
+install-git-annex:
+ifeq "$(DEBIAN_CODENAME)" "wheezy"
+	apt-get --assume-yes -t wheezy-backports install git-core git-annex
+endif
+ifeq "($(DEBIAN_CODENAME)" "jessie"
+	apt-get --assume-yes install git-core git-annex
+endif
+
+install-ddr-cmdln: install-git-annex
 	@echo ""
 	@echo "ddr-cmdln --------------------------------------------------------------"
-	apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev libz-dev pmount udisks python-dev python-pip
+	apt-get --assume-yes install libxml2-dev libxslt1-dev libz-dev pmount udisks python-dev python-pip
 	if test -d /usr/local/src/ddr-cmdln; \
 	then cd /usr/local/src/ddr-cmdln && git pull; \
 	else cd /usr/local/src && git clone https://github.com/densho/ddr-cmdln.git; \
@@ -380,10 +394,12 @@ restart-supervisor:
 
 
 status:
+	@echo "------------------------------------------------------------------------"
 	/etc/init.d/redis-server status
 	/etc/init.d/elasticsearch status
 	/etc/init.d/nginx status
 	supervisorctl status
+	git annex version | grep version
 
 git-status:
 	@echo "------------------------------------------------------------------------"
