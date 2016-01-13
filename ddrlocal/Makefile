@@ -124,7 +124,7 @@ uninstall: uninstall-app uninstall-configs
 clean: clean-app
 
 
-install-prep: ddr-user apt-update install-core git-config install-misc-tools
+install-prep: ddr-user apt-backports apt-update install-core git-config install-misc-tools
 
 ddr-user:
 	-addgroup ddr plugdev
@@ -132,6 +132,11 @@ ddr-user:
 	if ! grep "bin/activate" /home/ddr/.bashrc ; \
 	then printf "\n\n# ddrlocal: Activate virtualnv on login\nsource /usr/local/src/env/ddrlocal/bin/activate\n" >> /home/ddr/.bashrc; \
 	fi
+
+apt-backports:
+ifeq "$(DEBIAN_CODENAME)" "wheezy"
+	cp $(INSTALLDIR)/debian/conf/wheezy-backports.list /etc/apt/sources.list.d/
+endif
 
 apt-update:
 	@echo ""
@@ -243,7 +248,15 @@ uninstall-app: uninstall-ddr-cmdln uninstall-ddr-local uninstall-ddr-manual unin
 clean-app: clean-ddr-cmdln clean-ddr-local clean-ddr-manual
 
 
-install-ddr-cmdln: install-virtualenv install-setuptools
+install-git-annex:
+ifeq "$(DEBIAN_CODENAME)" "wheezy"
+	apt-get --assume-yes -t wheezy-backports install git-core git-annex
+endif
+ifeq "($(DEBIAN_CODENAME)" "jessie"
+	apt-get --assume-yes install git-core git-annex
+endif
+
+install-ddr-cmdln: install-git-annex install-virtualenv install-setuptools
 	@echo ""
 	@echo "ddr-cmdln --------------------------------------------------------------"
 	apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev libz-dev pmount udisks
@@ -484,10 +497,12 @@ restart-supervisor:
 
 
 status:
+	@echo "------------------------------------------------------------------------"
 	/etc/init.d/redis-server status
 	/etc/init.d/elasticsearch status
 	/etc/init.d/nginx status
 	supervisorctl status
+	git annex version | grep version
 
 git-status:
 	@echo "------------------------------------------------------------------------"
