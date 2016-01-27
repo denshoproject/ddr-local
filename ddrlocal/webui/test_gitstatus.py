@@ -47,6 +47,12 @@ class GitstatusTests(TestCase):
         expected = os.path.join(BASEDIR, 'tmp')
         self.assertEqual(expected, out)
      
+    def test_parse_status_path(self):
+        path = '/var/www/media/ddr/tmp/ddr-test-123.status'
+        out = gitstatus.parse_status_path(path)
+        expected = ('/var/www/media/ddr', 'ddr-test-123')
+        self.assertEqual(expected, out)
+     
     def test_queue_path(self):
         out = gitstatus.queue_path(BASEDIR)
         expected = os.path.join(BASEDIR, 'tmp', 'gitstatus-queue')
@@ -56,7 +62,7 @@ class GitstatusTests(TestCase):
         out = gitstatus.lock_path(BASEDIR)
         expected = os.path.join(BASEDIR, 'tmp', 'gitstatus-lock')
         self.assertEqual(expected, out)
-     
+    
     def test_path(self):
         out = gitstatus.path(BASEDIR, '/media/LABEL/ddr/ddr-test-123')
         expected = os.path.join(BASEDIR, 'tmp', 'ddr-test-123.status')

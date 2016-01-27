@@ -181,26 +181,23 @@ class GitStatusTask(Task):
 def gitstatus_update( collection_path ):
     if not os.path.exists(settings.MEDIA_BASE):
         raise Exception('base_dir does not exist. No Store mounted?: %s' % settings.MEDIA_BASE)
-    if not os.path.exists(gitstatus.queue_path(settings.MEDIA_BASE)):
-        queue = gitstatus.queue_generate(
-            settings.MEDIA_BASE,
-            gitolite.get_repos_orgs()
-        )
-        gitstatus.queue_write(settings.MEDIA_BASE, queue)
-    return gitstatus.update(settings.MEDIA_BASE, collection_path)
+    q = gitstatus.GitstatusQueue(settings.MEDIA_BASE)
+    if not os.path.exists(q.queue_path):
+        q.generate(gitolite.get_repos_orgs())
+        q.write()
+    gs = gitstatus.Gitstatus(Identifier(collection_path))
+    gs.update()
+    return gs.update()
 
 @task(base=GitStatusTask, name='webui.tasks.gitstatus_update_store')
 def gitstatus_update_store():
     if not os.path.exists(settings.MEDIA_BASE):
         raise Exception('base_dir does not exist. No Store mounted?: %s' % settings.MEDIA_BASE)
-    if not os.path.exists(gitstatus.queue_path(settings.MEDIA_BASE)):
-        queue = gitstatus.queue_generate(
-            settings.MEDIA_BASE,
-            gitolite.get_repos_orgs()
-        )
-        gitstatus.queue_write(settings.MEDIA_BASE, queue)
-    return gitstatus.update_store(
-        base_dir=settings.MEDIA_BASE,
+    q = gitstatus.GitstatusQueue(settings.MEDIA_BASE)
+    if not os.path.exists(q.queue_path):
+        q.generate(gitolite.get_repos_orgs())
+        q.write()
+    return q.update(
         delta=60,
         minimum=settings.GITSTATUS_INTERVAL,
     )

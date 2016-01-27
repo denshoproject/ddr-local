@@ -220,7 +220,7 @@ class Collection( DDRCollection ):
         >>> DDRLocalCollection.collection_path(None, 'ddr', 'testing', 123)
         '/var/www/media/base/ddr-test-123/.gitstatus'
         """
-        return gitstatus.path(self.path)
+        return gitstatus.Gitstatus(self.identifier).path
     
     def absolute_url( self ):
         """Returns relative URL in context of webui app.
@@ -311,13 +311,15 @@ class Collection( DDRCollection ):
         in collection base template and thus on pretty much every page.
         If Collection.gitstatus() is available it's a lot faster.
         """
-        gs = gitstatus.read(settings.MEDIA_BASE, self.path)
-        if gs and gs.get('status',None):
-            if   function_name == 'synced': return dvcs.synced(gs['status'])
-            elif function_name == 'ahead': return dvcs.ahead(gs['status'])
-            elif function_name == 'behind': return dvcs.behind(gs['status'])
-            elif function_name == 'diverged': return dvcs.diverged(gs['status'])
-            elif function_name == 'conflicted': return dvcs.conflicted(gs['status'])
+        gs = gitstatus.Gitstatus(self.identifier)
+        gs.read()
+        if gs and gs.git_status:
+            status = gs.git_status
+            if   function_name == 'synced': return dvcs.synced(status)
+            elif function_name == 'ahead': return dvcs.ahead(status)
+            elif function_name == 'behind': return dvcs.behind(status)
+            elif function_name == 'diverged': return dvcs.diverged(status)
+            elif function_name == 'conflicted': return dvcs.conflicted(status)
         else:
             if   function_name == 'synced': return super(Collection, self).repo_synced()
             elif function_name == 'ahead': return super(Collection, self).repo_ahead()
@@ -333,13 +335,17 @@ class Collection( DDRCollection ):
     def repo_conflicted( self ): return self._repo_state('conflicted')
         
     def sync_status( self, git_status, timestamp, cache_set=False, force=False ):
-        return gitstatus.sync_status( self, git_status, timestamp, cache_set, force )
+        gs = gitstatus.Gitstatus(self.identifier)
+        gs.read()
+        return gs.sync_status
     
     def sync_status_url( self ):
         return reverse('webui-collection-sync-status-ajax', args=self.idparts)
     
     def gitstatus( self, force=False ):
-        return gitstatus.read(settings.MEDIA_BASE, self.path)
+        gs = gitstatus.Gitstatus(self.identifier)
+        gs.read()
+        return gs
     
     def model_def_commits(self):
         """Assesses document's relation to model defs in 'ddr' repo.

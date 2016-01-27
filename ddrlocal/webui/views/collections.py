@@ -73,8 +73,8 @@ def collections( request ):
                 collection = Collection.from_identifier(identifier)
                 colls.append(collection)
                 gitstatus = collection.gitstatus()
-                if gitstatus and gitstatus.get('sync_status'):
-                    collection.sync_status = gitstatus['sync_status']
+                if gitstatus and gitstatus.sync_status:
+                    collection.sync_status = gitstatus.sync_status
                 else:
                     collection_status_urls.append( "'%s'" % collection.sync_status_url())
         collections.append( (object_id,repo,org,colls) )
