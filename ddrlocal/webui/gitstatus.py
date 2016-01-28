@@ -218,8 +218,9 @@ def update( base_dir, collection_path ):
     @returns: dict
     """
     start = datetime.now()
-    status = dvcs.repo_status(collection_path, short=True)
-    annex_status = dvcs.annex_status(collection_path)
+    repo = dvcs.repository(collection_path)
+    status = dvcs.repo_status(repo, short=True)
+    annex_status = dvcs.annex_status(repo)
     timestamp = datetime.now()
     syncstatus = sync_status(collection_path, git_status=status, timestamp=timestamp, force=True)
     elapsed = timestamp - start
