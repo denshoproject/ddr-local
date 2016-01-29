@@ -481,17 +481,17 @@ def next_repo( queue, local=False ):
         # choose first collection that is not locked
         for timestamp,cid in collections:
             if datetime.now() > timestamp:
-                collection = Collection.from_identifier(Identifier(id=cid))
-                if not collection.locked():
-                    return collection.path_abs
+                ci = Identifier(id=cid)
+                if not Collection.from_identifier(ci).locked():
+                    return ci.path_abs()
             if (not next_available) or (timestamp < next_available):
                 next_available = timestamp
     else:
         # global lock - just take the first collection
         for timestamp,cid in collections:
             if datetime.now() > timestamp:
-                identifier = Identifier(id=cid)
-                return identifier.path_abs
+                ci = Identifier(id=cid)
+                return ci.path_abs()
             if (not next_available) or (timestamp < next_available):
                 next_available = timestamp
     return ('notready',next_available)
