@@ -119,7 +119,7 @@ def dumps( timestamp, elapsed, status, annex_status, syncstatus ):
     return '\n%%\n'.join([
         timestamp_elapsed,
         status,
-        annex_status,
+        json.dumps(annex_status),
         json.dumps(syncstatus),
     ])
 
