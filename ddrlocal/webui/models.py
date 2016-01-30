@@ -303,34 +303,16 @@ class Collection( DDRCollection ):
             cache.set(key, data, COLLECTION_ANNEX_STATUS_TIMEOUT)
         return data
     
-    def _repo_state( self, function_name ):
-        """Use Collection.gitstatus if present (faster)
-        
-        Collection.repo_FUNCTION() required a git-status call so status
-        could be passed to dvcs.FUNCTION().  These functions are called
-        in collection base template and thus on pretty much every page.
-        If Collection.gitstatus() is available it's a lot faster.
+    def repo_states( self ):
+        """Get collection's repo state from git-status if available
         """
-        gs = gitstatus.read(settings.MEDIA_BASE, self.path)
-        if gs and gs.get('status',None):
-            if   function_name == 'synced': return dvcs.synced(gs['status'])
-            elif function_name == 'ahead': return dvcs.ahead(gs['status'])
-            elif function_name == 'behind': return dvcs.behind(gs['status'])
-            elif function_name == 'diverged': return dvcs.diverged(gs['status'])
-            elif function_name == 'conflicted': return dvcs.conflicted(gs['status'])
-        else:
-            if   function_name == 'synced': return super(Collection, self).repo_synced()
-            elif function_name == 'ahead': return super(Collection, self).repo_ahead()
-            elif function_name == 'behind': return super(Collection, self).repo_behind()
-            elif function_name == 'diverged': return super(Collection, self).repo_diverged()
-            elif function_name == 'conflicted': return super(Collection, self).repo_conflicted()
-        return None
-
-    def repo_synced( self ): return self._repo_state('synced')
-    def repo_ahead( self ): return self._repo_state('ahead')
-    def repo_behind( self ): return self._repo_state('behind')
-    def repo_diverged( self ): return self._repo_state('diverged')
-    def repo_conflicted( self ): return self._repo_state('conflicted')
+        if not self._states:
+            gs = gitstatus.read(settings.MEDIA_BASE, self.path)
+            if gs and gs.get('status',None):
+                self._states = dvcs.repo_states(gs['status'])
+            else:
+                self._states = dvcs.repo_states(self.repo_status())
+        return self._states
         
     def sync_status( self, git_status, timestamp, cache_set=False, force=False ):
         return gitstatus.sync_status( self, git_status, timestamp, cache_set, force )
