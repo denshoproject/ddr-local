@@ -332,6 +332,9 @@ install-configs:
 	cp /usr/local/src/ddr-local/debian/conf/ddr.cfg /etc/ddr/
 	chown root.root /etc/ddr/ddr.cfg
 	chmod 644 /etc/ddr/ddr.cfg
+# XML templates
+	-mkdir /etc/ddr/templates
+	cp -R /usr/local/src/ddr-local/debian/conf/templates/ /etc/ddr/
 # web app settings
 	cp /usr/local/src/ddr-local/debian/conf/settings.py /usr/local/src/ddr-local/ddrlocal/ddrlocal/
 	chown root.root /usr/local/src/ddr-local/ddrlocal/ddrlocal/settings.py
