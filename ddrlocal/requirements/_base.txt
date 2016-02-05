@@ -1,7 +1,7 @@
 # dependencies used in all environments
 
 # Non-Python dependencies
-# sudo apt-get install libssl-dev redis-server python2.7 supervisor
+# sudo apt-get install libssl-dev redis-server python2.7 python-lxml supervisor
 
                               # LICENSE  DEBIAN PKG (WHEEZY)              (JESSIE)                         Python3
 
@@ -23,7 +23,6 @@ beautifulsoup4==4.3.2         # MIT      python-beautifulsoup (3.2.1-1)   python
 django-bootstrap-pagination==1.5.0 # MIT
 python-dateutil==2.2          # BSD      python-dateutil (1.5+dfsg-0.1)   python-dateutil (1.5+dfsg-1)     y
 envoy==0.0.3                  # MIT      n/a                              n/a                              y
-lxml==3.3.5                   # BSD      python-lxml (2.3.2-1+deb7u1)     python-lxml (3.3.5-1+b1)         y
 pytz==2014.4                  # MIT      python-tz (2012c-1)              python-tz (2012c-1)              y
 requests==2.5.0               # Apache   python-requests (0.12.1-1)       python-requests (2.3.0-1)        y
 sorl-thumbnail==11.12.1b      # BSD      python-sorl-thumbnail (11.12-4)  python-sorl-thumbnail (11.12-6)  y
