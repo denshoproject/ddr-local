@@ -172,6 +172,15 @@ def read( base_dir, collection_path ):
 
 COLLECTION_SYNC_STATUS_CACHE_KEY = 'webui:collection:%s:sync-status'
 
+SYNC_STATUS_BOOTSTRAP_COLOR = {
+    'unknown': 'muted',
+    'synced': 'success',
+    'ahead': 'warning',
+    'behind': 'warning',
+    'conflicted': 'danger',
+    'locked': 'warning',
+}
+
 def sync_status( collection_path, git_status, timestamp, cache_set=False, force=False ):
     """Cache collection repo sync status info for collections list page.
     Used in both .collections() and .sync_status_ajax().
@@ -187,24 +196,23 @@ def sync_status( collection_path, git_status, timestamp, cache_set=False, force=
     key = COLLECTION_SYNC_STATUS_CACHE_KEY % collection_id
     data = cache.get(key)
     if force or (not data and cache_set):
-        status = 'unknown'
-        btn = 'muted'
         # we're just getting this so we can call Collection.locked
         disposable_collection = Collection.from_identifier(cidentifier)
         # now:
-        if   dvcs.ahead(git_status): status = 'ahead'; btn = 'warning'
-        elif dvcs.behind(git_status): status = 'behind'; btn = 'warning'
-        elif dvcs.conflicted(git_status): status = 'conflicted'; btn = 'danger'
-        elif dvcs.synced(git_status): status = 'synced'; btn = 'success'
-        elif disposable_collection.locked(): status = 'locked'; btn = 'warning'
+        status = 'unknown'
+        if   dvcs.synced(git_status): status = 'synced'
+        elif dvcs.ahead(git_status): status = 'ahead'
+        elif dvcs.behind(git_status): status = 'behind'
+        elif dvcs.conflicted(git_status): status = 'conflicted'
+        elif disposable_collection.locked(): status = 'locked'
         if isinstance(timestamp, datetime):
             timestamp = timestamp.strftime(settings.TIMESTAMP_FORMAT)
         data = {
-            'row': '#%s' % collection_id,
-            'color': btn,
-            'cell': '#%s td.status' % collection_id,
-            'status': status,
             'timestamp': timestamp,
+            'status': status,
+            'color': SYNC_STATUS_BOOTSTRAP_COLOR[status],
+            'row': '#%s' % collection_id,
+            'cell': '#%s td.status' % collection_id,
         }
         cache.set(key, data, COLLECTION_STATUS_TIMEOUT)
     return data
