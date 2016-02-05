@@ -30,6 +30,21 @@ First line contains date of last queue_generate().
 Timestamps represent next earliest update datetime.
 After running gitstatus on collection, next update time is scheduled.
 Time is slightly randomized so updates gradually spread out.
+
+
+Example: Update store
+
+>>> from django.conf import settings
+>>> from webui import gitolite
+>>> from webui import gitstatus
+>>> if not os.path.exists(gitstatus.queue_path(settings.MEDIA_BASE)):
+...     queue = gitstatus.queue_generate(
+...         settings.MEDIA_BASE, gitolite.get_repos_orgs()
+...     )
+...     gitstatus.queue_write(settings.MEDIA_BASE, queue)
+>>> 
+>>> gitstatus.update_store(settings.MEDIA_BASE, 60, 3600)
+
 """
 
 from datetime import datetime, timedelta
