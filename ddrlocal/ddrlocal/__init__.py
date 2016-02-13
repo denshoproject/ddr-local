@@ -5,7 +5,7 @@ import os
 # Django starts so that shared_task will use this app.
 from .celery import app as celery_app
 
-from DDR.dvcs import latest_commit
+from DDR import dvcs
 
 VERSION = '0.9.3-beta'
-COMMIT = latest_commit(os.path.dirname(__file__))
+COMMIT = dvcs.latest_commit(os.path.dirname(__file__))

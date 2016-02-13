@@ -152,7 +152,7 @@ def git_status( request, repo, org, cid ):
     collection = Collection.from_request(request)
     alert_if_conflicted(request, collection)
     gitstatus = collection.gitstatus()
-    remotes = dvcs.remotes(collection.path)
+    remotes = dvcs.remotes(dvcs.repository(collection.path))
     return render_to_response(
         'webui/collections/git-status.html',
         {'collection': collection,
