@@ -476,6 +476,25 @@ reload-supervisor:
 	supervisorctl reload
 
 
+stop: stop-elasticsearch stop-redis stop-nginx stop-munin stop-supervisor
+
+stop-elasticsearch:
+	/etc/init.d/elasticsearch stop
+
+stop-redis:
+	/etc/init.d/redis-server stop
+
+stop-nginx:
+	/etc/init.d/nginx stop
+
+stop-munin:
+	/etc/init.d/munin-node stop
+	/etc/init.d/munin stop
+
+stop-supervisor:
+	/etc/init.d/supervisor stop
+
+
 restart: restart-elasticsearch restart-redis restart-nginx restart-munin restart-supervisor
 
 restart-elasticsearch:
