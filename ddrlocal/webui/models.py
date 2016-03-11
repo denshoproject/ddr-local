@@ -360,6 +360,7 @@ class Collection( DDRCollection ):
     @staticmethod
     def create(collection_path, git_name, git_mail):
         """create new entity given an entity ID
+        TODO remove write and commit, just create object
         """
         # write collection.json template to collection location and commit
         fileio.write_text(Collection(collection_path).dump_json(template=True),
@@ -573,6 +574,7 @@ class Entity( DDREntity ):
     @staticmethod
     def create(collection, entity_id, git_name, git_mail, agent=settings.AGENT):
         """create new entity given an entity ID
+        TODO remove write and commit, just create object
         """
         eidentifier = Identifier(id=entity_id)
         entity_path = eidentifier.path_abs()

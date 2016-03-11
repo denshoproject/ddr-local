@@ -291,9 +291,13 @@ def new( request, repo, org, cid ):
     
     # get new entity ID
     try:
-        session = idservice.session(request.session['workbench_sessionid'],
-                                    request.session['workbench_csrftoken'])
-        entity_ids = idservice.entities_next(session, repo, org, cid, num_ids=1)
+        session = idservice.session(
+            request.session['workbench_sessionid'],
+            request.session['workbench_csrftoken']
+        )
+        entity_ids = idservice.entities_next(
+            session, collection.identifier, num_ids=1
+        )
     except Exception as e:
         logger.error('Could not get new object ID from workbench!')
         logger.error(str(e.args))

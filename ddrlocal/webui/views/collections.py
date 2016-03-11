@@ -224,6 +224,7 @@ def new( request, repo, org ):
     
     If it messes up, goes back to collection list.
     """
+    oidentifier = Identifier(request)
     git_name = request.session.get('git_name')
     git_mail = request.session.get('git_mail')
     if not (git_name and git_mail):
@@ -231,9 +232,11 @@ def new( request, repo, org ):
     # get new collection ID
     try:
         # TODO should this really be in a try/except?
-        session = idservice.session(request.session['workbench_sessionid'],
-                                    request.session['workbench_csrftoken'])
-        collection_ids = idservice.collections_next(session, repo, org, num_ids=1)
+        session = idservice.session(
+            request.session['workbench_sessionid'],
+            request.session['workbench_csrftoken']
+        )
+        collection_ids = idservice.collections_next(session, oidentifier, num_ids=1)
     except Exception as e:
         logger.error('Could not get new collecion ID!')
         logger.error(str(e.args))
