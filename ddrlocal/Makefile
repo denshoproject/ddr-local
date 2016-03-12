@@ -438,10 +438,6 @@ install-daemon-configs:
 	chmod 644 $(NGINX_CONF)
 	-ln -s $(NGINX_CONF) $(NGINX_CONF_LINK)
 	-rm /etc/nginx/sites-enabled/default
-# munin settings
-	cp $(INSTALLDIR)/debian/conf/munin.conf $(MUNIN_CONF)
-	chown root.root $(MUNIN_CONF)
-	chmod 644 $(MUNIN_CONF)
 # supervisord
 	cp $(INSTALLDIR)/debian/conf/celeryd.conf $(SUPERVISOR_CELERY_CONF)
 	cp $(INSTALLDIR)/debian/conf/gunicorn_ddrlocal.conf $(SUPERVISOR_CONF)
@@ -451,6 +447,10 @@ install-daemon-configs:
 	chmod 644 $(SUPERVISOR_CONF)
 # gitweb
 	cp $(INSTALLDIR)/debian/conf/gitweb.conf $(GITWEB_CONF)
+# munin settings
+	cp $(INSTALLDIR)/debian/conf/munin.conf $(MUNIN_CONF)
+	chown root.root $(MUNIN_CONF)
+	chmod 644 $(MUNIN_CONF)
 
 uninstall-daemon-configs:
 	-rm $(NGINX_CONF)
