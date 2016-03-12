@@ -478,6 +478,8 @@ reload-nginx:
 reload-supervisor:
 	supervisorctl reload
 
+reload-app: reload-supervisor
+
 
 stop: stop-elasticsearch stop-redis stop-nginx stop-munin stop-supervisor
 
@@ -496,6 +498,8 @@ stop-munin:
 
 stop-supervisor:
 	/etc/init.d/supervisor stop
+
+stop-app: stop-supervisor
 
 
 restart: restart-elasticsearch restart-redis restart-nginx restart-munin restart-supervisor
@@ -516,6 +520,8 @@ restart-munin:
 restart-supervisor:
 	/etc/init.d/supervisor stop
 	/etc/init.d/supervisor start
+
+restart-app: restart-supervisor
 
 
 status:
