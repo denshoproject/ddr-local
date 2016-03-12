@@ -168,9 +168,9 @@ install-daemons: install-elasticsearch install-redis install-cgit install-munin 
 install-cgit:
 	@echo ""
 	@echo "gitweb/cgit ------------------------------------------------------------"
-ifeq ($(DEBIAN_CODENAME), wheezy)
-	apt-get --assume-yes -t wheezy-backports install cgit
-endif
+#ifeq ($(DEBIAN_CODENAME), wheezy)
+# 	apt-get --assume-yes -t wheezy-backports install cgit
+#endif
 ifeq ($(DEBIAN_CODENAME), jessie)
 	apt-get --assume-yes install cgit
 endif
