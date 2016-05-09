@@ -13,6 +13,7 @@
   <div class="row-fluid">
     <div class="span12">
 
+
 <h2>
 {{ collection.id }}
 {% if collection.title %}&mdash; {{ collection.title }}{% endif %}
@@ -21,23 +22,6 @@
 EDIT
 </h1>
 
-{% if collection.model_def_fields_removed %}
-  <div class="alert alert-danger">
-    {{ collection.model_def_fields_removed_msg }}
-  </div>
-{% endif %}
-
-{% if collection.model_def_fields_added %}
-  <div class="alert alert-info">
-    {{ collection.model_def_fields_added_msg }}
-  </div>
-{% endif %}
-
-{% if collection.model_def_commits_msg %}
-  <div class="alert alert-{{ collection.model_def_commits_alert }}">
-    {{ collection.model_def_commits_msg }}
-  </div>
-{% endif %}
 
 <form name="edit" action="" method="POST">{% csrf_token %}
 <table>
@@ -49,6 +33,24 @@ EDIT
   </tr>
 </table>
 </form>
+
+
+{% if collection.model_def_fields_removed %}
+  <div class="text-danger bg-danger">
+    {{ collection.model_def_fields_removed_msg }}
+  </div>
+{% endif %}
+{% if collection.model_def_fields_added %}
+  <div class="text-info bg-info">
+    {{ collection.model_def_fields_added_msg }}
+  </div>
+{% endif %}
+{% if collection.model_def_commits_msg %}
+  <div class="text-{{ collection.model_def_commits_alert }} bg-{{ collection.model_def_commits_alert }}">
+    {{ collection.model_def_commits_msg }}
+  </div>
+{% endif %}
+
 
     </div><!-- .span12 -->
   </div><!-- .row-fluid -->

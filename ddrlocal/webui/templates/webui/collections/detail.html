@@ -28,25 +28,6 @@
 <div id="overview">
 
 
-{% if collection.model_def_fields_removed %}
-  <div class="alert alert-danger">
-    {{ collection.model_def_fields_removed_msg }}
-  </div>
-{% endif %}
-
-{% if collection.model_def_fields_added %}
-  <div class="alert alert-info">
-    {{ collection.model_def_fields_added_msg }}
-  </div>
-{% endif %}
-
-{% if collection.model_def_commits_msg %}
-  <div class="alert alert-{{ collection.model_def_commits_alert }}">
-    {{ collection.model_def_commits_msg }}
-  </div>
-{% endif %}
-
-
 {% if username and models_valid %}
 {% if collection.locked or collection.repo_behind or collection.repo_conflicted %}
 <p>
@@ -70,6 +51,22 @@
 </div><!-- #overview -->
 
 
+{% if collection.model_def_fields_removed %}
+  <div class="text-danger bg-danger">
+    {{ collection.model_def_fields_removed_msg }}
+  </div>
+{% endif %}
+{% if collection.model_def_fields_added %}
+  <div class="text-info bg-info">
+    {{ collection.model_def_fields_added_msg }}
+  </div>
+{% endif %}
+{% if collection.model_def_commits_msg %}
+  <div class="text-{{ collection.model_def_commits_alert }} bg-{{ collection.model_def_commits_alert }}">
+    {{ collection.model_def_commits_msg }}
+  </div>
+{% endif %}
+
     </div><!-- .span12 -->
   </div><!-- .row -->
 
@@ -89,6 +86,7 @@
   </span>
 </div>
 {% endif %}
+
 {% endblock footer %}
 
 

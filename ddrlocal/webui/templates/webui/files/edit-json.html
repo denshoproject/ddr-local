@@ -13,6 +13,7 @@
   <div class="row-fluid">
     <div class="span12">
 
+
 <h2>
 {{ entity.id }}
 </h2>
@@ -20,23 +21,6 @@
 Edit
 </h1>
 
-{% if file.model_def_fields_removed %}
-  <div class="alert alert-danger">
-    {{ file.model_def_fields_removed_msg }}
-  </div>
-{% endif %}
-
-{% if file.model_def_fields_added %}
-  <div class="alert alert-info">
-    {{ file.model_def_fields_added_msg }}
-  </div>
-{% endif %}
-
-{% if file.model_def_commits_msg %}
-  <div class="alert alert-{{ file.model_def_commits_alert }}">
-    {{ file.model_def_commits_msg }}
-  </div>
-{% endif %}
 
 <form name="edit" action="" method="POST">{% csrf_token %}
 <table>
@@ -48,6 +32,24 @@ Edit
   </tr>
 </table>
 </form>
+
+
+{% if file.model_def_fields_removed %}
+  <div class="text-danger bg-danger">
+    {{ file.model_def_fields_removed_msg }}
+  </div>
+{% endif %}
+{% if file.model_def_fields_added %}
+  <div class="text-info bg-info">
+    {{ file.model_def_fields_added_msg }}
+  </div>
+{% endif %}
+{% if file.model_def_commits_msg %}
+  <div class="text-{{ file.model_def_commits_alert }} bg-{{ file.model_def_commits_alert }}">
+    {{ file.model_def_commits_msg }}
+  </div>
+{% endif %}
+
 
     </div><!-- .span12 -->
   </div><!-- .row-fluid -->

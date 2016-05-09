@@ -14,27 +14,11 @@
   <div class="row-fluid">
     <div class="span12">
 
+
 <h1>
 {{ file.basename }}
 </h1>
 
-{% if file.model_def_fields_removed %}
-  <div class="alert alert-danger">
-    {{ file.model_def_fields_removed_msg }}
-  </div>
-{% endif %}
-
-{% if file.model_def_fields_added %}
-  <div class="alert alert-info">
-    {{ file.model_def_fields_added_msg }}
-  </div>
-{% endif %}
-
-{% if file.model_def_commits_msg %}
-  <div class="alert alert-{{ file.model_def_commits_alert }}">
-    {{ file.model_def_commits_msg }}
-  </div>
-{% endif %}
 
 {% if username and models_valid %}
 {% if entity.locked or collection.locked or collection.repo_behind or collection.repo_conflicted %}
@@ -141,6 +125,24 @@
 <a title="Generate New Access File" class="btn btn-mini muted ">Generate New Access File</a>
 {% endif %}
 {% endif %}{#username #}
+
+
+{% if file.model_def_fields_removed %}
+  <div class="text-danger bg-danger">
+    {{ file.model_def_fields_removed_msg }}
+  </div>
+{% endif %}
+{% if file.model_def_fields_added %}
+  <div class="text-info bg-info">
+    {{ file.model_def_fields_added_msg }}
+  </div>
+{% endif %}
+{% if file.model_def_commits_msg %}
+  <div class="text-{{ file.model_def_commits_alert }} bg-{{ file.model_def_commits_alert }}">
+    {{ file.model_def_commits_msg }}
+  </div>
+{% endif %}
+
 
     </div><!-- .span12 -->
   </div><!-- .row-fluid -->

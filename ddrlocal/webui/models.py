@@ -109,10 +109,12 @@ def model_def_fields(document):
             fields.remove('path_rel')
     rm_path_rel(added)
     rm_path_rel(removed)
-    document.model_def_fields_added = added
-    document.model_def_fields_removed = removed
-    document.model_def_fields_added_msg = WEBUI_MESSAGES['MODEL_DEF_FIELDS_ADDED'] % added
-    document.model_def_fields_removed_msg = WEBUI_MESSAGES['MODEL_DEF_FIELDS_REMOVED'] % removed
+    if added:
+        document.model_def_fields_added = added
+        document.model_def_fields_added_msg = WEBUI_MESSAGES['MODEL_DEF_FIELDS_ADDED'] % added
+    if removed:
+        document.model_def_fields_removed = removed
+        document.model_def_fields_removed_msg = WEBUI_MESSAGES['MODEL_DEF_FIELDS_REMOVED'] % removed
 
 def form_prep(document, module):
     """Apply formprep_{field} functions to prep data dict to pass into DDRForm object.
