@@ -41,14 +41,14 @@ def search_index(func):
         elif docstore_index_exists: d = 'd'
         key = ''.join([s,d])
         error_messages = {
-            'sd': None, # nothing to see here, move along
-            's ': 'No search index for %s. Search is disabled. Please reindex.' % (storage_label),
-            ' d': 'No storage devices mounted. Search is disabled.',
-            '  ': 'No storage devices mounted and no search index. Search is disabled.',
-            'ee': 'Cannot connect to Elasticsearch. Search is disabled.',
+            'sd': (None), # nothing to see here, move along
+            's ': ('No search index for %s. Search is disabled. Please reindex.' % (storage_label)),
+            ' d': ('No storage devices mounted. Search is disabled.'),
+            '  ': ('No storage devices mounted and no search index. Search is disabled.'),
+            'ee': ('Cannot connect to Elasticsearch. Search is disabled.'),
         }
         msg = error_messages[key]
         if msg:
-            messages.warning(request, msg)
+            messages.warning(request, msg, extra_tags='bottom')
         return func(request, *args, **kwargs)
     return inner
