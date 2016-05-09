@@ -40,7 +40,8 @@ def storage_required(func):
         # if we can get list of collections, storage must be readable
         basepath = settings.MEDIA_BASE
         if not os.path.exists(basepath):
-            messages.error(request, 'ERROR: Base path does not exist.')
+            msg = 'ERROR: Base path does not exist: %s' % basepath
+            messages.error(request, msg)
             return HttpResponseRedirect(reverse('storage-required'))
         # realpath(MEDIA_BASE) indicates which Store is mounted
         basepathreal = os.path.realpath(settings.MEDIA_BASE)
