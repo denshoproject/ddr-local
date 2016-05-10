@@ -14,8 +14,8 @@ django-redis==3.7.1           # BSD      n/a                              n/a   
 django-redis-sessions==0.4.0  # BSD      n/a                              n/a                              y
 
 # process queue
-celery==3.1.13                # BSD      python-celery (2.5.3-4)          python-celery (3.1.11-1)         y
-django-celery==3.1.10         # BSD      python-django-celery (2.5.5-2)   python-django-celery (3.1.10-1)  y
+celery==3.1.23                # BSD      python-celery (2.5.3-4)          python-celery (3.1.11-1)         y
+django-celery==3.1.17         # BSD      python-django-celery (2.5.5-2)   python-django-celery (3.1.10-1)  y
 django-celery-with-redis==3.0 # BSD      n/a                              n/a                              ???
 
 # misc
