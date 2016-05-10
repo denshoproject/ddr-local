@@ -43,6 +43,8 @@ NGINX_CONF=/etc/nginx/sites-available/ddrlocal.conf
 NGINX_CONF_LINK=/etc/nginx/sites-enabled/ddrlocal.conf
 MUNIN_CONF=/etc/munin/munin.conf
 GITWEB_CONF=/etc/gitweb.conf
+CGIT_CONF=/etc/cgitrc
+
 
 .PHONY: help
 
@@ -173,9 +175,13 @@ install-cgit:
 # 	apt-get --assume-yes -t wheezy-backports install cgit
 #endif
 ifeq ($(DEBIAN_CODENAME), jessie)
-	apt-get --assume-yes install cgit
+	apt-get --assume-yes install cgit fcgiwrap
 endif
-
+	-mkdir /var/www/cgit
+	-ln -s /usr/lib/cgit/cgit.cgi /var/www/cgit/cgit.cgi
+	-ln -s /usr/share/cgit/cgit.css /var/www/cgit/cgit.css
+	-ln -s /usr/share/cgit/favicon.ico /var/www/cgit/favicon.ico
+	-ln -s /usr/share/cgit/robots.txt /var/www/cgit/robots.txt
 
 install-munin:
 	@echo ""
@@ -451,6 +457,7 @@ install-daemon-configs:
 	chmod 644 $(SUPERVISOR_CONF)
 # gitweb
 	cp $(INSTALLDIR)/debian/conf/gitweb.conf $(GITWEB_CONF)
+	cp $(INSTALLDIR)/debian/conf/cgitrc $(CGIT_CONF)
 # munin settings
 	cp $(INSTALLDIR)/debian/conf/munin.conf $(MUNIN_CONF)
 	chown root.root $(MUNIN_CONF)
@@ -506,13 +513,16 @@ stop-supervisor:
 stop-app: stop-supervisor
 
 
-restart: restart-elasticsearch restart-redis restart-nginx restart-munin restart-supervisor
+restart: restart-elasticsearch restart-redis restart-cgit restart-nginx restart-munin restart-supervisor
 
 restart-elasticsearch:
 	/etc/init.d/elasticsearch restart
 
 restart-redis:
 	/etc/init.d/redis-server restart
+
+restart-cgit:
+	/etc/init.d/fcgiwrap restart
 
 restart-nginx:
 	/etc/init.d/nginx restart
