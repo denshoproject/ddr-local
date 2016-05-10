@@ -37,7 +37,8 @@ TYPEAHEAD=typeahead-0.10.2
 
 SUPERVISOR_CELERY_CONF=/etc/supervisor/conf.d/celeryd.conf
 SUPERVISOR_CELERYBEAT_CONF=/etc/supervisor/conf.d/celerybeat.conf
-SUPERVISOR_CONF=/etc/supervisor/conf.d/gunicorn_ddrlocal.conf
+SUPERVISOR_GUNICORN_CONF=/etc/supervisor/conf.d/gunicorn_ddrlocal.conf
+SUPERVISOR_CONF=/etc/supervisor/supervisord.conf
 NGINX_CONF=/etc/nginx/sites-available/ddrlocal.conf
 NGINX_CONF_LINK=/etc/nginx/sites-enabled/ddrlocal.conf
 MUNIN_CONF=/etc/munin/munin.conf
@@ -440,10 +441,13 @@ install-daemon-configs:
 	-rm /etc/nginx/sites-enabled/default
 # supervisord
 	cp $(INSTALLDIR)/debian/conf/celeryd.conf $(SUPERVISOR_CELERY_CONF)
-	cp $(INSTALLDIR)/debian/conf/gunicorn_ddrlocal.conf $(SUPERVISOR_CONF)
+	cp $(INSTALLDIR)/debian/conf/gunicorn_ddrlocal.conf $(SUPERVISOR_GUNICORN_CONF)
+	cp $(INSTALLDIR)/debian/conf/supervisord.conf $(SUPERVISOR_CONF)
 	chown root.root $(SUPERVISOR_CELERY_CONF)
+	chown root.root $(SUPERVISOR_GUNICORN_CONF)
 	chown root.root $(SUPERVISOR_CONF)
 	chmod 644 $(SUPERVISOR_CELERY_CONF)
+	chmod 644 $(SUPERVISOR_GUNICORN_CONF)
 	chmod 644 $(SUPERVISOR_CONF)
 # gitweb
 	cp $(INSTALLDIR)/debian/conf/gitweb.conf $(GITWEB_CONF)
