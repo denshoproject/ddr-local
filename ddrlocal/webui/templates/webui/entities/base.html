@@ -5,30 +5,35 @@
 
 {% if entity %}
 <div class="muted" id="expert">
-  <span><a class="muted" href="{{ entity.gitweb_url }}" target="git">git</a></span>
-  <span class="bullsep">&bull;</span>
-  <span><a class="muted" href="{{ entity.fs_url }}" target="fs">fs</a></span>
-  <span class="bullsep">&bull;</span>
+
   <span>
-    <a class="muted" href="{{ entity.json_url }}">json</a>
-{% if username %}
-    <a class="muted" href="{{ entity.edit_json_url }}">(edit)</a>
-{% endif %}{#username #}
+    <a href="{{ entity.json_url }}">json</a>,
+    <a href="{{ entity.mets_xml_url }}">xml</a>
   </span>
   <span class="bullsep">&bull;</span>
+
+  <span><a href="{{ entity.changelog_url }}">changelog</a></span>
+  <span class="bullsep">&bull;</span>
+
+  <span><a href="{{ entity.addfile_url }}">addfile.log</a></span>
+  <span class="bullsep">&bull;</span>
+
+  <span><a href="{{ entity.fs_url }}" target="fs">fs</a></span>
+  <span class="bullsep">&bull;</span>
+
   <span>
-    <a class="muted" href="{{ entity.mets_xml_url }}">mets.xml</a>
+    git (
+    <a href="{{ entity.gitweb_url }}" target="git">local</a>,
+    <a href="{{ entity.cgit_url }}" target="cgit">hub</a>
+    )
   </span>
-  <span class="bullsep">&bull;</span>
-  <span><a class="muted" href="{{ entity.changelog_url }}">changelog</a></span>
-{% if username %}
-  <span class="bullsep">&bull;</span>
-  <span><a class="muted" href="{{ entity.addfile_url }}">addfile.log</a></span>
-  <span class="bullsep">&bull;&bull;</span>
+
+  <br/>
+
   <span>
   {{ entity.path }}
   </span>
-{% endif %}{#username #}
+
 </div>
 {% endif %}
 

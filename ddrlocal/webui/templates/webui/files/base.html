@@ -5,20 +5,28 @@
 
 {% if file %}
 <div class="muted" id="expert">
-  <span><a class="muted" href="{{ file.gitweb_url }}" target="git">git</a></span>
-  <span class="bullsep">&bull;</span>
-  <span><a class="muted" href="{{ file.fs_url }}" target="fs">fs</a></span>
-  <span class="bullsep">&bull;</span>
+
   <span>
-    <a class="muted" href="{{ file.json_url }}">json</a>
-{% if username %}
-    <a class="muted" href="{{ file.edit_json_url }}">(edit)</a>
+    <a href="{{ file.json_url }}">json</a>
   </span>
-  <span class="bullsep">&bull;&bull;</span>
+  <span class="bullsep">&bull;</span>
+
+  <span><a href="{{ file.fs_url }}" target="fs">fs</a></span>
+  <span class="bullsep">&bull;</span>
+
+  <span>
+    git (
+    <a href="{{ file.gitweb_url }}" target="git">local</a>,
+    <a href="{{ file.cgit_url }}" target="cgit">hub</a>
+    )
+  </span>
+
+  <br/>
+
   <span>
   {{ file.path_abs }}
   </span>
-{% endif %}
+
 </div>
 {% endif %}
 
