@@ -172,6 +172,8 @@ if config.has_option('local', 'gitstatus_background_active'):
     GITSTATUS_BACKGROUND_ACTIVE = config.get('local', 'gitstatus_background_active')
     SUPERVISORD_PROCS.append('celerybeat')
 
+MANUAL_URL = os.path.join(MEDIA_URL, 'manual')
+
 # ----------------------------------------------------------------------
 
 import djcelery

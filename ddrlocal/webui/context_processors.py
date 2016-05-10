@@ -37,4 +37,5 @@ def sitewide(request):
         'munin_url': settings.MUNIN_URL,
         'logout_next': logout_next,
         'workbench_url': settings.WORKBENCH_URL,
+        'manual_url': settings.MANUAL_URL,
     }

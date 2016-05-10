@@ -548,6 +548,7 @@ install-ddr-manual:
 	else cd $(INSTALL_BASE) && git clone https://github.com/densho/ddr-manual.git; \
 	fi
 	cd $(INSTALL_BASE)/ddr-manual && make html
+	mv $(INSTALL_BASE)/ddr-manual/build/html $(MEDIA_ROOT)/manual
 
 update-ddr-manual:
 	@echo ""
