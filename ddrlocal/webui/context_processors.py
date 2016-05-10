@@ -19,6 +19,10 @@ def sitewide(request):
     if logout_next.find('edit') > -1:    logout_next = logout_next.split('edit')[0]
     elif logout_next.find('new') > -1:   logout_next = logout_next.split('new')[0]
     elif logout_next.find('batch') > -1: logout_next = logout_next.split('batch')[0]
+    
+    elasticsearch_url = 'http://%s:%s' % (
+        request.META['HTTP_HOST'], settings.DOCSTORE_HOSTS[0]['port']
+    )
     return {
         'request': request,
         # ddr-local info
@@ -34,6 +38,7 @@ def sitewide(request):
         'celery_tasks': session_tasks_list(request),
         'celery_status_url': reverse("webui-task-status"),
         'supervisord_url': settings.SUPERVISORD_URL,
+        'elasticsearch_url': elasticsearch_url,
         'munin_url': settings.MUNIN_URL,
         'logout_next': logout_next,
         'workbench_url': settings.WORKBENCH_URL,
