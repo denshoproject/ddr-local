@@ -156,9 +156,9 @@ def git_status( request, repo, org, cid ):
     return render_to_response(
         'webui/collections/git-status.html',
         {'collection': collection,
-         'status': gitstatus['status'],
-         'astatus': gitstatus['annex_status'],
-         'timestamp': gitstatus['timestamp'],
+         'status': gitstatus.get('status', 'git-status unavailable'),
+         'astatus': gitstatus.get('annex_status', 'annex-status unavailable'),
+         'timestamp': gitstatus.get('timestamp'),
          'remotes': remotes,
          },
         context_instance=RequestContext(request, processors=[])

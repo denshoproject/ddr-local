@@ -181,9 +181,8 @@ def read( base_dir, collection_path ):
     if os.path.exists(path(base_dir, collection_path)):
         with open(path(base_dir, collection_path), 'r') as f:
             text = f.read()
-        data = loads(text)
-        return data
-    return None
+        return loads(text)
+    return {}
 
 COLLECTION_SYNC_STATUS_CACHE_KEY = 'webui:collection:%s:sync-status'
 
