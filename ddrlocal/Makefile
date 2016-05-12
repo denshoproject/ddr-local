@@ -233,6 +233,8 @@ install-elasticsearch:
 
 
 install-virtualenv:
+	@echo ""
+	@echo "install-virtualenv -----------------------------------------------------"
 	apt-get --assume-yes install python-pip python-virtualenv
 	test -d $(VIRTUALENV) || virtualenv --distribute --setuptools $(VIRTUALENV)
 
@@ -244,7 +246,7 @@ install-setuptools: install-virtualenv
 	pip install -U --download-cache=$(PIP_CACHE_DIR) bpython setuptools
 
 
-install-app: install-ddr-cmdln install-ddr-local install-ddr-manual install-configs install-daemon-configs
+install-app: get-ddr-cmdln get-ddr-local install-git-annex install-virtualenv install-setuptools install-ddr-cmdln install-ddr-local install-ddr-manual install-configs install-daemon-configs
 
 uninstall-app: uninstall-ddr-cmdln uninstall-ddr-local uninstall-ddr-manual uninstall-configs uninstall-daemon-configs
 
@@ -259,14 +261,18 @@ ifeq "($(DEBIAN_CODENAME)" "jessie"
 	apt-get --assume-yes install git-core git-annex
 endif
 
-install-ddr-cmdln: install-git-annex install-virtualenv install-setuptools
+get-ddr-cmdln:
 	@echo ""
-	@echo "ddr-cmdln --------------------------------------------------------------"
-	apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev libz-dev pmount udisks
+	@echo "get-ddr-cmdln ----------------------------------------------------------"
 	if test -d $(INSTALL_BASE)/ddr-cmdln; \
 	then cd $(INSTALL_BASE)/ddr-cmdln && git pull; \
 	else cd $(INSTALL_BASE) && git clone https://github.com/densho/ddr-cmdln.git; \
 	fi
+
+install-ddr-cmdln:
+	@echo ""
+	@echo "install-ddr-cmdln ------------------------------------------------------"
+	apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev libz-dev pmount udisks
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_BASE)/ddr-cmdln/ddr && python setup.py install
 	source $(VIRTUALENV)/bin/activate; \
@@ -279,6 +285,8 @@ install-ddr-cmdln: install-git-annex install-virtualenv install-setuptools
 	chmod -R 755 $(MEDIA_ROOT)
 
 uninstall-ddr-cmdln:
+	@echo ""
+	@echo "uninstall-ddr-cmdln ----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_BASE)/ddr-cmdln/ddr && pip uninstall -y -r $(INSTALL_BASE)/ddr-cmdln/ddr/requirements/production.txt
 	-rm /usr/local/bin/ddr*
@@ -289,11 +297,15 @@ clean-ddr-cmdln:
 	-rm -Rf $(INSTALL_BASE)/ddr-cmdln/ddr/build
 
 
-install-ddr-local: install-virtualenv install-setuptools
+get-ddr-local:
 	@echo ""
-	@echo "ddr-local --------------------------------------------------------------"
-	apt-get --assume-yes install imagemagick libexempi3 libssl-dev python-dev libxml2 libxml2-dev libxslt1-dev supervisor
+	@echo "get-ddr-local ----------------------------------------------------------"
 	git pull
+
+install-ddr-local:
+	@echo ""
+	@echo "install-ddr-local ------------------------------------------------------"
+	apt-get --assume-yes install imagemagick libexempi3 libssl-dev python-dev libxml2 libxml2-dev libxslt1-dev supervisor
 	source $(VIRTUALENV)/bin/activate; \
 	pip install -U --download-cache=$(PIP_CACHE_DIR) -r $(INSTALLDIR)/ddrlocal/requirements/production.txt
 # logs dir
@@ -310,6 +322,8 @@ install-ddr-local: install-virtualenv install-setuptools
 	chmod -R 755 $(MEDIA_ROOT)
 
 uninstall-ddr-local:
+	@echo ""
+	@echo "uninstall-ddr-local ----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALLDIR)/ddrlocal && pip uninstall -y -r $(INSTALLDIR)/ddrlocal/requirements/production.txt
 	-rm /usr/local/lib/python2.7/dist-packages/ddrlocal-*
