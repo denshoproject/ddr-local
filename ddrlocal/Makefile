@@ -247,7 +247,7 @@ install-setuptools: install-virtualenv
 	pip install -U --download-cache=$(PIP_CACHE_DIR) bpython setuptools
 
 
-get-app: get-ddr-cmdln get-ddr-local
+get-app: get-ddr-cmdln get-ddr-local get-ddr-manual
 
 install-app: install-git-annex install-virtualenv install-setuptools install-ddr-cmdln install-ddr-local install-ddr-manual install-configs install-daemon-configs
 
@@ -547,14 +547,18 @@ git-status:
 	cd $(INSTALLDIR) && git status
 
 
-install-ddr-manual:
+get-ddr-manual:
 	@echo ""
-	@echo "ddr-manual --------------------------------------------------------------"
-	pip install -U --download-cache=$(PIP_CACHE_DIR) sphinx
+	@echo "get-ddr-manual ---------------------------------------------------------"
 	if test -d $(INSTALL_BASE)/ddr-manual; \
 	then cd $(INSTALL_BASE)/ddr-manual && git pull; \
 	else cd $(INSTALL_BASE) && git clone https://github.com/densho/ddr-manual.git; \
 	fi
+
+install-ddr-manual:
+	@echo ""
+	@echo "install-ddr-manual -----------------------------------------------------"
+	pip install -U --download-cache=$(PIP_CACHE_DIR) sphinx
 	cd $(INSTALL_BASE)/ddr-manual && make html
 	mv $(INSTALL_BASE)/ddr-manual/build/html $(MEDIA_ROOT)/manual
 
