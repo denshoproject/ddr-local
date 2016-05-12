@@ -61,8 +61,6 @@ help:
 	@echo ""
 	@echo "syncdb  - Initialize or update Django app's database tables."
 	@echo ""
-	@echo "update  - Updates ddr-cmd and ddr-local and re-copies config files."
-	@echo ""
 	@echo "branch BRANCH=[branch] - Switches both ddr-local and ddr-cmdln repos to [branch]."
 	@echo ""
 	@echo "reload  - Reloads supervisord and nginx configs"
@@ -86,7 +84,6 @@ help-all:
 	@echo "install-daemons - install-nginx install-redis install-elasticsearch"
 	@echo "install-app     - install-ddr-cmdln install-ddr-local"
 	@echo "install-static  - "
-	@echo "update  - Do an update"
 	@echo "restart - Restart servers"
 	@echo "status  - Server status"
 	@echo "install-configs - "
@@ -119,8 +116,6 @@ howto-install:
 
 
 install: install-prep install-daemons install-app install-static install-configs
-
-update: update-app
 
 uninstall: uninstall-app uninstall-configs
 
@@ -251,8 +246,6 @@ install-setuptools: install-virtualenv
 
 install-app: install-ddr-cmdln install-ddr-local install-ddr-manual install-configs install-daemon-configs
 
-update-app: update-ddr-cmdln update-ddr-local update-ddr-manual install-configs install-daemon-configs
-
 uninstall-app: uninstall-ddr-cmdln uninstall-ddr-local uninstall-ddr-manual uninstall-configs uninstall-daemon-configs
 
 clean-app: clean-ddr-cmdln clean-ddr-local clean-ddr-manual
@@ -285,15 +278,6 @@ install-ddr-cmdln: install-git-annex install-virtualenv install-setuptools
 	chown -R ddr.root $(MEDIA_ROOT)
 	chmod -R 755 $(MEDIA_ROOT)
 
-update-ddr-cmdln:
-	@echo ""
-	@echo "ddr-cmdln --------------------------------------------------------------"
-	cd $(INSTALL_BASE)/ddr-cmdln && git fetch && git pull
-	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_BASE)/ddr-cmdln/ddr && python setup.py install
-	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_BASE)/ddr-cmdln/ddr && pip install -U --download-cache=$(PIP_CACHE_DIR) -r $(INSTALL_BASE)/ddr-cmdln/ddr/requirements/production.txt
-
 uninstall-ddr-cmdln:
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_BASE)/ddr-cmdln/ddr && pip uninstall -y -r $(INSTALL_BASE)/ddr-cmdln/ddr/requirements/production.txt
@@ -324,13 +308,6 @@ install-ddr-local: install-virtualenv install-setuptools
 	-mkdir -p $(MEDIA_ROOT)
 	chown -R ddr.root $(MEDIA_ROOT)
 	chmod -R 755 $(MEDIA_ROOT)
-
-update-ddr-local:
-	@echo ""
-	@echo "ddr-local --------------------------------------------------------------"
-	git fetch && git pull
-	source $(VIRTUALENV)/bin/activate; \
-	pip install -U --download-cache=$(PIP_CACHE_DIR) -r $(INSTALLDIR)/ddrlocal/requirements/production.txt
 
 uninstall-ddr-local:
 	source $(VIRTUALENV)/bin/activate; \
@@ -563,12 +540,6 @@ install-ddr-manual:
 	fi
 	cd $(INSTALL_BASE)/ddr-manual && make html
 	mv $(INSTALL_BASE)/ddr-manual/build/html $(MEDIA_ROOT)/manual
-
-update-ddr-manual:
-	@echo ""
-	@echo "ddr-manual --------------------------------------------------------------"
-	cd $(INSTALL_BASE)/ddr-manual && git fetch && git pull
-	cd $(INSTALL_BASE)/ddr-manual && make html
 
 uninstall-ddr-manual:
 	pip uninstall -y sphinx
