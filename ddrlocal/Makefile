@@ -114,8 +114,9 @@ howto-install:
 	@echo "- [make clear-munin-logs]"
 
 
+get: get-ddr-cmdln get-ddr-local
 
-install: install-prep install-daemons install-app install-static install-configs
+install: install-prep get-app install-daemons install-app install-static install-configs
 
 uninstall: uninstall-app uninstall-configs
 
@@ -246,7 +247,9 @@ install-setuptools: install-virtualenv
 	pip install -U --download-cache=$(PIP_CACHE_DIR) bpython setuptools
 
 
-install-app: get-ddr-cmdln get-ddr-local install-git-annex install-virtualenv install-setuptools install-ddr-cmdln install-ddr-local install-ddr-manual install-configs install-daemon-configs
+get-app: get-ddr-cmdln get-ddr-local
+
+install-app: install-git-annex install-virtualenv install-setuptools install-ddr-cmdln install-ddr-local install-ddr-manual install-configs install-daemon-configs
 
 uninstall-app: uninstall-ddr-cmdln uninstall-ddr-local uninstall-ddr-manual uninstall-configs uninstall-daemon-configs
 
