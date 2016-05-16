@@ -26,38 +26,6 @@ from webui.views.decorators import login_required
 
 # views ----------------------------------------------------------------
 
-"""
-local takes username/passwd
-in background makes request to mits using that username/password
-gets the response
-figures out if successful/not
-if successful:
-    stores in memcached session
-
-what do we need to store?
-- username
-- user name  (for git logs)
-- user email (for git logs)
-- repo
-- orgs the user belongs to
-"""
-
-def _login(request, username, password):
-    """Logs in to the ID service / workbench server.
-    
-    @param request: HttpRequest object
-    @param username: str
-    @param password: str
-    @returns requests.Session object or string error message (starting with 'error:')
-    """
-    session = idservice.login(username, password)
-    request.session['workbench_sessionid'] = session.cookies.get('sessionid')
-    request.session['workbench_csrftoken'] = session.cookies.get('csrftoken')
-    request.session['username'] = username
-    request.session['git_name'] = session.git_name
-    request.session['git_mail'] = session.git_mail
-    return session
-
 @ddrview
 def login( request ):
     if request.method == 'POST':
@@ -66,12 +34,23 @@ def login( request ):
             redirect_uri = form.cleaned_data['next']
             if not redirect_uri:
                 redirect_uri = reverse('webui-index')
-            s = _login(
-                request,
+
+            ic = idservice.IDServiceClient()
+            status1 = ic.login(
                 form.cleaned_data['username'],
-                form.cleaned_data['password']
+                form.cleaned_data['password'],
             )
-            if s and (type(s) != type('')) and s.cookies.get('sessionid', None):
+            if status1 == 200:
+                request.session['idservice_username'] = ic.username
+                request.session['idservice_token'] = ic.token
+                status2,userinfo = ic.user_info()
+            if status2 == 200:
+                request.session['git_mail'] = userinfo['email']
+                request.session['git_name'] = ' '.join([
+                    userinfo['first_name'],
+                    userinfo['last_name']
+                ])
+            if (status1 == 200) and (status2 == 200) and request.session['idservice_token']:
                 messages.success(
                     request,
                     WEBUI_MESSAGES['LOGIN_SUCCESS'].format(form.cleaned_data['username']))
@@ -95,10 +74,10 @@ def logout( request ):
         redirect_uri = reverse('webui-index')
     status = idservice.logout()
     if status == 'ok':
-        username = request.session.get('username')
+        username = request.session.get('idservice_username')
         # remove user info from session
-        request.session['workbench_sessionid'] = None
-        request.session['username'] = None
+        request.session['idservice_username'] = None
+        request.session['idservice_token'] = None
         request.session['git_name'] = None
         request.session['git_mail'] = None
         # feedback

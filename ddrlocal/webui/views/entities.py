@@ -288,25 +288,24 @@ def new( request, repo, org, cid ):
     if collection.repo_behind():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
         return HttpResponseRedirect(collection.absolute_url())
-    
     # get new entity ID
-    try:
-        session = idservice.session(
-            request.session['workbench_sessionid'],
-            request.session['workbench_csrftoken']
-        )
-        entity_ids = idservice.entities_next(
-            session, collection.identifier, num_ids=1
-        )
-    except Exception as e:
-        logger.error('Could not get new object ID from workbench!')
+    ic = idservice.IDServiceClient()
+    ic.resume(
+        request.session['idservice_username'],
+        request.session['idservice_token']
+    )
+    http_status,new_entity_id = ic.next_object_id(
+        collection.identifier,
+        'entity'
+    )
+    if http_status not in [200,201]:
+        msg = WEBUI_MESSAGES['VIEWS_ENT_ERR_NO_IDS'] % http_status
+        logger.error(msg)
         logger.error(str(e.args))
-        messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_ERR_NO_IDS'])
+        messages.error(request, msg)
         messages.error(request, e)
         return HttpResponseRedirect(collection.absolute_url())
-    new_entity_id = entity_ids[0]
     eidentifier = Identifier(id=new_entity_id)
-    
     # create new entity
     entity_path = eidentifier.path_abs()
     # write entity.json template to entity location

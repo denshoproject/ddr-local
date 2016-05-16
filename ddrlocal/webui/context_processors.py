@@ -32,7 +32,7 @@ def sitewide(request):
         'commit': COMMIT,
         'models_valid': repo_models_valid(request),
         # user info
-        'username': request.session.get('username', None),
+        'username': request.session.get('idservice_username', None),
         'git_name': request.session.get('git_name', None),
         'git_mail': request.session.get('git_mail', None),
         'celery_tasks': session_tasks_list(request),
@@ -41,6 +41,6 @@ def sitewide(request):
         'elasticsearch_url': elasticsearch_url,
         'munin_url': settings.MUNIN_URL,
         'logout_next': logout_next,
-        'workbench_url': settings.WORKBENCH_URL,
+        'idservice_url': settings.IDSERVICE_API_BASE,
         'manual_url': settings.MANUAL_URL,
     }

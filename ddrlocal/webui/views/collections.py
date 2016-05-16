@@ -230,20 +230,23 @@ def new( request, repo, org ):
     if not (git_name and git_mail):
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     # get new collection ID
-    try:
-        # TODO should this really be in a try/except?
-        session = idservice.session(
-            request.session['workbench_sessionid'],
-            request.session['workbench_csrftoken']
-        )
-        collection_ids = idservice.collections_next(session, oidentifier, num_ids=1)
-    except Exception as e:
-        logger.error('Could not get new collecion ID!')
+    ic = idservice.IDServiceClient()
+    ic.resume(
+        request.session['idservice_username'],
+        request.session['idservice_token']
+    )
+    http_status,collection_id = ic.next_object_id(
+        oidentifier,
+        'collection'
+    )
+    if http_status not in [200,201]:
+        msg = WEBUI_MESSAGES['VIEWS_COLL_ERR_NO_IDS'] % http_status
+        logger.error(msg)
         logger.error(str(e.args))
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_ERR_NO_IDS'])
+        messages.error(request, msg)
         messages.error(request, e)
         return HttpResponseRedirect(reverse('webui-collections'))
-    identifier = Identifier(id=collection_ids[0], base_path=settings.MEDIA_BASE)
+    identifier = Identifier(id=collection_id, base_path=settings.MEDIA_BASE)
     # create the new collection repo
     collection_path = identifier.path_abs()
     # collection.json template
