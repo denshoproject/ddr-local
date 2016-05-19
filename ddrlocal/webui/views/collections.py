@@ -235,16 +235,15 @@ def new( request, repo, org ):
         request.session['idservice_username'],
         request.session['idservice_token']
     )
-    http_status,collection_id = ic.next_object_id(
+    http_status,http_reason,collection_id = ic.next_object_id(
         oidentifier,
         'collection'
     )
     if http_status not in [200,201]:
-        msg = WEBUI_MESSAGES['VIEWS_COLL_ERR_NO_IDS'] % http_status
+        err = '%s %s' % (http_status, http_reason)
+        msg = WEBUI_MESSAGES['VIEWS_COLL_ERR_NO_IDS'] % (settings.IDSERVICE_API_BASE, err)
         logger.error(msg)
-        logger.error(str(e.args))
         messages.error(request, msg)
-        messages.error(request, e)
         return HttpResponseRedirect(reverse('webui-collections'))
     identifier = Identifier(id=collection_id, base_path=settings.MEDIA_BASE)
     # create the new collection repo

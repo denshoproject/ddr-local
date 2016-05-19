@@ -36,14 +36,14 @@ def login( request ):
                 redirect_uri = reverse('webui-index')
 
             ic = idservice.IDServiceClient()
-            status1 = ic.login(
+            status1,reason1 = ic.login(
                 form.cleaned_data['username'],
                 form.cleaned_data['password'],
             )
             if status1 == 200:
                 request.session['idservice_username'] = ic.username
                 request.session['idservice_token'] = ic.token
-                status2,userinfo = ic.user_info()
+                status2,reason2,userinfo = ic.user_info()
             if status2 == 200:
                 request.session['git_mail'] = userinfo['email']
                 request.session['git_name'] = ' '.join([
