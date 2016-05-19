@@ -34,7 +34,7 @@ WEBUI_MESSAGES = {
     # webui.views.collections
     'VIEWS_COLL_SYNCED': 'Collection synced with server: {}', # collection id
     'VIEWS_COLL_CREATED': 'New collection created: {}',
-    'VIEWS_COLL_ERR_NO_IDS': 'Error: Could not get new collection IDs from workbench.',
+    'VIEWS_COLL_ERR_NO_IDS': 'Error: Could not get new collection ID from ID service (%s): %s',
     'VIEWS_COLL_ERR_CREATE': 'Error: Could not create new collection.',
     'VIEWS_COLL_UPDATED': 'Collection updated',
     'VIEWS_COLL_LOCKED': 'Collection is locked: <strong>{}</strong>', # collection_id
@@ -43,7 +43,7 @@ WEBUI_MESSAGES = {
     
     # webui.views.entities
     'VIEWS_ENT_CREATED': 'New object created: {}', # entity id
-    'VIEWS_ENT_ERR_NO_IDS': 'Error: Could not get new object IDs from workbench.',
+    'VIEWS_ENT_ERR_NO_IDS': 'Error: Could not get new object ID from ID service (%s): %s',
     'VIEWS_ENT_ERR_CREATE': 'Error: Could not create new object.',
     'VIEWS_ENT_UPDATED': 'Object updated',
     'VIEWS_ENT_LOCKED': 'This object is locked.',
