@@ -43,20 +43,23 @@ def login( request ):
             if status1 == 200:
                 request.session['idservice_username'] = ic.username
                 request.session['idservice_token'] = ic.token
-                status2,reason2,userinfo = ic.user_info()
-            if status2 == 200:
-                request.session['git_mail'] = userinfo['email']
-                request.session['git_name'] = ' '.join([
-                    userinfo['first_name'],
-                    userinfo['last_name']
-                ])
+            else:
+                messages.warning(request, 'Login failed: %s %s' % (status1,reason1))
+                return HttpResponseRedirect(redirect_uri)
+            status2,reason2,userinfo = ic.user_info()
+            request.session['git_mail'] = userinfo['email']
+            request.session['git_name'] = ' '.join([
+                userinfo['first_name'],
+                userinfo['last_name']
+            ])
             if (status1 == 200) and (status2 == 200) and request.session['idservice_token']:
                 messages.success(
                     request,
                     WEBUI_MESSAGES['LOGIN_SUCCESS'].format(form.cleaned_data['username']))
                 return HttpResponseRedirect(redirect_uri)
             else:
-                messages.warning(request, WEBUI_MESSAGES['LOGIN_FAIL'])
+                messages.warning(request, 'Could not get user information: %s %s' % (status2,reason2))
+                return HttpResponseRedirect(redirect_uri)
     else:
         form = LoginForm(initial={'next':request.GET.get('next',''),})
         # Using "initial" rather than passing in data dict lets form include
