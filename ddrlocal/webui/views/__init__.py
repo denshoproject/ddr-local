@@ -44,21 +44,35 @@ def login( request ):
                 request.session['idservice_username'] = ic.username
                 request.session['idservice_token'] = ic.token
             else:
-                messages.warning(request, 'Login failed: %s %s' % (status1,reason1))
+                messages.warning(
+                    request,
+                    'Login failed[1]: %s %s' % (status1,reason1)
+                )
                 return HttpResponseRedirect(redirect_uri)
+            
             status2,reason2,userinfo = ic.user_info()
+            if not (userinfo['email'] and userinfo['first_name'] and userinfo['last_name']):
+                messages.warning(
+                    request,
+                    'Login failed[2]: ID service missing required user info (email, first_name, last_name).'
+                )
+                return HttpResponseRedirect(redirect_uri)
             request.session['git_mail'] = userinfo['email']
             request.session['git_name'] = ' '.join([
                 userinfo['first_name'],
                 userinfo['last_name']
             ])
+            
             if (status1 == 200) and (status2 == 200) and request.session['idservice_token']:
                 messages.success(
                     request,
                     WEBUI_MESSAGES['LOGIN_SUCCESS'].format(form.cleaned_data['username']))
                 return HttpResponseRedirect(redirect_uri)
             else:
-                messages.warning(request, 'Could not get user information: %s %s' % (status2,reason2))
+                messages.warning(
+                    request,
+                    'Login failed[3]: Could not get user information: %s %s' % (status2,reason2)
+                )
                 return HttpResponseRedirect(redirect_uri)
     else:
         form = LoginForm(initial={'next':request.GET.get('next',''),})
