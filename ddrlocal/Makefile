@@ -10,8 +10,8 @@ INSTALLDIR=$(INSTALL_BASE)/ddr-local
 SETTINGS=$(INSTALLDIR)/ddrlocal/ddrlocal/settings.py
 
 CONF_BASE=/etc/ddr
-CONF_PRODUCTION=$(CONF_BASE)/ddr.cfg
-CONF_LOCAL=$(CONF_BASE)/local.cfg
+CONF_PRODUCTION=$(CONF_BASE)/ddrlocal.cfg
+CONF_LOCAL=$(CONF_BASE)/ddrlocal-local.cfg
 CONF_SECRET=$(CONF_BASE)/ddrlocal-secret-key.txt
 
 SQLITE_BASE=/var/lib/ddr
