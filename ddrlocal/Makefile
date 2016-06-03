@@ -538,11 +538,16 @@ restart-app: restart-supervisor
 
 status:
 	@echo "------------------------------------------------------------------------"
-	/etc/init.d/redis-server status
-	/etc/init.d/elasticsearch status
-	/etc/init.d/nginx status
-	supervisorctl status
-	git annex version | grep version
+	-/etc/init.d/elasticsearch status
+	@echo " - - - - -"
+	-/etc/init.d/redis-server status
+	@echo " - - - - -"
+	-/etc/init.d/nginx status
+	@echo " - - - - -"
+	-supervisorctl status
+	@echo " - - - - -"
+	-git annex version | grep version
+	@echo ""
 
 git-status:
 	@echo "------------------------------------------------------------------------"
