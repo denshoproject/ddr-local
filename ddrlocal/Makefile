@@ -19,7 +19,7 @@ LOG_BASE=/var/log/ddr
 
 DDR_REPO_BASE=/var/www/media
 
-MEDIA_BASE=/var/www
+MEDIA_BASE=/var/www/ddrlocal
 MEDIA_ROOT=$(MEDIA_BASE)/media
 STATIC_ROOT=$(MEDIA_BASE)/static
 
@@ -323,6 +323,10 @@ install-ddr-local:
 	-mkdir -p $(MEDIA_ROOT)
 	chown -R ddr.root $(MEDIA_ROOT)
 	chmod -R 755 $(MEDIA_ROOT)
+# static dir
+	-mkdir -p $(STATIC_ROOT)
+	chown -R ddr.root $(STATIC_ROOT)
+	chmod -R 755 $(STATIC_ROOT)
 
 uninstall-ddr-local:
 	@echo ""
