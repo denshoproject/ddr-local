@@ -17,7 +17,7 @@ CONF_SECRET=$(CONF_BASE)/ddrlocal-secret-key.txt
 SQLITE_BASE=/var/lib/ddr
 LOG_BASE=/var/log/ddr
 
-DDR_REPO_BASE=/var/www/media
+DDR_REPO_BASE=/var/www/ddr
 
 MEDIA_BASE=/var/www/ddrlocal
 MEDIA_ROOT=$(MEDIA_BASE)/media
@@ -108,7 +108,7 @@ howto-install:
 	@echo "- [make branch BRANCH=develop]"
 	@echo "- [make install]"
 	@echo "- make enable-bkgnd"
-	@echo "- Place copy of 'ddr' repo in /var/www/media/ddr/ddr."
+	@echo "- Place copy of 'ddr' repo in $(DDR_REPO_BASE)/ddr."
 	@echo "- make syncdb"
 	@echo "- make restart"
 	@echo "- [make clear-munin-logs]"
@@ -327,6 +327,8 @@ install-ddr-local:
 	-mkdir -p $(STATIC_ROOT)
 	chown -R ddr.root $(STATIC_ROOT)
 	chmod -R 755 $(STATIC_ROOT)
+# link to $(DDR_REPO_BASE)
+	-ln -s $(DDR_REPO_BASE) $(MEDIA_ROOT)/ddr
 
 uninstall-ddr-local:
 	@echo ""
