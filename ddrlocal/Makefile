@@ -569,8 +569,11 @@ get-ddr-manual:
 install-ddr-manual:
 	@echo ""
 	@echo "install-ddr-manual -----------------------------------------------------"
+	source $(VIRTUALENV)/bin/activate; \
 	pip install -U --download-cache=$(PIP_CACHE_DIR) sphinx
+	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_BASE)/ddr-manual && make html
+	rm -Rf $(MEDIA_ROOT)/manual
 	mv $(INSTALL_BASE)/ddr-manual/build/html $(MEDIA_ROOT)/manual
 
 uninstall-ddr-manual:
