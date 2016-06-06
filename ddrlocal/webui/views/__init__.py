@@ -45,19 +45,25 @@ def login( request ):
             if status1 != 200:
                 messages.warning(
                     request,
-                    'Login failed[1]: %s %s' % (status1,reason1)
+                    'Login failed: %s %s (%s) [1]' % (
+                        status1,reason1,settings.IDSERVICE_API_BASE
+                    )
                 )
                 return HttpResponseRedirect(redirect_uri)
             if status2 != 200:
                 messages.warning(
                     request,
-                    'Login failed[2]: %s %s' % (status2,reason2)
+                    'Login failed: %s %s (%s) [2]' % (
+                        status2,reason2, settings.IDSERVICE_API_BASE
+                    )
                 )
                 return HttpResponseRedirect(redirect_uri)
             if not (userinfo['email'] and userinfo['first_name'] and userinfo['last_name']):
                 messages.warning(
                     request,
-                    'Login failed[3]: ID service missing required user info (email, first_name, last_name).'
+                    'Login failed: ID service missing required user info (email, first_name, last_name). (%s) [3]' % (
+                        settings.IDSERVICE_API_BASE
+                    )
                 )
                 return HttpResponseRedirect(redirect_uri)
 
@@ -89,18 +95,38 @@ def logout( request ):
     redirect_uri = request.GET.get('redirect',None)
     if not redirect_uri:
         redirect_uri = reverse('webui-index')
-    status = idservice.logout()
-    if status == 'ok':
-        username = request.session.get('idservice_username')
-        # remove user info from session
+    
+    ic = idservice.IDServiceClient()
+    # resume session
+    auth_status,auth_reason = ic.resume(request.session['idservice_token'])
+    if auth_status != 200:
         request.session['idservice_username'] = None
         request.session['idservice_token'] = None
-        request.session['git_name'] = None
-        request.session['git_mail'] = None
+        messages.warning(
+            request,
+            'Session resume failed: %s %s (%s)' % (
+                auth_status,auth_reason,settings.IDSERVICE_API_BASE
+            )
+        )
+        return HttpResponseRedirect(redirect_uri)
+    # log out
+    logout_status,logout_reason = ic.logout()
+    if logout_status == 200:
+        username = request.session['idservice_username']
+        request.session['idservice_username'] = None
+        request.session['idservice_token'] = None
         # feedback
-        messages.success(request, WEBUI_MESSAGES['LOGOUT_SUCCESS'].format(username))
+        messages.success(
+            request,
+            WEBUI_MESSAGES['LOGOUT_SUCCESS'].format(username)
+        )
     else:
-        messages.warning(request, WEBUI_MESSAGES['LOGOUT_FAIL'].format(status))
+        messages.warning(
+            request,
+            'Logout failed: %s %s (%s)' % (
+                logout_status,logout_reason,settings.IDSERVICE_API_BASE
+            )
+        )
     return HttpResponseRedirect(redirect_uri)
 
 

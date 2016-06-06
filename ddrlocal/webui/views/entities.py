@@ -288,12 +288,21 @@ def new( request, repo, org, cid ):
     if collection.repo_behind():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
         return HttpResponseRedirect(collection.absolute_url())
-    # get new entity ID
+    
     ic = idservice.IDServiceClient()
-    ic.resume(
-        request.session['idservice_username'],
-        request.session['idservice_token']
-    )
+    # resume session
+    auth_status,auth_reason = ic.resume(request.session['idservice_token'])
+    if auth_status != 200:
+        request.session['idservice_username'] = None
+        request.session['idservice_token'] = None
+        messages.warning(
+            request,
+            'Session resume failed: %s %s (%s)' % (
+                auth_status,auth_reason,settings.IDSERVICE_API_BASE
+            )
+        )
+        return HttpResponseRedirect(collection.absolute_url())
+    # get new entity ID
     http_status,http_reason,new_entity_id = ic.next_object_id(
         collection.identifier,
         'entity'
@@ -304,6 +313,7 @@ def new( request, repo, org, cid ):
         logger.error(msg)
         messages.error(request, msg)
         return HttpResponseRedirect(collection.absolute_url())
+    
     eidentifier = Identifier(id=new_entity_id)
     # create new entity
     entity_path = eidentifier.path_abs()

@@ -229,12 +229,21 @@ def new( request, repo, org ):
     git_mail = request.session.get('git_mail')
     if not (git_name and git_mail):
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    # get new collection ID
+    
     ic = idservice.IDServiceClient()
-    ic.resume(
-        request.session['idservice_username'],
-        request.session['idservice_token']
-    )
+    # resume session
+    auth_status,auth_reason = ic.resume(request.session['idservice_token'])
+    if auth_status != 200:
+        request.session['idservice_username'] = None
+        request.session['idservice_token'] = None
+        messages.warning(
+            request,
+            'Session resume failed: %s %s (%s)' % (
+                auth_status,auth_reason,settings.IDSERVICE_API_BASE
+            )
+        )
+        return HttpResponseRedirect(reverse('webui-collections'))
+    # get new collection ID
     http_status,http_reason,collection_id = ic.next_object_id(
         oidentifier,
         'collection'
@@ -245,6 +254,7 @@ def new( request, repo, org ):
         logger.error(msg)
         messages.error(request, msg)
         return HttpResponseRedirect(reverse('webui-collections'))
+    
     identifier = Identifier(id=collection_id, base_path=settings.MEDIA_BASE)
     # create the new collection repo
     collection_path = identifier.path_abs()

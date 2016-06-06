@@ -10,16 +10,16 @@ INSTALLDIR=$(INSTALL_BASE)/ddr-local
 SETTINGS=$(INSTALLDIR)/ddrlocal/ddrlocal/settings.py
 
 CONF_BASE=/etc/ddr
-CONF_PRODUCTION=$(CONF_BASE)/ddr.cfg
-CONF_LOCAL=$(CONF_BASE)/local.cfg
+CONF_PRODUCTION=$(CONF_BASE)/ddrlocal.cfg
+CONF_LOCAL=$(CONF_BASE)/ddrlocal-local.cfg
 CONF_SECRET=$(CONF_BASE)/ddrlocal-secret-key.txt
 
 SQLITE_BASE=/var/lib/ddr
 LOG_BASE=/var/log/ddr
 
-DDR_REPO_BASE=/var/www/media
+DDR_REPO_BASE=/var/www/ddr
 
-MEDIA_BASE=/var/www
+MEDIA_BASE=/var/www/ddrlocal
 MEDIA_ROOT=$(MEDIA_BASE)/media
 STATIC_ROOT=$(MEDIA_BASE)/static
 
@@ -108,7 +108,7 @@ howto-install:
 	@echo "- [make branch BRANCH=develop]"
 	@echo "- [make install]"
 	@echo "- make enable-bkgnd"
-	@echo "- Place copy of 'ddr' repo in /var/www/media/ddr/ddr."
+	@echo "- Place copy of 'ddr' repo in $(DDR_REPO_BASE)/ddr."
 	@echo "- make syncdb"
 	@echo "- make restart"
 	@echo "- [make clear-munin-logs]"
@@ -323,6 +323,12 @@ install-ddr-local:
 	-mkdir -p $(MEDIA_ROOT)
 	chown -R ddr.root $(MEDIA_ROOT)
 	chmod -R 755 $(MEDIA_ROOT)
+# static dir
+	-mkdir -p $(STATIC_ROOT)
+	chown -R ddr.root $(STATIC_ROOT)
+	chmod -R 755 $(STATIC_ROOT)
+# link to $(DDR_REPO_BASE)
+	-ln -s $(DDR_REPO_BASE) $(MEDIA_ROOT)/ddr
 
 uninstall-ddr-local:
 	@echo ""
@@ -534,11 +540,16 @@ restart-app: restart-supervisor
 
 status:
 	@echo "------------------------------------------------------------------------"
-	/etc/init.d/redis-server status
-	/etc/init.d/elasticsearch status
-	/etc/init.d/nginx status
-	supervisorctl status
-	git annex version | grep version
+	-/etc/init.d/elasticsearch status
+	@echo " - - - - -"
+	-/etc/init.d/redis-server status
+	@echo " - - - - -"
+	-/etc/init.d/nginx status
+	@echo " - - - - -"
+	-supervisorctl status
+	@echo " - - - - -"
+	-git annex version | grep version
+	@echo ""
 
 git-status:
 	@echo "------------------------------------------------------------------------"
@@ -558,8 +569,11 @@ get-ddr-manual:
 install-ddr-manual:
 	@echo ""
 	@echo "install-ddr-manual -----------------------------------------------------"
+	source $(VIRTUALENV)/bin/activate; \
 	pip install -U --download-cache=$(PIP_CACHE_DIR) sphinx
+	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_BASE)/ddr-manual && make html
+	rm -Rf $(MEDIA_ROOT)/manual
 	mv $(INSTALL_BASE)/ddr-manual/build/html $(MEDIA_ROOT)/manual
 
 uninstall-ddr-manual:
