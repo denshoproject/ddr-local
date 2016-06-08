@@ -426,6 +426,9 @@ install-configs:
 	cp $(INSTALLDIR)/debian/conf/ddr.cfg $(CONF_PRODUCTION)
 	chown root.root $(CONF_PRODUCTION)
 	chmod 644 $(CONF_PRODUCTION)
+	touch $(CONF_LOCAL)
+	chown root.root $(CONF_LOCAL)
+	chmod 644 $(CONF_LOCAL)
 # web app settings
 	cp $(INSTALLDIR)/debian/conf/settings.py $(SETTINGS)
 	chown root.root $(SETTINGS)

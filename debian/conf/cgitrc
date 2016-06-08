@@ -1,0 +1,79 @@
+#
+# cgit config
+#
+
+
+# reference:
+# - http://git.zx2c4.com/cgit/tree/cgitrc.5.txt
+# - https://wiki.archlinux.org/index.php/Cgit
+
+
+# Text printed as heading on the repository index page.
+root-title=Digital Repository (local)
+
+# Text printed below the heading on the repository index page.
+root-desc=Git repositories attached to local machine
+
+css=/cgit/cgit.css
+#logo=/cgit/densho-cgit.png
+logo-link=/cgit/
+favicon=/favicon.ico
+
+# The content of the specified file will be included verbatim
+# about page.
+#root-readme=/var/www/cgit/about.html
+
+# The content of the specified file will be included verbatim
+# in the <head> tags of every page.
+#head-include=/var/www/cgit/head-include.html
+
+# Contents of the specified files will be included verbatim at the top/bottom of all pages.
+#header=/var/www/cgit/header.html
+#footer=/var/www/cgit/footer.html
+
+# When set to "1" makes cgit generate page as an html fragment
+# suitable for embedding in other html pages.
+#embedded=1
+
+# Text used as content for the "robots" meta-tag.
+robots=noindex, nofollow
+
+# If set to "1", display commit and tag times in the server's timezone
+local-time=1
+
+#
+# Repository display options
+#
+
+# When set to "1", display owner of each repo in repository index.
+#enable-index-owner=1
+
+# When set to "1", displays line-number links for plaintext blobs printed in tree view.
+enable-tree-linenumbers=0
+
+# hide author emails
+#noplainemail=1
+
+# Use gitweb descriptions and owner information.
+enable-git-config=1
+
+# Don't show ".git" suffix
+remove-suffix=1
+
+#
+# List of common mimetypes
+#
+
+mimetype.gif=image/gif
+mimetype.html=text/html
+mimetype.jpg=image/jpeg
+mimetype.jpeg=image/jpeg
+mimetype.pdf=application/pdf
+mimetype.png=image/png
+mimetype.svg=image/svg+xml
+
+
+# Path to be scanned for repositories. If project-list has been defined
+# prior to scan-path, scan-path loads only the directories listed in the
+# file pointed to by project-list.
+scan-path=/var/www/media/ddr
