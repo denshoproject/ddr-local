@@ -441,7 +441,7 @@ install-configs:
 	@echo "configuring ddr-local --------------------------------------------------"
 # base settings file
 	-mkdir /etc/ddr
-	cp $(INSTALL_LOCAL)/debian/conf/ddr.cfg $(CONF_PRODUCTION)
+	cp $(INSTALL_LOCAL)/debian/conf/ddrlocal.cfg $(CONF_PRODUCTION)
 	chown root.root $(CONF_PRODUCTION)
 	chmod 644 $(CONF_PRODUCTION)
 	touch $(CONF_LOCAL)
