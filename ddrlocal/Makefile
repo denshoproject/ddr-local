@@ -5,11 +5,13 @@ PACKAGE_SERVER=ddr.densho.org/static/ddrlocal
 
 SRC_REPO_CMDLN=https://github.com/densho/ddr-cmdln.git
 SRC_REPO_LOCAL=https://github.com/densho/ddr-local.git
+SRC_REPO_DEFS=https://github.com/densho/ddr-defs.git
 SRC_REPO_MANUAL=https://github.com/densho/ddr-manual.git
 
 INSTALL_BASE=/usr/local/src
 INSTALL_CMDLN=$(INSTALL_BASE)/ddr-cmdln
 INSTALL_LOCAL=$(INSTALL_BASE)/ddr-local
+INSTALL_DEFS=$(INSTALL_BASE)/ddr-defs
 INSTALL_MANUAL=$(INSTALL_BASE)/ddr-manual
 
 PIP_CACHE_DIR=$(INSTALL_BASE)/pip-cache
@@ -17,6 +19,7 @@ VIRTUALENV=$(INSTALL_BASE)/env/ddrlocal
 SETTINGS=$(INSTALL_LOCAL)/ddrlocal/settings.py
 
 CONF_BASE=/etc/ddr
+CONF_DEFS=$(CONF_BASE)/ddr-defs
 CONF_PRODUCTION=$(CONF_BASE)/ddrlocal.cfg
 CONF_LOCAL=$(CONF_BASE)/ddrlocal-local.cfg
 CONF_SECRET=$(CONF_BASE)/ddrlocal-secret-key.txt
@@ -349,6 +352,15 @@ clean-ddr-local:
 
 clean-pip:
 	-rm -Rf $(PIP_CACHE_DIR)/*
+
+
+get-ddr-defs:
+	@echo ""
+	@echo "get-ddr-defs -----------------------------------------------------------"
+	if test -d $(CONF_DEFS); \
+	then cd $(CONF_DEFS) && git pull; \
+	else cd $(CONF_BASE) && git clone $(SRC_REPO_DEFS) $(CONF_DEFS); \
+	fi
 
 
 syncdb:
