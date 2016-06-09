@@ -27,9 +27,9 @@ CONF_SECRET=$(CONF_BASE)/ddrlocal-secret-key.txt
 SQLITE_BASE=/var/lib/ddr
 LOG_BASE=/var/log/ddr
 
-DDR_REPO_BASE=/var/www/ddr
+DDR_REPO_BASE=/var/www/media/ddr
 
-MEDIA_BASE=/var/www/ddrlocal
+MEDIA_BASE=/var/www
 MEDIA_ROOT=$(MEDIA_BASE)/media
 STATIC_ROOT=$(MEDIA_BASE)/static
 
@@ -336,8 +336,6 @@ install-ddr-local:
 	-mkdir -p $(STATIC_ROOT)
 	chown -R ddr.root $(STATIC_ROOT)
 	chmod -R 755 $(STATIC_ROOT)
-# link to $(DDR_REPO_BASE)
-	-ln -s $(DDR_REPO_BASE) $(MEDIA_ROOT)/ddr
 
 uninstall-ddr-local:
 	@echo ""
