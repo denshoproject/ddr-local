@@ -50,9 +50,13 @@ class Identifier(DDRIdentifier):
         return super(Identifier, self).object_class(mappings).from_identifier(self)
     
     def parent(self, stubs=False):
-        pid = self.parent_id(stubs)
-        if pid:
-            return Identifier(id=pid, base_path=self.basepath)
+        parent_parts = self._parent_parts()
+        for model in self._parent_models(stubs):
+            idparts = parent_parts
+            idparts['model'] = model
+            i = Identifier(parts=idparts)
+            if i:
+                return i
         return None
     
     def child(self, model, idparts, base_path=settings.MEDIA_BASE):
