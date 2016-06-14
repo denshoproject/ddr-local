@@ -684,14 +684,22 @@ class DDRFile( File ):
     
     def access_url( self ):
         if self.access_rel:
-            stub = os.path.join(self.entity_files_path.replace(settings.MEDIA_ROOT,''), self.access_rel)
-            return '%s%s' % (settings.MEDIA_URL, stub)
+            mediaroot = os.path.join(settings.MEDIA_ROOT, '') # append trailing slash
+            path_rel = os.path.normpath(self.access_abs.replace(mediaroot, ''))
+            return os.path.join(settings.MEDIA_URL, path_rel)
+        return None
+    
+    def media_url( self ):
+        if self.path_rel:
+            mediaroot = os.path.join(settings.MEDIA_ROOT, '') # append trailing slash
+            path_rel = os.path.normpath(self.path_abs.replace(mediaroot, ''))
+            return os.path.join(settings.MEDIA_URL, path_rel)
         return None
     
     def fs_url( self ):
         """URL of the files directory browsable via Nginx.
         """
-        return settings.MEDIA_URL + self.entity_files_path.replace(settings.MEDIA_ROOT, '')
+        return os.path.dirname(self.media_url())
     
     def gitweb_url( self ):
         """Returns local gitweb URL for files directory.
@@ -701,12 +709,6 @@ class DDRFile( File ):
             os.path.basename(self.collection_path),
             os.path.dirname(self.json_path_rel)
         )
-    
-    def media_url( self ):
-        if self.path_rel:
-            stub = os.path.join(self.entity_files_path.replace(settings.MEDIA_ROOT,''), self.path_rel)
-            return '%s%s' % (settings.MEDIA_URL, stub)
-        return None
     
     def model_def_commits(self):
         """Assesses document's relation to model defs in 'ddr' repo.

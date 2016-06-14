@@ -3,13 +3,23 @@ DEBIAN_CODENAME := $(shell lsb_release -sc)
 
 PACKAGE_SERVER=ddr.densho.org/static/ddrlocal
 
+SRC_REPO_CMDLN=https://github.com/densho/ddr-cmdln.git
+SRC_REPO_LOCAL=https://github.com/densho/ddr-local.git
+SRC_REPO_DEFS=https://github.com/densho/ddr-defs.git
+SRC_REPO_MANUAL=https://github.com/densho/ddr-manual.git
+
 INSTALL_BASE=/usr/local/src
+INSTALL_CMDLN=$(INSTALL_BASE)/ddr-cmdln
+INSTALL_LOCAL=$(INSTALL_BASE)/ddr-local
+INSTALL_DEFS=$(INSTALL_BASE)/ddr-defs
+INSTALL_MANUAL=$(INSTALL_BASE)/ddr-manual
+
 PIP_CACHE_DIR=$(INSTALL_BASE)/pip-cache
 VIRTUALENV=$(INSTALL_BASE)/env/ddrlocal
-INSTALLDIR=$(INSTALL_BASE)/ddr-local
-SETTINGS=$(INSTALLDIR)/ddrlocal/ddrlocal/settings.py
+SETTINGS=$(INSTALL_LOCAL)/ddrlocal/settings.py
 
 CONF_BASE=/etc/ddr
+CONF_DEFS=$(CONF_BASE)/ddr-defs
 CONF_PRODUCTION=$(CONF_BASE)/ddrlocal.cfg
 CONF_LOCAL=$(CONF_BASE)/ddrlocal-local.cfg
 CONF_SECRET=$(CONF_BASE)/ddrlocal-secret-key.txt
@@ -17,9 +27,9 @@ CONF_SECRET=$(CONF_BASE)/ddrlocal-secret-key.txt
 SQLITE_BASE=/var/lib/ddr
 LOG_BASE=/var/log/ddr
 
-DDR_REPO_BASE=/var/www/ddr
+DDR_REPO_BASE=/var/www/media/ddr
 
-MEDIA_BASE=/var/www/ddrlocal
+MEDIA_BASE=/var/www
 MEDIA_ROOT=$(MEDIA_BASE)/media
 STATIC_ROOT=$(MEDIA_BASE)/static
 
@@ -50,46 +60,44 @@ CGIT_CONF=/etc/cgitrc
 
 
 help:
+	@echo "--------------------------------------------------------------------------------"
 	@echo "ddr-local Install Helper"
 	@echo ""
 	@echo "install - Does a complete install. Idempotent, so run as many times as you like."
 	@echo "          IMPORTANT: Run 'adduser ddr' first to install ddr user and group."
 	@echo "          Installation instructions: make howto-install"
+	@echo "Subcommands:"
+	@echo "    install-prep    - Various preperatory tasks"
+	@echo "    install-daemons - Installs Nginx, Redis, Elasticsearch"
+	@echo "    get-app         - Runs git-clone or git-pull on ddr-cmdln and ddr-local"
+	@echo "    install-app     - Just installer tasks for ddr-cmdln and ddr-local"
+	@echo "    install-static  - Downloads static media (Bootstrap, jquery, etc)"
+	@echo ""
+	@echo "get-defs - Installs ddr-defs in $(CONF_DEFS)."
 	@echo ""
 	@echo "enable-bkgnd  - Enable background processes. (Run make reload on completion)"
 	@echo "disable-bkgnd - Disablebackground processes. (Run make reload on completion)"
 	@echo ""
 	@echo "syncdb  - Initialize or update Django app's database tables."
 	@echo ""
-	@echo "branch BRANCH=[branch] - Switches both ddr-local and ddr-cmdln repos to [branch]."
+	@echo "branch BRANCH=[branch] - Switches ddr-local and ddr-cmdln repos to [branch]."
 	@echo ""
 	@echo "reload  - Reloads supervisord and nginx configs"
-	@echo "reload-nginx"
-	@echo "reload-supervisors"
+	@echo "    reload-nginx"
+	@echo "    reload-supervisors     (also: supervisorctl reload)"
 	@echo ""
 	@echo "restart - Restarts all servers"
-	@echo "restart-elasticsearch"
-	@echo "restart-redis"
-	@echo "restart-nginx"
-	@echo "restart-supervisord"
+	@echo "    restart-elasticsearch"
+	@echo "    restart-redis"
+	@echo "    restart-nginx"
+	@echo "    restart-supervisord    (also: supervisorctl restart all)"
 	@echo ""
 	@echo "status  - Server status"
 	@echo ""
 	@echo "uninstall - Deletes 'compiled' Python files. Leaves build dirs and configs."
 	@echo "clean   - Deletes files created by building the program. Leaves configs."
-
-help-all:
-	@echo "install - Do a fresh install"
-	@echo "install-prep    - git-config, add-user, apt-update, install-misc-tools"
-	@echo "install-daemons - install-nginx install-redis install-elasticsearch"
-	@echo "install-app     - install-ddr-cmdln install-ddr-local"
-	@echo "install-static  - "
-	@echo "restart - Restart servers"
-	@echo "status  - Server status"
-	@echo "install-configs - "
-	@echo "update-ddr - "
-	@echo "uninstall - "
-	@echo "clean - "
+	@echo ""
+	@echo "More install info: make howto-install"
 
 howto-install:
 	@echo "HOWTO INSTALL"
@@ -102,13 +110,14 @@ howto-install:
 	@echo "- ufw enable"
 	@echo "- apt-get install make"
 	@echo "- adduser ddr"
-	@echo "- git clone https://github.com/densho/ddr-local.git $(INSTALLDIR)"
-	@echo "- cd $(INSTALLDIR)/ddrlocal"
+	@echo "- git clone $(SRC_REPO_LOCAL) $(INSTALL_LOCAL)"
+	@echo "- cd $(INSTALL_LOCAL)/ddrlocal"
 	@echo "- make install"
 	@echo "- [make branch BRANCH=develop]"
 	@echo "- [make install]"
-	@echo "- make enable-bkgnd"
 	@echo "- Place copy of 'ddr' repo in $(DDR_REPO_BASE)/ddr."
+	@echo "- make install-defs"
+	@echo "- make enable-bkgnd"
 	@echo "- make syncdb"
 	@echo "- make restart"
 	@echo "- [make clear-munin-logs]"
@@ -134,7 +143,7 @@ ddr-user:
 
 apt-backports:
 ifeq "$(DEBIAN_CODENAME)" "wheezy"
-	cp $(INSTALLDIR)/debian/conf/wheezy-backports.list /etc/apt/sources.list.d/
+	cp $(INSTALL_LOCAL)/debian/conf/wheezy-backports.list /etc/apt/sources.list.d/
 endif
 
 apt-update:
@@ -267,9 +276,9 @@ endif
 get-ddr-cmdln:
 	@echo ""
 	@echo "get-ddr-cmdln ----------------------------------------------------------"
-	if test -d $(INSTALL_BASE)/ddr-cmdln; \
-	then cd $(INSTALL_BASE)/ddr-cmdln && git pull; \
-	else cd $(INSTALL_BASE) && git clone https://github.com/densho/ddr-cmdln.git; \
+	if test -d $(INSTALL_CMDLN); \
+	then cd $(INSTALL_CMDLN) && git pull; \
+	else cd $(INSTALL_BASE) && git clone $(SRC_REPO_CMDLN); \
 	fi
 
 install-ddr-cmdln:
@@ -277,9 +286,9 @@ install-ddr-cmdln:
 	@echo "install-ddr-cmdln ------------------------------------------------------"
 	apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev libz-dev pmount udisks
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_BASE)/ddr-cmdln/ddr && python setup.py install
+	cd $(INSTALL_CMDLN)/ddr && python setup.py install
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_BASE)/ddr-cmdln/ddr && pip install -U --download-cache=$(PIP_CACHE_DIR) -r $(INSTALL_BASE)/ddr-cmdln/ddr/requirements/production.txt
+	cd $(INSTALL_CMDLN)/ddr && pip install -U --download-cache=$(PIP_CACHE_DIR) -r $(INSTALL_CMDLN)/ddr/requirements/production.txt
 	-mkdir $(LOG_BASE)
 	chown -R ddr.root $(LOG_BASE)
 	chmod -R 755 $(LOG_BASE)
@@ -291,13 +300,13 @@ uninstall-ddr-cmdln:
 	@echo ""
 	@echo "uninstall-ddr-cmdln ----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_BASE)/ddr-cmdln/ddr && pip uninstall -y -r $(INSTALL_BASE)/ddr-cmdln/ddr/requirements/production.txt
+	cd $(INSTALL_CMDLN)/ddr && pip uninstall -y -r $(INSTALL_CMDLN)/ddr/requirements/production.txt
 	-rm /usr/local/bin/ddr*
 	-rm -Rf /usr/local/lib/python2.7/dist-packages/DDR*
 	-rm -Rf /usr/local/lib/python2.7/dist-packages/ddr*
 
 clean-ddr-cmdln:
-	-rm -Rf $(INSTALL_BASE)/ddr-cmdln/ddr/build
+	-rm -Rf $(INSTALL_CMDLN)/ddr/build
 
 
 get-ddr-local:
@@ -310,7 +319,7 @@ install-ddr-local:
 	@echo "install-ddr-local ------------------------------------------------------"
 	apt-get --assume-yes install imagemagick libexempi3 libssl-dev python-dev libxml2 libxml2-dev libxslt1-dev supervisor
 	source $(VIRTUALENV)/bin/activate; \
-	pip install -U --download-cache=$(PIP_CACHE_DIR) -r $(INSTALLDIR)/ddrlocal/requirements/production.txt
+	pip install -U --download-cache=$(PIP_CACHE_DIR) -r $(INSTALL_LOCAL)/ddrlocal/requirements/production.txt
 # logs dir
 	-mkdir $(LOG_BASE)
 	chown -R ddr.root $(LOG_BASE)
@@ -327,34 +336,41 @@ install-ddr-local:
 	-mkdir -p $(STATIC_ROOT)
 	chown -R ddr.root $(STATIC_ROOT)
 	chmod -R 755 $(STATIC_ROOT)
-# link to $(DDR_REPO_BASE)
-	-ln -s $(DDR_REPO_BASE) $(MEDIA_ROOT)/ddr
 
 uninstall-ddr-local:
 	@echo ""
 	@echo "uninstall-ddr-local ----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALLDIR)/ddrlocal && pip uninstall -y -r $(INSTALLDIR)/ddrlocal/requirements/production.txt
+	cd $(INSTALL_LOCAL)/ddrlocal && pip uninstall -y -r $(INSTALL_LOCAL)/ddrlocal/requirements/production.txt
 	-rm /usr/local/lib/python2.7/dist-packages/ddrlocal-*
 	-rm -Rf /usr/local/lib/python2.7/dist-packages/ddrlocal
 
 clean-ddr-local:
-	-rm -Rf $(INSTALLDIR)/ddrlocal/src
+	-rm -Rf $(INSTALL_LOCAL)/ddrlocal/src
 
 clean-pip:
 	-rm -Rf $(PIP_CACHE_DIR)/*
 
 
+get-ddr-defs:
+	@echo ""
+	@echo "get-ddr-defs -----------------------------------------------------------"
+	if test -d $(CONF_DEFS); \
+	then cd $(CONF_DEFS) && git pull; \
+	else cd $(CONF_BASE) && git clone $(SRC_REPO_DEFS) $(CONF_DEFS); \
+	fi
+
+
 syncdb:
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALLDIR)/ddrlocal && ./manage.py syncdb --noinput
+	cd $(INSTALL_LOCAL)/ddrlocal && ./manage.py syncdb --noinput
 	chown -R ddr.root $(SQLITE_BASE)
 	chmod -R 750 $(SQLITE_BASE)
 	chown -R ddr.root $(LOG_BASE)
 	chmod -R 755 $(LOG_BASE)
 
 branch:
-	cd $(INSTALLDIR)/ddrlocal; python ./bin/git-checkout-branch.py $(BRANCH)
+	cd $(INSTALL_LOCAL)/ddrlocal; python ./bin/git-checkout-branch.py $(BRANCH)
 
 
 install-static: install-modernizr install-bootstrap install-jquery install-tagmanager install-typeahead
@@ -423,11 +439,14 @@ install-configs:
 	@echo "configuring ddr-local --------------------------------------------------"
 # base settings file
 	-mkdir /etc/ddr
-	cp $(INSTALLDIR)/debian/conf/ddr.cfg $(CONF_PRODUCTION)
+	cp $(INSTALL_LOCAL)/debian/conf/ddrlocal.cfg $(CONF_PRODUCTION)
 	chown root.root $(CONF_PRODUCTION)
 	chmod 644 $(CONF_PRODUCTION)
+	touch $(CONF_LOCAL)
+	chown ddr.root $(CONF_LOCAL)
+	chmod 640 $(CONF_LOCAL)
 # web app settings
-	cp $(INSTALLDIR)/debian/conf/settings.py $(SETTINGS)
+	cp $(INSTALL_LOCAL)/debian/conf/settings.py $(SETTINGS)
 	chown root.root $(SETTINGS)
 	chmod 644 $(SETTINGS)
 
@@ -440,15 +459,15 @@ install-daemon-configs:
 	@echo ""
 	@echo "install-daemon-configs -------------------------------------------------"
 # nginx settings
-	cp $(INSTALLDIR)/debian/conf/ddrlocal.conf $(NGINX_CONF)
+	cp $(INSTALL_LOCAL)/debian/conf/ddrlocal.conf $(NGINX_CONF)
 	chown root.root $(NGINX_CONF)
 	chmod 644 $(NGINX_CONF)
 	-ln -s $(NGINX_CONF) $(NGINX_CONF_LINK)
 	-rm /etc/nginx/sites-enabled/default
 # supervisord
-	cp $(INSTALLDIR)/debian/conf/celeryd.conf $(SUPERVISOR_CELERY_CONF)
-	cp $(INSTALLDIR)/debian/conf/gunicorn_ddrlocal.conf $(SUPERVISOR_GUNICORN_CONF)
-	cp $(INSTALLDIR)/debian/conf/supervisord.conf $(SUPERVISOR_CONF)
+	cp $(INSTALL_LOCAL)/debian/conf/celeryd.conf $(SUPERVISOR_CELERY_CONF)
+	cp $(INSTALL_LOCAL)/debian/conf/gunicorn_ddrlocal.conf $(SUPERVISOR_GUNICORN_CONF)
+	cp $(INSTALL_LOCAL)/debian/conf/supervisord.conf $(SUPERVISOR_CONF)
 	chown root.root $(SUPERVISOR_CELERY_CONF)
 	chown root.root $(SUPERVISOR_GUNICORN_CONF)
 	chown root.root $(SUPERVISOR_CONF)
@@ -456,10 +475,10 @@ install-daemon-configs:
 	chmod 644 $(SUPERVISOR_GUNICORN_CONF)
 	chmod 644 $(SUPERVISOR_CONF)
 # gitweb
-	cp $(INSTALLDIR)/debian/conf/gitweb.conf $(GITWEB_CONF)
-	cp $(INSTALLDIR)/debian/conf/cgitrc $(CGIT_CONF)
+	cp $(INSTALL_LOCAL)/debian/conf/gitweb.conf $(GITWEB_CONF)
+	cp $(INSTALL_LOCAL)/debian/conf/cgitrc $(CGIT_CONF)
 # munin settings
-	cp $(INSTALLDIR)/debian/conf/munin.conf $(MUNIN_CONF)
+	cp $(INSTALL_LOCAL)/debian/conf/munin.conf $(MUNIN_CONF)
 	chown root.root $(MUNIN_CONF)
 	chmod 644 $(MUNIN_CONF)
 
@@ -473,7 +492,7 @@ uninstall-daemon-configs:
 
 
 enable-bkgnd:
-	cp $(INSTALLDIR)/debian/conf/celerybeat.conf $(SUPERVISOR_CELERYBEAT_CONF)
+	cp $(INSTALL_LOCAL)/debian/conf/celerybeat.conf $(SUPERVISOR_CELERYBEAT_CONF)
 	chown root.root $(SUPERVISOR_CELERYBEAT_CONF)
 	chmod 644 $(SUPERVISOR_CELERYBEAT_CONF)
 
@@ -553,17 +572,17 @@ status:
 
 git-status:
 	@echo "------------------------------------------------------------------------"
-	cd $(INSTALL_BASE)/ddr-cmdln && git status
+	cd $(INSTALL_CMDLN) && git status
 	@echo "------------------------------------------------------------------------"
-	cd $(INSTALLDIR) && git status
+	cd $(INSTALL_LOCAL) && git status
 
 
 get-ddr-manual:
 	@echo ""
 	@echo "get-ddr-manual ---------------------------------------------------------"
-	if test -d $(INSTALL_BASE)/ddr-manual; \
-	then cd $(INSTALL_BASE)/ddr-manual && git pull; \
-	else cd $(INSTALL_BASE) && git clone https://github.com/densho/ddr-manual.git; \
+	if test -d $(INSTALL_MANUAL); \
+	then cd $(INSTALL_MANUAL) && git pull; \
+	else cd $(INSTALL_BASE) && git clone $(SRC_REPO_MANUAL); \
 	fi
 
 install-ddr-manual:
@@ -572,12 +591,12 @@ install-ddr-manual:
 	source $(VIRTUALENV)/bin/activate; \
 	pip install -U --download-cache=$(PIP_CACHE_DIR) sphinx
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_BASE)/ddr-manual && make html
+	cd $(INSTALL_MANUAL) && make html
 	rm -Rf $(MEDIA_ROOT)/manual
-	mv $(INSTALL_BASE)/ddr-manual/build/html $(MEDIA_ROOT)/manual
+	mv $(INSTALL_MANUAL)/build/html $(MEDIA_ROOT)/manual
 
 uninstall-ddr-manual:
 	pip uninstall -y sphinx
 
 clean-ddr-manual:
-	-rm -Rf $(INSTALL_BASE)/ddr-manual/build
+	-rm -Rf $(INSTALL_MANUAL)/build
