@@ -37,7 +37,6 @@ from webui.models import Collection, Entity
 from webui.tasks import collection_entity_newexpert, collection_entity_edit, collection_delete_entity
 from webui.tasks import gitstatus_update
 from webui.views.decorators import login_required
-from xmlforms.models import XMLModel
 
 
 
@@ -254,19 +253,6 @@ def changelog( request, repo, org, cid, eid ):
          'entity': entity,},
         context_instance=RequestContext(request, processors=[])
     )
-
-@storage_required
-def entity_json( request, repo, org, cid, eid ):
-    entity = Entity.from_request(request)
-    collection = entity.collection()
-    return HttpResponse(entity.dump_json(), content_type="application/json")
-
-@storage_required
-def mets_xml( request, repo, org, cid, eid ):
-    entity = Entity.from_request(request)
-    collection = entity.collection()
-    soup = BeautifulSoup(entity.mets().xml, 'xml')
-    return HttpResponse(soup.prettify(), content_type="application/xml")
 
 @ddrview
 @login_required
@@ -519,61 +505,6 @@ def edit_vocab_terms( request, field ):
     return render_to_response(
         'webui/entities/vocab.html',
         {'terms': terms,},
-        context_instance=RequestContext(request, processors=[])
-    )
-
-@ddrview
-@login_required
-@storage_required
-def edit_json( request, repo, org, cid, eid ):
-    """
-    NOTE: will permit editing even if entity is locked!
-    (which you need to do sometimes).
-    """
-    entity = Entity.from_request(request)
-    collection = entity.collection()
-    #if collection.locked():
-    #    messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-    #    return HttpResponseRedirect(entity.absolute_url())
-    #collection.repo_fetch()
-    #if collection.repo_behind():
-    #    messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
-    #    return HttpResponseRedirect(entity.absolute_url())
-    #if entity.locked():
-    #    messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
-    #    return HttpResponseRedirect(entity.absolute_url())
-    #
-    if request.method == 'POST':
-        form = JSONForm(request.POST)
-        if form.is_valid():
-            git_name = request.session.get('git_name')
-            git_mail = request.session.get('git_mail')
-            if git_name and git_mail:
-                json_text = form.cleaned_data['json']
-                fileio.write_text(json_text, entity.json_path)
-                
-                exit,status = commands.entity_update(
-                    git_name, git_mail,
-                    collection, entity,
-                    [entity.json_path],
-                    agent=settings.AGENT
-                )
-                
-                collection.cache_delete()
-                if exit:
-                    messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
-                else:
-                    gitstatus_update.apply_async((collection.path,), countdown=2)
-                    messages.success(request, WEBUI_MESSAGES['VIEWS_ENT_UPDATED'])
-                    return HttpResponseRedirect(entity.absolute_url())
-            else:
-                messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    else:
-        form = JSONForm({'json': entity.dump_json(),})
-    return render_to_response(
-        'webui/entities/edit-raw.html',
-        {'entity': entity,
-         'form': form,},
         context_instance=RequestContext(request, processors=[])
     )
 

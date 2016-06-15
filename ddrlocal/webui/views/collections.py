@@ -37,7 +37,6 @@ from webui.identifier import Identifier
 from webui.tasks import collection_new_expert, collection_edit, collection_sync
 from webui.tasks import csv_export_model, export_csv_path, gitstatus_update
 from webui.views.decorators import login_required
-from xmlforms.models import XMLModel
 
 
 # helpers --------------------------------------------------------------
@@ -128,12 +127,6 @@ def changelog( request, repo, org, cid ):
         context_instance=RequestContext(request, processors=[])
     )
 
-@storage_required
-def collection_json( request, repo, org, cid ):
-    collection = Collection.from_request(request)
-    alert_if_conflicted(request, collection)
-    return HttpResponse(json.dumps(collection.json().data), content_type="application/json")
-
 @ddrview
 @storage_required
 def sync_status_ajax( request, repo, org, cid ):
@@ -163,13 +156,6 @@ def git_status( request, repo, org, cid ):
          },
         context_instance=RequestContext(request, processors=[])
     )
-
-@storage_required
-def ead_xml( request, repo, org, cid ):
-    collection = Collection.from_request(request)
-    alert_if_conflicted(request, collection)
-    soup = BeautifulSoup(collection.ead().xml, 'xml')
-    return HttpResponse(soup.prettify(), content_type="application/xml")
 
 @ddrview
 @login_required

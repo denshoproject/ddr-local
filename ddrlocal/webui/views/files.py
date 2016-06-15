@@ -90,14 +90,6 @@ def detail( request, repo, org, cid, eid, role, sha1 ):
         context_instance=RequestContext(request, processors=[])
     )
 
-@storage_required
-def file_json( request, repo, org, cid, eid, role, sha1 ):
-    file_ = DDRFile.from_request(request)
-    if file_.json_path and os.path.exists(file_.json_path):
-        return HttpResponse(file_.dump_json(), content_type="application/json")
-    messages.success(request, 'no JSON file. sorry.')
-    return HttpResponseRedirect(file_.absolute_url())
-
 @ddrview
 @login_required
 @storage_required

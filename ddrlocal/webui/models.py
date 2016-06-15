@@ -238,12 +238,10 @@ class Collection( DDRCollection ):
     def admin_url(self): return reverse('webui-collection-admin', args=self.idparts)
     def changelog_url(self): return reverse('webui-collection-changelog', args=self.idparts)
     def children_url(self): return reverse('webui-collection-children', args=self.idparts)
-    def ead_xml_url(self): return reverse('webui-collection-ead-xml', args=self.idparts)
     def edit_url(self): return reverse('webui-collection-edit', args=self.idparts)
     def export_entities_url(self): return reverse('webui-collection-export-entities', args=self.idparts)
     def export_files_url(self): return reverse('webui-collection-export-files', args=self.idparts)
     def git_status_url(self): return reverse('webui-collection-git-status', args=self.idparts)
-    def json_url(self): return reverse('webui-collection-json', args=self.idparts)
     def merge_url(self): return reverse('webui-merge-raw', args=self.idparts)
     def new_entity_url(self): return reverse('webui-entity-new', args=self.idparts)
     def sync_url(self): return reverse('webui-collection-sync', args=self.idparts)
@@ -453,9 +451,6 @@ class Entity( DDREntity ):
     def changelog_url(self): return reverse('webui-entity-changelog', args=self.idparts)
     def delete_url(self): return reverse('webui-entity-delete', args=self.idparts)
     def edit_url(self): return reverse('webui-entity-edit', args=self.idparts)
-    def edit_json_url(self): return reverse('webui-entity-edit-json', args=self.idparts)
-    def json_url(self): return reverse('webui-entity-json', args=self.idparts)
-    def mets_xml_url(self): return reverse('webui-entity-mets-xml', args=self.idparts)
     
     def new_file_url(self, role):
         args = [a for a in self.idparts]
@@ -678,7 +673,6 @@ class DDRFile( File ):
         return reverse('webui-file', args=self.idparts)
 
     def delete_url(self): return reverse('webui-file-delete', args=self.idparts)
-    def json_url(self): return reverse('webui-file-json', args=self.idparts)
     def edit_url(self): return reverse('webui-file-edit', args=self.idparts)
     def new_access_url(self): return reverse('webui-file-new-access', args=self.idparts)
     
@@ -688,6 +682,9 @@ class DDRFile( File ):
             path_rel = os.path.normpath(self.access_abs.replace(mediaroot, ''))
             return os.path.join(settings.MEDIA_URL, path_rel)
         return None
+
+    def media_path( self ):
+        return os.path.dirname(self.path_abs)
     
     def media_url( self ):
         if self.path_rel:
