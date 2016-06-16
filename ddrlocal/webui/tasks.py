@@ -288,9 +288,8 @@ TASK_STATUS_MESSAGES['webui-collection-newexpert'] = {
 
 def collection_new_expert(request, base_dir, collection_id, git_name, git_mail):
     # start tasks
-    repo,org,cid = collection_id.split('-')
     collection_path = os.path.join(base_dir, collection_id)
-    collection_url = reverse('webui-collection', args=[repo,org,cid])
+    collection_url = reverse('webui-collection', args=[collection_id])
     result = collection_newexpert.apply_async(
         (collection_path, git_name, git_mail),
         countdown=2)
@@ -404,8 +403,7 @@ TASK_STATUS_MESSAGES['webui-entity-newexpert'] = {
 
 def collection_entity_newexpert(request, collection, entity_id, git_name, git_mail):
     # start tasks
-    repo,org,cid,eid = entity_id.split('-')
-    entity_url = reverse('webui-entity', args=[repo,org,cid,eid])
+    entity_url = reverse('webui-entity', args=[entity_id])
     result = entity_newexpert.apply_async(
         (collection.path, entity_id, git_name, git_mail),
         countdown=2)
@@ -829,8 +827,7 @@ def session_tasks( request ):
                                        'webui-file-new-mezzanine',
                                        'webui-file-new-access']:
                 # Add entity_url to task for newly-created file
-                repo,org,cid,eid = task['entity_id'].split('-')
-                task['entity_url'] = reverse('webui-entity', args=[repo,org,cid,eid])
+                task['entity_url'] = reverse('webui-entity', args=[task['entity_id']])
     # Hit the celery-task_status view for status updates on each task.
     # get status, retval from celery
     # TODO Don't create a new ctask/task dict here!!! >:-O
@@ -859,7 +856,7 @@ def session_tasks( request ):
                 if type(r) == type({}):
                     if r.get('id', None):
                         oid = Identifier(r['id'])
-                        object_url = reverse('webui-%s' % oid.model, args=oid.parts.values())
+                        object_url = reverse('webui-%s' % oid.model, args=[oid.id])
                         ctask['%s_url' % oid.model] = object_url
             tasks[task['id']] = ctask
     # pretty status messages

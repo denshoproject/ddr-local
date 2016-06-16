@@ -212,8 +212,7 @@ class Collection( DDRCollection ):
         """
         objects = super(Collection, self).children(quick=quick)
         for o in objects:
-            oid = Identifier(id=o.id)
-            o.absolute_url = reverse('webui-entity', args=oid.parts.values())
+            o.absolute_url = reverse('webui-entity', args=[o.id])
         return objects
     
     def gitstatus_path( self ):
@@ -233,18 +232,18 @@ class Collection( DDRCollection ):
         >>> c.absolute_url()
         '/ui/ddr-testing-123/'
         """
-        return reverse('webui-collection', args=self.idparts)
+        return reverse('webui-collection', args=[self.id])
     
-    def admin_url(self): return reverse('webui-collection-admin', args=self.idparts)
-    def changelog_url(self): return reverse('webui-collection-changelog', args=self.idparts)
-    def children_url(self): return reverse('webui-collection-children', args=self.idparts)
-    def edit_url(self): return reverse('webui-collection-edit', args=self.idparts)
-    def export_entities_url(self): return reverse('webui-collection-export-entities', args=self.idparts)
-    def export_files_url(self): return reverse('webui-collection-export-files', args=self.idparts)
-    def git_status_url(self): return reverse('webui-collection-git-status', args=self.idparts)
-    def merge_url(self): return reverse('webui-merge-raw', args=self.idparts)
-    def new_entity_url(self): return reverse('webui-entity-new', args=self.idparts)
-    def sync_url(self): return reverse('webui-collection-sync', args=self.idparts)
+    def admin_url(self): return reverse('webui-collection-admin', args=[self.id])
+    def changelog_url(self): return reverse('webui-collection-changelog', args=[self.id])
+    def children_url(self): return reverse('webui-collection-children', args=[self.id])
+    def edit_url(self): return reverse('webui-collection-edit', args=[self.id])
+    def export_entities_url(self): return reverse('webui-collection-export-entities', args=[self.id])
+    def export_files_url(self): return reverse('webui-collection-export-files', args=[self.id])
+    def git_status_url(self): return reverse('webui-collection-git-status', args=[self.id])
+    def merge_url(self): return reverse('webui-merge-raw', args=[self.id])
+    def new_entity_url(self): return reverse('webui-entity-new', args=[self.id])
+    def sync_url(self): return reverse('webui-collection-sync', args=[self.id])
     
     def cgit_url( self ):
         """Returns cgit URL for collection.
@@ -255,7 +254,7 @@ class Collection( DDRCollection ):
         >>> c.cgit_url()
         'http://partner.densho.org/cgit/cgit.cgi/ddr-testing-123/'
         """
-        return '{}/cgit.cgi/{}/'.format(settings.CGIT_URL, self.id)
+        return '{}/cgit.cgi/{}/'.format(settings.CGIT_URL, [self.id])
     
     def fs_url( self ):
         """URL of the collection directory browsable via Nginx.
@@ -269,9 +268,7 @@ class Collection( DDRCollection ):
     
     def unlock_url(self, unlock_task_id):
         if unlock_task_id:
-            args = [a for a in self.idparts]
-            args.append(unlock_task_id)
-            return reverse('webui-collection-unlock', args=args)
+            return reverse('webui-collection-unlock', args=[self.id, unlock_task_id])
         return None
         
     def cache_delete( self ):
@@ -318,7 +315,7 @@ class Collection( DDRCollection ):
         return gitstatus.sync_status( self, git_status, timestamp, cache_set, force )
     
     def sync_status_url( self ):
-        return reverse('webui-collection-sync-status-ajax', args=self.idparts)
+        return reverse('webui-collection-sync-status-ajax', args=[self.id])
     
     def gitstatus( self, force=False ):
         return gitstatus.read(settings.MEDIA_BASE, self.path)
@@ -445,22 +442,26 @@ class Entity( DDREntity ):
 #        return []
     
     def absolute_url( self ):
-        return reverse('webui-entity', args=self.idparts)
+        return reverse('webui-entity', args=[self.id])
     
-    def addfilelog_url(self): return reverse('webui-entity-addfilelog', args=self.idparts)
-    def changelog_url(self): return reverse('webui-entity-changelog', args=self.idparts)
-    def delete_url(self): return reverse('webui-entity-delete', args=self.idparts)
-    def edit_url(self): return reverse('webui-entity-edit', args=self.idparts)
+    def addfilelog_url(self): return reverse('webui-entity-addfilelog', args=[self.id])
+    def changelog_url(self): return reverse('webui-entity-changelog', args=[self.id])
+    def delete_url(self): return reverse('webui-entity-delete', args=[self.id])
+    def edit_url(self): return reverse('webui-entity-edit', args=[self.id])
     
     def new_file_url(self, role):
-        args = [a for a in self.idparts]
-        args.append(role)
-        return reverse('webui-file-new', args=args)
+        idparts = self.identifier.idparts
+        idparts['model'] = 'file-role'
+        idparts['role'] = role
+        ri = Identifier(idparts)
+        return reverse('webui-file-new', args=[ri.id])
     
     def children_url(self, role):
-        args = [a for a in self.idparts]
-        args.append(role)
-        return reverse('webui-file-role', args=args)
+        idparts = self.identifier.idparts
+        idparts['model'] = 'file-role'
+        idparts['role'] = role
+        ri = Identifier(idparts)
+        return reverse('webui-file-role', args=[ri.id])
     
     def file_batch_url(self, role):
         args = [a for a in self.idparts]
@@ -468,9 +469,11 @@ class Entity( DDREntity ):
         return reverse('webui-file-batch', args=args)
     
     def file_browse_url(self, role):
-        args = [a for a in self.idparts]
-        args.append(role)
-        return reverse('webui-file-browse', args=args)
+        idparts = self.identifier.idparts
+        idparts['model'] = 'file-role'
+        idparts['role'] = role
+        ri = Identifier(idparts)
+        return reverse('webui-file-browse', args=[ri.id])
     
     def children_urls(self, active=None):
         return [
@@ -506,9 +509,7 @@ class Entity( DDREntity ):
     
     def unlock_url(self, unlock_task_id):
         if unlock_task_id:
-            args = [a for a in self.idparts]
-            args.append(unlock_task_id)
-            return reverse('webui-entity-unlock', args=args)
+            return reverse('webui-entity-unlock', args=[self.id, unlock_task_id])
         return None
     
     def model_def_commits(self):
@@ -670,11 +671,11 @@ class DDRFile( File ):
         return Entity.from_identifier(self.identifier.parent())
     
     def absolute_url( self ):
-        return reverse('webui-file', args=self.idparts)
+        return reverse('webui-file', args=[self.id])
 
-    def delete_url(self): return reverse('webui-file-delete', args=self.idparts)
-    def edit_url(self): return reverse('webui-file-edit', args=self.idparts)
-    def new_access_url(self): return reverse('webui-file-new-access', args=self.idparts)
+    def delete_url(self): return reverse('webui-file-delete', args=[self.id])
+    def edit_url(self): return reverse('webui-file-edit', args=[self.id])
+    def new_access_url(self): return reverse('webui-file-new-access', args=[self.id])
     
     def access_url( self ):
         if self.access_rel:

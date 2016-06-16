@@ -43,7 +43,7 @@ from webui.views.decorators import login_required
 
 def alert_if_conflicted(request, collection):
     if collection.repo_conflicted():
-        url = reverse('webui-merge', args=collection.idparts)
+        url = reverse('webui-merge', args=[collection.id])
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_CONFLICTED'].format(collection.id, url))
     
 
@@ -76,7 +76,7 @@ def collections( request ):
                     collection.sync_status = gitstatus['sync_status']
                 else:
                     collection_status_urls.append( "'%s'" % collection.sync_status_url())
-        collections.append( (object_id,repo,org,colls) )
+        collections.append( (object_id,colls) )
     # load statuses in random order
     random.shuffle(collection_status_urls)
     return render_to_response(
@@ -87,8 +87,8 @@ def collections( request ):
     )
 
 @storage_required
-def detail( request, repo, org, cid ):
-    collection = Collection.from_request(request)
+def detail( request, cid ):
+    collection = Collection.from_identifier(Identifier(cid))
     collection.model_def_commits()
     collection.model_def_fields()
     alert_if_conflicted(request, collection)
@@ -100,8 +100,8 @@ def detail( request, repo, org, cid ):
     )
 
 @storage_required
-def children( request, repo, org, cid ):
-    collection = Collection.from_request(request)
+def children( request, cid ):
+    collection = Collection.from_identifier(Identifier(cid))
     alert_if_conflicted(request, collection)
     objects = collection.children(quick=True)
     # paginate
@@ -118,8 +118,8 @@ def children( request, repo, org, cid ):
     )
 
 @storage_required
-def changelog( request, repo, org, cid ):
-    collection = Collection.from_request(request)
+def changelog( request, cid ):
+    collection = Collection.from_identifier(Identifier(cid))
     alert_if_conflicted(request, collection)
     return render_to_response(
         'webui/collections/changelog.html',
@@ -129,8 +129,8 @@ def changelog( request, repo, org, cid ):
 
 @ddrview
 @storage_required
-def sync_status_ajax( request, repo, org, cid ):
-    collection = Collection.from_request(request)
+def sync_status_ajax( request, cid ):
+    collection = Collection.from_identifier(Identifier(cid))
     gitstatus = collection.gitstatus()
     if gitstatus:
         sync_status = gitstatus['sync_status']
@@ -141,8 +141,8 @@ def sync_status_ajax( request, repo, org, cid ):
 
 @ddrview
 @storage_required
-def git_status( request, repo, org, cid ):
-    collection = Collection.from_request(request)
+def git_status( request, cid ):
+    collection = Collection.from_identifier(Identifier(cid))
     alert_if_conflicted(request, collection)
     gitstatus = collection.gitstatus()
     remotes = dvcs.remotes(dvcs.repository(collection.path))
@@ -160,9 +160,9 @@ def git_status( request, repo, org, cid ):
 @ddrview
 @login_required
 @storage_required
-def sync( request, repo, org, cid ):
+def sync( request, cid ):
     try:
-        collection = Collection.from_request(request)
+        collection = Collection.from_identifier(Identifier(cid))
     except:
         raise Http404
     git_name = request.session.get('git_name')
@@ -205,12 +205,12 @@ def sync( request, repo, org, cid ):
 @ddrview
 @login_required
 @storage_required
-def new( request, repo, org ):
+def new( request, oid ):
     """Gets new CID from workbench, creates new collection record.
     
     If it messes up, goes back to collection list.
     """
-    oidentifier = Identifier(request)
+    oidentifier = Identifier(oid)
     git_name = request.session.get('git_name')
     git_mail = request.session.get('git_mail')
     if not (git_name and git_mail):
@@ -265,7 +265,7 @@ def new( request, repo, org ):
         collection.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
         gitstatus_update.apply_async((collection_path,), countdown=2)
         # positive feedback
-        return HttpResponseRedirect( reverse('webui-collection-edit', args=collection.idparts) )
+        return HttpResponseRedirect( reverse('webui-collection-edit', args=[collection.id]) )
     # something happened...
     logger.error('Could not create new collecion!')
     messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_ERR_CREATE'])
@@ -274,7 +274,7 @@ def new( request, repo, org ):
 @ddrview
 @login_required
 @storage_required
-def newexpert( request, repo, org ):
+def newexpert( request, oid ):
     """Ask for Entity ID, then create new Entity.
     """
     git_name = request.session.get('git_name')
@@ -286,9 +286,10 @@ def newexpert( request, repo, org ):
         form = NewCollectionForm(request.POST)
         if form.is_valid():
 
+            oidentifier = Identifier(oid)
             idparts = {
                 'model':'collection',
-                'repo':repo, 'org':org,
+                'repo':oidentifier.repo, 'org':oidentifier.org,
                 'cid':str(form.cleaned_data['cid'])
             }
             identifier = Identifier(parts=idparts)
@@ -328,12 +329,12 @@ def newexpert( request, repo, org ):
 @ddrview
 @login_required
 @storage_required
-def edit( request, repo, org, cid ):
+def edit( request, cid ):
     git_name = request.session.get('git_name')
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    collection = Collection.from_request(request)
+    collection = Collection.from_identifier(Identifier(cid))
     module = collection.identifier.fields_module()
     collection.model_def_commits()
     collection.model_def_fields()
@@ -376,19 +377,19 @@ def edit( request, repo, org, cid ):
  
 @login_required
 @storage_required
-def csv_export( request, repo, org, cid, model=None ):
+def csv_export( request, cid, model=None ):
     """
     """
     if (not model) or (not (model in ['entity','file'])):
         raise Http404
-    collection = Collection.from_request(request)
+    collection = Collection.from_identifier(Identifier(cid))
     things = {'entity':'objects', 'file':'files'}
     csv_path = export_csv_path(collection.path, model)
     csv_filename = os.path.basename(csv_path)
     if model == 'entity':
-        file_url = reverse('webui-collection-csv-entities', args=collection.idparts)
+        file_url = reverse('webui-collection-csv-entities', args=[collection.id])
     elif model == 'file':
-        file_url = reverse('webui-collection-csv-files', args=collection.idparts)
+        file_url = reverse('webui-collection-csv-files', args=[collection.id])
     # do it
     result = csv_export_model.apply_async( (collection.path,model), countdown=2)
     # add celery task_id to session
@@ -407,14 +408,14 @@ def csv_export( request, repo, org, cid, model=None ):
     return HttpResponseRedirect(collection.absolute_url())
 
 @storage_required
-def csv_download( request, repo, org, cid, model=None ):
+def csv_download( request, cid, model=None ):
     """Offers CSV file in settings.CSV_TMPDIR for download.
     
     File must actually exist in settings.CSV_TMPDIR and be readable.
     File must be readable by Python csv module.
     If all that is true then it must be a legal CSV file.
     """
-    collection = Collection.from_request(request)
+    collection = Collection.from_identifier(Identifier(cid))
     path = export_csv_path(collection.path, model)
     filename = os.path.basename(path)
     if not os.path.exists(path):
@@ -436,14 +437,14 @@ def csv_download( request, repo, org, cid, model=None ):
 @ddrview
 @login_required
 @storage_required
-def unlock( request, repo, org, cid, task_id ):
+def unlock( request, cid, task_id ):
     """Provides a way to remove collection lockfile through the web UI.
     """
     git_name = request.session.get('git_name')
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    collection = Collection.from_request(request)
+    collection = Collection.from_identifier(Identifier(cid))
     if task_id and collection.locked() and (task_id == collection.locked()):
         collection.unlock(task_id)
         messages.success(request, 'Collection <b>%s</b> unlocked.' % collection.id)
