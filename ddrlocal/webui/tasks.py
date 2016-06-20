@@ -2,6 +2,8 @@ from datetime import datetime, timedelta
 import json
 import os
 
+from elasticsearch.exceptions import ConnectionError
+
 from celery import task
 from celery import Task
 from celery.utils.log import get_task_logger
@@ -253,8 +255,11 @@ def entity_add_file( git_name, git_mail, entity, src_path, role, data, agent='' 
     file_,repo,log = entity.add_file(src_path, role, data, git_name, git_mail, agent)
     file_,repo,log = entity.add_file_commit(file_, repo, log, git_name, git_mail, agent)
     log.ok('Updating Elasticsearch')
-    result = file_.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
-    log.ok('| %s' % result)
+    try:
+        result = file_.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+        log.ok('| %s' % result)
+    except ConnectionError:
+        log.not_ok('Could not post to Elasticsearch.')
     return file_.__dict__
 
 @task(base=FileAddDebugTask, name='entity-add-access')
@@ -270,7 +275,10 @@ def entity_add_access( git_name, git_mail, entity, ddrfile, agent='' ):
     gitstatus.lock(settings.MEDIA_BASE, 'entity_add_access')
     file_,repo,log = entity.add_access(ddrfile, git_name, git_mail, agent)
     file_,repo,log = entity.add_file_commit(file_, repo, log, git_name, git_mail, agent)
-    file_.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+    try:
+        file_.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+    except ConnectionError:
+        log.not_ok('Could not post to Elasticsearch.')
     return file_.__dict__
 
 
@@ -654,7 +662,10 @@ def delete_entity( git_name, git_mail, collection_path, entity_id, agent='' ):
         agent
     )
     # update search index
-    docstore.delete(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, entity_id)
+    try:
+        docstore.delete(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, entity_id)
+    except ConnectionError:
+        logger.error('Could not delete document from Elasticsearch.')
     return status,message,collection_path,entity_id
 
 
@@ -730,7 +741,10 @@ def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, 
         agent
     )
     logger.debug('delete from search index')
-    docstore.delete(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, file_.id)
+    try:
+        docstore.delete(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, file_.id)
+    except ConnectionError:
+        logger.error('Could not delete document from Elasticsearch.')
     return status,message,collection_path,file_basename
 
 
@@ -771,7 +785,10 @@ def collection_sync( git_name, git_mail, collection_path ):
     )
     # update search index
     collection = Collection.from_identifier(Identifier(path=collection_path))
-    collection.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+    try:
+        collection.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+    except ConnectionError:
+        logging.error('Could not update search index')
     return collection_path
 
 

@@ -5,6 +5,7 @@ logger = logging.getLogger(__name__)
 import os
 import sys
 
+from elasticsearch.exceptions import ConnectionError
 import envoy
 import requests
 
@@ -381,7 +382,10 @@ class Collection( DDRCollection ):
         #collection.cache_delete()
         with open(collection.json_path, 'r') as f:
             document = json.loads(f.read())
-        docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+        try:
+            docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+        except ConnectionError:
+            logger.error('Could not post to Elasticsearch.')
         
         return collection
     
@@ -403,7 +407,10 @@ class Collection( DDRCollection ):
         self.cache_delete()
         with open(self.json_path, 'r') as f:
             document = json.loads(f.read())
-        docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+        try:
+            docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+        except ConnectionError:
+            logger.error('Could not post to Elasticsearch.')
         return exit,status
 
 
@@ -606,7 +613,10 @@ class Entity( DDREntity ):
         collection.cache_delete()
         with open(entity.json_path, 'r') as f:
             document = json.loads(f.read())
-        docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+        try:
+            docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+        except ConnectionError:
+            logger.error('Could not post to Elasticsearch.')
         
         return entity
     
@@ -765,5 +775,8 @@ class DDRFile( File ):
         collection.cache_delete()
         with open(self.json_path, 'r') as f:
             document = json.loads(f.read())
-        docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+        try:
+            docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+        except ConnectionError:
+            logger.error('Could not post to Elasticsearch.')
         return exit,status
