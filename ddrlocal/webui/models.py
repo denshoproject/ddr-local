@@ -34,10 +34,7 @@ from webui import COLLECTION_ANNEX_STATUS_CACHE_KEY
 from webui import COLLECTION_FETCH_TIMEOUT
 from webui import COLLECTION_STATUS_TIMEOUT
 from webui import COLLECTION_ANNEX_STATUS_TIMEOUT
-from webui.identifier import Identifier, MODULES
-
-# TODO get roles from somewhere (Identifier?)
-FILE_ROLES = ['master', 'mezzanine',]
+from webui.identifier import Identifier, MODULES, VALID_COMPONENTS
 
 
 def repo_models_valid(request):
@@ -478,19 +475,19 @@ class Entity( DDREntity ):
     def children_urls(self, active=None):
         return [
             {'url': self.children_url(role), 'name': role, 'active': role == active}
-            for role in FILE_ROLES
+            for role in VALID_COMPONENTS['role']
         ]
     
     def file_batch_urls(self, active=None):
         return [
             {'url': self.file_batch_url(role), 'name': role, 'active': role == active}
-            for role in FILE_ROLES
+            for role in VALID_COMPONENTS['role']
         ]
     
     def file_browse_urls(self, active=None):
         return [
             {'url': self.file_browse_url(role), 'name': role, 'active': role == active}
-            for role in FILE_ROLES
+            for role in VALID_COMPONENTS['role']
         ]
     
     def fs_url( self ):

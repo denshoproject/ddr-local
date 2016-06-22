@@ -5,7 +5,7 @@ from django.core.urlresolvers import reverse
 from django.http import HttpRequest
 
 from DDR.identifier import Identifier as DDRIdentifier
-from DDR.identifier import CHILDREN_ALL, MODULES
+from DDR.identifier import CHILDREN_ALL, MODULES, VALID_COMPONENTS
 
 MODEL_CLASSES = {
     'file':         {'module': 'webui.models', 'class':'DDRFile'},
