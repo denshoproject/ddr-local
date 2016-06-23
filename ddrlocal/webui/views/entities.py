@@ -305,7 +305,7 @@ def new( request, cid ):
     eidentifier = Identifier(id=new_entity_id)
     # create new entity
     # load Entity object, inherit values from parent, write back to file
-    exit,status = Entity.new(eidentifier, git_name, git_mail, agent='cmdln')
+    exit,status = Entity.new(eidentifier, git_name, git_mail, agent=settings.AGENT)
     entity = Entity.from_identifier(eidentifier)
     
     collection.cache_delete()
