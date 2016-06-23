@@ -16,7 +16,7 @@ INSTALL_MANUAL=$(INSTALL_BASE)/ddr-manual
 
 PIP_CACHE_DIR=$(INSTALL_BASE)/pip-cache
 VIRTUALENV=$(INSTALL_BASE)/env/ddrlocal
-SETTINGS=$(INSTALL_LOCAL)/ddrlocal/settings.py
+SETTINGS=$(INSTALL_LOCAL)/ddrlocal/ddrlocal/settings.py
 
 CONF_BASE=/etc/ddr
 CONF_DEFS=$(CONF_BASE)/ddr-defs
