@@ -7,6 +7,7 @@ import random
 import sys
 
 from bs4 import BeautifulSoup
+from elasticsearch.exceptions import ConnectionError
 
 from django.conf import settings
 from django.contrib import messages
@@ -250,7 +251,10 @@ def new( request, oid ):
     else:
         # update search index
         collection = Collection.from_identifier(cidentifier)
-        collection.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+        try:
+            collection.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+        except ConnectionError:
+            logger.error('Could not post to Elasticsearch.')
         gitstatus_update.apply_async((cidentifier.path_abs(),), countdown=2)
         # positive feedback
         return HttpResponseRedirect( reverse('webui-collection-edit', args=[collection.id]) )

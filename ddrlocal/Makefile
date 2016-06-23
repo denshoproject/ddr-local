@@ -16,7 +16,7 @@ INSTALL_MANUAL=$(INSTALL_BASE)/ddr-manual
 
 PIP_CACHE_DIR=$(INSTALL_BASE)/pip-cache
 VIRTUALENV=$(INSTALL_BASE)/env/ddrlocal
-SETTINGS=$(INSTALL_LOCAL)/ddrlocal/settings.py
+SETTINGS=$(INSTALL_LOCAL)/ddrlocal/ddrlocal/settings.py
 
 CONF_BASE=/etc/ddr
 CONF_DEFS=$(CONF_BASE)/ddr-defs
@@ -73,7 +73,7 @@ help:
 	@echo "    install-app     - Just installer tasks for ddr-cmdln and ddr-local"
 	@echo "    install-static  - Downloads static media (Bootstrap, jquery, etc)"
 	@echo ""
-	@echo "get-defs - Installs ddr-defs in $(CONF_DEFS)."
+	@echo "get-ddr-defs - Installs ddr-defs in $(CONF_DEFS)."
 	@echo ""
 	@echo "enable-bkgnd  - Enable background processes. (Run make reload on completion)"
 	@echo "disable-bkgnd - Disablebackground processes. (Run make reload on completion)"
