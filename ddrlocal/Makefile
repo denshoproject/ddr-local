@@ -73,7 +73,7 @@ help:
 	@echo "    install-app     - Just installer tasks for ddr-cmdln and ddr-local"
 	@echo "    install-static  - Downloads static media (Bootstrap, jquery, etc)"
 	@echo ""
-	@echo "get-defs - Installs ddr-defs in $(CONF_DEFS)."
+	@echo "get-ddr-defs - Installs ddr-defs in $(CONF_DEFS)."
 	@echo ""
 	@echo "enable-bkgnd  - Enable background processes. (Run make reload on completion)"
 	@echo "disable-bkgnd - Disablebackground processes. (Run make reload on completion)"
