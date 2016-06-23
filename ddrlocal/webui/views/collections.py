@@ -241,29 +241,17 @@ def new( request, oid ):
         messages.error(request, msg)
         return HttpResponseRedirect(reverse('webui-collections'))
     
-    identifier = Identifier(id=collection_id, base_path=settings.MEDIA_BASE)
-    # create the new collection repo
-    collection_path = identifier.path_abs()
-    # collection.json template
-    fileio.write_text(
-        Collection(collection_path).dump_json(template=True),
-        settings.TEMPLATE_CJSON
-    )
-    exit,status = commands.create(
-        git_name, git_mail,
-        identifier,
-        [settings.TEMPLATE_CJSON, settings.TEMPLATE_EAD],
-        agent=settings.AGENT
-    )
+    cidentifier = Identifier(id=collection_id, base_path=settings.MEDIA_BASE)
+    exit,status = Collection.new(cidentifier, git_name, git_mail, settings.AGENT)
     if exit:
         logger.error(exit)
         logger.error(status)
         messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
     else:
         # update search index
-        collection = Collection.from_identifier(identifier)
+        collection = Collection.from_identifier(cidentifier)
         collection.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
-        gitstatus_update.apply_async((collection_path,), countdown=2)
+        gitstatus_update.apply_async((cidentifier.path_abs(),), countdown=2)
         # positive feedback
         return HttpResponseRedirect( reverse('webui-collection-edit', args=[collection.id]) )
     # something happened...

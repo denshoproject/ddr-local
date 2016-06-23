@@ -304,33 +304,9 @@ def new( request, cid ):
     
     eidentifier = Identifier(id=new_entity_id)
     # create new entity
-    entity_path = eidentifier.path_abs()
-    # write entity.json template to entity location
-    fileio.write_text(
-        Entity(entity_path).dump_json(template=True),
-        settings.TEMPLATE_EJSON
-    )
-    
-    # commit files
-    exit,status = commands.entity_create(
-        git_name, git_mail,
-        collection, eidentifier,
-        [collection.json_path_rel, collection.ead_path_rel],
-        [settings.TEMPLATE_EJSON, settings.TEMPLATE_METS],
-        agent=settings.AGENT
-    )
-    
     # load Entity object, inherit values from parent, write back to file
+    exit,status = Entity.new(eidentifier, git_name, git_mail, agent='cmdln')
     entity = Entity.from_identifier(eidentifier)
-    entity.inherit(collection)
-    entity.write_json()
-    updated_files = [entity.json_path]
-    exit,status = commands.entity_update(
-        git_name, git_mail,
-        collection, entity,
-        updated_files,
-        agent=settings.AGENT
-    )
     
     collection.cache_delete()
     if exit:
