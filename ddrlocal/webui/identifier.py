@@ -6,6 +6,7 @@ from django.http import HttpRequest
 
 from DDR.identifier import Identifier as DDRIdentifier
 from DDR.identifier import CHILDREN_ALL, MODULES, VALID_COMPONENTS
+from DDR.identifier import IdentifierFormatException
 
 MODEL_CLASSES = {
     'file':         {'module': 'webui.models', 'class':'DDRFile'},
@@ -54,9 +55,10 @@ class Identifier(DDRIdentifier):
         for model in self._parent_models(stubs):
             idparts = parent_parts
             idparts['model'] = model
-            i = Identifier(parts=idparts)
-            if i:
-                return i
+            try:
+                return Identifier(idparts, base_path=self.basepath)
+            except IdentifierFormatException:
+                pass
         return None
     
     def child(self, model, idparts, base_path=settings.MEDIA_BASE):
