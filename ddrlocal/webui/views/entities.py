@@ -426,7 +426,7 @@ def edit( request, eid ):
     if request.method == 'POST':
         form = DDRForm(request.POST, fields=module.FIELDS)
         if form.is_valid():
-            # run module_functions on raw form data
+            
             entity.form_post(form.cleaned_data)
             # write these so we see a change on refresh
             # will be rewritten in entity.save()

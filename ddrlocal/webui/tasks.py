@@ -580,6 +580,7 @@ def entity_edit(collection_path, entity_id, form_data, git_name, git_mail, agent
     
     @param collection_path: str Absolute path to collection
     @param entity_id: str
+    @param form_data: dict
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
     @param agent: (optional) Name of software making the change.

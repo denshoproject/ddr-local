@@ -351,7 +351,11 @@ def edit( request, fid ):
             file_.write_json()
             
             # commit files, delete cache, update search index, update git status
-            entity_file_edit(request, collection, file_, git_name, git_mail)
+            entity_file_edit(
+                request,
+                collection, file_, form.cleaned_data,
+                git_name, git_mail
+            )
             
             return HttpResponseRedirect( file_.absolute_url() )
             

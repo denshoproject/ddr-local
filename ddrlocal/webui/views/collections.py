@@ -345,8 +345,13 @@ def edit( request, cid ):
             # write these so we see a change on refresh
             # will be rewritten in collection.save()
             collection.write_json()
+            
             # commit files, delete cache, update search index, update git status
-            collection_edit(request, collection, form.cleaned_data, git_name, git_mail)
+            collection_edit(
+                request,
+                collection, form.cleaned_data,
+                git_name, git_mail
+            )
             
             return HttpResponseRedirect(collection.absolute_url())
         
