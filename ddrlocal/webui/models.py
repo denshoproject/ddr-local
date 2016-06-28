@@ -651,23 +651,23 @@ class DDRFile( File ):
         """
         model_def_fields(self)
     
-    def save( self, git_name, git_mail ):
+    def save( self, git_name, git_mail, form_data={} ):
         """Save file metadata
         
         Commit files, delete cache, update search index.
         These steps are to be called asynchronously from tasks.file_edit.
         
-        @param collection: Collection
-        @param file_id: str
         @param git_name: str
         @param git_mail: str
+        @param form_data: dict
         """
         collection = self.collection()
         
         exit,status = super(DDRFile, self).save(
             git_name, git_mail,
             settings.AGENT,
-            collection, self.parent()
+            collection, self.parent(),
+            form_data
         )
         
         collection.cache_delete()

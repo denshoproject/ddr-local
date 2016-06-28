@@ -479,10 +479,10 @@ TASK_STATUS_MESSAGES['webui-file-edit'] = {
     #'REVOKED': '',
 }
 
-def entity_file_edit(request, collection, file_, git_name, git_mail):
+def entity_file_edit(request, collection, file_, form_data, git_name, git_mail):
     # start tasks
     result = file_edit.apply_async(
-        (collection.path, file_.id, git_name, git_mail),
+        (collection.path, file_.id, form_data, git_name, git_mail),
         countdown=2)
     # lock collection
     lockstatus = collection.lock(result.task_id)
@@ -509,11 +509,12 @@ class FileEditTask(Task):
         gitstatus.unlock(settings.MEDIA_BASE, 'file_edit')
 
 @task(base=FileEditTask, name='webui-file-edit')
-def file_edit(collection_path, file_id, git_name, git_mail):
+def file_edit(collection_path, file_id, form_data, git_name, git_mail):
     """The time-consuming parts of file-edit.
     
     @param collection_path: str Absolute path to collection
     @param file_id: str
+    @param form_data: dict
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
     """
@@ -521,7 +522,7 @@ def file_edit(collection_path, file_id, git_name, git_mail):
     fidentifier = Identifier(id=file_id)
     file_ = DDRFile.from_identifier(fidentifier)
     gitstatus.lock(settings.MEDIA_BASE, 'file_edit')
-    exit,status = file_.save(git_name, git_mail)
+    exit,status = file_.save(git_name, git_mail, form_data)
     gitstatus_update.apply_async((collection_path,), countdown=2)
     return status,collection_path,file_id
 
