@@ -114,54 +114,6 @@ def model_def_fields(document):
         document.model_def_fields_removed = removed
         document.model_def_fields_removed_msg = WEBUI_MESSAGES['MODEL_DEF_FIELDS_REMOVED'] % removed
 
-def form_prep(document, module):
-    """Apply formprep_{field} functions to prep data dict to pass into DDRForm object.
-    
-    Certain fields require special processing.  Data may need to be massaged
-    and prepared for insertion into particular Django form objects.
-    If a "formprep_{field}" function is present in the collectionmodule
-    it will be executed.
-    
-    @param document: Collection, Entity, File document object
-    @param module: collection, entity, files model definitions module
-    @returns data: dict object as used by Django Form object.
-    """
-    data = {}
-    for f in module.FIELDS:
-        if hasattr(document, f['name']) and f.get('form',None):
-            key = f['name']
-            # run formprep_* functions on field data if present
-            value = modules.Module(module).function(
-                'formprep_%s' % key,
-                getattr(document, f['name'])
-            )
-            data[key] = value
-    return data
-    
-def form_post(document, module, form):
-    """Apply formpost_{field} functions to process cleaned_data from CollectionForm
-    
-    Certain fields require special processing.
-    If a "formpost_{field}" function is present in the entitymodule
-    it will be executed.
-    
-    @param document: Collection, Entity, File document object
-    @param module: collection, entity, files model definitions module
-    @param form: DDRForm object
-    """
-    for f in module.FIELDS:
-        if hasattr(document, f['name']) and f.get('form',None):
-            key = f['name']
-            # run formpost_* functions on field data if present
-            cleaned_data = modules.Module(module).function(
-                'formpost_%s' % key,
-                form.cleaned_data[key]
-            )
-            setattr(document, key, cleaned_data)
-    # update record_lastmod
-    if hasattr(document, 'record_lastmod'):
-        document.record_lastmod = datetime.now()
-
 
 # functions relating to inheritance ------------------------------------
 
@@ -337,20 +289,6 @@ class Collection( DDRCollection ):
         .model_def_fields_removed_msg
         """
         model_def_fields(self)
-    
-    def form_prep(self):
-        """Apply formprep_{field} functions to prep data dict to pass into DDRForm object.
-        
-        @returns data: dict object as used by Django Form object.
-        """
-        return form_prep(self, self.identifier.fields_module())
-    
-    def form_post(self, form):
-        """Apply formpost_{field} functions to process cleaned_data from DDRForm
-        
-        @param form: DDRForm object
-        """
-        form_post(self, self.identifier.fields_module(), form)
     
     @staticmethod
     def create(collection_path, git_name, git_mail):
@@ -537,25 +475,6 @@ class Entity( DDREntity ):
         """
         model_def_fields(self)
     
-    def form_prep(self):
-        """Apply formprep_{field} functions to prep data dict to pass into DDRForm object.
-        
-        @returns data: dict object as used by Django Form object.
-        """
-        data = form_prep(self, self.identifier.fields_module())
-        if not data.get('record_created', None):
-            data['record_created'] = datetime.now()
-        if not data.get('record_lastmod', None):
-            data['record_lastmod'] = datetime.now()
-        return data
-    
-    def form_post(self, form):
-        """Apply formpost_{field} functions to process cleaned_data from DDRForm
-        
-        @param form: DDRForm object
-        """
-        form_post(self, self.identifier.fields_module(), form)
-    
     def load_file_objects( self ):
         """Replaces list of file info dicts with list of DDRFile objects
         
@@ -731,20 +650,6 @@ class DDRFile( File ):
         .model_def_fields_removed_msg
         """
         model_def_fields(self)
-    
-    def form_prep(self):
-        """Apply formprep_{field} functions to prep data dict to pass into DDRForm object.
-        
-        @returns data: dict object as used by Django Form object.
-        """
-        return form_prep(self, self.identifier.fields_module())
-    
-    def form_post(self, form):
-        """Apply formpost_{field} functions to process cleaned_data from DDRForm
-        
-        @param form: DDRForm object
-        """
-        form_post(self, self.identifier.fields_module(), form)
     
     def save( self, git_name, git_mail ):
         """Save file metadata

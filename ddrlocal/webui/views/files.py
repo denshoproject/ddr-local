@@ -345,7 +345,7 @@ def edit( request, fid ):
         form = DDRForm(request.POST, fields=module.FIELDS)
         if form.is_valid():
             
-            file_.form_post(form)
+            file_.form_post(form.cleaned_data)
             # write these so we see a change on refresh
             # will be rewritten in file_.save()
             file_.write_json()
