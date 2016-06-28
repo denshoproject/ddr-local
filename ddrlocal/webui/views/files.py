@@ -346,6 +346,8 @@ def edit( request, fid ):
         if form.is_valid():
             
             file_.form_post(form)
+            # write these so we see a change on refresh
+            # will be rewritten in file_.save()
             file_.write_json()
             
             # commit files, delete cache, update search index, update git status

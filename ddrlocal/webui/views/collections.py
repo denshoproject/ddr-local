@@ -342,18 +342,11 @@ def edit( request, cid ):
         if form.is_valid():
             
             collection.form_post(form)
+            # write these so we see a change on refresh
+            # will be rewritten in collection.save()
             collection.write_json()
-            collection.write_ead()
-            updated_files = [collection.json_path, collection.ead_path,]
-            
-            # if inheritable fields selected, propagate changes to child objects
-            inheritables = collection.selected_inheritables(form.cleaned_data)
-            modified_ids,modified_files = collection.update_inheritables(inheritables, form.cleaned_data)
-            if modified_files:
-                updated_files = updated_files + modified_files
-            
             # commit files, delete cache, update search index, update git status
-            collection_edit(request, collection, updated_files, git_name, git_mail)
+            collection_edit(request, collection, form.cleaned_data, git_name, git_mail)
             
             return HttpResponseRedirect(collection.absolute_url())
         

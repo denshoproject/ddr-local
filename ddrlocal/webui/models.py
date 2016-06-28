@@ -381,21 +381,22 @@ class Collection( DDRCollection ):
         
         return collection
     
-    def save( self, updated_files, git_name, git_mail ):
-        """Perform file-save functions.
+    def save( self, git_name, git_mail, cleaned_data ):
+        """Save Collection metadata.
         
         Commit files, delete cache, update search index.
         These steps are to be called asynchronously from tasks.collection_edit.
         
-        @param collection: Collection
-        @param updated_files: list
         @param git_name: str
         @param git_mail: str
+        @param cleaned_data: dict
         """
-        exit,status = commands.update(
+        exit,status = super(Collection, self).save(
             git_name, git_mail,
-            self, updated_files,
-            agent=settings.AGENT)
+            settings.AGENT,
+            cleaned_data
+        )
+        
         self.cache_delete()
         with open(self.json_path, 'r') as f:
             document = json.loads(f.read())
@@ -613,27 +614,23 @@ class Entity( DDREntity ):
         
         return entity
     
-    def save_part2( self, collection, updated_files, form_data, git_name, git_mail ):
-        """Save entity part 2: the slow parts
+    def save( self, git_name, git_mail, collection=None, form_data={} ):
+        """Save Entity metadata
         
         Commit files, delete cache, update search index.
         These steps are slow, should be called from tasks.entity_edit
         
-        @param updated_files: list of paths
-        @param collection: Collection
         @param git_name: str
         @param git_mail: str
+        @param collection: Collection
+        @param form_data: dict
         """
-        inheritables = self.selected_inheritables(form_data)
-        modified_ids,modified_files = self.update_inheritables(inheritables, form_data)
-        if modified_files:
-            updated_files = updated_files + modified_files
-        
-        exit,status = commands.entity_update(
+        exit,status = super(Entity, self).save(
             git_name, git_mail,
-            collection, self,
-            updated_files,
-            agent=settings.AGENT)
+            settings.AGENT,
+            collection,
+            form_data
+        )
         
         collection.cache_delete()
         with open(self.json_path, 'r') as f:
@@ -750,7 +747,7 @@ class DDRFile( File ):
         form_post(self, self.identifier.fields_module(), form)
     
     def save( self, git_name, git_mail ):
-        """Perform file-save functions.
+        """Save file metadata
         
         Commit files, delete cache, update search index.
         These steps are to be called asynchronously from tasks.file_edit.
@@ -761,12 +758,13 @@ class DDRFile( File ):
         @param git_mail: str
         """
         collection = self.collection()
-        entity = self.parent()
-        exit,status = commands.entity_update(
+        
+        exit,status = super(DDRFile, self).save(
             git_name, git_mail,
-            collection, entity,
-            [self.json_path],
-            agent=settings.AGENT)
+            settings.AGENT,
+            collection, self.parent()
+        )
+        
         collection.cache_delete()
         with open(self.json_path, 'r') as f:
             document = json.loads(f.read())

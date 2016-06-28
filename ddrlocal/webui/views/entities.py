@@ -428,7 +428,9 @@ def edit( request, eid ):
         if form.is_valid():
             # run module_functions on raw form data
             entity.form_post(form)
-            inheritables = entity.selected_inheritables(form.cleaned_data)
+            # write these so we see a change on refresh
+            # will be rewritten in entity.save()
+            entity.write_json()
             
             # clean up after TagManager
             hidden_topics = request.POST.get('hidden-topics', None)
@@ -437,18 +439,13 @@ def edit( request, eid ):
             hidden_facility = request.POST.get('hidden-facility', None)
             if hidden_facility:
                 form.cleaned_data['facility'] = tagmanager_process_tags(hidden_facility)
-            
-            # write basic changes to disk (this is quick)
-            entity.write_json()
-            entity.write_mets()
-            updated_files = [entity.json_path, entity.mets_path,]
 
             # do the rest in the background:
             # update inheriable fields, commit files, delete cache,
             # update search index, update git status
             collection_entity_edit(
                 request,
-                collection, entity, updated_files, form.cleaned_data,
+                collection, entity, form.cleaned_data,
                 git_name, git_mail, settings.AGENT
             )
             
