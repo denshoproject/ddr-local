@@ -511,13 +511,16 @@ reload-supervisor:
 reload-app: reload-supervisor
 
 
-stop: stop-elasticsearch stop-redis stop-nginx stop-munin stop-supervisor
+stop: stop-elasticsearch stop-redis stop-cgit stop-nginx stop-munin stop-supervisor
 
 stop-elasticsearch:
 	/etc/init.d/elasticsearch stop
 
 stop-redis:
 	/etc/init.d/redis-server stop
+
+stop-cgit:
+	/etc/init.d/fcgiwrap stop
 
 stop-nginx:
 	/etc/init.d/nginx stop
@@ -555,6 +558,10 @@ restart-supervisor:
 	/etc/init.d/supervisor start
 
 restart-app: restart-supervisor
+
+
+# just Redis and Supervisor
+restart-minimal: stop-elasticsearch restart-redis stop-nginx stop-munin restart-supervisor
 
 
 status:
