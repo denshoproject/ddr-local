@@ -332,7 +332,8 @@ class Collection( DDRCollection ):
         exit,status = super(Collection, self).save(
             git_name, git_mail,
             settings.AGENT,
-            cleaned_data
+            cleaned_data,
+            commit=True
         )
         
         self.cache_delete()
@@ -548,7 +549,8 @@ class Entity( DDREntity ):
             git_name, git_mail,
             settings.AGENT,
             collection,
-            form_data
+            form_data,
+            commit=True
         )
         
         collection.cache_delete()
@@ -667,7 +669,8 @@ class DDRFile( File ):
             git_name, git_mail,
             settings.AGENT,
             collection, self.parent(),
-            form_data
+            form_data,
+            commit=True
         )
         
         collection.cache_delete()
