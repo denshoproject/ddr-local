@@ -37,6 +37,7 @@ def sitewide(request):
         'git_mail': request.session.get('git_mail', None),
         'celery_tasks': session_tasks_list(request),
         'celery_status_url': reverse("webui-task-status"),
+        'celery_status_update': request.session.get('celery_status_update', False),
         'supervisord_url': settings.SUPERVISORD_URL,
         'elasticsearch_url': elasticsearch_url,
         'munin_url': settings.MUNIN_URL,

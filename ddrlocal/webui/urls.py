@@ -13,6 +13,7 @@ urlpatterns = patterns(
     url(r'^tasks/$', 'webui.views.tasks', name='webui-tasks'),
     
     url(r'^gitstatus-queue/$', 'webui.views.gitstatus_queue', name='webui-gitstatus-queue'),
+    url(r'^gitstatus-toggle/$', 'webui.views.gitstatus_toggle', name='webui-gitstatus-toggle'),
     
     url(r'^restart/$', TemplateView.as_view(template_name="webui/restart-park.html"), name='webui-restart'),
     url(r'^supervisord/procinfo.html$', 'webui.views.supervisord.procinfo_html', name='webui-supervisord-procinfo-html'),
