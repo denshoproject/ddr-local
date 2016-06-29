@@ -545,6 +545,8 @@ class Entity( DDREntity ):
         @param collection: Collection
         @param form_data: dict
         """
+        collection = self.collection()
+        
         exit,status = super(Entity, self).save(
             git_name, git_mail,
             settings.AGENT,
