@@ -6,16 +6,8 @@ from django.http import HttpRequest
 
 from DDR.identifier import Identifier as DDRIdentifier
 from DDR.identifier import CHILDREN_ALL, MODULES, VALID_COMPONENTS
+from DDR.identifier import MODEL_CLASSES
 from DDR.identifier import IdentifierFormatException
-
-MODEL_CLASSES = {
-    'file':         {'module': 'webui.models', 'class':'DDRFile'},
-    'file-role':    {'module': 'webui.models', 'class':'Stub'},
-    'entity':       {'module': 'webui.models', 'class':'Entity'},
-    'collection':   {'module': 'webui.models', 'class':'Collection'},
-    'organization': {'module': 'webui.models', 'class':'Stub'},
-    'repository':   {'module': 'webui.models', 'class':'Stub'},
-}
 
 
 class Identifier(DDRIdentifier):
