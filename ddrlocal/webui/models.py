@@ -645,7 +645,10 @@ class Entity( DDREntity ):
         collection.cache_delete()
         with open(self.json_path, 'r') as f:
             document = json.loads(f.read())
-        docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+        try:
+            docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+        except ConnectionError:
+            logger.error('Could not post to Elasticsearch.')
         return exit,status
 
 
