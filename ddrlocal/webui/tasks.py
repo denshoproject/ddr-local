@@ -788,7 +788,7 @@ def collection_sync( git_name, git_mail, collection_path ):
     try:
         collection.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
     except ConnectionError:
-        logging.error('Could not update search index')
+        logger.error('Could not update search index')
     return collection_path
 
 
