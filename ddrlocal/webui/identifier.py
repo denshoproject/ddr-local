@@ -6,8 +6,14 @@ from django.http import HttpRequest
 
 from DDR.identifier import Identifier as DDRIdentifier
 from DDR.identifier import CHILDREN_ALL, MODULES, VALID_COMPONENTS
-from DDR.identifier import MODEL_CLASSES
+from DDR.identifier import MODEL_CLASSES as DDR_MODEL_CLASSES
 from DDR.identifier import IdentifierFormatException
+
+# TODO this isn't too far removed from hard-coding...
+MODEL_CLASSES = {}
+for k,v in DDR_MODEL_CLASSES.iteritems():
+    v['module'] = v['module'] = 'webui.models'
+    MODEL_CLASSES[k] = v
 
 
 class Identifier(DDRIdentifier):
