@@ -225,9 +225,11 @@ class FileAddDebugTask(Task):
         entity = args[2]
         collection = entity.collection()
         log = addfile_logger(entity.identifier)
-        log.ok('DDRTask.AFTER_RETURN')
+        log.ok('FileAddDebugTask.AFTER_RETURN')
         log.ok('task_id: %s' % task_id)
         log.ok('status: %s' % status)
+        if retval.get('xmp'):
+            retval['xmp'] = '%s...' % retval['xmp'][:100]
         log.ok('retval: %s' % retval)
         log.ok('Unlocking %s' % entity.id)
         lockstatus = entity.unlock(task_id)
