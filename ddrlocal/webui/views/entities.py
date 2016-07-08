@@ -7,6 +7,7 @@ import re
 import sys
 
 from bs4 import BeautifulSoup
+from elasticsearch.exceptions import ConnectionError
 import requests
 
 from django.conf import settings
@@ -351,7 +352,10 @@ def new( request, repo, org, cid ):
         messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
     else:
         # update search index
-        entity.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+        try:
+            entity.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+        except ConnectionError:
+            logger.error('Could not post to Elasticsearch.')
         gitstatus_update.apply_async((collection.path,), countdown=2)
         # positive feedback
         return HttpResponseRedirect(reverse('webui-entity-edit', args=entity.idparts))
@@ -654,7 +658,10 @@ def files_dedupe( request, repo, org, cid, eid ):
                 messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
             else:
                 # update search index
-                entity.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+                try:
+                    entity.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+                except ConnectionError:
+                    logger.error('Could not post to Elasticsearch.')
                 gitstatus_update.apply_async((collection.path,), countdown=2)
                 # positive feedback
                 messages.success(request, success_msg)
