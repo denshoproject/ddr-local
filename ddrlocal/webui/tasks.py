@@ -275,7 +275,7 @@ def entity_add_access( git_name, git_mail, entity, ddrfile, agent='' ):
     @param agent: (optional) Name of software making the change.
     """
     gitstatus.lock(settings.MEDIA_BASE, 'entity_add_access')
-    file_,repo,log,op = entity.add_access(ddrfile, git_name, git_mail, agent)
+    file_,repo,log,op = entity.add_access(ddrfile, ddrfile.path_abs, git_name, git_mail, agent)
     if op and (op == 'pass'):
         log.ok('Things are okay as they are.  Leaving them alone.')
         return file_.__dict__
