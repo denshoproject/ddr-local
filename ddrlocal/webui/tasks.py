@@ -254,7 +254,7 @@ def entity_add_file( git_name, git_mail, entity, src_path, role, data, agent='' 
     @param agent: (optional) Name of software making the change.
     """
     gitstatus.lock(settings.MEDIA_BASE, 'entity_add_file')
-    file_,repo,log = entity.add_file(src_path, role, data, git_name, git_mail, agent)
+    file_,repo,log = entity.add_local_file(src_path, role, data, git_name, git_mail, agent)
     file_,repo,log = entity.add_file_commit(file_, repo, log, git_name, git_mail, agent)
     log.ok('Updating Elasticsearch')
     try:

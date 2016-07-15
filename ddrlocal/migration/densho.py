@@ -813,7 +813,7 @@ def import_files( csv_path, collection_path, git_name, git_mail ):
                 rowstarted = datetime.now()
                 print('%s %s/%s %s %s (%s)' % (dtfmt(rowstarted), n+1, len(rows), entity.id, src_path, humanize_bytes(os.path.getsize(src_path))))
                 #print('add_file(%s, %s, %s, %s, %s, %s)' % (git_name, git_mail, entity, src_path, role, rowd))
-                entity.add_file( git_name, git_mail, src_path, role, rowd, agent=AGENT )
+                entity.add_local_file( git_name, git_mail, src_path, role, rowd, agent=AGENT )
                 rowfinished = datetime.now()
                 rowelapsed = rowfinished - rowstarted
                 print('%s done (%s)' % (dtfmt(rowfinished), rowelapsed))
