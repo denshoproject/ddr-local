@@ -23,7 +23,7 @@ from webui.decorators import ddrview
 from webui.forms import DDRForm
 from webui.forms.files import NewFileDDRForm, NewAccessFileForm, DeleteFileForm
 from webui.forms.files import shared_folder_files
-from webui.models import Collection, Entity, DDRFile
+from webui.models import Stub, Collection, Entity, DDRFile
 from webui.models import MODULES
 from webui.identifier import Identifier, CHILDREN_ALL
 from webui.tasks import entity_add_file, entity_add_access
@@ -70,10 +70,10 @@ def prep_newfile_form_fields(FIELDS):
 # views ----------------------------------------------------------------
 
 @storage_required
-def detail( request, repo, org, cid, eid, role, sha1 ):
+def detail( request, fid ):
     """Add file to entity.
     """
-    file_ = DDRFile.from_request(request)
+    file_ = DDRFile.from_identifier(Identifier(fid))
     entity = file_.parent()
     collection = file_.collection()
     file_.model_def_commits()
@@ -83,29 +83,21 @@ def detail( request, repo, org, cid, eid, role, sha1 ):
         'webui/files/detail.html',
         {'collection': collection,
          'entity': entity,
-         'role': role,
+         'role': file_.identifier.parts['role'],
          'file': file_,
          'new_access_url': file_.new_access_url,
          'new_access_form': NewAccessFileForm(formdata),},
         context_instance=RequestContext(request, processors=[])
     )
 
-@storage_required
-def file_json( request, repo, org, cid, eid, role, sha1 ):
-    file_ = DDRFile.from_request(request)
-    if file_.json_path and os.path.exists(file_.json_path):
-        return HttpResponse(file_.dump_json(), content_type="application/json")
-    messages.success(request, 'no JSON file. sorry.')
-    return HttpResponseRedirect(file_.absolute_url())
-
 @ddrview
 @login_required
 @storage_required
-def browse( request, repo, org, cid, eid, role='master' ):
+def browse( request, rid ):
     """Browse for a file in vbox shared folder.
     """
-    identifier = Identifier(request)
-    file_role = identifier.object()
+    file_role = Stub.from_identifier(Identifier(rid))
+    role = file_role.identifier.parts['role']
     entity = file_role.parent(stubs=True)
     collection = entity.collection()
     path = request.GET.get('path')
@@ -150,14 +142,16 @@ def browse( request, repo, org, cid, eid, role='master' ):
 @ddrview
 @login_required
 @storage_required
-def new( request, repo, org, cid, eid, role='master' ):
+def new( request, rid ):
     git_name = request.session.get('git_name')
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    fidentifier = Identifier(request)
-    file_role = fidentifier.object()
-    module = MODULES[CHILDREN_ALL[fidentifier.model]]
+    file_role = Stub.from_identifier(Identifier(rid))
+    role = file_role.identifier.parts['role']
+    #child_models = CHILDREN_ALL[file_role.identifier.model]
+    FILE_MODEL = 'file'
+    module = MODULES[FILE_MODEL]
     entity = file_role.parent(stubs=True)
     collection = entity.collection()
     if collection.locked():
@@ -237,7 +231,7 @@ def new( request, repo, org, cid, eid, role='master' ):
 @ddrview
 @login_required
 @storage_required
-def new_access( request, repo, org, cid, eid, role, sha1 ):
+def new_access( request, fid ):
     """Generate a new access file for the specified file.
     
     NOTE: There is no GET for this view.  GET requests will redirect to entity.
@@ -246,7 +240,7 @@ def new_access( request, repo, org, cid, eid, role, sha1 ):
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    file_ = DDRFile.from_request(request)
+    file_ = DDRFile.from_identifier(Identifier(fid))
     entity = file_.parent()
     collection = file_.collection()
     if collection.locked():
@@ -299,9 +293,10 @@ def new_access( request, repo, org, cid, eid, role, sha1 ):
 @ddrview
 @login_required
 @storage_required
-def batch( request, repo, org, cid, eid, role='master' ):
+def batch( request, rid ):
     """Add multiple files to entity.
     """
+    file_role = Stub.from_identifier(Identifier(rid))
     entity = Entity.from_request(request)
     collection = entity.collection()
     if collection.locked():
@@ -324,12 +319,12 @@ def batch( request, repo, org, cid, eid, role='master' ):
 @ddrview
 @login_required
 @storage_required
-def edit( request, repo, org, cid, eid, role, sha1 ):
+def edit( request, fid ):
     git_name = request.session.get('git_name')
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    file_ = DDRFile.from_request(request)
+    file_ = DDRFile.from_identifier(Identifier(fid))
     module = file_.identifier.fields_module()
     entity = file_.parent()
     collection = file_.collection()
@@ -350,11 +345,17 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
         form = DDRForm(request.POST, fields=module.FIELDS)
         if form.is_valid():
             
-            file_.form_post(form)
+            file_.form_post(form.cleaned_data)
+            # write these so we see a change on refresh
+            # will be rewritten in file_.save()
             file_.write_json()
             
             # commit files, delete cache, update search index, update git status
-            entity_file_edit(request, collection, file_, git_name, git_mail)
+            entity_file_edit(
+                request,
+                collection, file_, form.cleaned_data,
+                git_name, git_mail
+            )
             
             return HttpResponseRedirect( file_.absolute_url() )
             
@@ -364,7 +365,7 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
         'webui/files/edit-json.html',
         {'collection': collection,
          'entity': entity,
-         'role': role,
+         'role': file_.identifier.parts['role'],
          'file': file_,
          'form': form,
          },
@@ -374,9 +375,9 @@ def edit( request, repo, org, cid, eid, role, sha1 ):
 @ddrview
 @login_required
 @storage_required
-def delete( request, repo, org, cid, eid, role, sha1 ):
+def delete( request, fid ):
     try:
-        file_ = DDRFile.from_request(request)
+        file_ = DDRFile.from_identifier(Identifier(fid))
         entity = file_.parent()
         collection = file_.collection()
     except:
@@ -402,7 +403,7 @@ def delete( request, repo, org, cid, eid, role, sha1 ):
     return render_to_response(
         'webui/files/delete.html',
         {'file': file_,
-         'role': role,
+         'role': file_.identifier.parts['role'],
          'form': form,
          },
         context_instance=RequestContext(request, processors=[])

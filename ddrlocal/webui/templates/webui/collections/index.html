@@ -20,12 +20,12 @@
 
 {% if username and models_valid %}
 <p>
-<a href="{% url "webui-collection-new" o.1 o.2 %}" class="btn btn-xs btn-primary"><span class="glyphicon glyphicon-plus icon-white"></span> New Collection</a>
+<a href="{% url "webui-collection-new" o.0 %}" class="btn btn-xs btn-primary"><span class="glyphicon glyphicon-plus icon-white"></span> New Collection</a>
 </p>
 {% endif %}
 
 <table class="table table-condensed">
-{% for c in o.3 %}
+{% for c in o.1 %}
   <tr id="{{ c.id }}" {% if c.sync_status %}class="{{ c.sync_status.color }}"{% endif %}>
     <td class="id-title">
       <a href="{{ c.absolute_url }}">{{ c.id }}</a> {% if c.title %}&mdash; <a href="{{ c.absolute_url }}">{{ c.title }}{% endif %}</a>

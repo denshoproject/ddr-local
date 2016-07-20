@@ -197,3 +197,17 @@ def task_dismiss( request, task_id ):
     dismiss_session_task(request, task_id)
     data = {'status':'ok'}
     return HttpResponse(json.dumps(data), content_type="application/json")
+
+@ddrview
+def gitstatus_toggle(request):
+    """Toggle the Celery status update that runs every N seconds; remember for session.
+    """
+    if request.session.get('celery_status_update', False):
+        request.session['celery_status_update'] = False
+        messages.success(request, 'Celery status updates DISABLED for the duration of this session.')
+    else:
+        request.session['celery_status_update'] = True
+        messages.success(request, 'Celery status updates ENABLED for the duration of this session.')
+    return HttpResponseRedirect(
+        request.META.get('HTTP_REFERER', reverse('webui-index'))
+    )

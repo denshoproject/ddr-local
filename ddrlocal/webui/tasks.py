@@ -254,7 +254,7 @@ def entity_add_file( git_name, git_mail, entity, src_path, role, data, agent='' 
     @param agent: (optional) Name of software making the change.
     """
     gitstatus.lock(settings.MEDIA_BASE, 'entity_add_file')
-    file_,repo,log = entity.add_file(src_path, role, data, git_name, git_mail, agent)
+    file_,repo,log = entity.add_local_file(src_path, role, data, git_name, git_mail, agent)
     file_,repo,log = entity.add_file_commit(file_, repo, log, git_name, git_mail, agent)
     log.ok('Updating Elasticsearch')
     try:
@@ -275,7 +275,7 @@ def entity_add_access( git_name, git_mail, entity, ddrfile, agent='' ):
     @param agent: (optional) Name of software making the change.
     """
     gitstatus.lock(settings.MEDIA_BASE, 'entity_add_access')
-    file_,repo,log,op = entity.add_access(ddrfile, git_name, git_mail, agent)
+    file_,repo,log,op = entity.add_access(ddrfile, ddrfile.path_abs, git_name, git_mail, agent)
     if op and (op == 'pass'):
         log.ok('Things are okay as they are.  Leaving them alone.')
         return file_.__dict__
@@ -301,9 +301,8 @@ TASK_STATUS_MESSAGES['webui-collection-newexpert'] = {
 
 def collection_new_expert(request, base_dir, collection_id, git_name, git_mail):
     # start tasks
-    repo,org,cid = collection_id.split('-')
     collection_path = os.path.join(base_dir, collection_id)
-    collection_url = reverse('webui-collection', args=[repo,org,cid])
+    collection_url = reverse('webui-collection', args=[collection_id])
     result = collection_newexpert.apply_async(
         (collection_path, git_name, git_mail),
         countdown=2)
@@ -356,10 +355,10 @@ TASK_STATUS_MESSAGES['webui-collection-edit'] = {
     #'REVOKED': '',
 }
 
-def collection_edit(request, collection, updated_files, git_name, git_mail):
+def collection_edit(request, collection, cleaned_data, git_name, git_mail):
     # start tasks
     result = collection_save.apply_async(
-        (collection.path, updated_files, git_name, git_mail),
+        (collection.path, cleaned_data, git_name, git_mail),
         countdown=2)
     # lock collection
     lockstatus = collection.lock(result.task_id)
@@ -386,20 +385,21 @@ class CollectionEditTask(Task):
         gitstatus.unlock(settings.MEDIA_BASE, 'collection_edit')
 
 @task(base=CollectionEditTask, name='webui-collection-edit')
-def collection_save(collection_path, updated_files, git_name, git_mail):
+def collection_save(collection_path, cleaned_data, git_name, git_mail):
     """The time-consuming parts of collection-edit.
     
     @param collection_path: str Absolute path to collection
+    @param cleaned_data: dict form.cleaned_data
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
     """
-    logger.debug('collection_save(%s,%s,%s,%s)' % (
-        git_name, git_mail, collection_path, updated_files))
+    logger.debug('collection_save(%s,%s,%s)' % (
+        git_name, git_mail, collection_path))
     
     collection = Collection.from_identifier(Identifier(path=collection_path))
     
     gitstatus.lock(settings.MEDIA_BASE, 'collection_edit')
-    exit,status = collection.save(updated_files, git_name, git_mail)
+    exit,status = collection.save(git_name, git_mail, cleaned_data)
     gitstatus_update.apply_async((collection_path,), countdown=2)
     
     return status,collection_path
@@ -417,8 +417,7 @@ TASK_STATUS_MESSAGES['webui-entity-newexpert'] = {
 
 def collection_entity_newexpert(request, collection, entity_id, git_name, git_mail):
     # start tasks
-    repo,org,cid,eid = entity_id.split('-')
-    entity_url = reverse('webui-entity', args=[repo,org,cid,eid])
+    entity_url = reverse('webui-entity', args=[entity_id])
     result = entity_newexpert.apply_async(
         (collection.path, entity_id, git_name, git_mail),
         countdown=2)
@@ -485,10 +484,10 @@ TASK_STATUS_MESSAGES['webui-file-edit'] = {
     #'REVOKED': '',
 }
 
-def entity_file_edit(request, collection, file_, git_name, git_mail):
+def entity_file_edit(request, collection, file_, form_data, git_name, git_mail):
     # start tasks
     result = file_edit.apply_async(
-        (collection.path, file_.id, git_name, git_mail),
+        (collection.path, file_.id, form_data, git_name, git_mail),
         countdown=2)
     # lock collection
     lockstatus = collection.lock(result.task_id)
@@ -515,11 +514,12 @@ class FileEditTask(Task):
         gitstatus.unlock(settings.MEDIA_BASE, 'file_edit')
 
 @task(base=FileEditTask, name='webui-file-edit')
-def file_edit(collection_path, file_id, git_name, git_mail):
+def file_edit(collection_path, file_id, form_data, git_name, git_mail):
     """The time-consuming parts of file-edit.
     
     @param collection_path: str Absolute path to collection
     @param file_id: str
+    @param form_data: dict
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
     """
@@ -527,7 +527,7 @@ def file_edit(collection_path, file_id, git_name, git_mail):
     fidentifier = Identifier(id=file_id)
     file_ = DDRFile.from_identifier(fidentifier)
     gitstatus.lock(settings.MEDIA_BASE, 'file_edit')
-    exit,status = file_.save(git_name, git_mail)
+    exit,status = file_.save(git_name, git_mail, form_data)
     gitstatus_update.apply_async((collection_path,), countdown=2)
     return status,collection_path,file_id
 
@@ -542,10 +542,10 @@ TASK_STATUS_MESSAGES['webui-entity-edit'] = {
     #'REVOKED': '',
 }
 
-def collection_entity_edit(request, collection, entity, updated_files, form_data, git_name, git_mail, agent):
+def collection_entity_edit(request, collection, entity, form_data, git_name, git_mail, agent):
     # start tasks
     result = entity_edit.apply_async(
-        (collection.path, entity.id, updated_files, form_data, git_name, git_mail, agent),
+        (collection.path, entity.id, form_data, git_name, git_mail, agent),
         countdown=2)
     # lock collection
     lockstatus = collection.lock(result.task_id)
@@ -559,7 +559,6 @@ def collection_entity_edit(request, collection, entity, updated_files, form_data
         'collection_id': collection.id,
         'entity_url': entity.absolute_url(),
         'entity_id': entity.id,
-        'updated_files': updated_files,
         'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
 
@@ -581,11 +580,12 @@ class EntityEditTask(Task):
         gitstatus.unlock(settings.MEDIA_BASE, 'entity_edit')
 
 @task(base=EntityEditTask, name='webui-entity-edit')
-def entity_edit(collection_path, entity_id, updated_files, form_data, git_name, git_mail, agent=''):
+def entity_edit(collection_path, entity_id, form_data, git_name, git_mail, agent=''):
     """The time-consuming parts of entity-edit.
     
     @param collection_path: str Absolute path to collection
     @param entity_id: str
+    @param form_data: dict
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
     @param agent: (optional) Name of software making the change.
@@ -595,7 +595,7 @@ def entity_edit(collection_path, entity_id, updated_files, form_data, git_name, 
     collection = Collection.from_identifier(Identifier(path=collection_path))
     entity = Entity.from_identifier(Identifier(id=entity_id))
     gitstatus.lock(settings.MEDIA_BASE, 'entity_edit')
-    exit,status = entity.save_part2(collection, updated_files, form_data, git_name, git_mail)
+    exit,status = entity.save(git_name, git_mail, collection, form_data)
     gitstatus_update.apply_async((collection.path,), countdown=2)
     return status,collection_path,entity_id
 
@@ -851,8 +851,7 @@ def session_tasks( request ):
                                        'webui-file-new-mezzanine',
                                        'webui-file-new-access']:
                 # Add entity_url to task for newly-created file
-                repo,org,cid,eid = task['entity_id'].split('-')
-                task['entity_url'] = reverse('webui-entity', args=[repo,org,cid,eid])
+                task['entity_url'] = reverse('webui-entity', args=[task['entity_id']])
     # Hit the celery-task_status view for status updates on each task.
     # get status, retval from celery
     # TODO Don't create a new ctask/task dict here!!! >:-O
@@ -881,7 +880,7 @@ def session_tasks( request ):
                 if type(r) == type({}):
                     if r.get('id', None):
                         oid = Identifier(r['id'])
-                        object_url = reverse('webui-%s' % oid.model, args=oid.parts.values())
+                        object_url = reverse('webui-%s' % oid.model, args=[oid.id])
                         ctask['%s_url' % oid.model] = object_url
             tasks[task['id']] = ctask
     # pretty status messages

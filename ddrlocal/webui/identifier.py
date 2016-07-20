@@ -5,16 +5,15 @@ from django.core.urlresolvers import reverse
 from django.http import HttpRequest
 
 from DDR.identifier import Identifier as DDRIdentifier
-from DDR.identifier import CHILDREN_ALL, MODULES
+from DDR.identifier import CHILDREN_ALL, MODULES, VALID_COMPONENTS
+from DDR.identifier import MODEL_CLASSES as DDR_MODEL_CLASSES
+from DDR.identifier import IdentifierFormatException
 
-MODEL_CLASSES = {
-    'file':         {'module': 'webui.models', 'class':'DDRFile'},
-    'file-role':    {'module': 'webui.models', 'class':'Stub'},
-    'entity':       {'module': 'webui.models', 'class':'Entity'},
-    'collection':   {'module': 'webui.models', 'class':'Collection'},
-    'organization': {'module': 'webui.models', 'class':'Stub'},
-    'repository':   {'module': 'webui.models', 'class':'Stub'},
-}
+# TODO this isn't too far removed from hard-coding...
+MODEL_CLASSES = {}
+for k,v in DDR_MODEL_CLASSES.iteritems():
+    v['module'] = v['module'] = 'webui.models'
+    MODEL_CLASSES[k] = v
 
 
 class Identifier(DDRIdentifier):
@@ -50,9 +49,14 @@ class Identifier(DDRIdentifier):
         return super(Identifier, self).object_class(mappings).from_identifier(self)
     
     def parent(self, stubs=False):
-        pid = self.parent_id(stubs)
-        if pid:
-            return Identifier(id=pid, base_path=self.basepath)
+        parent_parts = self._parent_parts()
+        for model in self._parent_models(stubs):
+            idparts = parent_parts
+            idparts['model'] = model
+            try:
+                return Identifier(idparts, base_path=self.basepath)
+            except IdentifierFormatException:
+                pass
         return None
     
     def child(self, model, idparts, base_path=settings.MEDIA_BASE):
@@ -73,14 +77,14 @@ class Identifier(DDRIdentifier):
         lineage = self.lineage(stubs=True)[:-2]  # start with collection
         cid = lineage.pop()
         crumb = {
-            'url': reverse('webui-%s' % cid.model, kwargs=cid.parts),
+            'url': reverse('webui-%s' % cid.model, args=[cid.id]),
             'label': cid.id,
         }
         crumbs = [crumb]
         lineage.reverse()
         for i in lineage:
             crumb = {
-                'url': reverse('webui-%s' % i.model, kwargs=i.parts),
+                'url': reverse('webui-%s' % i.model, args=[i.id]),
                 'label': i.parts.values()[-1],
             }
             crumbs.append(crumb)

@@ -35,10 +35,7 @@ from webui import COLLECTION_ANNEX_STATUS_CACHE_KEY
 from webui import COLLECTION_FETCH_TIMEOUT
 from webui import COLLECTION_STATUS_TIMEOUT
 from webui import COLLECTION_ANNEX_STATUS_TIMEOUT
-from webui.identifier import Identifier, MODULES
-
-# TODO get roles from somewhere (Identifier?)
-FILE_ROLES = ['master', 'mezzanine',]
+from webui.identifier import Identifier, MODULES, VALID_COMPONENTS
 
 
 def repo_models_valid(request):
@@ -117,54 +114,6 @@ def model_def_fields(document):
         document.model_def_fields_removed = removed
         document.model_def_fields_removed_msg = WEBUI_MESSAGES['MODEL_DEF_FIELDS_REMOVED'] % removed
 
-def form_prep(document, module):
-    """Apply formprep_{field} functions to prep data dict to pass into DDRForm object.
-    
-    Certain fields require special processing.  Data may need to be massaged
-    and prepared for insertion into particular Django form objects.
-    If a "formprep_{field}" function is present in the collectionmodule
-    it will be executed.
-    
-    @param document: Collection, Entity, File document object
-    @param module: collection, entity, files model definitions module
-    @returns data: dict object as used by Django Form object.
-    """
-    data = {}
-    for f in module.FIELDS:
-        if hasattr(document, f['name']) and f.get('form',None):
-            key = f['name']
-            # run formprep_* functions on field data if present
-            value = modules.Module(module).function(
-                'formprep_%s' % key,
-                getattr(document, f['name'])
-            )
-            data[key] = value
-    return data
-    
-def form_post(document, module, form):
-    """Apply formpost_{field} functions to process cleaned_data from CollectionForm
-    
-    Certain fields require special processing.
-    If a "formpost_{field}" function is present in the entitymodule
-    it will be executed.
-    
-    @param document: Collection, Entity, File document object
-    @param module: collection, entity, files model definitions module
-    @param form: DDRForm object
-    """
-    for f in module.FIELDS:
-        if hasattr(document, f['name']) and f.get('form',None):
-            key = f['name']
-            # run formpost_* functions on field data if present
-            cleaned_data = modules.Module(module).function(
-                'formpost_%s' % key,
-                form.cleaned_data[key]
-            )
-            setattr(document, key, cleaned_data)
-    # update record_lastmod
-    if hasattr(document, 'record_lastmod'):
-        document.record_lastmod = datetime.now()
-
 
 # functions relating to inheritance ------------------------------------
 
@@ -213,8 +162,7 @@ class Collection( DDRCollection ):
         """
         objects = super(Collection, self).children(quick=quick)
         for o in objects:
-            oid = Identifier(id=o.id)
-            o.absolute_url = reverse('webui-entity', args=oid.parts.values())
+            o.absolute_url = reverse('webui-entity', args=[o.id])
         return objects
     
     def gitstatus_path( self ):
@@ -234,20 +182,18 @@ class Collection( DDRCollection ):
         >>> c.absolute_url()
         '/ui/ddr-testing-123/'
         """
-        return reverse('webui-collection', args=self.idparts)
+        return reverse('webui-collection', args=[self.id])
     
-    def admin_url(self): return reverse('webui-collection-admin', args=self.idparts)
-    def changelog_url(self): return reverse('webui-collection-changelog', args=self.idparts)
-    def children_url(self): return reverse('webui-collection-children', args=self.idparts)
-    def ead_xml_url(self): return reverse('webui-collection-ead-xml', args=self.idparts)
-    def edit_url(self): return reverse('webui-collection-edit', args=self.idparts)
-    def export_entities_url(self): return reverse('webui-collection-export-entities', args=self.idparts)
-    def export_files_url(self): return reverse('webui-collection-export-files', args=self.idparts)
-    def git_status_url(self): return reverse('webui-collection-git-status', args=self.idparts)
-    def json_url(self): return reverse('webui-collection-json', args=self.idparts)
-    def merge_url(self): return reverse('webui-merge-raw', args=self.idparts)
-    def new_entity_url(self): return reverse('webui-entity-new', args=self.idparts)
-    def sync_url(self): return reverse('webui-collection-sync', args=self.idparts)
+    def admin_url(self): return reverse('webui-collection-admin', args=[self.id])
+    def changelog_url(self): return reverse('webui-collection-changelog', args=[self.id])
+    def children_url(self): return reverse('webui-collection-children', args=[self.id])
+    def edit_url(self): return reverse('webui-collection-edit', args=[self.id])
+    def export_entities_url(self): return reverse('webui-collection-export-entities', args=[self.id])
+    def export_files_url(self): return reverse('webui-collection-export-files', args=[self.id])
+    def git_status_url(self): return reverse('webui-collection-git-status', args=[self.id])
+    def merge_url(self): return reverse('webui-merge-raw', args=[self.id])
+    def new_entity_url(self): return reverse('webui-entity-new', args=[self.id])
+    def sync_url(self): return reverse('webui-collection-sync', args=[self.id])
     
     def cgit_url( self ):
         """Returns cgit URL for collection.
@@ -258,7 +204,7 @@ class Collection( DDRCollection ):
         >>> c.cgit_url()
         'http://partner.densho.org/cgit/cgit.cgi/ddr-testing-123/'
         """
-        return '{}/cgit.cgi/{}/'.format(settings.CGIT_URL, self.id)
+        return '{}/cgit.cgi/{}/'.format(settings.CGIT_URL, [self.id])
     
     def fs_url( self ):
         """URL of the collection directory browsable via Nginx.
@@ -272,9 +218,7 @@ class Collection( DDRCollection ):
     
     def unlock_url(self, unlock_task_id):
         if unlock_task_id:
-            args = [a for a in self.idparts]
-            args.append(unlock_task_id)
-            return reverse('webui-collection-unlock', args=args)
+            return reverse('webui-collection-unlock', args=[self.id, unlock_task_id])
         return None
         
     def cache_delete( self ):
@@ -321,7 +265,7 @@ class Collection( DDRCollection ):
         return gitstatus.sync_status( self, git_status, timestamp, cache_set, force )
     
     def sync_status_url( self ):
-        return reverse('webui-collection-sync-status-ajax', args=self.idparts)
+        return reverse('webui-collection-sync-status-ajax', args=[self.id])
     
     def gitstatus( self, force=False ):
         return gitstatus.read(settings.MEDIA_BASE, self.path)
@@ -345,20 +289,6 @@ class Collection( DDRCollection ):
         .model_def_fields_removed_msg
         """
         model_def_fields(self)
-    
-    def form_prep(self):
-        """Apply formprep_{field} functions to prep data dict to pass into DDRForm object.
-        
-        @returns data: dict object as used by Django Form object.
-        """
-        return form_prep(self, self.identifier.fields_module())
-    
-    def form_post(self, form):
-        """Apply formpost_{field} functions to process cleaned_data from DDRForm
-        
-        @param form: DDRForm object
-        """
-        form_post(self, self.identifier.fields_module(), form)
     
     @staticmethod
     def create(collection_path, git_name, git_mail):
@@ -389,21 +319,23 @@ class Collection( DDRCollection ):
         
         return collection
     
-    def save( self, updated_files, git_name, git_mail ):
-        """Perform file-save functions.
+    def save( self, git_name, git_mail, cleaned_data ):
+        """Save Collection metadata.
         
         Commit files, delete cache, update search index.
         These steps are to be called asynchronously from tasks.collection_edit.
         
-        @param collection: Collection
-        @param updated_files: list
         @param git_name: str
         @param git_mail: str
+        @param cleaned_data: dict
         """
-        exit,status = commands.update(
+        exit,status = super(Collection, self).save(
             git_name, git_mail,
-            self, updated_files,
-            agent=settings.AGENT)
+            settings.AGENT,
+            cleaned_data,
+            commit=True
+        )
+        
         self.cache_delete()
         with open(self.json_path, 'r') as f:
             document = json.loads(f.read())
@@ -454,25 +386,26 @@ class Entity( DDREntity ):
 #        return []
     
     def absolute_url( self ):
-        return reverse('webui-entity', args=self.idparts)
+        return reverse('webui-entity', args=[self.id])
     
-    def addfilelog_url(self): return reverse('webui-entity-addfilelog', args=self.idparts)
-    def changelog_url(self): return reverse('webui-entity-changelog', args=self.idparts)
-    def delete_url(self): return reverse('webui-entity-delete', args=self.idparts)
-    def edit_url(self): return reverse('webui-entity-edit', args=self.idparts)
-    def edit_json_url(self): return reverse('webui-entity-edit-json', args=self.idparts)
-    def json_url(self): return reverse('webui-entity-json', args=self.idparts)
-    def mets_xml_url(self): return reverse('webui-entity-mets-xml', args=self.idparts)
+    def addfilelog_url(self): return reverse('webui-entity-addfilelog', args=[self.id])
+    def changelog_url(self): return reverse('webui-entity-changelog', args=[self.id])
+    def delete_url(self): return reverse('webui-entity-delete', args=[self.id])
+    def edit_url(self): return reverse('webui-entity-edit', args=[self.id])
     
     def new_file_url(self, role):
-        args = [a for a in self.idparts]
-        args.append(role)
-        return reverse('webui-file-new', args=args)
+        idparts = self.identifier.idparts
+        idparts['model'] = 'file-role'
+        idparts['role'] = role
+        ri = Identifier(idparts)
+        return reverse('webui-file-new', args=[ri.id])
     
     def children_url(self, role):
-        args = [a for a in self.idparts]
-        args.append(role)
-        return reverse('webui-file-role', args=args)
+        idparts = self.identifier.idparts
+        idparts['model'] = 'file-role'
+        idparts['role'] = role
+        ri = Identifier(idparts)
+        return reverse('webui-file-role', args=[ri.id])
     
     def file_batch_url(self, role):
         args = [a for a in self.idparts]
@@ -480,26 +413,28 @@ class Entity( DDREntity ):
         return reverse('webui-file-batch', args=args)
     
     def file_browse_url(self, role):
-        args = [a for a in self.idparts]
-        args.append(role)
-        return reverse('webui-file-browse', args=args)
+        idparts = self.identifier.idparts
+        idparts['model'] = 'file-role'
+        idparts['role'] = role
+        ri = Identifier(idparts)
+        return reverse('webui-file-browse', args=[ri.id])
     
     def children_urls(self, active=None):
         return [
             {'url': self.children_url(role), 'name': role, 'active': role == active}
-            for role in FILE_ROLES
+            for role in VALID_COMPONENTS['role']
         ]
     
     def file_batch_urls(self, active=None):
         return [
             {'url': self.file_batch_url(role), 'name': role, 'active': role == active}
-            for role in FILE_ROLES
+            for role in VALID_COMPONENTS['role']
         ]
     
     def file_browse_urls(self, active=None):
         return [
             {'url': self.file_browse_url(role), 'name': role, 'active': role == active}
-            for role in FILE_ROLES
+            for role in VALID_COMPONENTS['role']
         ]
     
     def fs_url( self ):
@@ -518,9 +453,7 @@ class Entity( DDREntity ):
     
     def unlock_url(self, unlock_task_id):
         if unlock_task_id:
-            args = [a for a in self.idparts]
-            args.append(unlock_task_id)
-            return reverse('webui-entity-unlock', args=args)
+            return reverse('webui-entity-unlock', args=[self.id, unlock_task_id])
         return None
     
     def model_def_commits(self):
@@ -542,25 +475,6 @@ class Entity( DDREntity ):
         .model_def_fields_removed_msg
         """
         model_def_fields(self)
-    
-    def form_prep(self):
-        """Apply formprep_{field} functions to prep data dict to pass into DDRForm object.
-        
-        @returns data: dict object as used by Django Form object.
-        """
-        data = form_prep(self, self.identifier.fields_module())
-        if not data.get('record_created', None):
-            data['record_created'] = datetime.now()
-        if not data.get('record_lastmod', None):
-            data['record_lastmod'] = datetime.now()
-        return data
-    
-    def form_post(self, form):
-        """Apply formpost_{field} functions to process cleaned_data from DDRForm
-        
-        @param form: DDRForm object
-        """
-        form_post(self, self.identifier.fields_module(), form)
     
     def load_file_objects( self ):
         """Replaces list of file info dicts with list of DDRFile objects
@@ -620,27 +534,26 @@ class Entity( DDREntity ):
         
         return entity
     
-    def save_part2( self, collection, updated_files, form_data, git_name, git_mail ):
-        """Save entity part 2: the slow parts
+    def save( self, git_name, git_mail, collection=None, form_data={} ):
+        """Save Entity metadata
         
         Commit files, delete cache, update search index.
         These steps are slow, should be called from tasks.entity_edit
         
-        @param updated_files: list of paths
-        @param collection: Collection
         @param git_name: str
         @param git_mail: str
+        @param collection: Collection
+        @param form_data: dict
         """
-        inheritables = self.selected_inheritables(form_data)
-        modified_ids,modified_files = self.update_inheritables(inheritables, form_data)
-        if modified_files:
-            updated_files = updated_files + modified_files
+        collection = self.collection()
         
-        exit,status = commands.entity_update(
+        exit,status = super(Entity, self).save(
             git_name, git_mail,
-            collection, self,
-            updated_files,
-            agent=settings.AGENT)
+            settings.AGENT,
+            collection,
+            form_data,
+            commit=True
+        )
         
         collection.cache_delete()
         with open(self.json_path, 'r') as f:
@@ -688,12 +601,11 @@ class DDRFile( File ):
         return Entity.from_identifier(self.identifier.parent())
     
     def absolute_url( self ):
-        return reverse('webui-file', args=self.idparts)
+        return reverse('webui-file', args=[self.id])
 
-    def delete_url(self): return reverse('webui-file-delete', args=self.idparts)
-    def json_url(self): return reverse('webui-file-json', args=self.idparts)
-    def edit_url(self): return reverse('webui-file-edit', args=self.idparts)
-    def new_access_url(self): return reverse('webui-file-new-access', args=self.idparts)
+    def delete_url(self): return reverse('webui-file-delete', args=[self.id])
+    def edit_url(self): return reverse('webui-file-edit', args=[self.id])
+    def new_access_url(self): return reverse('webui-file-new-access', args=[self.id])
     
     def access_url( self ):
         if self.access_rel:
@@ -701,6 +613,9 @@ class DDRFile( File ):
             path_rel = os.path.normpath(self.access_abs.replace(mediaroot, ''))
             return os.path.join(settings.MEDIA_URL, path_rel)
         return None
+
+    def media_path( self ):
+        return os.path.dirname(self.path_abs)
     
     def media_url( self ):
         if self.path_rel:
@@ -743,38 +658,26 @@ class DDRFile( File ):
         """
         model_def_fields(self)
     
-    def form_prep(self):
-        """Apply formprep_{field} functions to prep data dict to pass into DDRForm object.
-        
-        @returns data: dict object as used by Django Form object.
-        """
-        return form_prep(self, self.identifier.fields_module())
-    
-    def form_post(self, form):
-        """Apply formpost_{field} functions to process cleaned_data from DDRForm
-        
-        @param form: DDRForm object
-        """
-        form_post(self, self.identifier.fields_module(), form)
-    
-    def save( self, git_name, git_mail ):
-        """Perform file-save functions.
+    def save( self, git_name, git_mail, form_data={} ):
+        """Save file metadata
         
         Commit files, delete cache, update search index.
         These steps are to be called asynchronously from tasks.file_edit.
         
-        @param collection: Collection
-        @param file_id: str
         @param git_name: str
         @param git_mail: str
+        @param form_data: dict
         """
         collection = self.collection()
-        entity = self.parent()
-        exit,status = commands.entity_update(
+        
+        exit,status = super(DDRFile, self).save(
             git_name, git_mail,
-            collection, entity,
-            [self.json_path],
-            agent=settings.AGENT)
+            settings.AGENT,
+            collection, self.parent(),
+            form_data,
+            commit=True
+        )
+        
         collection.cache_delete()
         with open(self.json_path, 'r') as f:
             document = json.loads(f.read())

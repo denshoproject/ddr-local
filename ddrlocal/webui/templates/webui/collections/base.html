@@ -56,12 +56,6 @@
 {% if collection %}
 <div class="muted" id="expert">
 
-  <span>
-    <a href="{{ collection.json_url }}">json</a>,
-    <a href="{{ collection.ead_xml_url }}">xml</a>
-  </span>
-  <span class="bullsep">&bull;</span>
-
   <span><a href="{{ collection.git_status_url }}">status</a></span>
   <span class="bullsep">&bull;</span>
 
@@ -73,11 +67,6 @@
     <a href="{{ collection.export_entities_url }}">objects</a>,
     <a href="{{ collection.export_files_url }}">files</a>
     )
-  </span>
-  <span class="bullsep">&bull;</span>
-
-  <span>
-    <a href="{{ collection.fs_url }}" target="fs">fs</a>
   </span>
   <span class="bullsep">&bull;</span>
 
@@ -96,7 +85,7 @@
   <br/>
 
   <span>
-  {{ collection.path }}
+    <a href="{{ collection.fs_url }}" target="fs">{{ collection.path }}</a>
   </span>
 
 </div>
