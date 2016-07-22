@@ -476,23 +476,18 @@ class Entity( DDREntity ):
         """
         model_def_fields(self)
     
-    def load_file_objects( self ):
+    def load_file_objects(self, identifier_class, object_class, force_read=False):
         """Replaces list of file info dicts with list of DDRFile objects
         
         Overrides the function in .models.DDRLocalEntity, which
         adds DDRLocalFile objects which are missing certain methods of
         DDRFile.
         """
-        self._file_objects = []
-        for f in self.files:
-            if f and f.get('path_rel',None):
-                basename = os.path.basename(f['path_rel'])
-                fid = os.path.splitext(basename)[0]
-                identifier = Identifier(id=fid)
-                file_ = DDRFile.from_identifier(identifier)
-                self._file_objects.append(file_)
-        # keep track of how many times this gets loaded...
-        self._file_objects_loaded = self._file_objects_loaded + 1
+        super(Entity, self).load_file_objects(
+            Identifier,
+            DDRFile,
+            force_read=force_read
+        )
     
     @staticmethod
     def create(collection, entity_id, git_name, git_mail, agent=settings.AGENT):
