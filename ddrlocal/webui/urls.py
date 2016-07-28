@@ -66,6 +66,7 @@ urlpatterns = patterns(
     url(r'^entity/(?P<eid>[\w\d-]+)/unlock/(?P<task_id>[\w\d-]+)/$', 'webui.views.entities.unlock', name='webui-entity-unlock'),
 
     url(r'^entity/(?P<eid>[\w\d-]+)/addfile.log$', 'webui.views.entities.addfile_log', name='webui-entity-addfilelog'),
+    url(r'^entity/(?P<eid>[\w\d-]+)/files/reload/$', 'webui.views.entities.files_reload', name='webui-entity-files-reload'),
     url(r'^entity/(?P<eid>[\w\d-]+)/files/dedupe/$', 'webui.views.entities.files_dedupe', name='webui-entity-files-dedupe'),
     url(r'^entity/(?P<eid>[\w\d-]+)/changelog/$', 'webui.views.entities.changelog', name='webui-entity-changelog'),
     url(r'^entity/(?P<eid>[\w\d-]+)/$', 'webui.views.entities.detail', name='webui-entity'),
