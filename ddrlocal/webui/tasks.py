@@ -155,6 +155,8 @@ def reindex_and_notify( index ):
 
 
 
+# ----------------------------------------------------------------------
+
 @task(base=DebugTask, name='webui.tasks.gitolite_info_refresh')
 def gitolite_info_refresh():
     """
@@ -165,6 +167,8 @@ def gitolite_info_refresh():
     return gitolite.refresh()
 
 
+
+# ----------------------------------------------------------------------
 
 class GitStatusTask(Task):
     abstract = True
@@ -207,6 +211,9 @@ def gitstatus_update_store():
         minimum=settings.GITSTATUS_INTERVAL,
     )
 
+
+
+# ----------------------------------------------------------------------
 
 class FileAddDebugTask(Task):
     abstract = True
@@ -502,6 +509,8 @@ def entity_file_edit(request, collection, file_, form_data, git_name, git_mail):
         'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
 
+# ----------------------------------------------------------------------
+
 class FileEditTask(Task):
     abstract = True
     
@@ -752,7 +761,7 @@ def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, 
         logger.error('Could not delete document from Elasticsearch.')
     return status,message,collection_path,file_basename
 
-
+# ----------------------------------------------------------------------
 
 class CollectionSyncDebugTask(Task):
     abstract = True
@@ -796,7 +805,7 @@ def collection_sync( git_name, git_mail, collection_path ):
         logger.error('Could not update search index')
     return collection_path
 
-
+# ----------------------------------------------------------------------
 
 TASK_STATUS_MESSAGES['webui-csv-export-model'] = {
     #'STARTED': '',
@@ -831,6 +840,7 @@ def csv_export_model( collection_path, model ):
     return csv_path
 
 
+# ----------------------------------------------------------------------
 
 def session_tasks( request ):
     """Gets task statuses from Celery API, appends to task dicts from session.
