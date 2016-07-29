@@ -155,6 +155,8 @@ def reindex_and_notify( index ):
 
 
 
+# ----------------------------------------------------------------------
+
 @task(base=DebugTask, name='webui.tasks.gitolite_info_refresh')
 def gitolite_info_refresh():
     """
@@ -165,6 +167,8 @@ def gitolite_info_refresh():
     return gitolite.refresh()
 
 
+
+# ----------------------------------------------------------------------
 
 class GitStatusTask(Task):
     abstract = True
@@ -207,6 +211,9 @@ def gitstatus_update_store():
         minimum=settings.GITSTATUS_INTERVAL,
     )
 
+
+
+# ----------------------------------------------------------------------
 
 class FileAddDebugTask(Task):
     abstract = True
@@ -502,6 +509,8 @@ def entity_file_edit(request, collection, file_, form_data, git_name, git_mail):
         'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
 
+# ----------------------------------------------------------------------
+
 class FileEditTask(Task):
     abstract = True
     
@@ -673,7 +682,73 @@ def delete_entity( git_name, git_mail, collection_path, entity_id, agent='' ):
         logger.error('Could not delete document from Elasticsearch.')
     return status,message,collection_path,entity_id
 
+# ----------------------------------------------------------------------
 
+
+def entity_reload_files(request, collection, entity, git_name, git_mail, agent):
+    # start tasks
+    result = reload_files.apply_async(
+        (collection.path, entity.id, git_name, git_mail, agent),
+        countdown=2
+    )
+    # lock collection
+    lockstatus = entity.lock(result.task_id)
+    # add celery task_id to session
+    celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
+    # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
+    celery_tasks[result.task_id] = {
+        'task_id': result.task_id,
+        'action': 'webui-entity-reload-files',
+        'entity_url': entity.absolute_url(),
+        'entity_id': entity.id,
+        'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
+    request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
+
+class EntityReloadTask(Task):
+    abstract = True
+        
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
+        logger.debug('EntityReloadTask.on_failure(%s, %s, %s, %s)' % (exc, task_id, args, kwargs))
+    
+    def on_success(self, retval, task_id, args, kwargs):
+        logger.debug('EntityReloadTask.on_success(%s, %s, %s, %s)' % (retval, task_id, args, kwargs))
+    
+    def after_return(self, status, retval, task_id, args, kwargs, einfo):
+        logger.debug('EntityReloadTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
+        collection_path = args[0]
+        collection = Collection.from_identifier(Identifier(path=collection_path))
+        entity_id = args[1]
+        entity = Entity.from_identifier(Identifier(id=entity_id))
+        lockstatus = entity.unlock(task_id)
+        gitstatus.update(settings.MEDIA_BASE, collection_path)
+        gitstatus.unlock(settings.MEDIA_BASE, 'reload_files')
+
+@task(base=EntityReloadTask, name='webui-entity-reload-files')
+def reload_files(collection_path, entity_id, git_name, git_mail, agent=''):
+    """Regenerate entity.json's list of child files.
+    
+    @param collection_path: string
+    @param entity_id: string
+    @param git_name: Username of git committer.
+    @param git_mail: Email of git committer.
+    @param agent: (optional) Name of software making the change.
+    """
+    logger.debug('reload_files(%s,%s,%s,%s,%s)' % (collection_path, entity_id, git_name, git_mail, agent))
+    gitstatus.lock(settings.MEDIA_BASE, 'reload_files')
+    entity = Entity.from_identifier(Identifier(entity_id))
+    collection = Collection.from_identifier(Identifier(path=collection_path))
+    
+    entity.load_file_objects(Identifier, Entity, force_read=True)
+    exit,status = entity.save(git_name, git_mail, collection, {})
+    
+    logger.debug('delete from search index')
+    try:
+        docstore.delete(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, entity.id)
+    except ConnectionError:
+        logger.error('Could not delete document from Elasticsearch.')
+    return status,collection_path,entity_id
+
+# ----------------------------------------------------------------------
 
 TASK_STATUS_MESSAGES['webui-file-delete'] = {
     #'STARTED': '',
@@ -752,7 +827,7 @@ def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, 
         logger.error('Could not delete document from Elasticsearch.')
     return status,message,collection_path,file_basename
 
-
+# ----------------------------------------------------------------------
 
 class CollectionSyncDebugTask(Task):
     abstract = True
@@ -796,7 +871,7 @@ def collection_sync( git_name, git_mail, collection_path ):
         logger.error('Could not update search index')
     return collection_path
 
-
+# ----------------------------------------------------------------------
 
 TASK_STATUS_MESSAGES['webui-csv-export-model'] = {
     #'STARTED': '',
@@ -831,6 +906,7 @@ def csv_export_model( collection_path, model ):
     return csv_path
 
 
+# ----------------------------------------------------------------------
 
 def session_tasks( request ):
     """Gets task statuses from Celery API, appends to task dicts from session.

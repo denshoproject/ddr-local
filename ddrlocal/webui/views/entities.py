@@ -36,6 +36,7 @@ from webui.mets import NAMESPACES, NAMESPACES_XPATH
 from webui.mets import METS_FIELDS, MetsForm
 from webui.models import Stub, Collection, Entity
 from webui.tasks import collection_entity_newexpert, collection_entity_edit, collection_delete_entity
+from webui.tasks import entity_reload_files
 from webui.tasks import gitstatus_update
 from webui.views.decorators import login_required
 
@@ -526,6 +527,38 @@ def delete( request, eid, confirm=False ):
          },
         context_instance=RequestContext(request, processors=[])
     )
+
+@login_required
+@storage_required
+def files_reload( request, eid ):
+    """Regenerates list of file info dicts with list of File objects
+    """
+    git_name = request.session.get('git_name')
+    git_mail = request.session.get('git_mail')
+    if not (git_name and git_mail):
+        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
+    entity = Entity.from_identifier(Identifier(eid))
+    collection = entity.collection()
+    if entity.locked():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
+        return HttpResponseRedirect(entity.absolute_url())
+    if collection.locked():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
+        return HttpResponseRedirect(collection.absolute_url())
+    
+    entity_reload_files(
+        request,
+        collection, entity,
+        git_name, git_mail, settings.AGENT
+    )
+    
+    messages.success(
+        request,
+        'Regenerating files list for <a href="%s">%s</a>.' % (
+            entity.absolute_url(), entity.id
+        )
+    )
+    return HttpResponseRedirect(entity.absolute_url())
 
 @login_required
 @storage_required
