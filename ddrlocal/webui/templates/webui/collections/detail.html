@@ -1,5 +1,5 @@
 {% extends "webui/collections/base.html" %}
-{% load webui_tags %}
+{% load thumbnail webui_tags %}
 
 {% block title %}{{ collection.id }}{% endblock %}
 
@@ -41,6 +41,18 @@
 </p>
 {% endif %}{# conflicted #}
 {% endif %}{#username #}
+
+{% if collection.signature_abs %}
+<div id="thumbnail" style="float:right; text-align:right;">
+{% thumbnail collection.signature_abs "300x300" crop="center" as img %}
+<img class="img-responsive img-thumbnail" src="{{ img.url }}" width="{{ img.width }}" height="{{ img.height }}">
+<br/>
+<small><a href="{% url "webui-file" collection.signature_id %}">{{ collection.signature_id }}</a></small>
+{% empty %}
+<p>No image</p>
+{% endthumbnail %}
+</div><!-- #thumbnail -->
+{% endif %}
 
 <dl class="dl-horizontal">
 {% for lv in collection.labels_values %}
