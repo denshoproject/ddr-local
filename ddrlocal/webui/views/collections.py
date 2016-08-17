@@ -31,11 +31,13 @@ from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
 from webui.decorators import ddrview, search_index
 from webui.forms import DDRForm
-from webui.forms.collections import NewCollectionForm, UpdateForm, SyncConfirmForm
+from webui.forms.collections import NewCollectionForm, UpdateForm
+from webui.forms.collections import SyncConfirmForm, SignaturesConfirmForm
 from webui import gitolite
 from webui.models import Collection, COLLECTION_STATUS_CACHE_KEY, COLLECTION_STATUS_TIMEOUT
 from webui.identifier import Identifier
-from webui.tasks import collection_new_expert, collection_edit, collection_sync
+from webui.tasks import collection_new_expert, collection_edit
+from webui.tasks import collection_sync, collection_signatures
 from webui.tasks import csv_export_model, export_csv_path, gitstatus_update
 from webui.views.decorators import login_required
 
@@ -362,6 +364,57 @@ def edit( request, cid ):
         {'collection': collection,
          'form': form,
          },
+        context_instance=RequestContext(request, processors=[])
+    )
+
+@ddrview
+@login_required
+@storage_required
+def signatures( request, cid ):
+    try:
+        collection = Collection.from_identifier(Identifier(cid))
+    except:
+        raise Http404
+    git_name = request.session.get('git_name')
+    git_mail = request.session.get('git_mail')
+    if not git_name and git_mail:
+        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
+    alert_if_conflicted(request, collection)
+    if collection.locked():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
+        return HttpResponseRedirect(collection.absolute_url())
+    if request.method == 'POST':
+        form = SignaturesConfirmForm(request.POST)
+        form_is_valid = form.is_valid()
+        if form.is_valid() and form.cleaned_data['confirmed']:
+            
+            result = collection_signatures.apply_async(
+                (collection.path,git_name,git_mail),
+                countdown=2
+            )
+            lockstatus = collection.lock(result.task_id)
+            # add celery task_id to session
+            celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
+            # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
+            task = {
+                'task_id': result.task_id,
+                'action': 'webui-collection-signatures',
+                'collection_id': collection.id,
+                'collection_url': collection.absolute_url(),
+                'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),
+            }
+            celery_tasks[result.task_id] = task
+            request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
+            return HttpResponseRedirect(collection.absolute_url())
+        
+    else:
+        form = SignaturesConfirmForm()
+    return render_to_response(
+        'webui/collections/signatures-confirm.html',
+        {
+            'collection': collection,
+            'form': form,
+        },
         context_instance=RequestContext(request, processors=[])
     )
  

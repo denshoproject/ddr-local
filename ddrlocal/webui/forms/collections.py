@@ -16,3 +16,8 @@ class SyncConfirmForm(forms.Form):
     confirmed = forms.BooleanField(
         help_text='Yes, I want to synchronize this collection.'
     )
+
+class SignaturesConfirmForm(forms.Form):
+    confirmed = forms.BooleanField(
+        help_text='Yes, I want to choose signatures for this collection.'
+    )

@@ -31,6 +31,7 @@ from DDR import commands
 from DDR import docstore
 from DDR import dvcs
 from DDR import models
+from DDR import signatures
 from DDR.ingest import addfile_logger
 
 
@@ -70,6 +71,14 @@ TASK_STATUS_MESSAGES = {
         'PENDING': 'Syncing <b><a href="{collection_url}">{collection_id}</a></b> with the workbench server.',
         'SUCCESS': 'Synced <b><a href="{collection_url}">{collection_id}</a></b> with the workbench server.',
         'FAILURE': 'Could not sync <b><a href="{collection_url}">{collection_id}</a></b> with the workbench server.',
+        #'RETRY': '',
+        #'REVOKED': '',
+        },
+    'webui-collection-signatures': {
+        #'STARTED': '',
+        'PENDING': 'Choosing signatures for <b><a href="{collection_url}">{collection_id}</a></b>.',
+        'SUCCESS': 'Signatures chosen for <b><a href="{collection_url}">{collection_id}</a></b>.',
+        'FAILURE': 'Could not choose signatures for <b><a href="{collection_url}">{collection_id}</a></b>.',
         #'RETRY': '',
         #'REVOKED': '',
         },
@@ -874,6 +883,58 @@ def collection_sync( git_name, git_mail, collection_path ):
     except ConnectionError:
         logger.error('Could not update search index')
     return collection_path
+
+
+# ----------------------------------------------------------------------
+
+class CollectionSignaturesDebugTask(Task):
+    abstract = True
+    
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
+        pass
+    
+    def on_success(self, retval, task_id, args, kwargs):
+        pass
+    
+    def after_return(self, status, retval, task_id, args, kwargs, cinfo):
+        collection_path = args[0]
+        collection = Collection.from_identifier(Identifier(path=collection_path))
+        # NOTE: collection is locked immediately after collection_signatures task
+        #       starts in webui.views.collections.signatures
+        collection.unlock(task_id)
+        collection.cache_delete()
+        gitstatus.update(settings.MEDIA_BASE, collection_path)
+        gitstatus.unlock(settings.MEDIA_BASE, 'collection_signatures')
+
+@task(base=CollectionSignaturesDebugTask, name='webui-collection-signatures')
+def collection_signatures(collection_path, git_name, git_mail):
+    """Identifies signature files for collection and entities.
+    
+    @param collection_path: Absolute path to collection repo.
+    @param git_name: Username of git committer.
+    @param git_mail: Email of git committer.
+    @return collection_path: Absolute path to collection.
+    """
+    gitstatus.lock(settings.MEDIA_BASE, 'collection_signatures')
+    collection = Collection.from_identifier(Identifier(path=collection_path))
+    
+    updates = signatures.find_updates(collection)
+    files_written = signatures.write_updates(updates)
+    status,msg = signatures.commit_updates(
+        collection,
+        files_written,
+        git_name, git_mail, agent='ddr-local'
+    )
+    logger.debug('DONE')
+    
+    # update search index
+    collection = Collection.from_identifier(Identifier(path=collection_path))
+    try:
+        collection.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+    except ConnectionError:
+        logger.error('Could not update search index')
+    return collection_path
+
 
 # ----------------------------------------------------------------------
 

@@ -42,6 +42,7 @@ urlpatterns = patterns(
 
     url(r'^collection/(?P<cid>[\w\d-]+)/edit/$', 'webui.views.collections.edit', name='webui-collection-edit'),
     url(r'^collection/(?P<cid>[\w\d-]+)/sync/$', 'webui.views.collections.sync', name='webui-collection-sync'),
+    url(r'^collection/(?P<cid>[\w\d-]+)/signatures/$', 'webui.views.collections.signatures', name='webui-collection-signatures'),
     url(r'^collection/(?P<cid>[\w\d-]+)/unlock/(?P<task_id>[\w\d-]+)/$', 'webui.views.collections.unlock', name='webui-collection-unlock'),
 
     url(r'^collection/(?P<cid>[\w\d-]+)/export/objects/$', 'webui.views.collections.csv_export', kwargs={'model':'entity'}, name='webui-collection-export-entities'),
