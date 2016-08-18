@@ -45,8 +45,8 @@ urlpatterns = patterns(
 
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/export/objects/$', 'webui.views.collections.csv_export', kwargs={'model':'entity'}, name='webui-collection-export-entities'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/export/files/$', 'webui.views.collections.csv_export', kwargs={'model':'file'}, name='webui-collection-export-files'),
-    url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-objects.csv$', 'webui.views.collections.csv_download', kwargs={'model':'entity'}, name='webui-collection-csv-entities'),
-    url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)-files.csv$', 'webui.views.collections.csv_download', kwargs={'model':'file'}, name='webui-collection-csv-files'),
+    url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/objects/csv$', 'webui.views.collections.csv_download', kwargs={'model':'entity'}, name='webui-collection-csv-entities'),
+    url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/files/csv$', 'webui.views.collections.csv_download', kwargs={'model':'file'}, name='webui-collection-csv-files'),
 
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/children/$', 'webui.views.collections.children', name='webui-collection-children'),
     url(r'^(?P<repo>[\w]+)-(?P<org>[\w]+)-(?P<cid>[\d]+)/collection.json$', 'webui.views.collections.collection_json', name='webui-collection-json'),

@@ -36,7 +36,7 @@ from webui import gitolite
 from webui.models import Collection, COLLECTION_STATUS_CACHE_KEY, COLLECTION_STATUS_TIMEOUT
 from webui.identifier import Identifier
 from webui.tasks import collection_new_expert, collection_edit, collection_sync
-from webui.tasks import csv_export_model, export_csv_path, gitstatus_update
+from webui.tasks import csv_export_model, gitstatus_update
 from webui.views.decorators import login_required
 from xmlforms.models import XMLModel
 
@@ -401,7 +401,7 @@ def csv_export( request, repo, org, cid, model=None ):
         raise Http404
     collection = Collection.from_request(request)
     things = {'entity':'objects', 'file':'files'}
-    csv_path = export_csv_path(collection.path, model)
+    csv_path = settings.CSV_EXPORT_PATH[model] % collection.id
     csv_filename = os.path.basename(csv_path)
     if model == 'entity':
         file_url = reverse('webui-collection-csv-entities', args=collection.idparts)
@@ -428,25 +428,31 @@ def csv_export( request, repo, org, cid, model=None ):
 def csv_download( request, repo, org, cid, model=None ):
     """Offers CSV file in settings.CSV_TMPDIR for download.
     
-    File must actually exist in settings.CSV_TMPDIR and be readable.
+    File must actually exist in settings.CSV_EXPORT_PATH and be readable.
     File must be readable by Python csv module.
     If all that is true then it must be a legal CSV file.
     """
     collection = Collection.from_request(request)
-    path = export_csv_path(collection.path, model)
+    path = settings.CSV_EXPORT_PATH[model] % collection.id
     filename = os.path.basename(path)
     if not os.path.exists(path):
         raise Http404
     import csv
-    # TODO use vars from migrations.densho or put them in settings.
-    CSV_DELIMITER = ','
-    CSV_QUOTECHAR = '"'
-    CSV_QUOTING = csv.QUOTE_ALL
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename="%s"' % filename
-    writer = csv.writer(response, delimiter=CSV_DELIMITER, quotechar=CSV_QUOTECHAR, quoting=CSV_QUOTING)
+    writer = csv.writer(
+        response,
+        delimiter=fileio.CSV_DELIMITER,
+        quotechar=fileio.CSV_QUOTECHAR,
+        quoting=fileio.CSV_QUOTING
+    )
     with open(path, 'rb') as f:
-        reader = csv.reader(f, delimiter=CSV_DELIMITER, quotechar=CSV_QUOTECHAR, quoting=CSV_QUOTING)
+        reader = csv.reader(
+            f,
+            delimiter=fileio.CSV_DELIMITER,
+            quotechar=fileio.CSV_QUOTECHAR,
+            quoting=fileio.CSV_QUOTING
+        )
         for row in reader:
             writer.writerow(row)
     return response

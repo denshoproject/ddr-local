@@ -92,7 +92,10 @@ LOG_DIR              = config.get('local', 'log_dir')
 LOG_FILE             = config.get('local', 'log_file')
 LOG_LEVEL            = config.get('local', 'log_level')
 VOCAB_TERMS_URL      = config.get('local', 'vocab_terms_url')
-CSV_TMPDIR           = '/tmp/ddr/csv'
+CSV_EXPORT_PATH = {
+    'entity': '/tmp/ddr/csv/%s-objects.csv',
+    'file': '/tmp/ddr/csv/%s-files.csv',
+}
 
 # ElasticSearch
 DOCSTORE_INDEX       = config.get('local', 'docstore_index')

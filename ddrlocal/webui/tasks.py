@@ -20,17 +20,18 @@ from django.contrib import messages
 from django.core.cache import cache
 from django.core.urlresolvers import reverse
 
-from migration.densho import export_entities, export_files, export_csv_path
 from webui import GITOLITE_INFO_CACHE_KEY
 from webui import gitolite
 from webui import gitstatus
 from webui.models import Collection, Entity, DDRFile
 from webui.identifier import Identifier
 
+from DDR import batch
 from DDR import commands
 from DDR import docstore
 from DDR import dvcs
 from DDR import models
+from DDR import util
 from DDR.ingest import addfile_logger
 
 
@@ -823,13 +824,18 @@ def csv_export_model( collection_path, model ):
     @return collection_path: Absolute path to collection.
     @return model: 'entity' or 'file'.
     """
-    csv_path = export_csv_path(collection_path, model)
-    if model == 'entity':
-        csv_path = export_entities(collection_path, csv_path)
-    elif model == 'file':
-        csv_path = export_files(collection_path, csv_path)
+    collection = Collection.from_identifier(Identifier(path=collection_path))
+    csv_path = settings.CSV_EXPORT_PATH[model] % collection.id
+    
+    logger.info('All paths in %s' % collection_path)
+    paths = util.find_meta_files(
+        basedir=collection_path, model=model, recursive=1, force_read=1
+    )
+    logger.info('Exporting %s paths' % len(paths))
+    batch.Exporter.export(
+        paths, model, csv_path, required_only=False
+    )
     return csv_path
-
 
 
 def session_tasks( request ):
