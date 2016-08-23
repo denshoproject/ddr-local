@@ -71,6 +71,8 @@ urlpatterns = patterns(
     url(r'^entity/(?P<eid>[\w\d-]+)/files/dedupe/$', 'webui.views.entities.files_dedupe', name='webui-entity-files-dedupe'),
     url(r'^entity/(?P<eid>[\w\d-]+)/changelog/$', 'webui.views.entities.changelog', name='webui-entity-changelog'),
     url(r'^entity/(?P<eid>[\w\d-]+)/$', 'webui.views.entities.detail', name='webui-entity'),
+    # segments Just Work with entity patterns except for this one
+    url(r'^segment/(?P<eid>[\w\d-]+)/$', 'webui.views.entities.detail', name='webui-segment'),
 
     url(r'^entity/(?P<cid>[\w\d-]+)/new-expert/$', 'webui.views.entities.newexpert', name='webui-entity-newexpert'),
     url(r'^entity/(?P<cid>[\w\d-]+)/new/$', 'webui.views.entities.new', name='webui-entity-new'),
