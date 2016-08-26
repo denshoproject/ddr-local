@@ -22,6 +22,7 @@ from django.shortcuts import Http404, get_object_or_404, render_to_response
 from django.template import RequestContext
 
 from DDR import commands
+from DDR import converters
 from DDR import docstore
 from DDR import fileio
 from DDR import idservice
@@ -181,15 +182,24 @@ def tagmanager_process_tags( form_terms ):
     
     TODO This should probably be somewhere else
     
-    >>> hidden_terms = u'Topic 1 [94],Topic 2 [95],Topic 3 [244]'
+    >>> hidden_terms = u'Topic 1 [94],Topic 2: Subtopic 2 [95]'
     >>> process_cleaned_terms(hidden_terms, all_terms)
-    u'Topic 1 [94]; Topic 2 [95]; Topic 3 [244]'
+    u'Topic 1 [94]; Subtopic 2 [95]'
     """
-    return ']; '.join(form_terms.split('],'))
+    cleaned = []
+    for term in form_terms.replace('],', '];').split(';'):
+        if ':' in term:
+            # term has parent; get only the final subtopic
+            last_colon = term.rindex(':')
+            t = term[last_colon+1:].strip()
+        else:
+            # no subtopics
+            t = term
+        cleaned.append(t)
+    return '; '.join(cleaned)
 
 
 # views ----------------------------------------------------------------
-
 
 @storage_required
 def detail( request, eid ):
@@ -428,19 +438,19 @@ def edit( request, eid ):
         form = DDRForm(request.POST, fields=module.FIELDS)
         if form.is_valid():
             
+            # clean up after TagManager
+            hidden_topics = request.POST.get('hidden-topics', None)
+            hidden_facility = request.POST.get('hidden-facility', None)
+            if hidden_topics:
+                form.cleaned_data['topics'] = tagmanager_process_tags(hidden_topics)
+            if hidden_facility:
+                form.cleaned_data['facility'] = tagmanager_process_tags(hidden_facility)
+
             entity.form_post(form.cleaned_data)
             # write these so we see a change on refresh
             # will be rewritten in entity.save()
             entity.write_json()
             
-            # clean up after TagManager
-            hidden_topics = request.POST.get('hidden-topics', None)
-            if hidden_topics:
-                form.cleaned_data['topics'] = tagmanager_process_tags(hidden_topics)
-            hidden_facility = request.POST.get('hidden-facility', None)
-            if hidden_facility:
-                form.cleaned_data['facility'] = tagmanager_process_tags(hidden_facility)
-
             # do the rest in the background:
             # update inheriable fields, commit files, delete cache,
             # update search index, update git status
@@ -453,12 +463,22 @@ def edit( request, eid ):
             return HttpResponseRedirect(entity.absolute_url())
     else:
         form = DDRForm(entity.form_prep(), fields=module.FIELDS)
-    
-    topics_prefilled = tagmanager_prefilled_terms(entity.topics, topics_terms)
-    facility_prefilled = tagmanager_prefilled_terms(entity.facility, facility_terms)
+
+    # coerce term:id dicts into old-style "term [id]" strings
+    entity_topics = [
+        converters.formats.dict_to_textbracketid(item, ['term','id'])
+        for item in entity.topics
+    ]
+    entity_facility = [
+        converters.formats.dict_to_textbracketid(item, ['term','id'])
+        for item in entity.facility
+    ]
+
+    topics_prefilled = tagmanager_prefilled_terms(entity_topics, topics_terms)
+    facility_prefilled = tagmanager_prefilled_terms(entity_facility, facility_terms)
     # selected terms that don't appear in field_terms
-    topics_legacy = tagmanager_legacy_terms(entity.topics, topics_terms)
-    facility_legacy = tagmanager_legacy_terms(entity.facility, facility_terms)
+    topics_legacy = tagmanager_legacy_terms(entity_topics, topics_terms)
+    facility_legacy = tagmanager_legacy_terms(entity_facility, facility_terms)
     return render_to_response(
         'webui/entities/edit-json.html',
         {'collection': collection,
