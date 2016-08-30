@@ -281,6 +281,10 @@ get-ddr-cmdln:
 	else cd $(INSTALL_BASE) && git clone $(SRC_REPO_CMDLN); \
 	fi
 
+setup-ddr-cmdln:
+	source $(VIRTUALENV)/bin/activate; \
+	cd $(INSTALL_CMDLN)/ddr && python setup.py install
+
 install-ddr-cmdln:
 	@echo ""
 	@echo "install-ddr-cmdln ------------------------------------------------------"
