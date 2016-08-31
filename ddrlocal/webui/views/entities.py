@@ -466,11 +466,11 @@ def edit( request, eid ):
 
     # coerce term:id dicts into old-style "term [id]" strings
     entity_topics = [
-        converters.formats.dict_to_textbracketid(item, ['term','id'])
+        converters.dict_to_textbracketid(item, ['term','id'])
         for item in entity.topics
     ]
     entity_facility = [
-        converters.formats.dict_to_textbracketid(item, ['term','id'])
+        converters.dict_to_textbracketid(item, ['term','id'])
         for item in entity.facility
     ]
 
