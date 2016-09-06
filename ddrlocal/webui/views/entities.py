@@ -462,9 +462,6 @@ def edit( request, repo, org, cid, eid ):
     if request.method == 'POST':
         form = DDRForm(request.POST, fields=module.FIELDS)
         if form.is_valid():
-            # run module_functions on raw form data
-            entity.form_post(form)
-            inheritables = entity.selected_inheritables(form.cleaned_data)
             
             # clean up after TagManager
             hidden_topics = request.POST.get('hidden-topics', None)
@@ -474,11 +471,15 @@ def edit( request, repo, org, cid, eid ):
             if hidden_facility:
                 form.cleaned_data['facility'] = tagmanager_process_tags(hidden_facility)
             
+            # run module_functions on raw form data
+            entity.form_post(form)
+            inheritables = entity.selected_inheritables(form.cleaned_data)
+            
             # write basic changes to disk (this is quick)
             entity.write_json()
             entity.write_mets()
             updated_files = [entity.json_path, entity.mets_path,]
-
+            
             # do the rest in the background:
             # update inheriable fields, commit files, delete cache,
             # update search index, update git status
