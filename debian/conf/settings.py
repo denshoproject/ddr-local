@@ -36,6 +36,14 @@ REPO_MODELS_PATH = config.get('cmdln','repo_models_path')
 if REPO_MODELS_PATH not in sys.path:
     sys.path.append(REPO_MODELS_PATH)
 
+# Latest commits for ddr-cmdln and ddr-local.
+# Include here in settings so only has to be retrieved once,
+# and so commits are visible in error pages and in page footers.
+from DDR import dvcs
+DDRCMDLN_INSTALL_PATH = config.get('cmdln','install_path')
+DDRCMDLN_COMMIT = dvcs.latest_commit(DDRCMDLN_INSTALL_PATH)
+DDRLOCAL_COMMIT = dvcs.latest_commit(os.path.dirname(__file__))
+
 # The following settings are in debian/config/ddr.cfg.
 # See that file for comments on the settings.
 # ddr.cfg is installed in /etc/ddr/ddr.cfg.

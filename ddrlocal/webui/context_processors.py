@@ -6,7 +6,6 @@ import os
 from django.conf import settings
 from django.core.urlresolvers import reverse
 
-from ddrlocal import COMMIT
 from webui.models import repo_models_valid
 from webui.tasks import session_tasks_list
 
@@ -29,7 +28,8 @@ def sitewide(request):
         'time': datetime.now().isoformat(),
         'pid': os.getpid(),
         'host': os.uname()[1],
-        'commit': COMMIT,
+        'ddrcmdln_commit': settings.DDRCMDLN_COMMIT,
+        'ddrlocal_commit': settings.DDRLOCAL_COMMIT,
         'models_valid': repo_models_valid(request),
         # user info
         'username': request.session.get('idservice_username', None),

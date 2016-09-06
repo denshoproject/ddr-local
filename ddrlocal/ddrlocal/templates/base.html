@@ -205,7 +205,9 @@ form td { padding-bottom:20px; }
 <span class="content">
 Rendered at {{ time }} by PID {{ pid }} on {{ host }}
 <br/>
-{{ commit }}
+ddr-cmdln: {{ ddrcmdln_commit }}
+<br/>
+ddr-local: {{ ddrlocal_commit }}
 <br/>
 <a href="{{ supervisord_url }}" target="supervisor">supervisor</a>
 <a href="{{ elasticsearch_url }}" target="elasticsearch">elasticsearch</a>
