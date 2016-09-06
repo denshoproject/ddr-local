@@ -229,8 +229,6 @@ class FileAddDebugTask(Task):
         log.ok('FileAddDebugTask.AFTER_RETURN')
         log.ok('task_id: %s' % task_id)
         log.ok('status: %s' % status)
-        if retval.get('xmp'):
-            retval['xmp'] = '%s...' % retval['xmp'][:100]
         log.ok('retval: %s' % retval)
         log.ok('Unlocking %s' % entity.id)
         lockstatus = entity.unlock(task_id)
@@ -263,7 +261,10 @@ def entity_add_file( git_name, git_mail, entity, src_path, role, data, agent='' 
         log.ok('| %s' % result)
     except ConnectionError:
         log.not_ok('Could not post to Elasticsearch.')
-    return file_.__dict__
+    return {
+        'id': file_.id,
+        'status': 'ok'
+    }
 
 @task(base=FileAddDebugTask, name='entity-add-access')
 def entity_add_access( git_name, git_mail, entity, ddrfile, agent='' ):
@@ -285,7 +286,10 @@ def entity_add_access( git_name, git_mail, entity, ddrfile, agent='' ):
         file_.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
     except ConnectionError:
         log.not_ok('Could not post to Elasticsearch.')
-    return file_.__dict__
+    return {
+        'id': file_.id,
+        'status': 'ok'
+    }
 
 
 
