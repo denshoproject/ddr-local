@@ -20,18 +20,19 @@ from django.contrib import messages
 from django.core.cache import cache
 from django.core.urlresolvers import reverse
 
-from migration.densho import export_entities, export_files, export_csv_path
 from webui import GITOLITE_INFO_CACHE_KEY
 from webui import gitolite
 from webui import gitstatus
 from webui.models import Collection, Entity, DDRFile
 from webui.identifier import Identifier
 
+from DDR import batch
 from DDR import commands
 from DDR import docstore
 from DDR import dvcs
 from DDR import models
 from DDR import signatures
+from DDR import util
 from DDR.ingest import addfile_logger
 
 
@@ -244,8 +245,6 @@ class FileAddDebugTask(Task):
         log.ok('FileAddDebugTask.AFTER_RETURN')
         log.ok('task_id: %s' % task_id)
         log.ok('status: %s' % status)
-        if retval.get('xmp'):
-            retval['xmp'] = '%s...' % retval['xmp'][:100]
         log.ok('retval: %s' % retval)
         log.ok('Unlocking %s' % entity.id)
         lockstatus = entity.unlock(task_id)
@@ -278,7 +277,10 @@ def entity_add_file( git_name, git_mail, entity, src_path, role, data, agent='' 
         log.ok('| %s' % result)
     except ConnectionError:
         log.not_ok('Could not post to Elasticsearch.')
-    return file_.__dict__
+    return {
+        'id': file_.id,
+        'status': 'ok'
+    }
 
 @task(base=FileAddDebugTask, name='entity-add-access')
 def entity_add_access( git_name, git_mail, entity, ddrfile, agent='' ):
@@ -300,7 +302,10 @@ def entity_add_access( git_name, git_mail, entity, ddrfile, agent='' ):
         file_.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
     except ConnectionError:
         log.not_ok('Could not post to Elasticsearch.')
-    return file_.__dict__
+    return {
+        'id': file_.id,
+        'status': 'ok'
+    }
 
 
 
@@ -963,11 +968,17 @@ def csv_export_model( collection_path, model ):
     @return collection_path: Absolute path to collection.
     @return model: 'entity' or 'file'.
     """
-    csv_path = export_csv_path(collection_path, model)
-    if model == 'entity':
-        csv_path = export_entities(collection_path, csv_path)
-    elif model == 'file':
-        csv_path = export_files(collection_path, csv_path)
+    collection = Collection.from_identifier(Identifier(path=collection_path))
+    csv_path = settings.CSV_EXPORT_PATH[model] % collection.id
+    
+    logger.info('All paths in %s' % collection_path)
+    paths = util.find_meta_files(
+        basedir=collection_path, model=model, recursive=1, force_read=1
+    )
+    logger.info('Exporting %s paths' % len(paths))
+    batch.Exporter.export(
+        paths, model, csv_path, required_only=False
+    )
     return csv_path
 
 
