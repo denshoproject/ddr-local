@@ -106,7 +106,7 @@ def detail( request, cid ):
 def children( request, cid ):
     collection = Collection.from_identifier(Identifier(cid))
     alert_if_conflicted(request, collection)
-    objects = collection.children(quick=True)
+    objects = collection.children()
     # paginate
     thispage = request.GET.get('page', 1)
     paginator = Paginator(objects, settings.RESULTS_PER_PAGE)

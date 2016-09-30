@@ -1,5 +1,5 @@
 {% extends "webui/entities/base.html" %}
-{% load bootstrap_pagination webui_tags thumbnail %}
+{% load bootstrap_pagination thumbnail webui_tags %}
 
 
 {% block title %}files | {{ entity.id }}{% endblock %}
@@ -52,21 +52,22 @@ or <a class="btn btn-primary btn-mini" href="{{ batch_url }}">Add a batch of fil
 
 {% if page.object_list %}
 
+<div>
+  {{ paginator.count }} items<br/>
+</div>
+
 <table class="table table-condensed">
   <thead>
 	<tr>
 {% if username %}
 		<th></th>
 {% endif %}
+		<th></th>
 		<th>Filename</th>
 		<th>Label</th>
 	</tr>
   </thead>
   <tbody>	
-
-  <div>
-    {{ paginator.count }} items<br/>
-  </div>
 
 {% for file in page.object_list %}
   <tr>
@@ -83,6 +84,13 @@ or <a class="btn btn-primary btn-mini" href="{{ batch_url }}">Add a batch of fil
     </td>
 {% endif %}{#username #}
 
+    <td>
+  {% thumbnail file.path_abs "100x100" crop="center" as img %}
+    <a href="{{ file.absolute_url }}">
+      <img class="img-responsive img-thumbnail" src="{{ img.url }}" width="{{ img.width }}" height="{{ img.height }}">
+    </a>
+  {% endthumbnail %}
+    </td>
     <td>
       <a href="{{ file.absolute_url }}">{{ file.basename }}</a>
       ({{ file.size|filesizeformat }})
