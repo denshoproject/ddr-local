@@ -421,8 +421,17 @@ class Entity( DDREntity ):
         return reverse('webui-file-browse', args=[ri.id])
     
     def children_urls(self, active=None):
+        filegroup_lens = {
+            fg['role']: len(fg.get('files', []))
+            for fg in self.file_groups
+        }
         return [
-            {'url': self.children_url(role), 'name': role, 'active': role == active}
+            {
+                'url': self.children_url(role),
+                'name': role,
+                'active': role == active,
+                'len': filegroup_lens.get(role, 0)
+            }
             for role in VALID_COMPONENTS['role']
         ]
     

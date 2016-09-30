@@ -70,6 +70,7 @@ urlpatterns = patterns(
     url(r'^entity/(?P<eid>[\w\d-]+)/files/reload/$', 'webui.views.entities.files_reload', name='webui-entity-files-reload'),
     url(r'^entity/(?P<eid>[\w\d-]+)/files/dedupe/$', 'webui.views.entities.files_dedupe', name='webui-entity-files-dedupe'),
     url(r'^entity/(?P<eid>[\w\d-]+)/changelog/$', 'webui.views.entities.changelog', name='webui-entity-changelog'),
+    url(r'^entity/(?P<eid>[\w\d-]+)/children/$', 'webui.views.entities.children', name='webui-entity-children'),
     url(r'^entity/(?P<eid>[\w\d-]+)/$', 'webui.views.entities.detail', name='webui-entity'),
     # segments Just Work with entity patterns except for this one
     url(r'^segment/(?P<eid>[\w\d-]+)/$', 'webui.views.entities.detail', name='webui-segment'),
@@ -87,7 +88,7 @@ urlpatterns = patterns(
     url(r'^file/(?P<rid>[\w\d-]+)/batch/$', 'webui.views.files.batch', name='webui-file-batch'),
     url(r'^file/(?P<rid>[\w\d-]+)/browse/$', 'webui.views.files.browse', name='webui-file-browse'),
     url(r'^file/(?P<rid>[\w\d-]+)/new/$', 'webui.views.files.new', name='webui-file-new'),
-    url(r'^file-role/(?P<rid>[\w\d-]+)/$', 'webui.views.entities.children', name='webui-file-role'),
+    url(r'^file-role/(?P<rid>[\w\d-]+)/$', 'webui.views.entities.files', name='webui-file-role'),
     url(r'^file/(?P<eid>[\w\d-]+)-master/new/$', 'webui.views.files.new', kwargs={'role':'master'}, name='webui-file-new-master'),
     url(r'^file/(?P<eid>[\w\d-]+)-mezzanine/new/$', 'webui.views.files.new', kwargs={'role':'mezzanine'}, name='webui-file-new-mezzanine'),
     url(r'^file/(?P<eid>[\w\d-]+)/new/$', 'webui.views.files.new', name='webui-file-new'),

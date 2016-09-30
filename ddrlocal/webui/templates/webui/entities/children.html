@@ -1,0 +1,96 @@
+{% extends "webui/entities/base.html" %}
+{% load bootstrap_pagination thumbnail webui_tags %}
+
+
+{% block title %}Objects | {{ entity.id }}{% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+{% breadcrumbs entity "Objects" %}
+{% endblock breadcrumbs %}
+
+
+{% block content %}
+
+  <div class="row-fluid">
+    <div class="span12">
+
+<h1>{{ entity.id }}</h1>
+
+
+
+      <ul class="nav nav-tabs" id="tabs">
+        <li>
+          <a href="{{ entity.absolute_url }}">Object Metadata</a>
+        </li>
+        <li class="active">
+          <a href="{% url "webui-entity-children" entity.id %}">
+            Child Objects
+            {% if entity.children_meta %}({{ entity.children_meta|length }}){% endif %}
+          </a>
+        </li>
+{% for role in children_urls %}
+        <li>
+          <a href="{{ role.url }}">
+            {{ role.name|capfirst }}
+            {% if role.len %}({{ role.len }}){% endif %}
+          </a>
+        </li>
+{% endfor %}
+      </ul>
+
+
+{% if page.object_list %}
+
+<div>
+  {{ paginator.count }} items<br/>
+</div>
+
+<table class="table table-condensed">
+  <thead>
+	<tr>
+		<th></th>
+		<th>ID</th>
+		<th>Title</th>
+	</tr>
+  </thead>
+  <tbody>	
+
+{% for object in page.object_list %}
+  <tr>
+
+    <td>
+  {% if object.signature_id %}
+  {% thumbnail object.signature_abs "100x100" crop="center" as img %}
+    <a href="{{ object.absolute_url }}">
+      <img class="img-responsive img-thumbnail" src="{{ img.url }}" width="{{ img.width }}" height="{{ img.height }}">
+    </a>
+  {% endthumbnail %}
+  {% endif %}
+    </td>
+    <td>
+      <a href="{% url "webui-entity" object.id %}">{{ object.id }}</a>
+    </td>
+    <td>
+      {{ object.title }}
+    </td>
+  </tr>
+{% endfor %}
+
+{% if paginator.num_pages > 1 %}
+{% bootstrap_paginate page range=10 show_first_last="true" %}
+{% endif %}
+
+{% else %}
+<p>
+This object has no children.
+</p>
+{% endif %}{# page.object_list #}
+
+
+</tbody>
+</table>
+
+    </div><!-- .span12 -->
+  </div><!-- .row-fluid -->
+
+{% endblock content %}

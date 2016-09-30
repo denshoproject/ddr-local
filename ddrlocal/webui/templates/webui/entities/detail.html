@@ -20,9 +20,22 @@
 
 
       <ul class="nav nav-tabs" id="tabs">
-        <li class="active"><a href="#">Object Metadata</a></li>
+        <li class="active">
+          <a href="#">Object Metadata</a>
+        </li>
+        <li>
+          <a href="{% url "webui-entity-children" entity.id %}">
+            Child Objects
+            {% if entity.children_meta %}({{ entity.children_meta|length }}){% endif %}
+          </a>
+        </li>
 {% for role in children_urls %}
-        <li><a href="{{ role.url }}">{{ role.name|capfirst }} Files</a></li>
+        <li>
+          <a href="{{ role.url }}">
+            {{ role.name|capfirst }}
+            {% if role.len %}({{ role.len }}){% endif %}
+          </a>
+        </li>
 {% endfor %}
       </ul>
 

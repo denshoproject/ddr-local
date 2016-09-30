@@ -219,7 +219,29 @@ def detail( request, eid ):
     )
 
 @storage_required
-def children( request, rid ):
+def children( request, eid ):
+    entity = Entity.from_identifier(Identifier(eid))
+    collection = entity.collection()
+    # paginate
+    objects = entity.children_meta
+    thispage = request.GET.get('page', 1)
+    paginator = Paginator(objects, settings.RESULTS_PER_PAGE)
+    page = paginator.page(thispage)
+    return render_to_response(
+        'webui/entities/children.html',
+        {
+            'collection': collection,
+            'entity': entity,
+            'children_urls': entity.children_urls(),
+            'paginator': paginator,
+            'page': page,
+            'thispage': thispage,
+        },
+        context_instance=RequestContext(request, processors=[])
+    )
+
+@storage_required
+def files( request, rid ):
     file_role = Stub.from_identifier(Identifier(rid))
     role = file_role.identifier.parts['role']
     entity = file_role.parent(stubs=True)
@@ -235,14 +257,16 @@ def children( request, rid ):
     page = paginator.page(thispage)
     return render_to_response(
         'webui/entities/files.html',
-        {'collection': collection,
-         'entity': entity,
-         'children_urls': entity.children_urls(active=role),
-         'browse_url': entity.file_browse_url(role),
-         'batch_url': entity.file_browse_url(role),
-         'paginator': paginator,
-         'page': page,
-         'thispage': thispage,},
+        {
+            'collection': collection,
+            'entity': entity,
+            'children_urls': entity.children_urls(active=role),
+            'browse_url': entity.file_browse_url(role),
+            'batch_url': entity.file_browse_url(role),
+            'paginator': paginator,
+            'page': page,
+            'thispage': thispage,
+        },
         context_instance=RequestContext(request, processors=[])
     )
 
