@@ -56,7 +56,7 @@ def get_repos_orgs():
         # cache miss!  This should not happen very often
         # Same code as webui.tasks.gitolite_info_refresh(),
         # but copied to prevent import loop.
-        info = dvcs.gitolite_info(settings.GITOLITE, settings.GITOLITE_TIMEOUT)
+        info = dvcs.Gitolite().initialize(settings.GITOLITE, settings.GITOLITE_TIMEOUT).info
         cached = dumps(info, settings.GITOLITE)
         cache.set(
             GITOLITE_INFO_CACHE_KEY,
@@ -69,7 +69,9 @@ def get_repos_orgs():
         except ValueError:
             timestamp,source,info = None,None,None
         if info:
-            repos_orgs = dvcs.gitolite_orgs(info)
+            gitolite = dvcs.Gitolite()
+            gitolite.info = info
+            repos_orgs = gitolite.orgs()
     return repos_orgs
 
 def refresh():
@@ -102,7 +104,7 @@ def refresh():
         needs_update = True
         feedback.append('missing')
     if needs_update:
-        info = dvcs.gitolite_info(settings.GITOLITE, settings.GITOLITE_TIMEOUT)
+        info = dvcs.Gitolite().initialize(settings.GITOLITE, settings.GITOLITE_TIMEOUT).info
         if info:
             cached = dumps(info, settings.GITOLITE)
             cache.set(
