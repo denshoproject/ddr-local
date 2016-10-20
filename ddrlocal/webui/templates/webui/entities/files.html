@@ -84,12 +84,16 @@ or <a class="btn btn-primary btn-mini" href="{{ batch_url }}">Add a batch of fil
     </td>
 {% endif %}{#username #}
 
-    <td>
-  {% thumbnail file.path_abs "100x100" crop="center" as img %}
+  <td>
+  {% if file.access_present %}
+  {% thumbnail file.access_abs "100x100" crop="center" as img %}
     <a href="{{ file.absolute_url }}">
       <img class="img-responsive img-thumbnail" src="{{ img.url }}" width="{{ img.width }}" height="{{ img.height }}">
     </a>
   {% endthumbnail %}
+  {% else %}
+    <p>No image</p>
+  {% endif %}{# file.access_present #}
     </td>
     <td>
       <a href="{{ file.absolute_url }}">{{ file.basename }}</a>
