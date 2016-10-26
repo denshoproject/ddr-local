@@ -22,6 +22,8 @@ from datetime import timedelta
 import logging
 import sys
 
+import pytz
+
 os.environ['USER'] = 'ddr'
 
 AGENT = 'ddr-local'
@@ -58,6 +60,8 @@ IDSERVICE_API_BASE   = config.get('idservice','api_base')
 MEDIA_BASE           = config.get('cmdln','media_base')
 # Location of Repository 'ddr' repo, which should contain repo_models
 # for the Repository.
+DEFAULT_TIMEZONE     = config.get('cmdln','default_timezone')
+TZ = pytz.timezone(DEFAULT_TIMEZONE)
 DATE_FORMAT          = config.get('cmdln','date_format')
 TIME_FORMAT          = config.get('cmdln','time_format')
 DATETIME_FORMAT      = config.get('cmdln','datetime_format')
