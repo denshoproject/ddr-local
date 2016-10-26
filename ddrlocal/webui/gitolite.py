@@ -95,7 +95,7 @@ def refresh():
             feedback.append('malformed')
             needs_update = True
         if timestamp:
-            elapsed = datetime.now() - timestamp
+            elapsed = datetime.now(settings.TZ) - timestamp
             cutoff = timedelta(seconds=settings.GITOLITE_INFO_CACHE_CUTOFF)
             if elapsed > cutoff:
                 needs_update = True
@@ -139,7 +139,7 @@ def dumps(info, source):
     @param source: str
     @returns: str
     """
-    timestamp = datetime.now().strftime(settings.TIMESTAMP_FORMAT)
+    timestamp = datetime.now(settings.TZ).strftime(settings.TIMESTAMP_FORMAT)
     text = '%s %s\n%s' % (timestamp, source, info)
     return text
 

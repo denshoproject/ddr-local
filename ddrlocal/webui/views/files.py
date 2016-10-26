@@ -198,7 +198,7 @@ def new( request, rid ):
                     'action': 'webui-file-new-%s' % role,
                     'filename': os.path.basename(src_path),
                     'entity_id': entity.id,
-                    'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
+                    'start': datetime.now(settings.TZ).strftime(settings.TIMESTAMP_FORMAT),}
             celery_tasks[result.task_id] = task
             #del request.session[settings.CELERY_TASKS_SESSION_KEY]
             request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
@@ -281,7 +281,7 @@ def new_access( request, fid ):
                     'filename': os.path.basename(src_path),
                     'file_url': file_.absolute_url(),
                     'entity_id': entity.id,
-                    'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
+                    'start': datetime.now(settings.TZ).strftime(settings.TIMESTAMP_FORMAT),}
             celery_tasks[result.task_id] = task
             #del request.session[settings.CELERY_TASKS_SESSION_KEY]
             request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks

@@ -189,7 +189,7 @@ def sync( request, cid ):
                     'action': 'webui-collection-sync',
                     'collection_id': collection.id,
                     'collection_url': collection.absolute_url(),
-                    'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
+                    'start': datetime.now(settings.TZ).strftime(settings.TIMESTAMP_FORMAT),}
             celery_tasks[result.task_id] = task
             request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
             return HttpResponseRedirect(collection.absolute_url())
@@ -401,7 +401,7 @@ def signatures( request, cid ):
                 'action': 'webui-collection-signatures',
                 'collection_id': collection.id,
                 'collection_url': collection.absolute_url(),
-                'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),
+                'start': datetime.now(settings.TZ).strftime(settings.TIMESTAMP_FORMAT),
             }
             celery_tasks[result.task_id] = task
             request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
@@ -445,7 +445,7 @@ def csv_export( request, cid, model=None ):
             'things': things[model],
             'file_name': csv_filename,
             'file_url': file_url,
-            'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
+            'start': datetime.now(settings.TZ).strftime(settings.TIMESTAMP_FORMAT),}
     celery_tasks[result.task_id] = task
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
     return HttpResponseRedirect(collection.absolute_url())

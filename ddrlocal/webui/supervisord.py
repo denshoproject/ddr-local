@@ -13,7 +13,7 @@ def process_info():
         data[name] = {
             'name': name,
             'alert_class': 'danger',
-            'timestamp': datetime.now(),
+            'timestamp': datetime.now(settings.TZ),
             'statename': 'restarting...',
         }
     server = xmlrpclib.Server(settings.SUPERVISORD_URL)

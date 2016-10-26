@@ -201,7 +201,7 @@ def reindex( request ):
                 task = {'task_id': result.task_id,
                         'action': 'webui-search-reindex',
                         'index': index,
-                        'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
+                        'start': datetime.now(settings.TZ).strftime(settings.TIMESTAMP_FORMAT),}
                 celery_tasks[result.task_id] = task
                 request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
     return HttpResponseRedirect( reverse('webui-search-admin') )

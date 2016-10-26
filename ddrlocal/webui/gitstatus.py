@@ -69,7 +69,7 @@ from webui.identifier import Identifier
 def log(msg):
     """celery does not like writing to logs, so write to separate logfile
     """
-    entry = '%s %s\n' % (datetime.now().strftime(settings.TIMESTAMP_FORMAT), msg)
+    entry = '%s %s\n' % (datetime.now(settings.TZ).strftime(settings.TIMESTAMP_FORMAT), msg)
     with open(settings.GITSTATUS_LOG, 'a') as f:
         f.write(entry)
 
@@ -239,11 +239,11 @@ def update( base_dir, collection_path ):
     @param force: Boolean Forces refresh of status
     @returns: dict
     """
-    start = datetime.now()
+    start = datetime.now(settings.TZ)
     repo = dvcs.repository(collection_path)
     status = dvcs.repo_status(repo, short=True)
     annex_status = dvcs.annex_status(repo)
-    timestamp = datetime.now()
+    timestamp = datetime.now(settings.TZ)
     syncstatus = sync_status(collection_path, git_status=status, timestamp=timestamp, force=True)
     elapsed = timestamp - start
     text = write(base_dir, collection_path, timestamp, elapsed, status, annex_status, syncstatus)
@@ -291,7 +291,7 @@ def lock( base_dir, task_id ):
     @param task_id: Unique identifier for task.
     @returns: Complete text of lockfile
     """
-    ts = datetime.now().strftime(settings.TIMESTAMP_FORMAT)
+    ts = datetime.now(settings.TZ).strftime(settings.TIMESTAMP_FORMAT)
     text = '%s %s' % (ts, task_id)
     LOCK = lock_path(base_dir)
     locks = []
@@ -442,7 +442,7 @@ def queue_generate( base_dir, repos_orgs ):
             if not collection_id in cids:
                 cids.append(collection_id)
                 queue['collections'].append( (epoch,collection_id) )
-    queue['generated'] = datetime.now()
+    queue['generated'] = datetime.now(settings.TZ)
     return queue
 
 def queue_mark_updated( queue, collection_id, delta, minimum ):
@@ -481,7 +481,7 @@ def next_time( queue, delta, minimum ):
         if (not latest) or (ts > latest):
             latest = ts
     timestamp = latest + timedelta(seconds=delta)
-    earliest = datetime.now() + timedelta(seconds=minimum)
+    earliest = datetime.now(settings.TZ) + timedelta(seconds=minimum)
     if timestamp < earliest:
         timestamp = earliest
     return timestamp
@@ -502,7 +502,7 @@ def next_repo( queue, local=False ):
     if local:
         # choose first collection that is not locked
         for timestamp,cid in collections:
-            if datetime.now() > timestamp:
+            if datetime.now(settings.TZ) > timestamp:
                 ci = Identifier(id=cid)
                 if not Collection.from_identifier(ci).locked():
                     return ci.path_abs()
@@ -511,7 +511,7 @@ def next_repo( queue, local=False ):
     else:
         # global lock - just take the first collection
         for timestamp,cid in collections:
-            if datetime.now() > timestamp:
+            if datetime.now(settings.TZ) > timestamp:
                 ci = Identifier(id=cid)
                 return ci.path_abs()
             if (not next_available) or (timestamp < next_available):
