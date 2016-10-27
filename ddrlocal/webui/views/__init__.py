@@ -1,4 +1,3 @@
-from datetime import datetime
 import json
 import logging
 logger = logging.getLogger(__name__)
@@ -12,6 +11,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import Http404, get_object_or_404, render_to_response
 from django.template import RequestContext
 
+from DDR import converters
 from DDR import idservice
 
 from webui import WEBUI_MESSAGES
@@ -153,7 +153,7 @@ def tasks( request ):
     # add start datetime to tasks list
     celery_tasks = session_tasks_list(request)
     for task in celery_tasks:
-        task['startd'] = datetime.strptime(task['start'], settings.TIMESTAMP_FORMAT)
+        task['startd'] = converters.text_to_datetime(task['start'])
 
     if request.method == 'POST':
         form = TaskDismissForm(request.POST, celery_tasks=celery_tasks)

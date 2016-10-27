@@ -22,6 +22,7 @@ from django.template import RequestContext
 from django.template.loader import get_template
 
 from DDR import commands
+from DDR import converters
 from DDR import docstore
 from DDR import dvcs
 from DDR import fileio
@@ -138,7 +139,7 @@ def sync_status_ajax( request, cid ):
     if gitstatus:
         sync_status = gitstatus['sync_status']
         if sync_status.get('timestamp',None):
-            sync_status['timestamp'] = sync_status['timestamp'].strftime(settings.TIMESTAMP_FORMAT)
+            sync_status['timestamp'] = converters.datetime_to_text(sync_status['timestamp'])
         return HttpResponse(json.dumps(sync_status), content_type="application/json")
     raise Http404
 
@@ -189,7 +190,7 @@ def sync( request, cid ):
                     'action': 'webui-collection-sync',
                     'collection_id': collection.id,
                     'collection_url': collection.absolute_url(),
-                    'start': datetime.now(settings.TZ).strftime(settings.TIMESTAMP_FORMAT),}
+                    'start': converters.datetime_to_text(datetime.now(settings.TZ)),}
             celery_tasks[result.task_id] = task
             request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
             return HttpResponseRedirect(collection.absolute_url())
@@ -401,7 +402,7 @@ def signatures( request, cid ):
                 'action': 'webui-collection-signatures',
                 'collection_id': collection.id,
                 'collection_url': collection.absolute_url(),
-                'start': datetime.now(settings.TZ).strftime(settings.TIMESTAMP_FORMAT),
+                'start': converters.datetime_to_text(datetime.now(settings.TZ)),
             }
             celery_tasks[result.task_id] = task
             request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
@@ -445,7 +446,7 @@ def csv_export( request, cid, model=None ):
             'things': things[model],
             'file_name': csv_filename,
             'file_url': file_url,
-            'start': datetime.now(settings.TZ).strftime(settings.TIMESTAMP_FORMAT),}
+            'start': converters.datetime_to_text(datetime.now(settings.TZ)),}
     celery_tasks[result.task_id] = task
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
     return HttpResponseRedirect(collection.absolute_url())

@@ -116,6 +116,7 @@ import doctest
 from django.conf import settings
 
 from DDR import commands
+from DDR import converters
 from DDR import fileio
 from DDR import modules
 from DDR import util
@@ -302,7 +303,7 @@ def dtfmt(dt, fmt='%Y-%m-%dT%H:%M:%S.%f'):
     @param fmt: str Format string (default: '%Y-%m-%dT%H:%M:%S.%f')
     @returns: str
     """
-    return dt.strftime(fmt)
+    return converters.datetime_to_text(fmt)
 
 def make_tmpdir(tmpdir):
     """Make tmp dir if doesn't exist.
