@@ -24,6 +24,8 @@ import sys
 
 import pytz
 
+from DDR import config as ddrconfig
+
 os.environ['USER'] = 'ddr'
 
 AGENT = 'ddr-local'
@@ -67,9 +69,7 @@ try:
 except:
     DEFAULT_TIMEZONE = 'America/Los_Angeles'
 TZ = pytz.timezone(DEFAULT_TIMEZONE)
-ALT_TIMEZONES = {
-    'hmwf': pytz.timezone('America/Boise'),
-}
+ALT_TIMEZONES = ddrconfig._parse_alt_timezones(config.get('cmdln','alt_timezones'))
 DATETIME_FORMAT = config.get('cmdln','datetime_format')
 DATE_FORMAT = config.get('cmdln','date_format')
 TIME_FORMAT = config.get('cmdln','time_format')
