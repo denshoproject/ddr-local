@@ -60,15 +60,20 @@ IDSERVICE_API_BASE   = config.get('idservice','api_base')
 MEDIA_BASE           = config.get('cmdln','media_base')
 # Location of Repository 'ddr' repo, which should contain repo_models
 # for the Repository.
-DEFAULT_TIMEZONE     = config.get('cmdln','default_timezone')
+
+# see notes in ddrlocal.cfg
+try:
+    DEFAULT_TIMEZONE = config.get('cmdln','default_timezone')
+except:
+    DEFAULT_TIMEZONE = 'America/Los_Angeles'
 TZ = pytz.timezone(DEFAULT_TIMEZONE)
-DATE_FORMAT          = config.get('cmdln','date_format')
-TIME_FORMAT          = config.get('cmdln','time_format')
-DATETIME_FORMAT      = config.get('cmdln','datetime_format')
-TIMESTAMP_FORMAT     = config.get('cmdln','timestamp_format')
-PRETTY_DATE_FORMAT   = config.get('cmdln','pretty_date_format')
-PRETTY_TIME_FORMAT   = config.get('cmdln','pretty_time_format')
+DATETIME_FORMAT = config.get('cmdln','datetime_format')
+DATE_FORMAT = config.get('cmdln','date_format')
+TIME_FORMAT = config.get('cmdln','time_format')
 PRETTY_DATETIME_FORMAT = config.get('cmdln','pretty_datetime_format')
+PRETTY_DATE_FORMAT = config.get('cmdln','pretty_date_format')
+PRETTY_TIME_FORMAT = config.get('cmdln','pretty_time_format')
+
 TEMPLATE_CJSON       = config.get('cmdln','template_cjson')
 TEMPLATE_EJSON       = config.get('cmdln','template_ejson')
 TEMPLATE_EAD         = os.path.join(REPO_MODELS_PATH, 'templates', 'ead.xml')
