@@ -76,6 +76,7 @@ TIME_FORMAT = config.get('cmdln','time_format')
 PRETTY_DATETIME_FORMAT = config.get('cmdln','pretty_datetime_format')
 PRETTY_DATE_FORMAT = config.get('cmdln','pretty_date_format')
 PRETTY_TIME_FORMAT = config.get('cmdln','pretty_time_format')
+ELASTICSEARCH_DATETIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss"
 
 TEMPLATE_CJSON       = config.get('cmdln','template_cjson')
 TEMPLATE_EJSON       = config.get('cmdln','template_ejson')
