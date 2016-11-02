@@ -28,6 +28,7 @@ from webui.identifier import Identifier
 
 from DDR import batch
 from DDR import commands
+from DDR import converters
 from DDR import docstore
 from DDR import dvcs
 from DDR import models
@@ -159,7 +160,7 @@ def reindex_and_notify( index ):
     task = {'task_id': result.task_id,
             'action': 'webui-search-reindex',
             'index': index,
-            'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
+            'start': converters.datetime_to_text(datetime.now(settings.TZ)),}
     celery_tasks[result.task_id] = task
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
 
@@ -335,7 +336,7 @@ def collection_new_expert(request, base_dir, collection_id, git_name, git_mail):
         'action': 'webui-collection-newexpert',
         'collection_url': collection_url,
         'collection_id': collection_id,
-        'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
+        'start': converters.datetime_to_text(datetime.now(settings.TZ)),}
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
 
 class CollectionNewExpertTask(Task):
@@ -391,7 +392,7 @@ def collection_edit(request, collection, cleaned_data, git_name, git_mail):
         'action': 'webui-collection-edit',
         'collection_url': collection.absolute_url(),
         'collection_id': collection.id,
-        'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
+        'start': converters.datetime_to_text(datetime.now(settings.TZ)),}
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
 
 class CollectionEditTask(Task):
@@ -454,7 +455,7 @@ def collection_entity_newexpert(request, collection, entity_id, git_name, git_ma
         'collection_id': collection.id,
         'entity_url': entity_url,
         'entity_id': entity_id,
-        'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
+        'start': converters.datetime_to_text(datetime.now(settings.TZ)),}
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
 
 class EntityNewExpertTask(Task):
@@ -520,7 +521,7 @@ def entity_file_edit(request, collection, file_, form_data, git_name, git_mail):
         'action': 'webui-file-edit',
         'file_url': file_.absolute_url(),
         'file_id': file_.id,
-        'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
+        'start': converters.datetime_to_text(datetime.now(settings.TZ)),}
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
 
 # ----------------------------------------------------------------------
@@ -582,7 +583,7 @@ def collection_entity_edit(request, collection, entity, form_data, git_name, git
         'collection_id': collection.id,
         'entity_url': entity.absolute_url(),
         'entity_id': entity.id,
-        'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
+        'start': converters.datetime_to_text(datetime.now(settings.TZ)),}
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
 
 class EntityEditTask(Task):
@@ -653,7 +654,7 @@ def collection_delete_entity(request, git_name, git_mail, collection, entity, ag
         'collection_id': collection.id,
         'entity_url': entity.absolute_url(),
         'entity_id': entity.id,
-        'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
+        'start': converters.datetime_to_text(datetime.now(settings.TZ)),}
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
 
 class DeleteEntityTask(Task):
@@ -718,7 +719,7 @@ def entity_reload_files(request, collection, entity, git_name, git_mail, agent):
         'action': 'webui-entity-reload-files',
         'entity_url': entity.absolute_url(),
         'entity_id': entity.id,
-        'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
+        'start': converters.datetime_to_text(datetime.now(settings.TZ)),}
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
 
 class EntityReloadTask(Task):
@@ -794,7 +795,7 @@ def entity_delete_file(request, git_name, git_mail, collection, entity, file_, a
         'entity_id': entity.id,
         'filename': file_.basename,
         'file_url': file_.absolute_url(),
-        'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
+        'start': converters.datetime_to_text(datetime.now(settings.TZ)),}
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
 
 class DeleteFileTask(Task):

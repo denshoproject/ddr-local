@@ -25,7 +25,7 @@ def sitewide(request):
     return {
         'request': request,
         # ddr-local info
-        'time': datetime.now().isoformat(),
+        'time': datetime.now(settings.TZ).isoformat(),
         'pid': os.getpid(),
         'host': os.uname()[1],
         'ddrcmdln_commit': settings.DDRCMDLN_COMMIT,

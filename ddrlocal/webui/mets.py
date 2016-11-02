@@ -90,12 +90,12 @@ class MetsForm(XMLForm):
         if not getval(tree, namespaces, "/mets:mets/mets:metsHdr/@CREATEDATE"):
             tree = set_attr(tree, namespaces,
                             "/mets:mets/mets:metsHdr", 'CREATEDATE',
-                            datetime.now().strftime('%Y-%m-%dT%H:%M:%S'))
+                            datetime.now(settings.TZ).strftime('%Y-%m-%dT%H:%M:%S'))
         # modified
         tree = set_attr(tree, namespaces,
                         "/mets:mets/mets:metsHdr",
                         'LASTMODDATE',
-                        datetime.now().strftime('%Y-%m-%dT%H:%M:%S'))
+                        datetime.now(settings.TZ).strftime('%Y-%m-%dT%H:%M:%S'))
         
         # fields
         

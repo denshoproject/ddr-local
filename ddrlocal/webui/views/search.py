@@ -17,7 +17,9 @@ from django.utils.http import urlquote  as django_urlquote
 
 from elasticsearch import Elasticsearch
 
-from DDR import docstore, models
+from DDR import converters
+from DDR import docstore
+from DDR import models
 from webui import tasks
 from webui.decorators import search_index
 from webui.forms.search import SearchForm, IndexConfirmForm, DropConfirmForm
@@ -201,7 +203,7 @@ def reindex( request ):
                 task = {'task_id': result.task_id,
                         'action': 'webui-search-reindex',
                         'index': index,
-                        'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
+                        'start': converters.datetime_to_text(datetime.now(settings.TZ)),}
                 celery_tasks[result.task_id] = task
                 request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
     return HttpResponseRedirect( reverse('webui-search-admin') )

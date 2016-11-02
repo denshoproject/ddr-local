@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 from django.conf import settings
 from django.core.cache import cache
 
+from DDR import converters
 from DDR import dvcs
 
 from webui import GITOLITE_INFO_CACHE_KEY
@@ -88,14 +89,14 @@ def refresh():
         feedback.append('cached')
         try:
             timestamp,source,info = loads(cached)
-            feedback.append(timestamp.strftime(settings.TIMESTAMP_FORMAT))
+            feedback.append(converters.datetime_to_text(timestamp))
             feedback.append(source)
         except ValueError:
             timestamp,source,info = None,None,None
             feedback.append('malformed')
             needs_update = True
         if timestamp:
-            elapsed = datetime.now() - timestamp
+            elapsed = datetime.now(settings.TZ) - timestamp
             cutoff = timedelta(seconds=settings.GITOLITE_INFO_CACHE_CUTOFF)
             if elapsed > cutoff:
                 needs_update = True
@@ -139,7 +140,7 @@ def dumps(info, source):
     @param source: str
     @returns: str
     """
-    timestamp = datetime.now().strftime(settings.TIMESTAMP_FORMAT)
+    timestamp = converters.datetime_to_text(datetime.now(settings.TZ))
     text = '%s %s\n%s' % (timestamp, source, info)
     return text
 
@@ -151,5 +152,5 @@ def loads(text):
     """
     line0,info = text.split('\n', 1)
     ts,source = line0.split(' ')
-    timestamp = datetime.strptime(ts, settings.TIMESTAMP_FORMAT)
+    timestamp = converters.text_to_datetime(ts)
     return timestamp,source,info
