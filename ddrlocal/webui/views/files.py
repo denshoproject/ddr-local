@@ -27,9 +27,7 @@ from webui.forms.files import shared_folder_files
 from webui.models import Stub, Collection, Entity, DDRFile
 from webui.models import MODULES
 from webui.identifier import Identifier, CHILDREN_ALL
-from webui.tasks import entity_add_file, entity_add_access
-from webui.tasks import entity_file_edit, entity_delete_file
-from webui.tasks import gitstatus_update
+from webui import tasks
 from webui.views.decorators import login_required
 
 
@@ -177,7 +175,7 @@ def new( request, rid ):
             for field in entity.inheritable_fields():
                 inherited.append( (field,getattr(entity,field)) )
             # start tasks
-            result = entity_add_file.apply_async(
+            result = tasks.entity_add_file.apply_async(
                 (git_name, git_mail, entity, src_path, role, data, settings.AGENT),
                 countdown=2)
             result_dict = result.__dict__
@@ -260,9 +258,10 @@ def new_access( request, fid ):
         if form.is_valid():
             src_path = form.cleaned_data['path']
             # start tasks
-            result = entity_add_access.apply_async(
+            result = tasks.entity_add_access.apply_async(
                 (git_name, git_mail, entity, file_),
-                countdown=2)
+                countdown=2
+            )
             result_dict = result.__dict__
             log = addfile_logger(entity.identifier)
             log.ok('START task_id %s' % result.task_id)
@@ -352,7 +351,7 @@ def edit( request, fid ):
             file_.write_json()
             
             # commit files, delete cache, update search index, update git status
-            entity_file_edit(
+            tasks.entity_file_edit(
                 request,
                 collection, file_, form.cleaned_data,
                 git_name, git_mail
@@ -397,7 +396,12 @@ def delete( request, fid ):
     if request.method == 'POST':
         form = DeleteFileForm(request.POST)
         if form.is_valid() and form.cleaned_data['confirmed']:
-            entity_delete_file(request, git_name, git_mail, collection, entity, file_, settings.AGENT)
+            tasks.entity_delete_file(
+                request,
+                git_name, git_mail,
+                collection, entity, file_,
+                settings.AGENT
+            )
             return HttpResponseRedirect(collection.absolute_url())
     else:
         form = DeleteFileForm()
