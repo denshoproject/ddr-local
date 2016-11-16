@@ -681,9 +681,6 @@ def entity_edit(collection_path, entity_id, form_data, git_name, git_mail, agent
         git_name, git_mail, collection_path, entity_id, agent))
     collection = Collection.from_identifier(Identifier(path=collection_path))
     entity = Entity.from_identifier(Identifier(id=entity_id))
-    # regenerate list of entity's files and child entities
-    entity.load_children_objects(Identifier, Entity, force_read=True)
-    entity.load_file_objects(Identifier, DDRFile, force_read=True)
     gitstatus.lock(settings.MEDIA_BASE, 'entity_edit')
     
     exit,status = entity.save(
@@ -834,9 +831,6 @@ def reload_files(collection_path, entity_id, git_name, git_mail, agent=''):
     gitstatus.lock(settings.MEDIA_BASE, 'reload_files')
     entity = Entity.from_identifier(Identifier(entity_id))
     collection = Collection.from_identifier(Identifier(path=collection_path))
-    
-    entity.load_children_objects(Identifier, Entity, force_read=True)
-    entity.load_file_objects(Identifier, DDRFile, force_read=True)
     
     exit,status = entity.save(
         git_name, git_mail,
