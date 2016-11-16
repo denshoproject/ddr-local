@@ -319,7 +319,7 @@ class Collection( DDRCollection ):
         
         return collection
     
-    def save( self, git_name, git_mail, cleaned_data ):
+    def save( self, git_name, git_mail, cleaned_data, commit=True ):
         """Save Collection metadata.
         
         Commit files, delete cache, update search index.
@@ -333,7 +333,7 @@ class Collection( DDRCollection ):
             git_name, git_mail,
             settings.AGENT,
             cleaned_data,
-            commit=True
+            commit=commit
         )
         
         self.cache_delete()
@@ -529,7 +529,7 @@ class Entity( DDREntity ):
         
         return entity
     
-    def save( self, git_name, git_mail, collection=None, form_data={} ):
+    def save( self, git_name, git_mail, collection=None, form_data={}, commit=True ):
         """Save Entity metadata
         
         Commit files, delete cache, update search index.
@@ -547,7 +547,7 @@ class Entity( DDREntity ):
             settings.AGENT,
             collection,
             form_data,
-            commit=True
+            commit=commit
         )
         
         collection.cache_delete()
@@ -653,7 +653,7 @@ class DDRFile( File ):
         """
         model_def_fields(self)
     
-    def save( self, git_name, git_mail, form_data={} ):
+    def save( self, git_name, git_mail, form_data={}, commit=True ):
         """Save file metadata
         
         Commit files, delete cache, update search index.
@@ -670,7 +670,7 @@ class DDRFile( File ):
             settings.AGENT,
             collection, self.parent(),
             form_data,
-            commit=True
+            commit=commit
         )
         
         collection.cache_delete()
