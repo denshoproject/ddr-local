@@ -453,7 +453,7 @@ def collection_save(collection_path, cleaned_data, git_name, git_mail):
     collection = Collection.from_identifier(Identifier(path=collection_path))
     gitstatus.lock(settings.MEDIA_BASE, 'collection_edit')
     
-    exit,status = collection.save(
+    exit,status,updated_files = collection.save(
         git_name, git_mail,
         cleaned_data
     )
@@ -604,7 +604,7 @@ def file_edit(collection_path, file_id, form_data, git_name, git_mail):
     file_ = DDRFile.from_identifier(fidentifier)
     gitstatus.lock(settings.MEDIA_BASE, 'file_edit')
     
-    exit,status = file_.save(
+    exit,status,updated_files = file_.save(
         git_name, git_mail,
         form_data
     )
@@ -683,7 +683,7 @@ def entity_edit(collection_path, entity_id, form_data, git_name, git_mail, agent
     entity = Entity.from_identifier(Identifier(id=entity_id))
     gitstatus.lock(settings.MEDIA_BASE, 'entity_edit')
     
-    exit,status = entity.save(
+    exit,status,updated_files = entity.save(
         git_name, git_mail,
         collection,
         form_data
@@ -832,7 +832,7 @@ def reload_files(collection_path, entity_id, git_name, git_mail, agent=''):
     entity = Entity.from_identifier(Identifier(entity_id))
     collection = Collection.from_identifier(Identifier(path=collection_path))
     
-    exit,status = entity.save(
+    exit,status,updated_files = entity.save(
         git_name, git_mail,
         collection,
         {}

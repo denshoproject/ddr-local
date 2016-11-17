@@ -329,7 +329,7 @@ class Collection( DDRCollection ):
         @param git_mail: str
         @param cleaned_data: dict
         """
-        exit,status = super(Collection, self).save(
+        exit,status,updated_files = super(Collection, self).save(
             git_name, git_mail,
             settings.AGENT,
             cleaned_data,
@@ -343,7 +343,7 @@ class Collection( DDRCollection ):
             docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
         except ConnectionError:
             logger.error('Could not post to Elasticsearch.')
-        return exit,status
+        return exit,status,updated_files
 
 
 class Entity( DDREntity ):
@@ -542,7 +542,7 @@ class Entity( DDREntity ):
         """
         collection = self.collection()
         
-        exit,status = super(Entity, self).save(
+        exit,status,updated_files = super(Entity, self).save(
             git_name, git_mail,
             settings.AGENT,
             collection,
@@ -557,7 +557,7 @@ class Entity( DDREntity ):
             docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
         except ConnectionError:
             logger.error('Could not post to Elasticsearch.')
-        return exit,status
+        return exit,status,updated_files
 
 
 class DDRFile( File ):
@@ -665,7 +665,7 @@ class DDRFile( File ):
         """
         collection = self.collection()
         
-        exit,status = super(DDRFile, self).save(
+        exit,status,updated_files = super(DDRFile, self).save(
             git_name, git_mail,
             settings.AGENT,
             collection, self.parent(),
@@ -680,4 +680,4 @@ class DDRFile( File ):
             docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
         except ConnectionError:
             logger.error('Could not post to Elasticsearch.')
-        return exit,status
+        return exit,status,updated_files
