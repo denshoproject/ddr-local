@@ -147,7 +147,7 @@ def gitstatus_queue(request):
         context_instance=RequestContext(request, processors=[])
     )
 
-def tasks( request ):
+def task_list( request ):
     """Show pending/successful/failed tasks; UI for dismissing tasks.
     """
     # add start datetime to tasks list
@@ -163,7 +163,7 @@ def tasks( request ):
             for task in celery_tasks:
                 fieldname = 'dismiss_%s' % task['task_id']
                 if (fieldname in form.cleaned_data.keys()) and form.cleaned_data[fieldname]:
-                    task.dismiss_session_task(
+                    tasks.dismiss_session_task(
                         request,
                         task['task_id']
                     )
@@ -199,7 +199,7 @@ def task_status( request ):
 
 @login_required
 def task_dismiss( request, task_id ):
-    task.dismiss_session_task(
+    tasks.dismiss_session_task(
         request,
         task_id
     )

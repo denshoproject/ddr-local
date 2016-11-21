@@ -10,7 +10,7 @@ urlpatterns = patterns(
 
     url(r'^task-status/$', 'webui.views.task_status', name='webui-task-status'),
     url(r'^tasks/(?P<task_id>[-\w]+)/dismiss/$', 'webui.views.task_dismiss', name='webui-tasks-dismiss'),
-    url(r'^tasks/$', 'webui.views.tasks', name='webui-tasks'),
+    url(r'^tasks/$', 'webui.views.task_list', name='webui-tasks'),
     
     url(r'^gitstatus-queue/$', 'webui.views.gitstatus_queue', name='webui-gitstatus-queue'),
     url(r'^gitstatus-toggle/$', 'webui.views.gitstatus_toggle', name='webui-gitstatus-toggle'),
