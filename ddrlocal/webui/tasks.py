@@ -154,13 +154,17 @@ def reindex_and_notify( index ):
     """Drop existing index and build another from scratch; hand off to Celery.
     This function is intended for use in a view.
     """
-    result = reindex(index).apply_async(countdown=2)
+    result = reindex(index).apply_async(
+        countdown=2
+    )
     celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
     # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
-    task = {'task_id': result.task_id,
-            'action': 'webui-search-reindex',
-            'index': index,
-            'start': converters.datetime_to_text(datetime.now(settings.TZ)),}
+    task = {
+        'task_id': result.task_id,
+        'action': 'webui-search-reindex',
+        'index': index,
+        'start': converters.datetime_to_text(datetime.now(settings.TZ)),
+    }
     celery_tasks[result.task_id] = task
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
 
@@ -270,8 +274,16 @@ def entity_add_file( git_name, git_mail, entity, src_path, role, data, agent='' 
     @param agent: (optional) Name of software making the change.
     """
     gitstatus.lock(settings.MEDIA_BASE, 'entity_add_file')
-    file_,repo,log = entity.add_local_file(src_path, role, data, git_name, git_mail, agent)
-    file_,repo,log = entity.add_file_commit(file_, repo, log, git_name, git_mail, agent)
+    
+    file_,repo,log = entity.add_local_file(
+        src_path, role, data,
+        git_name, git_mail, agent
+    )
+    file_,repo,log = entity.add_file_commit(
+        file_, repo, log,
+        git_name, git_mail, agent
+    )
+    
     log.ok('Updating Elasticsearch')
     try:
         result = file_.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
@@ -294,11 +306,19 @@ def entity_add_access( git_name, git_mail, entity, ddrfile, agent='' ):
     @param agent: (optional) Name of software making the change.
     """
     gitstatus.lock(settings.MEDIA_BASE, 'entity_add_access')
-    file_,repo,log,op = entity.add_access(ddrfile, ddrfile.path_abs, git_name, git_mail, agent)
+    
+    file_,repo,log,op = entity.add_access(
+        ddrfile, ddrfile.path_abs,
+        git_name, git_mail, agent
+    )
     if op and (op == 'pass'):
         log.ok('Things are okay as they are.  Leaving them alone.')
         return file_.__dict__
-    file_,repo,log = entity.add_file_commit(file_, repo, log, git_name, git_mail, agent)
+    file_,repo,log = entity.add_file_commit(
+        file_, repo, log,
+        git_name, git_mail, agent
+    )
+    
     try:
         file_.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
     except ConnectionError:
@@ -325,9 +345,12 @@ def collection_new_expert(request, base_dir, collection_id, git_name, git_mail):
     # start tasks
     collection_path = os.path.join(base_dir, collection_id)
     collection_url = reverse('webui-collection', args=[collection_id])
+    
     result = collection_newexpert.apply_async(
         (collection_path, git_name, git_mail),
-        countdown=2)
+        countdown=2
+    )
+    
     # add celery task_id to session
     celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
     # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
@@ -361,8 +384,14 @@ def collection_newexpert(collection_path, git_name, git_mail):
     logger.debug('collection_newexpert(%s,%s,%s)' % (
         collection_path, git_name, git_mail))
     
-    collection = Collection.create(collection_path, git_name, git_mail)
-    gitstatus_update.apply_async((collection.path,), countdown=2)
+    collection = Collection.create(
+        collection_path,
+        git_name, git_mail
+    )
+    gitstatus_update.apply_async(
+        (collection.path,),
+        countdown=2
+    )
     
     return 'status',collection_path
 
@@ -379,9 +408,12 @@ TASK_STATUS_MESSAGES['webui-collection-edit'] = {
 
 def collection_edit(request, collection, cleaned_data, git_name, git_mail):
     # start tasks
+    
     result = collection_save.apply_async(
         (collection.path, cleaned_data, git_name, git_mail),
-        countdown=2)
+        countdown=2
+    )
+    
     # lock collection
     lockstatus = collection.lock(result.task_id)
     # add celery task_id to session
@@ -419,10 +451,17 @@ def collection_save(collection_path, cleaned_data, git_name, git_mail):
         git_name, git_mail, collection_path))
     
     collection = Collection.from_identifier(Identifier(path=collection_path))
-    
     gitstatus.lock(settings.MEDIA_BASE, 'collection_edit')
-    exit,status = collection.save(git_name, git_mail, cleaned_data)
-    gitstatus_update.apply_async((collection_path,), countdown=2)
+    
+    exit,status,updated_files = collection.save(
+        git_name, git_mail,
+        cleaned_data
+    )
+    
+    gitstatus_update.apply_async(
+        (collection_path,),
+        countdown=2
+    )
     
     return status,collection_path
 
@@ -440,9 +479,12 @@ TASK_STATUS_MESSAGES['webui-entity-newexpert'] = {
 def collection_entity_newexpert(request, collection, entity_id, git_name, git_mail):
     # start tasks
     entity_url = reverse('webui-entity', args=[entity_id])
+    
     result = entity_newexpert.apply_async(
         (collection.path, entity_id, git_name, git_mail),
-        countdown=2)
+        countdown=2
+    )
+    
     # lock collection
     lockstatus = collection.lock(result.task_id)
     # add celery task_id to session
@@ -488,10 +530,17 @@ def entity_newexpert(collection_path, entity_id, git_name, git_mail):
         collection_path, entity_id, git_name, git_mail))
     
     collection = Collection.from_identifier(Identifier(path=collection_path))
-    
     gitstatus.lock(settings.MEDIA_BASE, 'entity_newexpert')
-    entity = Entity.create(collection, entity_id, git_name, git_mail)
-    gitstatus_update.apply_async((collection.path,), countdown=2)
+    
+    entity = Entity.create(
+        collection, entity_id,
+        git_name, git_mail
+    )
+    
+    gitstatus_update.apply_async(
+        (collection.path,),
+        countdown=2
+    )
 
     return 'status',collection_path,entity.id
 
@@ -508,9 +557,12 @@ TASK_STATUS_MESSAGES['webui-file-edit'] = {
 
 def entity_file_edit(request, collection, file_, form_data, git_name, git_mail):
     # start tasks
+    
     result = file_edit.apply_async(
         (collection.path, file_.id, form_data, git_name, git_mail),
-        countdown=2)
+        countdown=2
+    )
+    
     # lock collection
     lockstatus = collection.lock(result.task_id)
     # add celery task_id to session
@@ -551,8 +603,16 @@ def file_edit(collection_path, file_id, form_data, git_name, git_mail):
     fidentifier = Identifier(id=file_id)
     file_ = DDRFile.from_identifier(fidentifier)
     gitstatus.lock(settings.MEDIA_BASE, 'file_edit')
-    exit,status = file_.save(git_name, git_mail, form_data)
-    gitstatus_update.apply_async((collection_path,), countdown=2)
+    
+    exit,status,updated_files = file_.save(
+        git_name, git_mail,
+        form_data
+    )
+    
+    gitstatus_update.apply_async(
+        (collection_path,),
+        countdown=2
+    )
     return status,collection_path,file_id
 
 # ----------------------------------------------------------------------
@@ -568,9 +628,12 @@ TASK_STATUS_MESSAGES['webui-entity-edit'] = {
 
 def collection_entity_edit(request, collection, entity, form_data, git_name, git_mail, agent):
     # start tasks
+    
     result = entity_edit.apply_async(
         (collection.path, entity.id, form_data, git_name, git_mail, agent),
-        countdown=2)
+        countdown=2
+    )
+    
     # lock collection
     lockstatus = collection.lock(result.task_id)
     # add celery task_id to session
@@ -618,12 +681,18 @@ def entity_edit(collection_path, entity_id, form_data, git_name, git_mail, agent
         git_name, git_mail, collection_path, entity_id, agent))
     collection = Collection.from_identifier(Identifier(path=collection_path))
     entity = Entity.from_identifier(Identifier(id=entity_id))
-    # regenerate list of entity's files and child entities
-    entity.load_children_objects(Identifier, Entity, force_read=True)
-    entity.load_file_objects(Identifier, DDRFile, force_read=True)
     gitstatus.lock(settings.MEDIA_BASE, 'entity_edit')
-    exit,status = entity.save(git_name, git_mail, collection, form_data)
-    gitstatus_update.apply_async((collection.path,), countdown=2)
+    
+    exit,status,updated_files = entity.save(
+        git_name, git_mail,
+        collection,
+        form_data
+    )
+    
+    gitstatus_update.apply_async(
+        (collection.path,),
+        countdown=2
+    )
     return status,collection_path,entity_id
 
 # ------------------------------------------------------------------------
@@ -639,9 +708,12 @@ TASK_STATUS_MESSAGES['webui-entity-delete'] = {
 
 def collection_delete_entity(request, git_name, git_mail, collection, entity, agent):
     # start tasks
+    
     result = delete_entity.apply_async(
         (git_name, git_mail, collection.path, entity.id, agent),
-        countdown=2)
+        countdown=2
+    )
+    
     # lock collection
     lockstatus = collection.lock(result.task_id)
     # add celery task_id to session
@@ -688,11 +760,13 @@ def delete_entity( git_name, git_mail, collection_path, entity_id, agent='' ):
     # remove the entity
     collection = Collection.from_identifier(Identifier(collection_path))
     entity = Entity.from_identifier(Identifier(entity_id))
+    
     status,message = commands.entity_destroy(
         git_name, git_mail,
         collection, entity,
         agent
     )
+    
     # update search index
     try:
         docstore.delete(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, entity_id)
@@ -705,10 +779,12 @@ def delete_entity( git_name, git_mail, collection_path, entity_id, agent='' ):
 
 def entity_reload_files(request, collection, entity, git_name, git_mail, agent):
     # start tasks
+    
     result = reload_files.apply_async(
         (collection.path, entity.id, git_name, git_mail, agent),
         countdown=2
     )
+    
     # lock collection
     lockstatus = entity.lock(result.task_id)
     # add celery task_id to session
@@ -756,9 +832,11 @@ def reload_files(collection_path, entity_id, git_name, git_mail, agent=''):
     entity = Entity.from_identifier(Identifier(entity_id))
     collection = Collection.from_identifier(Identifier(path=collection_path))
     
-    entity.load_children_objects(Identifier, Entity, force_read=True)
-    entity.load_file_objects(Identifier, DDRFile, force_read=True)
-    exit,status = entity.save(git_name, git_mail, collection, {})
+    exit,status,updated_files = entity.save(
+        git_name, git_mail,
+        collection,
+        {}
+    )
     
     logger.debug('delete from search index')
     try:
@@ -780,9 +858,12 @@ TASK_STATUS_MESSAGES['webui-file-delete'] = {
 
 def entity_delete_file(request, git_name, git_mail, collection, entity, file_, agent):
     # start tasks
+    
     result = delete_file.apply_async(
         (git_name, git_mail, collection.path, entity.id, file_.basename, agent),
-        countdown=2)
+        countdown=2
+    )
+    
     # lock collection
     lockstatus = collection.lock(result.task_id)
     # add celery task_id to session
@@ -833,12 +914,14 @@ def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, 
     collection = Collection.from_identifier(Identifier(path=collection_path))
     logger.debug('delete from repository')
     rm_files,updated_files = entity.prep_rm_file(file_)
+    
     status,message = commands.file_destroy(
         git_name, git_mail,
         collection, entity,
         rm_files, updated_files,
         agent
     )
+    
     logger.debug('delete from search index')
     try:
         docstore.delete(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, file_.id)
@@ -878,10 +961,12 @@ def collection_sync( git_name, git_mail, collection_path ):
     """
     gitstatus.lock(settings.MEDIA_BASE, 'collection_sync')
     collection = Collection.from_identifier(Identifier(path=collection_path))
+    
     exit,status = commands.sync(
         git_name, git_mail,
         collection
     )
+    
     # update search index
     collection = Collection.from_identifier(Identifier(path=collection_path))
     try:
@@ -923,9 +1008,9 @@ def collection_signatures(collection_path, git_name, git_mail):
     """
     gitstatus.lock(settings.MEDIA_BASE, 'collection_signatures')
     collection = Collection.from_identifier(Identifier(path=collection_path))
-    
     updates = signatures.find_updates(collection)
     files_written = signatures.write_updates(updates)
+    
     status,msg = signatures.commit_updates(
         collection,
         files_written,

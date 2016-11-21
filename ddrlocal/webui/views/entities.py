@@ -35,9 +35,7 @@ from webui.identifier import Identifier
 from webui.mets import NAMESPACES, NAMESPACES_XPATH
 from webui.mets import METS_FIELDS, MetsForm
 from webui.models import Stub, Collection, Entity
-from webui.tasks import collection_entity_newexpert, collection_entity_edit, collection_delete_entity
-from webui.tasks import entity_reload_files
-from webui.tasks import gitstatus_update
+from webui import tasks
 from webui.views.decorators import login_required
 
 
@@ -330,7 +328,10 @@ def new( request, cid ):
             entity.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
         except ConnectionError:
             logger.error('Could not post to Elasticsearch.')
-        gitstatus_update.apply_async((collection.path,), countdown=2)
+        tasks.gitstatus_update.apply_async(
+            (collection.path,),
+            countdown=2
+        )
         # positive feedback
         return HttpResponseRedirect(reverse('webui-entity-edit', args=[entity.id]))
     
@@ -376,7 +377,7 @@ def newexpert( request, cid ):
                 messages.error(request, "That object ID already exists. Try again.")
             
             if entity_id and is_legal and not already_exists:
-                collection_entity_newexpert(
+                tasks.collection_entity_newexpert(
                     request,
                     collection, entity_id,
                     git_name, git_mail
@@ -453,7 +454,7 @@ def edit( request, eid ):
             # do the rest in the background:
             # update inheriable fields, commit files, delete cache,
             # update search index, update git status
-            collection_entity_edit(
+            tasks.collection_entity_edit(
                 request,
                 collection, entity, form.cleaned_data,
                 git_name, git_mail, settings.AGENT
@@ -532,10 +533,12 @@ def delete( request, eid, confirm=False ):
     if request.method == 'POST':
         form = DeleteEntityForm(request.POST)
         if form.is_valid() and form.cleaned_data['confirmed']:
-            collection_delete_entity(request,
-                                     git_name, git_mail,
-                                     collection, entity,
-                                     settings.AGENT)
+            tasks.collection_delete_entity(
+                request,
+                git_name, git_mail,
+                collection, entity,
+                settings.AGENT
+            )
             return HttpResponseRedirect(collection.absolute_url())
     else:
         form = DeleteEntityForm()
@@ -565,7 +568,7 @@ def files_reload( request, eid ):
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect(collection.absolute_url())
     
-    entity_reload_files(
+    tasks.entity_reload_files(
         request,
         collection, entity,
         git_name, git_mail, settings.AGENT
@@ -620,7 +623,10 @@ def files_dedupe( request, eid ):
                     entity.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
                 except ConnectionError:
                     logger.error('Could not post to Elasticsearch.')
-                gitstatus_update.apply_async((collection.path,), countdown=2)
+                tasks.gitstatus_update.apply_async(
+                    (collection.path,),
+                    countdown=2
+                )
                 # positive feedback
                 messages.success(request, success_msg)
                 return HttpResponseRedirect(entity.absolute_url())

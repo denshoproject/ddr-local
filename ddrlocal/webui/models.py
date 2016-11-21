@@ -319,7 +319,7 @@ class Collection( DDRCollection ):
         
         return collection
     
-    def save( self, git_name, git_mail, cleaned_data ):
+    def save( self, git_name, git_mail, cleaned_data, commit=True ):
         """Save Collection metadata.
         
         Commit files, delete cache, update search index.
@@ -329,11 +329,11 @@ class Collection( DDRCollection ):
         @param git_mail: str
         @param cleaned_data: dict
         """
-        exit,status = super(Collection, self).save(
+        exit,status,updated_files = super(Collection, self).save(
             git_name, git_mail,
             settings.AGENT,
             cleaned_data,
-            commit=True
+            commit=commit
         )
         
         self.cache_delete()
@@ -343,7 +343,7 @@ class Collection( DDRCollection ):
             docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
         except ConnectionError:
             logger.error('Could not post to Elasticsearch.')
-        return exit,status
+        return exit,status,updated_files
 
 
 class Entity( DDREntity ):
@@ -529,7 +529,7 @@ class Entity( DDREntity ):
         
         return entity
     
-    def save( self, git_name, git_mail, collection=None, form_data={} ):
+    def save( self, git_name, git_mail, collection=None, form_data={}, commit=True ):
         """Save Entity metadata
         
         Commit files, delete cache, update search index.
@@ -542,12 +542,12 @@ class Entity( DDREntity ):
         """
         collection = self.collection()
         
-        exit,status = super(Entity, self).save(
+        exit,status,updated_files = super(Entity, self).save(
             git_name, git_mail,
             settings.AGENT,
             collection,
             form_data,
-            commit=True
+            commit=commit
         )
         
         collection.cache_delete()
@@ -557,7 +557,7 @@ class Entity( DDREntity ):
             docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
         except ConnectionError:
             logger.error('Could not post to Elasticsearch.')
-        return exit,status
+        return exit,status,updated_files
 
 
 class DDRFile( File ):
@@ -653,7 +653,7 @@ class DDRFile( File ):
         """
         model_def_fields(self)
     
-    def save( self, git_name, git_mail, form_data={} ):
+    def save( self, git_name, git_mail, form_data={}, commit=True ):
         """Save file metadata
         
         Commit files, delete cache, update search index.
@@ -665,12 +665,12 @@ class DDRFile( File ):
         """
         collection = self.collection()
         
-        exit,status = super(DDRFile, self).save(
+        exit,status,updated_files = super(DDRFile, self).save(
             git_name, git_mail,
             settings.AGENT,
             collection, self.parent(),
             form_data,
-            commit=True
+            commit=commit
         )
         
         collection.cache_delete()
@@ -680,4 +680,4 @@ class DDRFile( File ):
             docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
         except ConnectionError:
             logger.error('Could not post to Elasticsearch.')
-        return exit,status
+        return exit,status,updated_files

@@ -18,7 +18,7 @@ from webui import WEBUI_MESSAGES
 from webui import gitstatus
 from webui.decorators import ddrview
 from webui.forms import LoginForm, TaskDismissForm
-from webui.tasks import dismiss_session_task, session_tasks_list
+from webui import tasks
 from webui.views.decorators import login_required
 
 # helpers --------------------------------------------------------------
@@ -147,11 +147,13 @@ def gitstatus_queue(request):
         context_instance=RequestContext(request, processors=[])
     )
 
-def tasks( request ):
+def task_list( request ):
     """Show pending/successful/failed tasks; UI for dismissing tasks.
     """
     # add start datetime to tasks list
-    celery_tasks = session_tasks_list(request)
+    celery_tasks = tasks.session_tasks_list(
+        request
+    )
     for task in celery_tasks:
         task['startd'] = converters.text_to_datetime(task['start'])
 
@@ -161,7 +163,10 @@ def tasks( request ):
             for task in celery_tasks:
                 fieldname = 'dismiss_%s' % task['task_id']
                 if (fieldname in form.cleaned_data.keys()) and form.cleaned_data[fieldname]:
-                    dismiss_session_task(request, task['task_id'])
+                    tasks.dismiss_session_task(
+                        request,
+                        task['task_id']
+                    )
             # redirect
             redirect_uri = form.cleaned_data['next']
             if not redirect_uri:
@@ -194,7 +199,10 @@ def task_status( request ):
 
 @login_required
 def task_dismiss( request, task_id ):
-    dismiss_session_task(request, task_id)
+    tasks.dismiss_session_task(
+        request,
+        task_id
+    )
     data = {'status':'ok'}
     return HttpResponse(json.dumps(data), content_type="application/json")
 

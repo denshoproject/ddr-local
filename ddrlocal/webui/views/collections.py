@@ -37,9 +37,7 @@ from webui.forms.collections import SyncConfirmForm, SignaturesConfirmForm
 from webui import gitolite
 from webui.models import Collection, COLLECTION_STATUS_CACHE_KEY, COLLECTION_STATUS_TIMEOUT
 from webui.identifier import Identifier
-from webui.tasks import collection_new_expert, collection_edit
-from webui.tasks import collection_sync, collection_signatures
-from webui.tasks import csv_export_model, gitstatus_update
+from webui import tasks
 from webui.views.decorators import login_required
 
 
@@ -181,7 +179,10 @@ def sync( request, cid ):
         form = SyncConfirmForm(request.POST)
         form_is_valid = form.is_valid()
         if form.is_valid() and form.cleaned_data['confirmed']:
-            result = collection_sync.apply_async( (git_name,git_mail,collection.path), countdown=2)
+            result = tasks.collection_sync.apply_async(
+                (git_name,git_mail,collection.path),
+                countdown=2
+            )
             lockstatus = collection.lock(result.task_id)
             # add celery task_id to session
             celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
@@ -258,7 +259,10 @@ def new( request, oid ):
             collection.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
         except ConnectionError:
             logger.error('Could not post to Elasticsearch.')
-        gitstatus_update.apply_async((cidentifier.path_abs(),), countdown=2)
+        tasks.gitstatus_update.apply_async(
+            (cidentifier.path_abs(),),
+            countdown=2
+        )
         # positive feedback
         return HttpResponseRedirect( reverse('webui-collection-edit', args=[collection.id]) )
     # something happened...
@@ -300,7 +304,7 @@ def newexpert( request, oid ):
                 messages.error(request, "That collection ID already exists. Try again.")
             
             if collection_id and not already_exists:
-                collection_new_expert(
+                tasks.collection_new_expert(
                     request,
                     settings.MEDIA_BASE,
                     collection_id,
@@ -350,7 +354,7 @@ def edit( request, cid ):
             collection.write_json()
             
             # commit files, delete cache, update search index, update git status
-            collection_edit(
+            tasks.collection_edit(
                 request,
                 collection, form.cleaned_data,
                 git_name, git_mail
@@ -389,7 +393,7 @@ def signatures( request, cid ):
         form_is_valid = form.is_valid()
         if form.is_valid() and form.cleaned_data['confirmed']:
             
-            result = collection_signatures.apply_async(
+            result = tasks.collection_signatures.apply_async(
                 (collection.path,git_name,git_mail),
                 countdown=2
             )
@@ -435,7 +439,10 @@ def csv_export( request, cid, model=None ):
     elif model == 'file':
         file_url = reverse('webui-collection-csv-files', args=[collection.id])
     # do it
-    result = csv_export_model.apply_async( (collection.path,model), countdown=2)
+    result = tasks.csv_export_model.apply_async(
+        (collection.path,model),
+        countdown=2
+    )
     # add celery task_id to session
     celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
     # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
