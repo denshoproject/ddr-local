@@ -125,27 +125,31 @@ def reindex( index ):
         raise NameError('MEDIA_BASE does not exist - you need to remount!')
     logger.debug('webui.tasks.reindex(%s)' % index)
     logger.debug('DOCSTORE_HOSTS: %s' % settings.DOCSTORE_HOSTS)
+    ds = docstore.Docstore(index=index)
     logger.debug('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ')
     logger.debug('deleting existing index: %s' % index)
-    delete_status = docstore.delete_index(settings.DOCSTORE_HOSTS, index)
+    delete_status = ds.delete_index()
     logger.debug(delete_status)
     logger.debug('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ')
     logger.debug('creating new index: %s' % index)
-    create_status = docstore.create_index(settings.DOCSTORE_HOSTS, index)
+    create_status = ds.create_index()
     logger.debug(create_status)
     logger.debug('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ')
     logger.debug('mappings: %s, %s' % (docstore.HARD_CODED_MAPPINGS_PATH, models.MODELS_DIR))
-    mappings_status = docstore.put_mappings(settings.DOCSTORE_HOSTS, index,
-                                            docstore.HARD_CODED_MAPPINGS_PATH, models.MODELS_DIR)
+    mappings_status = ds.put_mappings(
+        docstore.HARD_CODED_MAPPINGS_PATH, models.MODELS_DIR
+    )
     logger.debug(mappings_status)
     logger.debug('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ')
     logger.debug('facets')
-    facets_status = docstore.put_facets(settings.DOCSTORE_HOSTS, index)
+    facets_status = ds.put_facets()
     logger.debug(facets_status)
     logger.debug('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ')
     logger.debug('indexing')
-    index_status = docstore.index(settings.DOCSTORE_HOSTS, index, path=settings.MEDIA_BASE,
-                                  recursive=True, public=False)
+    index_status = ds.index(
+        path=settings.MEDIA_BASE,
+        recursive=True, public=False
+    )
     logger.debug(index_status)
     return statuses
 
@@ -693,8 +697,9 @@ def delete_entity( git_name, git_mail, collection_path, entity_id, agent='' ):
         agent
     )
     # update search index
+    ds = docstore.Docstore()
     try:
-        docstore.delete(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, entity_id)
+        ds.delete(entity_id)
     except ConnectionError:
         logger.error('Could not delete document from Elasticsearch.')
     return status,message,collection_path,entity_id
@@ -760,8 +765,9 @@ def reload_files(collection_path, entity_id, git_name, git_mail, agent=''):
     exit,status = entity.save(git_name, git_mail, collection, {})
     
     logger.debug('delete from search index')
+    ds = docstore.Docstore()
     try:
-        docstore.delete(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, entity.id)
+        ds.delete(entity.id)
     except ConnectionError:
         logger.error('Could not delete document from Elasticsearch.')
     return status,collection_path,entity_id
@@ -839,8 +845,9 @@ def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, 
         agent
     )
     logger.debug('delete from search index')
+    ds = docstore.Docstore()
     try:
-        docstore.delete(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, file_.id)
+        ds.delete(file_.id)
     except ConnectionError:
         logger.error('Could not delete document from Elasticsearch.')
     return status,message,collection_path,file_basename

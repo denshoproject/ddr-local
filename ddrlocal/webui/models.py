@@ -314,7 +314,7 @@ class Collection( DDRCollection ):
         with open(collection.json_path, 'r') as f:
             document = json.loads(f.read())
         try:
-            docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+            docstore.Docstore().post(document)
         except ConnectionError:
             logger.error('Could not post to Elasticsearch.')
         
@@ -341,7 +341,7 @@ class Collection( DDRCollection ):
         with open(self.json_path, 'r') as f:
             document = json.loads(f.read())
         try:
-            docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+            docstore.Docstore().post(document)
         except ConnectionError:
             logger.error('Could not post to Elasticsearch.')
         return exit,status
@@ -524,7 +524,7 @@ class Entity( DDREntity ):
         with open(entity.json_path, 'r') as f:
             document = json.loads(f.read())
         try:
-            docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+            docstore.Docstore().post(document)
         except ConnectionError:
             logger.error('Could not post to Elasticsearch.')
         
@@ -555,7 +555,7 @@ class Entity( DDREntity ):
         with open(self.json_path, 'r') as f:
             document = json.loads(f.read())
         try:
-            docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+            docstore.Docstore().post(document)
         except ConnectionError:
             logger.error('Could not post to Elasticsearch.')
         return exit,status
@@ -678,7 +678,7 @@ class DDRFile( File ):
         with open(self.json_path, 'r') as f:
             document = json.loads(f.read())
         try:
-            docstore.post(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, document)
+            docstore.Docstore().post(document)
         except ConnectionError:
             logger.error('Could not post to Elasticsearch.')
         return exit,status
