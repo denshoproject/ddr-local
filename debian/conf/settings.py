@@ -323,6 +323,9 @@ LOGGING = {
             '()': 'django.utils.log.RequireDebugFalse'
         },
         'suppress_celery_newconnect': {
+            # NOTE: Import problems here may indicate problems in the definitions
+            # modules, such as a syntax error or a missing dependency (e.g. lxml).
+            # They may also indicate an import problem elsewhere.
             '()': 'webui.log.SuppressCeleryNewConnections'
         },
     },

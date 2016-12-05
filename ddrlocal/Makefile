@@ -288,7 +288,7 @@ setup-ddr-cmdln:
 install-ddr-cmdln:
 	@echo ""
 	@echo "install-ddr-cmdln ------------------------------------------------------"
-	apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev libz-dev python-lxml pmount udisks
+	apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev libz-dev pmount udisks
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_CMDLN)/ddr && python setup.py install
 	source $(VIRTUALENV)/bin/activate; \
@@ -321,7 +321,7 @@ get-ddr-local:
 install-ddr-local:
 	@echo ""
 	@echo "install-ddr-local ------------------------------------------------------"
-	apt-get --assume-yes install imagemagick libexempi3 libssl-dev python-dev python-lxml libxml2 libxml2-dev libxslt1-dev supervisor
+	apt-get --assume-yes install imagemagick libexempi3 libssl-dev python-dev libxml2 libxml2-dev libxslt1-dev supervisor
 	source $(VIRTUALENV)/bin/activate; \
 	pip install -U --download-cache=$(PIP_CACHE_DIR) -r $(INSTALL_LOCAL)/ddrlocal/requirements/production.txt
 # logs dir
