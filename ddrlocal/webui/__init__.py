@@ -57,6 +57,9 @@ WEBUI_MESSAGES = {
     # webui.models.model_def_commits
     'MODEL_DEF_COMMITS_STATUS_-m': ('warning', "Missing model definitions commit info."),
     'MODEL_DEF_COMMITS_STATUS_-d': ('warning', "Missing document commit info."),
+    # 'a!' and 'b!' occur if source code was on an unmerged branch when document was committed
+    'MODEL_DEF_COMMITS_STATUS_a!': ('warning', "Model definitions commit A not in commit log."),
+    'MODEL_DEF_COMMITS_STATUS_b!': ('warning', "Model definitions commit B not in commit log."),
     'MODEL_DEF_COMMITS_STATUS_lt': ('info', "Document model definitions OLDER than module's."),
     'MODEL_DEF_COMMITS_STATUS_eq': ('info', "Document model definitions SAME as module's."),
     'MODEL_DEF_COMMITS_STATUS_gt': ('info', "Document model definitions NEWER than module's."),
