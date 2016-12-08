@@ -98,7 +98,7 @@ def _mount_common(request, device):
     logger.debug('caching base_path')
     bp = base_path(request)
     # update elasticsearch alias
-    docstore.set_alias(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, device['label'])
+    docstore.Docstore().set_alias(device['label'])
     # remove disk space data from cache
     cache.delete(DISK_SPACE_CACHE_KEY)
 

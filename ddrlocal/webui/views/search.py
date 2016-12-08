@@ -59,7 +59,7 @@ def massage_query_results( results, thispage, size ):
 
 @search_index
 def index( request ):
-    target_index = docstore.target_index(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+    target_index = docstore.Docstore().target_index()
     return render_to_response(
         'webui/search/index.html',
         {'hide_header_search': True,
@@ -73,7 +73,8 @@ def index( request ):
 def results( request ):
     """Results of a search query or a DDR ID query.
     """
-    target_index = docstore.target_index(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+    ds = docstore.Docstore()
+    target_index = ds.target_index()
     template = 'webui/search/results.html'
     context = {
         'hide_header_search': True,
@@ -104,9 +105,10 @@ def results( request ):
                 'record_lastmod': request.GET.get('record_lastmod', ''),}
         
         # do query and cache the results
-        results = docstore.search(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX,
-                                  query=query, filters=filters,
-                                  model='collection,entity,file', fields=fields, sort=sort)
+        results = ds.search(
+            query=query, filters=filters,
+            model='collection,entity,file', fields=fields, sort=sort
+        )
         if results.get('hits',None) and not results.get('status',None):
             # OK -- prep results for display
             thispage = request.GET.get('page', 1)
@@ -131,7 +133,7 @@ def results( request ):
 def admin( request ):
     """Administrative stuff like re-indexing.
     """
-    target_index = docstore.target_index(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+    target_index = docstore.Docstore().target_index()
     server_info = []
     index_names = []
     indices = []
@@ -213,7 +215,8 @@ def drop_index( request ):
         form = DropConfirmForm(request.POST, request=request)
         if form.is_valid():
             index = form.cleaned_data['index']
-            docstore.delete_index(settings.DOCSTORE_HOSTS, index)
+            ds = docstore.Docstore(index=index)
+            ds.delete_index()
             messages.error(request,
                            'Search index "%s" dropped. ' \
                            'Click "Re-index" to reindex your collections.' % index)
