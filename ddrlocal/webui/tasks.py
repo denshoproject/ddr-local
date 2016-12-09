@@ -913,19 +913,13 @@ def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, 
     @param agent: (optional) Name of software making the change.
     """
     logger.debug('delete_file(%s,%s,%s,%s,%s,%s)' % (git_name, git_mail, collection_path, entity_id, file_basename, agent))
+    
     gitstatus.lock(settings.MEDIA_BASE, 'delete_file')
     file_id = os.path.splitext(file_basename)[0]
     file_ = DDRFile.from_identifier(Identifier(file_id))
-    entity = Entity.from_identifier(Identifier(entity_id))
-    collection = Collection.from_identifier(Identifier(path=collection_path))
-    logger.debug('delete from repository')
-    rm_files,updated_files = entity.prep_rm_file(file_)
-    
-    status,message = commands.file_destroy(
-        git_name, git_mail,
-        collection, entity,
-        rm_files, updated_files,
-        agent
+
+    exit,status,rm_files,updated_files = file_.delete(
+        git_name, git_mail, agent
     )
     
     logger.debug('delete from search index')
@@ -934,7 +928,7 @@ def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, 
         ds.delete(file_.id)
     except ConnectionError:
         logger.error('Could not delete document from Elasticsearch.')
-    return status,message,collection_path,file_basename
+    return exit,status,collection_path,file_basename
 
 # ----------------------------------------------------------------------
 
