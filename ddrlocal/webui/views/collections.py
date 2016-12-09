@@ -256,7 +256,7 @@ def new( request, oid ):
         # update search index
         collection = Collection.from_identifier(cidentifier)
         try:
-            collection.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+            collection.post_json()
         except ConnectionError:
             logger.error('Could not post to Elasticsearch.')
         tasks.gitstatus_update.apply_async(

@@ -325,7 +325,7 @@ def new( request, cid ):
     else:
         # update search index
         try:
-            entity.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+            entity.post_json()
         except ConnectionError:
             logger.error('Could not post to Elasticsearch.')
         tasks.gitstatus_update.apply_async(
@@ -620,7 +620,7 @@ def files_dedupe( request, eid ):
             else:
                 # update search index
                 try:
-                    entity.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+                    entity.post_json()
                 except ConnectionError:
                     logger.error('Could not post to Elasticsearch.')
                 tasks.gitstatus_update.apply_async(

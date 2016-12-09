@@ -290,7 +290,7 @@ def entity_add_file( git_name, git_mail, entity, src_path, role, data, agent='' 
     
     log.ok('Updating Elasticsearch')
     try:
-        result = file_.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+        result = file_.post_json()
         log.ok('| %s' % result)
     except ConnectionError:
         log.not_ok('Could not post to Elasticsearch.')
@@ -324,7 +324,7 @@ def entity_add_access( git_name, git_mail, entity, ddrfile, agent='' ):
     )
     
     try:
-        file_.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+        file_.post_json()
     except ConnectionError:
         log.not_ok('Could not post to Elasticsearch.')
     return {
@@ -977,7 +977,7 @@ def collection_sync( git_name, git_mail, collection_path ):
     # update search index
     collection = Collection.from_identifier(Identifier(path=collection_path))
     try:
-        collection.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+        collection.post_json()
     except ConnectionError:
         logger.error('Could not update search index')
     return collection_path
@@ -1028,7 +1028,7 @@ def collection_signatures(collection_path, git_name, git_mail):
     # update search index
     collection = Collection.from_identifier(Identifier(path=collection_path))
     try:
-        collection.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+        collection.post_json()
     except ConnectionError:
         logger.error('Could not update search index')
     return collection_path
