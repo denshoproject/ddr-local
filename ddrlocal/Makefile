@@ -33,13 +33,13 @@ MEDIA_BASE=/var/www
 MEDIA_ROOT=$(MEDIA_BASE)/media
 STATIC_ROOT=$(MEDIA_BASE)/static
 
-ELASTICSEARCH=elasticsearch-1.6.2.deb
+ELASTICSEARCH=elasticsearch-2.4.3.deb
 MODERNIZR=modernizr-2.6.2.js
 JQUERY=jquery-1.11.0.min.js
 BOOTSTRAP=bootstrap-3.1.1-dist.zip
 TAGMANAGER=tagmanager-3.0.1
 TYPEAHEAD=typeahead-0.10.2
-# wget https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.6.2.deb
+# wget https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-2.4.3.deb
 # wget http://code.jquery.com/jquery-1.11.0.min.js
 # wget https://github.com/twbs/bootstrap/releases/download/v3.1.1/bootstrap-3.1.1-dist.zip
 # wget https://github.com/max-favilli/tagmanager/archive/v3.0.1.tar.gz

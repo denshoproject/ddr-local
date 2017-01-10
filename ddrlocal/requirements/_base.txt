@@ -2,6 +2,7 @@
 
 # Non-Python dependencies
 # sudo apt-get install libssl-dev redis-server python2.7 supervisor
+# Elasticsearch 2.4.3
 
                               # LICENSE  DEBIAN PKG (WHEEZY)              (JESSIE)                         Python3
 
