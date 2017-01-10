@@ -59,7 +59,11 @@ def massage_query_results( results, thispage, size ):
 
 @search_index
 def index( request ):
-    target_index = docstore.Docstore().target_index()
+    ds = docstore.Docstore()
+    if settings.DOCSTORE_INDEX in ds.aliases():
+        target_index = ds.target_index(settings.DOCSTORE_INDEX)
+    else:
+        target_index = None
     return render_to_response(
         'webui/search/index.html',
         {'hide_header_search': True,
@@ -74,7 +78,10 @@ def results( request ):
     """Results of a search query or a DDR ID query.
     """
     ds = docstore.Docstore()
-    target_index = ds.target_index()
+    if settings.DOCSTORE_INDEX in ds.aliases():
+        target_index = ds.target_index(settings.DOCSTORE_INDEX)
+    else:
+        target_index = None
     template = 'webui/search/results.html'
     context = {
         'hide_header_search': True,
@@ -164,11 +171,11 @@ def admin( request ):
         for name in status['indices'].keys():
             no_indices = False
             server_info.append( {'label':name, 'data':'', 'class':''} )
-            size = status['indices'][name]['index']['size_in_bytes']
+            size = status['indices'][name]['total']['store']['size_in_bytes']
             ONEPLACE = Decimal(10) ** -1
             size_nice = Decimal(size/1024/1024.0).quantize(ONEPLACE)
             size_formatted = '%sMB (%s bytes)' % (size_nice, size)
-            num_docs = status['indices'][name]['docs']['num_docs']
+            num_docs = status['indices'][name]['total']['docs']['num_docs']
             server_info.append( {'label':'size', 'data':size_formatted, 'class':'info'} )
             server_info.append( {'label':'documents', 'data':num_docs, 'class':'info'} )
             
