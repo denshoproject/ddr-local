@@ -36,22 +36,12 @@ def kosher( query ):
             return False
     return True
 
-def make_object_url(object_id):
-    """Takes a list of object ID parts and returns URL for that object.
-    """
-    i = Identifier(id=object_id)
-    if i.model == 'file': return reverse('webui-file', args=i.parts)
-    elif i.model == 'entity': return reverse('webui-entity', args=i.parts)
-    elif i.model == 'collection': return reverse('webui-collection', args=i.parts)
-    return None
-
-
 def massage_query_results( results, thispage, size ):
     objects = docstore.massage_query_results(results, thispage, size)
     results = None
     for o in objects:
         if not o.get('placeholder',False):
-            o['absolute_url'] = make_object_url(o['id'])
+            o['absolute_url'] = Identifier(id=o['id']).absolute_url()
     return objects
 
 

@@ -40,6 +40,9 @@ class Identifier(DDRIdentifier):
     def __repr__(self):
         return "<%s.%s %s:%s>" % (self.__module__, self.__class__.__name__, self.model, self.id)
     
+    def absolute_url(self):
+        return reverse('webui-%s' % self.model, args=[self.id])
+    
     def object_class(self, mappings=MODEL_CLASSES):
         """Identifier's object class according to mappings.
         """
