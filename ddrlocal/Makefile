@@ -14,7 +14,6 @@ INSTALL_LOCAL=$(INSTALL_BASE)/ddr-local
 INSTALL_DEFS=$(INSTALL_BASE)/ddr-defs
 INSTALL_MANUAL=$(INSTALL_BASE)/ddr-manual
 
-PIP_CACHE_DIR=$(INSTALL_BASE)/pip-cache
 VIRTUALENV=$(INSTALL_BASE)/env/ddrlocal
 SETTINGS=$(INSTALL_LOCAL)/ddrlocal/ddrlocal/settings.py
 
@@ -253,7 +252,7 @@ install-setuptools: install-virtualenv
 	@echo "install-setuptools -----------------------------------------------------"
 	apt-get --assume-yes install python-dev
 	source $(VIRTUALENV)/bin/activate; \
-	pip install -U --download-cache=$(PIP_CACHE_DIR) bpython setuptools
+	pip install -U bpython setuptools
 
 
 get-app: get-ddr-cmdln get-ddr-local get-ddr-manual
@@ -292,7 +291,7 @@ install-ddr-cmdln:
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_CMDLN)/ddr && python setup.py install
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_CMDLN)/ddr && pip install -U --download-cache=$(PIP_CACHE_DIR) -r $(INSTALL_CMDLN)/ddr/requirements/production.txt
+	cd $(INSTALL_CMDLN)/ddr && pip install -U -r $(INSTALL_CMDLN)/ddr/requirements/production.txt
 	-mkdir $(LOG_BASE)
 	chown -R ddr.root $(LOG_BASE)
 	chmod -R 755 $(LOG_BASE)
@@ -323,7 +322,7 @@ install-ddr-local:
 	@echo "install-ddr-local ------------------------------------------------------"
 	apt-get --assume-yes install imagemagick libexempi3 libssl-dev python-dev libxml2 libxml2-dev libxslt1-dev supervisor
 	source $(VIRTUALENV)/bin/activate; \
-	pip install -U --download-cache=$(PIP_CACHE_DIR) -r $(INSTALL_LOCAL)/ddrlocal/requirements/production.txt
+	pip install -U -r $(INSTALL_LOCAL)/ddrlocal/requirements/production.txt
 # logs dir
 	-mkdir $(LOG_BASE)
 	chown -R ddr.root $(LOG_BASE)
@@ -351,9 +350,6 @@ uninstall-ddr-local:
 
 clean-ddr-local:
 	-rm -Rf $(INSTALL_LOCAL)/ddrlocal/src
-
-clean-pip:
-	-rm -Rf $(PIP_CACHE_DIR)/*
 
 
 get-ddr-defs:
@@ -600,7 +596,7 @@ install-ddr-manual:
 	@echo ""
 	@echo "install-ddr-manual -----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
-	pip install -U --download-cache=$(PIP_CACHE_DIR) sphinx
+	pip install -U sphinx
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_MANUAL) && make html
 	rm -Rf $(MEDIA_ROOT)/manual
