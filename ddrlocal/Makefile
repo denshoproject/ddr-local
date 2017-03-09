@@ -14,7 +14,7 @@ INSTALL_LOCAL=$(INSTALL_BASE)/ddr-local
 INSTALL_DEFS=$(INSTALL_BASE)/ddr-defs
 INSTALL_MANUAL=$(INSTALL_BASE)/ddr-manual
 
-VIRTUALENV=$(INSTALL_BASE)/env/ddrlocal
+VIRTUALENV=$(INSTALL_LOCAL)/venv
 SETTINGS=$(INSTALL_LOCAL)/ddrlocal/ddrlocal/settings.py
 
 CONF_BASE=/etc/ddr
@@ -137,7 +137,7 @@ ddr-user:
 	-addgroup ddr plugdev
 	-addgroup ddr vboxsf
 	if ! grep "bin/activate" /home/ddr/.bashrc ; \
-	then printf "\n\n# ddrlocal: Activate virtualnv on login\nsource /usr/local/src/env/ddrlocal/bin/activate\n" >> /home/ddr/.bashrc; \
+	then printf "\n\n# ddrlocal: Activate virtualnv on login\nsource $(VIRTUALENV)/bin/activate\n" >> /home/ddr/.bashrc; \
 	fi
 
 apt-backports:
