@@ -3,5 +3,6 @@
 *.db
 *.svg
 tmp/
+venv/
 .coverage
 coverage-*
