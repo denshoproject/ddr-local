@@ -28,3 +28,5 @@ requests==2.9.0               # Apache   python-requests (0.12.1-1)       python
 sorl-thumbnail==11.12.1b      # BSD      python-sorl-thumbnail (11.12-4)  python-sorl-thumbnail (11.12-6)  y
 
 #-e git://github.com/densho/ddr-cmdln.git#egg=DDR
+
+bpython==0.16
