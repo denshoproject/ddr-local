@@ -18,20 +18,10 @@ INSTALL_MANUAL=$(INSTALL_LOCAL)/ddr-manual
 VIRTUALENV=$(INSTALL_LOCAL)/venv/ddrlocal
 SETTINGS=$(INSTALL_LOCAL)/ddrlocal/ddrlocal/settings.py
 
-
 PACKAGE_BASE=/tmp
 PACKAGE_TMP=$(PACKAGE_BASE)/ddr-local
 PACKAGE_VENV=$(PACKAGE_TMP)/venv/ddrlocal
 PACKAGE_TGZ=ddr-local-debian$(DEBIAN_RELEASE).tgz
-package:
-	-rm -Rf $(PACKAGE_TMP)
-	-rm -Rf $(PACKAGE_BASE)/$(PACKAGE_TGZ)
-	cp -R $(INSTALL_LOCAL) $(PACKAGE_TMP)
-# export PACKAGE_COMMIT=``
-# export PACKAGE_TIMESTAMP=`date +%Y%m%d%H%M`
-# remove everything that's git-unknown
-	virtualenv --relocatable $(PACKAGE_VENV)
-	-cd $(PACKAGE_BASE); tar czf $(PACKAGE_TGZ) ddr-local
 
 CONF_BASE=/etc/ddr
 CONF_DEFS=$(CONF_BASE)/ddr-defs
@@ -644,3 +634,14 @@ uninstall-ddr-manual:
 
 clean-ddr-manual:
 	-rm -Rf $(INSTALL_MANUAL)/build
+
+
+package:
+	-rm -Rf $(PACKAGE_TMP)
+	-rm -Rf $(PACKAGE_BASE)/$(PACKAGE_TGZ)
+	cp -R $(INSTALL_LOCAL) $(PACKAGE_TMP)
+# export PACKAGE_COMMIT=``
+# export PACKAGE_TIMESTAMP=`date +%Y%m%d%H%M`
+# remove everything that's git-unknown
+	virtualenv --relocatable $(PACKAGE_VENV)
+	-cd $(PACKAGE_BASE); tar czf $(PACKAGE_TGZ) ddr-local
