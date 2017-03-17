@@ -9,10 +9,10 @@ SRC_REPO_DEFS=https://github.com/densho/ddr-defs.git
 SRC_REPO_MANUAL=https://github.com/densho/ddr-manual.git
 
 INSTALL_BASE=/usr/local/src
-INSTALL_CMDLN=$(INSTALL_BASE)/ddr-cmdln
 INSTALL_LOCAL=$(INSTALL_BASE)/ddr-local
-INSTALL_DEFS=$(INSTALL_BASE)/ddr-defs
-INSTALL_MANUAL=$(INSTALL_BASE)/ddr-manual
+INSTALL_CMDLN=$(INSTALL_LOCAL)/ddr-cmdln
+INSTALL_DEFS=$(INSTALL_LOCAL)/ddr-defs
+INSTALL_MANUAL=$(INSTALL_LOCAL)/ddr-manual
 
 VIRTUALENV=$(INSTALL_LOCAL)/venv/ddrlocal
 SETTINGS=$(INSTALL_LOCAL)/ddrlocal/ddrlocal/settings.py
