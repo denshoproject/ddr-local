@@ -273,6 +273,15 @@ install-setuptools: install-virtualenv
 	pip install -U setuptools
 
 
+install-dependencies: install-core install-misc-tools install-daemons install-git-annex
+	@echo ""
+	@echo "install-dependencies ---------------------------------------------------"
+	apt-get --assume-yes install python-pip python-virtualenv
+	apt-get --assume-yes install python-dev
+	apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev libz-dev pmount udisks
+	apt-get --assume-yes install imagemagick libexempi3 libssl-dev python-dev libxml2 libxml2-dev libxslt1-dev supervisor
+
+
 get-app: get-ddr-cmdln get-ddr-local get-ddr-manual
 
 install-app: install-git-annex install-virtualenv install-setuptools install-ddr-cmdln install-ddr-local install-ddr-manual install-configs install-daemon-configs
