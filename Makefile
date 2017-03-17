@@ -645,3 +645,5 @@ package:
 # remove everything that's git-unknown
 	virtualenv --relocatable $(PACKAGE_VENV)
 	-cd $(PACKAGE_BASE); tar czf $(PACKAGE_TGZ) ddr-local
+
+install-packaged: install-prep install-dependencies install-static install-configs mkdirs syncdb install-daemon-configs
