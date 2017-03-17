@@ -281,6 +281,8 @@ install-dependencies: install-core install-misc-tools install-daemons install-gi
 	apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev libz-dev pmount udisks
 	apt-get --assume-yes install imagemagick libexempi3 libssl-dev python-dev libxml2 libxml2-dev libxslt1-dev supervisor
 
+mkdirs: mkdir-ddr-cmdln mkdir-ddr-local
+
 
 get-app: get-ddr-cmdln get-ddr-local get-ddr-manual
 
@@ -311,7 +313,7 @@ setup-ddr-cmdln:
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_CMDLN)/ddr && python setup.py install
 
-install-ddr-cmdln:
+install-ddr-cmdln: mkdir-ddr-cmdln
 	@echo ""
 	@echo "install-ddr-cmdln ------------------------------------------------------"
 	apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev libz-dev pmount udisks
@@ -319,6 +321,10 @@ install-ddr-cmdln:
 	cd $(INSTALL_CMDLN)/ddr && python setup.py install
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_CMDLN)/ddr && pip install -U -r $(INSTALL_CMDLN)/ddr/requirements/production.txt
+
+mkdir-ddr-cmdln:
+	@echo ""
+	@echo "mkdir-ddr-cmdln --------------------------------------------------------"
 	-mkdir $(LOG_BASE)
 	chown -R ddr.root $(LOG_BASE)
 	chmod -R 755 $(LOG_BASE)
@@ -344,12 +350,16 @@ get-ddr-local:
 	@echo "get-ddr-local ----------------------------------------------------------"
 	git pull
 
-install-ddr-local:
+install-ddr-local: mkdir-ddr-local
 	@echo ""
 	@echo "install-ddr-local ------------------------------------------------------"
 	apt-get --assume-yes install imagemagick libexempi3 libssl-dev python-dev libxml2 libxml2-dev libxslt1-dev supervisor
 	source $(VIRTUALENV)/bin/activate; \
 	pip install -U -r $(INSTALL_LOCAL)/ddrlocal/requirements/production.txt
+
+mkdir-ddr-local:
+	@echo ""
+	@echo "mkdir-ddr-local --------------------------------------------------------"
 # logs dir
 	-mkdir $(LOG_BASE)
 	chown -R ddr.root $(LOG_BASE)
