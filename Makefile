@@ -1,5 +1,6 @@
 SHELL = /bin/bash
 DEBIAN_CODENAME := $(shell lsb_release -sc)
+DEBIAN_RELEASE := $(shell lsb_release -sr)
 
 PACKAGE_SERVER=ddr.densho.org/static/ddrlocal
 
@@ -16,6 +17,21 @@ INSTALL_MANUAL=$(INSTALL_LOCAL)/ddr-manual
 
 VIRTUALENV=$(INSTALL_LOCAL)/venv/ddrlocal
 SETTINGS=$(INSTALL_LOCAL)/ddrlocal/ddrlocal/settings.py
+
+
+PACKAGE_BASE=/tmp
+PACKAGE_TMP=$(PACKAGE_BASE)/ddr-local
+PACKAGE_VENV=$(PACKAGE_TMP)/venv/ddrlocal
+PACKAGE_TGZ=ddr-local-debian$(DEBIAN_RELEASE).tgz
+package:
+	-rm -Rf $(PACKAGE_TMP)
+	-rm -Rf $(PACKAGE_BASE)/$(PACKAGE_TGZ)
+	cp -R $(INSTALL_LOCAL) $(PACKAGE_TMP)
+# export PACKAGE_COMMIT=``
+# export PACKAGE_TIMESTAMP=`date +%Y%m%d%H%M`
+# remove everything that's git-unknown
+	virtualenv --relocatable $(PACKAGE_VENV)
+	-cd $(PACKAGE_BASE); tar czf $(PACKAGE_TGZ) ddr-local
 
 CONF_BASE=/etc/ddr
 CONF_DEFS=$(CONF_BASE)/ddr-defs
@@ -95,6 +111,8 @@ help:
 	@echo ""
 	@echo "uninstall - Deletes 'compiled' Python files. Leaves build dirs and configs."
 	@echo "clean   - Deletes files created by building the program. Leaves configs."
+	@echo ""
+	@echo "package - Package project in a self-contained .tgz for installation."
 	@echo ""
 	@echo "More install info: make howto-install"
 
