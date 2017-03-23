@@ -2,6 +2,13 @@ SHELL = /bin/bash
 DEBIAN_CODENAME := $(shell lsb_release -sc)
 DEBIAN_RELEASE := $(shell lsb_release -sr)
 
+# current branch name minus dashes or underscores
+PACKAGE_BRANCH := $(shell git rev-parse --abbrev-ref HEAD | tr -d _ | tr -d -)
+# current commit hash
+PACKAGE_COMMIT := $(shell git log -1 --pretty="%h")
+# current commit date minus dashes
+PACKAGE_TIMESTAMP := $(shell git log -1 --pretty="%ad" --date=short | tr -d -)
+
 PACKAGE_SERVER=ddr.densho.org/static/ddrlocal
 
 SRC_REPO_CMDLN=https://github.com/densho/ddr-cmdln.git
@@ -18,10 +25,11 @@ INSTALL_MANUAL=$(INSTALL_LOCAL)/ddr-manual
 VIRTUALENV=$(INSTALL_LOCAL)/venv/ddrlocal
 SETTINGS=$(INSTALL_LOCAL)/ddrlocal/ddrlocal/settings.py
 
-PACKAGE_BASE=/tmp
+PACKAGE_BASE=/tmp/ddrlocal
 PACKAGE_TMP=$(PACKAGE_BASE)/ddr-local
 PACKAGE_VENV=$(PACKAGE_TMP)/venv/ddrlocal
-PACKAGE_TGZ=ddr-local-debian$(DEBIAN_RELEASE).tgz
+PACKAGE_TGZ=ddrlocal-$(PACKAGE_BRANCH)-$(PACKAGE_TIMESTAMP)-$(PACKAGE_COMMIT).tgz
+PACKAGE_RSYNC_DEST=takezo@takezo:~/packaging/ddr-local
 
 CONF_BASE=/etc/ddr
 CONF_DEFS=$(CONF_BASE)/ddr-defs
@@ -637,13 +645,22 @@ clean-ddr-manual:
 
 
 package:
+	@echo ""
+	@echo "packaging --------------------------------------------------------------"
 	-rm -Rf $(PACKAGE_TMP)
-	-rm -Rf $(PACKAGE_BASE)/$(PACKAGE_TGZ)
+	-rm -Rf $(PACKAGE_BASE)/*.tgz
+	-mkdir -p $(PACKAGE_BASE)
 	cp -R $(INSTALL_LOCAL) $(PACKAGE_TMP)
-# export PACKAGE_COMMIT=``
-# export PACKAGE_TIMESTAMP=`date +%Y%m%d%H%M`
-# remove everything that's git-unknown
-	virtualenv --relocatable $(PACKAGE_VENV)
+	cd $(PACKAGE_TMP)
+	git clean -fd   # Remove all untracked files
+	virtualenv --relocatable $(PACKAGE_VENV)  # Make venv relocatable
 	-cd $(PACKAGE_BASE); tar czf $(PACKAGE_TGZ) ddr-local
 
+rsync-packaged:
+	@echo ""
+	@echo "rsync-packaged ---------------------------------------------------------"
+	rsync -avz --delete $(PACKAGE_BASE)/ddr-local $(PACKAGE_RSYNC_DEST)
+
 install-packaged: install-prep install-dependencies install-static install-configs mkdirs syncdb install-daemon-configs
+	@echo ""
+	@echo "install packaged -------------------------------------------------------"
