@@ -213,6 +213,14 @@ restart()
 
 
 # ----------------------------------------------------------
+reboot()
+{
+    confirm "Reboot machine" 0
+    sudo shutdown -r now
+}
+
+
+# ----------------------------------------------------------
 main_menu()
 {
         
@@ -273,7 +281,7 @@ main_menu()
             repeat=true
             ;;
         reboot)
-            echo "9"
+            reboot
             ;;
     esac
     break
