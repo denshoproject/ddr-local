@@ -87,79 +87,6 @@ print_error()
 
 
 # ----------------------------------------------------------
-deb_version()
-{
-    # check debian version FIXME Is /etc/debian_version the best way?
-    grep -q '\(jessie\|\(^\|[^a-zA-Z0-9.]\)8\($\|[^a-zA-Z0-9]\)\)' /etc/debian_version && msg "Debian version: OK"|| deb_version_fail
-}
-deb_version_fail()
-{
-    echo "/etc/debian_version reads: $(cat /etc/debian_version)"
-    echo "This script only supports Debian Jessie."
-    DEB_VERSION_STATUS="FAIL"
-    return 1
-}
-
-
-# ----------------------------------------------------------
-net_test() {
-    tries=4
-    printf 'Checking network connection... '
-    while [[ $tries -gt 0 ]]
-    do
-        wget -O - 'http://ftp.debian.org/debian/README' >/dev/null 2>&1 && {
-            msg '[OK]'
-            return 0
-        }
-        ((tries--))
-        sleep 1
-    done
-    msg '[FAILED]'
-    return 1
-}
-net_test_fail()
-{
-    echo "You do not seem to have a working network connection."
-    echo "Please fix this issue and run the script again."
-    NET_STATUS="FAIL"
-    return 1
-}
-
-# ----------------------------------------------------------
-sudo_test()
-{
-    echo "You will need your password to perform certain system tasks."
-    echo "Please enter it now and it will be stored for a while."
-    echo "(You may need to enter it again later.)"
-    sudo -v || sudo_test_fail
-    msg '[OK]'
-}
-sudo_test_fail()
-{
-    echo "You do not appear to have permission to use sudo,"
-    echo "which is needed in this script."
-    echo "Please make the necessary adjustments to your system and try again."
-    SUDO_STATUS="FAIL"
-    return 1
-}
-
-
-# ----------------------------------------------------------
-check_prereqs()
-{
-    bigmsg "Checking prerequisites"
-    DEB_VERSION_STATUS="OK"
-    NET_STATUS="OK"
-    SUDO_STATUS="OK"
-    deb_version || deb_version_fail
-    net_test || net_test_fail
-    sudo_test || sudo_test_fail
-    sleep 2
-    message "Debian version $DEB_VERSION_STATUS / Network $NET_STATUS / Permissions $SUDO_STATUS"
-}
-
-
-# ----------------------------------------------------------
 apt_get()
 {
     bigmsg "Updating package database..."
@@ -309,10 +236,6 @@ main_menu()
     MENU_MSG=""
     repeat=false
     case $OPTION in
-        prep)
-            check_prereqs
-            repeat=true
-            ;;
         packages)
             apt_get
             repeat=true
