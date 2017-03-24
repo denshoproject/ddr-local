@@ -105,7 +105,7 @@ net_config()
 {
     bigmsg "Configuring Network..."
     option 'Install standard ddr-local VM networking config (192.168.56.101)?' && {
-        sudo cp debian/conf/network-interfaces /etc/network/interfaces.copied
+        sudo cp $INSTALL_DIR/$PROJECT/debian/conf/network-interfaces /etc/network/interfaces
     }
     option 'Install openssh and ufw?' && {
         sudo apt-get --quiet install openssh-server ufw || giveup "Couldn't install openssh-server or ufw. See ${logfile}." 1
