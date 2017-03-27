@@ -2,6 +2,10 @@
 *.pyc
 *.db
 *.svg
+ddrlocal/ddrlocal/settings.py
+ddr-cmdln/
+ddr-defs/
+ddr-manual/
 tmp/
 venv/
 .coverage

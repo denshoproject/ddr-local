@@ -295,15 +295,14 @@ MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 ALLOWED_HOSTS = []
 
 TEMPLATE_DIRS = (
-    '/usr/local/src/ddr-local/ddrlocal/ddrlocal/templates',
-    '/usr/local/src/ddr-local/ddrlocal/storage/templates',
-    '/usr/local/src/ddr-local/ddrlocal/webui/templates',
+    '%s/ddrlocal/templates' % BASE_DIR,
+    '%s/storage/templates' % BASE_DIR,
+    '%s/webui/templates' % BASE_DIR,
 )
 
 STATICFILES_DIRS = (
-    #'/opt/ddr-local/ddrlocal/ddrlocal/static',
-    #'/usr/local/src/ddr-local/ddrlocal/storage/static',
-    '/usr/local/src/ddr-local/ddrlocal/webui/static',
+    #'%s/storage/static' % BASE_DIR,
+    '%s/webui/static' % BASE_DIR,
 )
 
 LOGGING = {

@@ -1,5 +1,13 @@
 SHELL = /bin/bash
 DEBIAN_CODENAME := $(shell lsb_release -sc)
+DEBIAN_RELEASE := $(shell lsb_release -sr)
+
+# current branch name minus dashes or underscores
+PACKAGE_BRANCH := $(shell git rev-parse --abbrev-ref HEAD | tr -d _ | tr -d -)
+# current commit hash
+PACKAGE_COMMIT := $(shell git log -1 --pretty="%h")
+# current commit date minus dashes
+PACKAGE_TIMESTAMP := $(shell git log -1 --pretty="%ad" --date=short | tr -d -)
 
 PACKAGE_SERVER=ddr.densho.org/static/ddrlocal
 
@@ -9,13 +17,19 @@ SRC_REPO_DEFS=https://github.com/densho/ddr-defs.git
 SRC_REPO_MANUAL=https://github.com/densho/ddr-manual.git
 
 INSTALL_BASE=/usr/local/src
-INSTALL_CMDLN=$(INSTALL_BASE)/ddr-cmdln
 INSTALL_LOCAL=$(INSTALL_BASE)/ddr-local
-INSTALL_DEFS=$(INSTALL_BASE)/ddr-defs
-INSTALL_MANUAL=$(INSTALL_BASE)/ddr-manual
+INSTALL_CMDLN=$(INSTALL_LOCAL)/ddr-cmdln
+INSTALL_DEFS=$(INSTALL_LOCAL)/ddr-defs
+INSTALL_MANUAL=$(INSTALL_LOCAL)/ddr-manual
 
 VIRTUALENV=$(INSTALL_LOCAL)/venv/ddrlocal
 SETTINGS=$(INSTALL_LOCAL)/ddrlocal/ddrlocal/settings.py
+
+PACKAGE_BASE=/tmp/ddrlocal
+PACKAGE_TMP=$(PACKAGE_BASE)/ddr-local
+PACKAGE_VENV=$(PACKAGE_TMP)/venv/ddrlocal
+PACKAGE_TGZ=ddrlocal-$(PACKAGE_BRANCH)-$(PACKAGE_TIMESTAMP)-$(PACKAGE_COMMIT).tgz
+PACKAGE_RSYNC_DEST=takezo@takezo:~/packaging/ddr-local
 
 CONF_BASE=/etc/ddr
 CONF_DEFS=$(CONF_BASE)/ddr-defs
@@ -95,6 +109,8 @@ help:
 	@echo ""
 	@echo "uninstall - Deletes 'compiled' Python files. Leaves build dirs and configs."
 	@echo "clean   - Deletes files created by building the program. Leaves configs."
+	@echo ""
+	@echo "package - Package project in a self-contained .tgz for installation."
 	@echo ""
 	@echo "More install info: make howto-install"
 
@@ -255,6 +271,17 @@ install-setuptools: install-virtualenv
 	pip install -U setuptools
 
 
+install-dependencies: install-core install-misc-tools install-daemons install-git-annex
+	@echo ""
+	@echo "install-dependencies ---------------------------------------------------"
+	apt-get --assume-yes install python-pip python-virtualenv
+	apt-get --assume-yes install python-dev
+	apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev libz-dev pmount udisks
+	apt-get --assume-yes install imagemagick libexempi3 libssl-dev python-dev libxml2 libxml2-dev libxslt1-dev supervisor
+
+mkdirs: mkdir-ddr-cmdln mkdir-ddr-local
+
+
 get-app: get-ddr-cmdln get-ddr-local get-ddr-manual
 
 install-app: install-git-annex install-virtualenv install-setuptools install-ddr-cmdln install-ddr-local install-ddr-manual install-configs install-daemon-configs
@@ -284,7 +311,7 @@ setup-ddr-cmdln:
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_CMDLN)/ddr && python setup.py install
 
-install-ddr-cmdln:
+install-ddr-cmdln: mkdir-ddr-cmdln
 	@echo ""
 	@echo "install-ddr-cmdln ------------------------------------------------------"
 	apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev libz-dev pmount udisks
@@ -292,6 +319,10 @@ install-ddr-cmdln:
 	cd $(INSTALL_CMDLN)/ddr && python setup.py install
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_CMDLN)/ddr && pip install -U -r $(INSTALL_CMDLN)/ddr/requirements/production.txt
+
+mkdir-ddr-cmdln:
+	@echo ""
+	@echo "mkdir-ddr-cmdln --------------------------------------------------------"
 	-mkdir $(LOG_BASE)
 	chown -R ddr.root $(LOG_BASE)
 	chmod -R 755 $(LOG_BASE)
@@ -317,12 +348,16 @@ get-ddr-local:
 	@echo "get-ddr-local ----------------------------------------------------------"
 	git pull
 
-install-ddr-local:
+install-ddr-local: mkdir-ddr-local
 	@echo ""
 	@echo "install-ddr-local ------------------------------------------------------"
 	apt-get --assume-yes install imagemagick libexempi3 libssl-dev python-dev libxml2 libxml2-dev libxslt1-dev supervisor
 	source $(VIRTUALENV)/bin/activate; \
 	pip install -U -r $(INSTALL_LOCAL)/ddrlocal/requirements/production.txt
+
+mkdir-ddr-local:
+	@echo ""
+	@echo "mkdir-ddr-local --------------------------------------------------------"
 # logs dir
 	-mkdir $(LOG_BASE)
 	chown -R ddr.root $(LOG_BASE)
@@ -607,3 +642,25 @@ uninstall-ddr-manual:
 
 clean-ddr-manual:
 	-rm -Rf $(INSTALL_MANUAL)/build
+
+
+package:
+	@echo ""
+	@echo "packaging --------------------------------------------------------------"
+	-rm -Rf $(PACKAGE_TMP)
+	-rm -Rf $(PACKAGE_BASE)/*.tgz
+	-mkdir -p $(PACKAGE_BASE)
+	cp -R $(INSTALL_LOCAL) $(PACKAGE_TMP)
+	cd $(PACKAGE_TMP)
+	git clean -fd   # Remove all untracked files
+	virtualenv --relocatable $(PACKAGE_VENV)  # Make venv relocatable
+	-cd $(PACKAGE_BASE); tar czf $(PACKAGE_TGZ) ddr-local
+
+rsync-packaged:
+	@echo ""
+	@echo "rsync-packaged ---------------------------------------------------------"
+	rsync -avz --delete $(PACKAGE_BASE)/ddr-local $(PACKAGE_RSYNC_DEST)
+
+install-packaged: install-prep install-dependencies install-static install-configs mkdirs syncdb install-daemon-configs
+	@echo ""
+	@echo "install packaged -------------------------------------------------------"
