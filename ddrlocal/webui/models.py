@@ -6,7 +6,6 @@ import sys
 
 from elasticsearch.exceptions import ConnectionError
 import envoy
-import requests
 
 from django.conf import settings
 from django.contrib import messages

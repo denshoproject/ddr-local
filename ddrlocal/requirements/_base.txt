@@ -24,7 +24,6 @@ django-bootstrap-pagination==1.5.0 # MIT y
 python-dateutil==2.2          # BSD      y
 envoy==0.0.3                  # MIT      y
 lxml==3.3.5                   # BSD      y        N(?)
-requests==2.9.0               # Apache   y        y
 sorl-thumbnail==11.12.1b      # BSD      y
 
 #-e git://github.com/densho/ddr-cmdln.git#egg=DDR
