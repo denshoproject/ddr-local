@@ -18,7 +18,8 @@
 
 DDR_USER=ddr
 PROJECT=ddr-local
-INSTALL_SRC=https://ddr.densho.org/static/ddrlocal/ddrlocal-latest.tgz
+BRANCH=master
+INSTALL_SRC=https://ddr.densho.org/static/ddrlocal/ddrlocal-$BRANCH.tgz
 INSTALL_DIR=/usr/local/src
 INSTALL_FILE=ddrlocal_debian8.7_amd64.tgz
 
@@ -161,7 +162,21 @@ add_user()
 
 
 # ----------------------------------------------------------
-destdir()
+setbranch()
+{
+    BRANCH=$(
+        whiptail \
+            --inputbox "Install branch:" \
+            8 78 $BRANCH \
+            --title "Set branch" \
+            3>&1 1>&2 2>&3
+    )
+    message "Branch set to $BRANCH."
+}
+
+
+# ----------------------------------------------------------
+setinstalldir()
 {
     INSTALL_DIR=$(
         whiptail \
@@ -242,8 +257,9 @@ main_menu()
         
     OPTION=$(whiptail \
         --title "DDR-LOCAL Installer" \
-        --menu "$MENU_MSG\nInstalls ddr-local on VM running Debian 8.7 'Jessie' netinstall." \
+        --menu "$MENU_MSG\nInstalls ddr-local on VM running Debian 8.7 'Jessie' netinstall.\n\n" \
         22 72 10 \
+        "branch"     "Set branch ($BRANCH)" \
         "installdir" "Set install directory ($INSTALL_DIR)" \
         "download"   "Download to install directory." \
         "install"    "Run install scripts." \
@@ -274,8 +290,12 @@ main_menu()
             add_user
             repeat=true
             ;;
+        branch)
+            setbranch
+            repeat=true
+            ;;
         installdir)
-            destdir
+            setinstalldir
             repeat=true
             ;;
         download)
