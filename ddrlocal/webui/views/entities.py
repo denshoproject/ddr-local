@@ -32,8 +32,6 @@ from webui.decorators import ddrview
 from webui.forms import DDRForm
 from webui.forms.entities import NewEntityForm, JSONForm, UpdateForm, DeleteEntityForm, RmDuplicatesForm
 from webui.identifier import Identifier
-from webui.mets import NAMESPACES, NAMESPACES_XPATH
-from webui.mets import METS_FIELDS, MetsForm
 from webui.models import Stub, Collection, Entity
 from webui import tasks
 from webui.views.decorators import login_required
