@@ -4,28 +4,28 @@
 # sudo apt-get install libssl-dev redis-server python2.7 supervisor
 # Elasticsearch 2.4.3
 
-                              # LICENSE  DEBIAN PKG (WHEEZY)              (JESSIE)                         Python3  PyPy
+                              # LICENSE  Python3  PyPy
 
-django==1.7.11                # MIT      python-django (1.4.5-1+deb7u7)   python-django (1.6.5-1)          y
-gunicorn==19.1.1              # MIT      gunicorn (0.14.5-3+deb7u1)       gunicorn (18.0-3)                y
+django==1.7.11                # MIT      y
+gunicorn==19.1.1              # MIT      y
 
 # cache, sessions, celery broker
-redis==2.10.3                 # MIT      python-redis (2.4.13-1)          python-redis (2.9.1-3)           y
-django-redis==3.7.1           # BSD      n/a                              n/a                              y
-django-redis-sessions==0.4.0  # BSD      n/a                              n/a                              y
+redis==2.10.3                 # MIT      y
+django-redis==3.7.1           # BSD      y
+django-redis-sessions==0.4.0  # BSD      y
 
 # process queue
-celery==3.1.23                # BSD      python-celery (2.5.3-4)          python-celery (3.1.11-1)         y        y
-django-celery==3.1.17         # BSD      python-django-celery (2.5.5-2)   python-django-celery (3.1.10-1)  y        y
-django-celery-with-redis==3.0 # BSD      n/a                              n/a                              ???      ???
+celery==3.1.23                # BSD      y        y
+django-celery==3.1.17         # BSD      y        y
+django-celery-with-redis==3.0 # BSD      ???      ???
 
 # misc
-django-bootstrap-pagination==1.5.0 # MIT                                                                   y
-python-dateutil==2.2          # BSD      python-dateutil (1.5+dfsg-0.1)   python-dateutil (1.5+dfsg-1)     y
-envoy==0.0.3                  # MIT      n/a                              n/a                              y
-lxml==3.3.5                   # BSD      python-lxml (2.3.2-1+deb7u1)     python-lxml (3.3.5-1+b1)         y        N(?)
-requests==2.9.0               # Apache   python-requests (0.12.1-1)       python-requests (2.3.0-1)        y        y
-sorl-thumbnail==11.12.1b      # BSD      python-sorl-thumbnail (11.12-4)  python-sorl-thumbnail (11.12-6)  y
+django-bootstrap-pagination==1.5.0 # MIT y
+python-dateutil==2.2          # BSD      y
+envoy==0.0.3                  # MIT      y
+lxml==3.3.5                   # BSD      y        N(?)
+requests==2.9.0               # Apache   y        y
+sorl-thumbnail==11.12.1b      # BSD      y
 
 #-e git://github.com/densho/ddr-cmdln.git#egg=DDR
 
