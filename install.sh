@@ -1,5 +1,21 @@
 #!/bin/bash
 
+# ddr-local/install.sh
+#  
+# This script bootstraps a new instance of the DDR Editor starting with
+# a basic instance of Debian 8.* (Jessie) netinst.  Download this file
+# and then
+#  
+# Install `sudo` and `wget` if you have not already:
+#  
+#     # apt-get install sudo wget
+#  
+# Then download this file and run it:
+#  
+#     $ wget https://raw.githubusercontent.com/densho/ddr-local/BRANCH/install.sh
+#     $ sh install.sh
+
+
 DDR_USER=ddr
 PROJECT=ddr-local
 INSTALL_SRC=https://ddr.densho.org/static/ddrlocal/ddrlocal-latest.tgz
