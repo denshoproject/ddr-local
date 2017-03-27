@@ -307,11 +307,11 @@ get-ddr-cmdln:
 	else cd $(INSTALL_BASE) && git clone $(SRC_REPO_CMDLN); \
 	fi
 
-setup-ddr-cmdln:
+setup-ddr-cmdln: install-virtualenv
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_CMDLN)/ddr && python setup.py install
 
-install-ddr-cmdln: mkdir-ddr-cmdln
+install-ddr-cmdln: install-virtualenv mkdir-ddr-cmdln
 	@echo ""
 	@echo "install-ddr-cmdln ------------------------------------------------------"
 	apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev libz-dev pmount udisks
@@ -330,7 +330,7 @@ mkdir-ddr-cmdln:
 	chown -R ddr.root $(MEDIA_ROOT)
 	chmod -R 755 $(MEDIA_ROOT)
 
-uninstall-ddr-cmdln:
+uninstall-ddr-cmdln: install-virtualenv
 	@echo ""
 	@echo "uninstall-ddr-cmdln ----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
@@ -348,7 +348,7 @@ get-ddr-local:
 	@echo "get-ddr-local ----------------------------------------------------------"
 	git pull
 
-install-ddr-local: mkdir-ddr-local
+install-ddr-local: install-virtualenv mkdir-ddr-local
 	@echo ""
 	@echo "install-ddr-local ------------------------------------------------------"
 	apt-get --assume-yes install imagemagick libexempi3 libssl-dev python-dev libxml2 libxml2-dev libxslt1-dev supervisor
@@ -375,7 +375,7 @@ mkdir-ddr-local:
 	chown -R ddr.root $(STATIC_ROOT)
 	chmod -R 755 $(STATIC_ROOT)
 
-uninstall-ddr-local:
+uninstall-ddr-local: install-virtualenv
 	@echo ""
 	@echo "uninstall-ddr-local ----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
@@ -396,7 +396,7 @@ get-ddr-defs:
 	fi
 
 
-syncdb:
+syncdb: install-virtualenv
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_LOCAL)/ddrlocal && ./manage.py syncdb --noinput
 	chown -R ddr.root $(SQLITE_BASE)
@@ -627,7 +627,7 @@ get-ddr-manual:
 	else cd $(INSTALL_BASE) && git clone $(SRC_REPO_MANUAL); \
 	fi
 
-install-ddr-manual:
+install-ddr-manual: install-virtualenv
 	@echo ""
 	@echo "install-ddr-manual -----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
