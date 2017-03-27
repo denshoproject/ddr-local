@@ -7,7 +7,6 @@ import sys
 
 from bs4 import BeautifulSoup
 from elasticsearch.exceptions import ConnectionError
-import requests
 
 from django.conf import settings
 from django.contrib import messages
@@ -25,6 +24,7 @@ from DDR import converters
 from DDR import docstore
 from DDR import fileio
 from DDR import idservice
+from DDR import vocab
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
@@ -51,12 +51,7 @@ def vocab_terms( fieldname ):
     timeout = 60*60*1  # 1 hour
     data = cache.get(key)
     if not data:
-        url = settings.VOCAB_TERMS_URL % fieldname
-        r = requests.get(url)
-        if r.status_code != 200:
-            raise Exception(
-                '%s vocabulary file missing: %s' % (fieldname.capitalize(), url))
-        data = json.loads(r.text)
+        data = vocab.http_get_terms(fieldname)
         cache.set(key, data, timeout)
     return data
 
