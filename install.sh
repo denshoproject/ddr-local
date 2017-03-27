@@ -19,7 +19,6 @@
 DDR_USER=ddr
 PROJECT=ddr-local
 BRANCH=master
-INSTALL_SRC=https://ddr.densho.org/static/ddrlocal/ddrlocal-$BRANCH.tgz
 INSTALL_DIR=/usr/local/src
 INSTALL_FILE=ddrlocal_debian8.7_amd64.tgz
 
@@ -192,6 +191,7 @@ setinstalldir()
 # ----------------------------------------------------------
 download()
 {
+    INSTALL_SRC=https://ddr.densho.org/static/ddrlocal/ddrlocal-$BRANCH.tgz
     INSTALL_URL=$(
         whiptail \
             --inputbox "Download release tarball." \
