@@ -7,10 +7,10 @@
                               # LICENSE  Python3  PyPy
 
 django==1.7.11                # MIT      y
-gunicorn==19.1.1              # MIT      y
+gunicorn==19.7.1              # MIT      y
 
 # cache, sessions, celery broker
-redis==2.10.3                 # MIT      y
+redis==2.10.5                 # MIT      y
 django-redis==3.7.1           # BSD      y
 django-redis-sessions==0.4.0  # BSD      y
 
@@ -20,8 +20,8 @@ django-celery==3.1.17         # BSD      y        y
 django-celery-with-redis==3.0 # BSD      ???      ???
 
 # misc
-django-bootstrap-pagination==1.5.0 # MIT y
-sorl-thumbnail==11.12.1b      # BSD      y
+django-bootstrap-pagination   # MIT y
+sorl-thumbnail                # BSD      y
 
 #-e git://github.com/densho/ddr-cmdln.git#egg=DDR
 
