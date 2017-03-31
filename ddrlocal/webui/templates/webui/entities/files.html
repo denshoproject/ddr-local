@@ -23,7 +23,7 @@
 {% for role in children_urls %}
         <li {% if role.active %}class="active"{% endif %}>
           <a href="{{ role.url }}">
-            {{ role.name|capfirst }} Files
+            {{ role.name|capfirst }}
             {% if role.count %}({{ role.count }}){% endif %}
           </a>
         </li>

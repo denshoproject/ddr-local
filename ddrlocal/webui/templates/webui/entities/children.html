@@ -1,0 +1,121 @@
+{% extends "webui/entities/base.html" %}
+{% load bootstrap_pagination thumbnail webui_tags %}
+
+
+{% block title %}Children | {{ entity.id }}{% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+{% breadcrumbs entity "Children" %}
+{% endblock breadcrumbs %}
+
+
+{% block content %}
+
+  <div class="row-fluid">
+    <div class="span12">
+
+<h1>{{ entity.id }}</h1>
+
+
+
+      <ul class="nav nav-tabs" id="tabs">
+        <li><a href="{{ entity.absolute_url }}">Object Metadata</a></li>
+{% for role in children_urls %}
+        <li {% if role.active %}class="active"{% endif %}>
+          <a href="{{ role.url }}">
+            {{ role.name|capfirst }}
+            {% if role.count %}({{ role.count }}){% endif %}
+          </a>
+        </li>
+{% endfor %}
+      </ul>
+
+
+<!--
+{% if username and models_valid %}
+{% if entity.locked or collection.locked or collection.repo_behind or collection.repo_conflicted %}
+<p>
+<button class="btn btn-mini" href="{{ browse_url }}"><span class="glyphicon glyphicon-plus"></span> New object</button>
+-->
+<!--
+or <a class="btn btn-mini" href="{{ batch_url }}">Add a batch of files</a>
+-->
+<!--
+{% if collection.repo_behind %}
+<span id="edit-alert" class="alert alert-error">Editing is disabled until collection is synced.</span>
+{% endif %}
+{% if collection.repo_conflicted %}
+<span id="edit-alert" class="alert alert-error">Editing is disabled until merge conflict is resolved.</span>
+{% endif %}
+</p>
+{% else %}{# locked/conflicted #}
+<p>
+<a href="{{ collection.new_entity_url }}" class="btn btn-primary btn-small"><span class="glyphicon glyphicon-plus icon-white"></span> New object</a>
+</p>
+{% endif %}{# locked/conflicted #}
+{% endif %}{# username #}
+-->
+
+
+{% if page.object_list %}
+  <div>
+    {{ paginator.count }} items<br/>
+  </div>
+
+{% bootstrap_paginate page range=10 show_first_last="true" %}
+
+<table class="table table-condensed">
+  <thead>
+	<tr>
+	  <th></th>
+	  <th>ID</th>
+	  <th>Title</th>
+	</tr>
+  </thead>
+  <tbody>
+
+{% for entity in page.object_list %}
+    <tr>
+      <td>
+        {% if entity.signature_id %}
+        {% thumbnail entity.signature_abs "100x100" crop="center" as img %}
+        <a href="{{ entity.absolute_url }}">
+          <img class="img-responsive img-thumbnail" src="{{ img.url }}" width="{{ img.width }}" height="{{ img.height }}">
+        </a>
+        {% endthumbnail %}
+        {% endif %}
+      </td>
+      <td>
+        <a href="{{ entity.absolute_url }}">
+          {{ entity.id }}
+        </a>
+      </td>
+      <td>
+        {% if entity.title %}
+        <a href="{{ entity.absolute_url }}">{{ entity.title }}</a>
+        {% endif %}
+      </td>
+    </tr>
+{% endfor %}
+
+  </tbody>
+</table>
+
+{% if paginator.num_pages > 1 %}
+{% bootstrap_paginate page range=10 show_first_last="true" %}
+{% endif %}
+
+{% else %}
+<p>
+This object has no child objects.
+</p>
+{% endif %}
+
+
+</tbody>
+</table>
+
+    </div><!-- .span12 -->
+  </div><!-- .row-fluid -->
+
+{% endblock content %}

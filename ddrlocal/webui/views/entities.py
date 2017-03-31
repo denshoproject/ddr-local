@@ -209,7 +209,42 @@ def detail( request, eid ):
     )
 
 @storage_required
-def children( request, rid ):
+def children(request, eid):
+    entity = Entity.from_identifier(Identifier(eid))
+    collection = entity.collection()
+    # paginate
+    children_meta = sorted(
+        entity.children_meta,
+        key=lambda entity: (
+            int(entity.get('sort',1000000)),
+            entity['id']
+        )
+    )
+    children = [
+        Entity.from_identifier(Identifier(item['id']))
+        for item in children_meta
+    ]
+    thispage = request.GET.get('page', 1)
+    paginator = Paginator(
+        children,
+        settings.RESULTS_PER_PAGE
+    )
+    page = paginator.page(thispage)
+    return render_to_response(
+        'webui/entities/children.html',
+        {
+            'collection': collection,
+            'entity': entity,
+            'children_urls': entity.children_urls(active='children'),
+            'paginator': paginator,
+            'page': page,
+            'thispage': thispage,
+        },
+        context_instance=RequestContext(request, processors=[])
+    )
+
+@storage_required
+def file_role( request, rid ):
     file_role = Stub.from_identifier(Identifier(rid))
     role = file_role.identifier.parts['role']
     entity = file_role.parent(stubs=True)
