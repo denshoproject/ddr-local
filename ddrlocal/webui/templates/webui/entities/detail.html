@@ -22,7 +22,12 @@
       <ul class="nav nav-tabs" id="tabs">
         <li class="active"><a href="#">Object Metadata</a></li>
 {% for role in children_urls %}
-        <li><a href="{{ role.url }}">{{ role.name|capfirst }} Files</a></li>
+        <li>
+          <a href="{{ role.url }}">
+            {{ role.name|capfirst }} Files
+            {% if role.count %}({{ role.count }}){% endif %}
+          </a>
+        </li>
 {% endfor %}
       </ul>
 

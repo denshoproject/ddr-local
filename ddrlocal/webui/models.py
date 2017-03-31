@@ -418,8 +418,14 @@ class Entity( DDREntity ):
         return reverse('webui-file-browse', args=[ri.id])
     
     def children_urls(self, active=None):
+        role_counts = {x['role']: len(x['files']) for x in self.file_groups}
         return [
-            {'url': self.children_url(role), 'name': role, 'active': role == active}
+            {
+                'name': role,
+                'url': self.children_url(role),
+                'active': role == active,
+                'count': role_counts.get(role, 0),
+            }
             for role in VALID_COMPONENTS['role']
         ]
     
