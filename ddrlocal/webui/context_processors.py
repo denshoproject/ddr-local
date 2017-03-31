@@ -28,8 +28,7 @@ def sitewide(request):
         'time': datetime.now(settings.TZ).isoformat(),
         'pid': os.getpid(),
         'host': os.uname()[1],
-        'ddrcmdln_commit': settings.DDRCMDLN_COMMIT,
-        'ddrlocal_commit': settings.DDRLOCAL_COMMIT,
+        'commits': settings.COMMITS_TEXT,
         'models_valid': repo_models_valid(request),
         # user info
         'username': request.session.get('idservice_username', None),

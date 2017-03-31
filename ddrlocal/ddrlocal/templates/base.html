@@ -203,12 +203,8 @@ form td { padding-bottom:20px; }
 <p class="debuginfo small text-muted">
 <span class="icon">&pi;</span>&nbsp;
 <span class="content">
-Rendered at {{ time }} by PID {{ pid }} on {{ host }}
-<br/>
-ddr-cmdln: {{ ddrcmdln_commit }}
-<br/>
-ddr-local: {{ ddrlocal_commit }}
-<br/>
+Rendered at {{ time }} by PID {{ pid }} on {{ host }}<br/>
+{{ commits|safe }}<br/>
 <a href="{{ supervisord_url }}" target="supervisor">supervisor</a>
 &bull;
 <a href="{{ elasticsearch_url }}" target="elasticsearch">elasticsearch</a>

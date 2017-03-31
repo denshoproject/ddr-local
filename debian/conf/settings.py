@@ -45,8 +45,14 @@ if REPO_MODELS_PATH not in sys.path:
 # and so commits are visible in error pages and in page footers.
 from DDR import dvcs
 DDRCMDLN_INSTALL_PATH = config.get('cmdln','install_path')
-DDRCMDLN_COMMIT = dvcs.latest_commit(DDRCMDLN_INSTALL_PATH)
-DDRLOCAL_COMMIT = dvcs.latest_commit(os.path.dirname(__file__))
+COMMITS_DDRCMDLN = dvcs.latest_commit(DDRCMDLN_INSTALL_PATH)
+COMMITS_DDRLOCAL = dvcs.latest_commit(os.path.dirname(__file__))
+COMMITS_DDRDEFS = dvcs.latest_commit(REPO_MODELS_PATH)
+COMMITS_TEXT = '<br/>\n'.join([
+    'cmd: %s' % COMMITS_DDRCMDLN,
+    'loc: %s' % COMMITS_DDRLOCAL,
+    'def: %s' % COMMITS_DDRDEFS,
+])
 
 # The following settings are in debian/config/ddr.cfg.
 # See that file for comments on the settings.
