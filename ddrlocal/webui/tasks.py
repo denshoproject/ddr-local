@@ -13,7 +13,6 @@ from celery import states
 from celery.result import AsyncResult
 from celery.utils.encoding import safe_repr
 from celery.utils import get_full_cls_name
-import requests
 
 from django.conf import settings
 from django.contrib import messages
