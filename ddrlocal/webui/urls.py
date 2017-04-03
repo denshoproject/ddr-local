@@ -81,6 +81,7 @@ urlpatterns = patterns(
     # files
 
     url(r'^file/(?P<fid>[\w\d-]+)/delete/$', 'webui.views.files.delete', name='webui-file-delete'),
+    url(r'^file/(?P<fid>[\w\d-]+)/sig/$', 'webui.views.files.set_signature', name='webui-file-sig'),
     url(r'^file/(?P<fid>[\w\d-]+)/edit/$', 'webui.views.files.edit', name='webui-file-edit'),
     url(r'^file/(?P<fid>[\w\d-]+)/$', 'webui.views.files.detail', name='webui-file'),
     url(r'^file/(?P<fid>[\w\d-]+)/new/access/$', 'webui.views.files.new_access', name='webui-file-new-access'),

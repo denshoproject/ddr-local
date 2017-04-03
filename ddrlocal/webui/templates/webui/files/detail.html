@@ -126,6 +126,19 @@
 {% endif %}
 {% endif %}{#username #}
 
+{% if username and models_valid %}
+{% if entity.locked or collection.locked or collection.repo_behind or collection.repo_conflicted %}
+{% else %}
+<form name="edit" action="{% url "webui-file-sig" file.id %}" method="POST">{% csrf_token %}
+  <input id="id_object_id" name="object_id" type="hidden" value="{{ entity.id }}" />
+  <button class="btn btn-primary btn-mini" type="submit" value="Object signature">Make object signature</button>
+</form>
+<form name="edit" action="{% url "webui-file-sig" file.id %}" method="POST">{% csrf_token %}
+  <input id="id_object_id" name="object_id" type="hidden" value="{{ collection.id }}" />
+  <button class="btn btn-primary btn-mini" type="submit" value="Object signature">Make collection signature</button>
+</form>
+{% endif %}
+{% endif %}{#username #}
 
 {% if file.model_def_fields_removed %}
   <div class="text-danger bg-danger">

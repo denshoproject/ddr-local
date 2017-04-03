@@ -375,6 +375,58 @@ def edit( request, fid ):
 @ddrview
 @login_required
 @storage_required
+def set_signature( request, fid ):
+    """Make file the signature of the specified entity or collection.
+    """
+    git_name = request.session.get('git_name')
+    git_mail = request.session.get('git_mail')
+    if not git_name and git_mail:
+        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
+    file_ = DDRFile.from_identifier(Identifier(fid))
+    entity = file_.parent()
+    collection = file_.collection()
+    if collection.locked():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
+        return HttpResponseRedirect(entity.absolute_url())
+    collection.repo_fetch()
+    if collection.repo_behind():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
+        return HttpResponseRedirect(entity.absolute_url())
+    if entity.locked():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
+        return HttpResponseRedirect(entity.absolute_url())
+    #
+    if (request.method == 'POST') and (request.POST.get('object_id')):
+            
+        # NOTE: We have to populate dict with entity/collection data
+        # prepped with converters.form_prep because OBJECT.save() assumes
+        # the data is coming from a form, and was converted into
+        # form-friendly text.
+        if request.POST.get('object_id') == entity.id:
+            cleaned_data = entity.form_prep()
+            cleaned_data['signature_id'] = file_.id
+            tasks.collection_entity_edit(
+                request,
+                collection,
+                entity,
+                cleaned_data,
+                git_name, git_mail, settings.AGENT
+            )
+        elif request.POST.get('object_id') == collection.id:
+            cleaned_data = collection.form_prep()
+            cleaned_data['signature_id'] = file_.id
+            tasks.collection_edit(
+                request,
+                collection,
+                cleaned_data,
+                git_name, git_mail
+            )
+            
+    return HttpResponseRedirect( file_.absolute_url() )
+
+@ddrview
+@login_required
+@storage_required
 def delete( request, fid ):
     try:
         file_ = DDRFile.from_identifier(Identifier(fid))
