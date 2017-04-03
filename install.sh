@@ -259,13 +259,13 @@ main_menu()
         --title "DDR-LOCAL Installer" \
         --menu "$MENU_MSG\nInstalls ddr-local on VM running Debian 8.7 'Jessie' netinstall.\n\n" \
         22 72 10 \
+        "vbox"       "Install VirtualBox Guest Additions." \
+        "user"       "Set up the 'ddr' user." \
         "branch"     "Set branch ($BRANCH)" \
         "installdir" "Set install directory ($INSTALL_DIR)" \
         "download"   "Download to install directory." \
-        "install"    "Run install scripts." \
         "network"    "Install ddr-local network configs." \
-        "vbox"       "Install VirtualBox Guest Additions." \
-        "user"       "Set up the 'ddr' user." \
+        "install"    "Run install scripts." \
         "bkgnd"      "Enable background processes (e.g. repo status)." \
         "restart"    "Restart ddr-local daemons and application." \
         "reboot"     "Reboot the machine." \
