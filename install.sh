@@ -244,10 +244,13 @@ restart()
 
 
 # ----------------------------------------------------------
-reboot()
+reboot_vm()
 {
-    confirm "Reboot machine" 0
-    sudo shutdown -r now
+    if (whiptail --title "Confirm Reboot" --yesno "You do really want to reboot?" 8 78) then
+       sudo shutdown -r now
+    else
+       message "Reboot cancelled by user."
+    fi
 }
 
 
@@ -315,7 +318,8 @@ main_menu()
             repeat=true
             ;;
         reboot)
-            reboot
+            reboot_vm
+            repeat=true
             ;;
     esac
     break
