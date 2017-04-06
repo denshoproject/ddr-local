@@ -6,12 +6,15 @@ from django import forms
 from django.conf import settings
 from django.utils.datastructures import SortedDict
 
+from DDR import modules
+from webui.identifier import Identifier
 
 
 class LoginForm(forms.Form):
     username = forms.CharField(max_length=100)
     password = forms.CharField(widget=forms.PasswordInput)
     next = forms.CharField(max_length=255, required=False, widget=forms.HiddenInput)
+
 
 class TaskDismissForm( forms.Form ):
     next = forms.CharField(max_length=255, required=False, widget=forms.HiddenInput)
@@ -33,6 +36,7 @@ class TaskDismissForm( forms.Form ):
                 )
         # Django Form object takes a SortedDict rather than list
         self.fields = SortedDict(fields)
+
 
 class DDRForm(forms.Form):
     def __init__(self, *args, **kwargs):
@@ -60,6 +64,46 @@ class DDRForm(forms.Form):
             MODEL_FIELDS = []
         super(DDRForm, self).__init__(*args, **kwargs)
         self.fields = construct_form(deepcopy(MODEL_FIELDS))
+
+    def clean(self):
+        """Run form_post on each field and report errors.
+        
+        This instead of just crashing the page. :)
+        Do each field separately so errors are attached to the individual
+        form fields.
+        """
+        # self.add_error modifies cleaned_data so work with copy
+        cleaned_data_copy = deepcopy(super(DDRForm, self).clean())
+        
+        
+        try:
+            obj = Identifier(cleaned_data_copy.pop('id')).object()
+        except:
+            raise forms.ValidationError(
+                "Form data does not contain a valid object ID."
+            )
+        # run form_post on field
+        module = obj.identifier.fields_module()
+        for fieldname,value in cleaned_data_copy.iteritems():
+            try:
+                data = modules.Module(module).function(
+                    'formpost_%s' % fieldname,
+                    value
+                )
+            except Exception as err:
+                # attach error to field
+                self.add_error(fieldname, str(err))
+            # can't validate signature_id without causing an import loop
+            # so do it here
+            if fieldname == 'signature_id':
+                si = None
+                try:
+                    si = Identifier(id=value)
+                except:
+                    self.add_error(fieldname, 'Not a valid object ID')
+                if si and not (si.model == 'file'):
+                    self.add_error(fieldname, 'Only files can be used as signatures.')
+
 
 def construct_form(model_fields):
     fields = []
