@@ -29,7 +29,9 @@ PACKAGE_BASE=/tmp/ddrlocal
 PACKAGE_TMP=$(PACKAGE_BASE)/ddr-local
 PACKAGE_VENV=$(PACKAGE_TMP)/venv/ddrlocal
 PACKAGE_TGZ=ddrlocal-$(PACKAGE_BRANCH)-$(PACKAGE_TIMESTAMP)-$(PACKAGE_COMMIT).tgz
-PACKAGE_RSYNC_DEST=takezo@takezo:~/packaging/ddr-local
+# The directory into which ddr-local will be placed and synced
+# Should not include "ddr-local", and should not end with a slash (see man rsync)
+PACKAGE_RSYNC_DEST=takezo@takezo:~/packaging
 
 CONF_BASE=/etc/ddr
 CONF_DEFS=$(CONF_BASE)/ddr-defs
