@@ -95,7 +95,7 @@ class DDRForm(forms.Form):
                 self.add_error(fieldname, str(err))
             # can't validate signature_id without causing an import loop
             # so do it here
-            if fieldname == 'signature_id':
+            if (fieldname == 'signature_id') and value:
                 si = None
                 try:
                     si = Identifier(id=value)
