@@ -260,15 +260,11 @@ install-elasticsearch:
 install-virtualenv:
 	@echo ""
 	@echo "install-virtualenv -----------------------------------------------------"
-	apt-get --assume-yes install python-pip python-virtualenv
+	apt-get --assume-yes install python-pip python-virtualenv python-dev
 	test -d $(VIRTUALENV) || virtualenv --distribute --setuptools $(VIRTUALENV)
-
-install-setuptools: install-virtualenv
-	@echo ""
-	@echo "install-setuptools -----------------------------------------------------"
-	apt-get --assume-yes install python-dev
 	source $(VIRTUALENV)/bin/activate; \
 	pip install -U setuptools
+#	virtualenv --relocatable $(VIRTUALENV)  # Make venv relocatable
 
 
 install-dependencies: install-core install-misc-tools install-daemons install-git-annex
@@ -284,7 +280,7 @@ mkdirs: mkdir-ddr-cmdln mkdir-ddr-local
 
 get-app: get-ddr-cmdln get-ddr-local get-ddr-manual
 
-install-app: install-git-annex install-virtualenv install-setuptools install-ddr-cmdln install-ddr-local install-ddr-manual install-configs install-daemon-configs
+install-app: install-git-annex install-virtualenv install-ddr-cmdln install-ddr-local install-ddr-manual install-configs install-daemon-configs
 
 uninstall-app: uninstall-ddr-cmdln uninstall-ddr-local uninstall-ddr-manual uninstall-configs uninstall-daemon-configs
 
