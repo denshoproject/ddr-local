@@ -22,6 +22,16 @@ Edit
 </h1>
 
 
+{% if form.errors %}
+<div class="callout callout-danger">
+  <h4>
+    <span class="glyphicon glyphicon-exclamation-sign"></span>
+    Form contains errors &mdash; see below
+  </h4>
+</div><!-- .callout -->
+{% endif %}
+
+
 <form name="edit" action="" method="POST">{% csrf_token %}
 <table>
   <tr>
@@ -39,6 +49,28 @@ Edit
   </tr>
 </table>
 </form>
+
+
+{% if form.tracebacks %}
+<div class="callout callout-danger">
+  <h4>
+    <span class="glyphicon glyphicon-exclamation-sign"></span>
+    Form field error tracebacks
+  </h4>
+  <table class="table">
+    {% for fieldname,traceback in form.tracebacks.iteritems %}
+    <tr>
+      <th><label>
+          {{ fieldname }}
+      </label></th>
+      <td class="text-muted">
+        {{ traceback|safe|linebreaks }}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div><!-- .callout -->
+{% endif %}
 
 
 {% if entity.model_def_fields_removed %}

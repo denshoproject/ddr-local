@@ -1,6 +1,7 @@
 from copy import deepcopy
 import logging
 logger = logging.getLogger(__name__)
+import traceback
 
 from django import forms
 from django.conf import settings
@@ -71,10 +72,12 @@ class DDRForm(forms.Form):
         This instead of just crashing the page. :)
         Do each field separately so errors are attached to the individual
         form fields.
+        
+        Tracebacks are added to a form.tracebacks dict so they can be
+        printed in the page source.
         """
         # self.add_error modifies cleaned_data so work with copy
         cleaned_data_copy = deepcopy(super(DDRForm, self).clean())
-        
         
         try:
             obj = Identifier(cleaned_data_copy.pop('id')).object()
@@ -84,6 +87,8 @@ class DDRForm(forms.Form):
             )
         # run form_post on field
         module = obj.identifier.fields_module()
+        # put per-field error tracebacks here
+        self.tracebacks = {}
         for fieldname,value in cleaned_data_copy.iteritems():
             try:
                 data = modules.Module(module).function(
@@ -93,6 +98,7 @@ class DDRForm(forms.Form):
             except Exception as err:
                 # attach error to field
                 self.add_error(fieldname, str(err))
+                self.tracebacks[fieldname] = traceback.format_exc().strip()
             # can't validate signature_id without causing an import loop
             # so do it here
             if (fieldname == 'signature_id') and value:
