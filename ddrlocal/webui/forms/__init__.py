@@ -78,6 +78,14 @@ class DDRForm(forms.Form):
         """
         # self.add_error modifies cleaned_data so work with copy
         cleaned_data_copy = deepcopy(super(DDRForm, self).clean())
+
+        # Custom validation depends on having a FIELDS list in a module
+        # object.  On the first stage of file import the user hasn't yet
+        # decided which file to import.  We haven't calc'd the file hash
+        # so we have no ID, no Identifier, and no module object.
+        # Just give up. We'll validate later when they edit.
+        if 'id' not in cleaned_data_copy.keys():
+            return
         
         try:
             obj = Identifier(cleaned_data_copy.pop('id')).object()
