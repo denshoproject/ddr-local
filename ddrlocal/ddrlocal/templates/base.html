@@ -217,6 +217,8 @@ form td { padding-bottom:20px; }
 <span class="content">
 Rendered at {{ time }} by PID {{ pid }} on {{ host }}<br/>
 {{ commits|safe }}<br/>
+<a href="{% url "debug" %}">debug</a>
+&bull;
 <a href="{{ supervisord_url }}" target="supervisor">supervisor</a>
 &bull;
 <a href="{{ elasticsearch_url }}" target="elasticsearch">elasticsearch</a>
