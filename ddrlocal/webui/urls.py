@@ -88,6 +88,7 @@ urlpatterns = patterns(
 
     url(r'^file/(?P<rid>[\w\d-]+)/batch/$', 'webui.views.files.batch', name='webui-file-batch'),
     url(r'^file/(?P<rid>[\w\d-]+)/browse/$', 'webui.views.files.browse', name='webui-file-browse'),
+    url(r'^file/(?P<rid>[\w\d-]+)/new-external/$', 'webui.views.files.new_external', name='webui-file-new-external'),
     url(r'^file/(?P<rid>[\w\d-]+)/new/$', 'webui.views.files.new', name='webui-file-new'),
     url(r'^file-role/(?P<rid>[\w\d-]+)/$', 'webui.views.entities.file_role', name='webui-file-role'),
     url(r'^file/(?P<eid>[\w\d-]+)-master/new/$', 'webui.views.files.new', kwargs={'role':'master'}, name='webui-file-new-master'),

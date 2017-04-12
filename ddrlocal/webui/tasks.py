@@ -298,6 +298,37 @@ def entity_add_file( git_name, git_mail, entity, src_path, role, data, agent='' 
         'status': 'ok'
     }
 
+@task(base=FileAddDebugTask, name='entity-add-external')
+def entity_add_external( git_name, git_mail, entity, data, agent='' ):
+    """
+    @param entity: Entity
+    @param data: Dict containing form data.
+    @param git_name: Username of git committer.
+    @param git_mail: Email of git committer.
+    @param agent: (optional) Name of software making the change.
+    """
+    gitstatus.lock(settings.MEDIA_BASE, 'entity_add_external')
+    
+    file_,repo,log = entity.add_external_file(
+        data,
+        git_name, git_mail, agent
+    )
+    file_,repo,log = entity.add_file_commit(
+        file_, repo, log,
+        git_name, git_mail, agent
+    )
+    
+    log.ok('Updating Elasticsearch')
+    try:
+        result = file_.post_json()
+        log.ok('| %s' % result)
+    except ConnectionError:
+        log.not_ok('Could not post to Elasticsearch.')
+    return {
+        'id': file_.id,
+        'status': 'ok'
+    }
+
 @task(base=FileAddDebugTask, name='entity-add-access')
 def entity_add_access( git_name, git_mail, entity, ddrfile, agent='' ):
     """

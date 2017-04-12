@@ -22,7 +22,8 @@ from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
 from webui.decorators import ddrview
 from webui.forms import DDRForm
-from webui.forms.files import NewFileDDRForm, NewAccessFileForm, DeleteFileForm
+from webui.forms.files import NewFileDDRForm, NewExternalFileForm, NewAccessFileForm
+from webui.forms.files import DeleteFileForm
 from webui.forms.files import shared_folder_files
 from webui.models import Stub, Collection, Entity, DDRFile
 from webui.models import MODULES
@@ -247,6 +248,93 @@ def new( request, rid ):
          'file_role': file_role,
          'form': form,
          'path': path,},
+        context_instance=RequestContext(request, processors=[])
+    )
+
+@ddrview
+@login_required
+@storage_required
+def new_external(request, rid):
+    """Enter initial data for external file
+    
+    An external file is one that is external to the DDR collection.
+    The hashes are known but the binary file itself is not present
+    within the collection.
+    """
+    file_role = Stub.from_identifier(Identifier(rid))
+    role = file_role.identifier.parts['role']
+    entity = file_role.parent(stubs=True)
+    collection = entity.collection()
+    check_parents(entity, collection, check_locks=0, fetch=0)
+    
+    if request.method == 'POST':
+        form = NewExternalFileForm(request.POST)
+        if form.is_valid():
+            idparts = file_role.identifier.idparts
+            idparts['model'] = 'file'
+            idparts['sha1'] = form.cleaned_data['sha1']
+            fi = Identifier(parts=idparts)
+            basename_orig = form.cleaned_data['filename']
+            
+            data = {
+                'id': fi.id,
+                'external': 1,
+                'role': role,
+                'basename_orig': basename_orig,
+                'sha1': form.cleaned_data['sha1'],
+                'sha256': form.cleaned_data['sha256'],
+                'md5': form.cleaned_data['md5'],
+                'size': form.cleaned_data['size'],
+                'mimetype': form.cleaned_data['mimetype'],
+            }
+            
+            # start tasks
+            result = tasks.entity_add_external.apply_async(
+                (
+                    request.session['git_name'], request.session['git_mail'],
+                    entity, data, settings.AGENT
+                ),
+                countdown=2)
+            result_dict = result.__dict__
+            log = addfile_logger(entity.identifier)
+            log.ok('START task_id %s' % result.task_id)
+            log.ok('ddrlocal.webui.file.new_external')
+            log.ok('Locking %s' % entity.id)
+            # lock entity
+            lockstatus = entity.lock(result.task_id)
+            if lockstatus == 'ok':
+                log.ok('locked')
+            else:
+                log.not_ok(lockstatus)
+            
+            # add celery task_id to session
+            celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
+            # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
+            task = {
+                'task_id': result.task_id,
+                'action': 'webui-file-new-external',
+                'filename': os.path.basename(basename_orig),
+                'entity_id': entity.id,
+                'start': converters.datetime_to_text(datetime.now(settings.TZ)),
+            }
+            celery_tasks[result.task_id] = task
+            #del request.session[settings.CELERY_TASKS_SESSION_KEY]
+            request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
+            
+            # redirect to entity
+        return HttpResponseRedirect(entity.absolute_url())
+            
+    else:
+        form = NewExternalFileForm()
+    
+    return render_to_response(
+        'webui/files/new-external.html',
+        {
+            'collection': collection,
+            'entity': entity,
+            'file_role': file_role,
+            'form': form,
+        },
         context_instance=RequestContext(request, processors=[])
     )
 

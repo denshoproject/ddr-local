@@ -27,6 +27,19 @@ class NewFileDDRForm(DDRForm):
         if path_choices:
             self.fields['path'].choices = path_choices
 
+MIMETYPE_CHOICES = [
+    ('text/html', 'text/html'),
+    ('video/mp4', 'video/mp4'),
+]
+
+class NewExternalFileForm(forms.Form):
+    filename = forms.CharField(required=True, max_length=255)
+    mimetype = forms.ChoiceField(choices=MIMETYPE_CHOICES, required=True)
+    size = forms.CharField(required=True, max_length=255)
+    sha1 = forms.CharField(required=True, max_length=255)
+    md5 = forms.CharField(required=True, max_length=255)
+    sha256 = forms.CharField(required=True, max_length=255)
+
 class NewAccessFileForm(forms.Form):
     path = forms.CharField(max_length=255, widget=forms.HiddenInput)
 

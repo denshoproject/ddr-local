@@ -1,0 +1,32 @@
+{% extends "webui/files/base.html" %}
+{% load webui_tags %}
+
+{% block title %}{{ entity.title }}{% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+{% breadcrumbs file_role "Add file" %}
+{% endblock breadcrumbs %}
+
+
+{% block content %}
+
+  <div class="row-fluid">
+    <div class="span12">
+
+<h1>Add File Metadata</h1>
+
+<form name="entity-add" action="" method="POST" enctype="multipart/form-data">{% csrf_token %}
+<table>
+<tr><th><label>Path:</label></th><td>{{ path }}</td></tr>
+  {{ form.as_table }}
+  <tr>
+    <th></th>
+    <td><button name="submit" type="submit" value="Save" class="btn btn-mini btn-primary">Save</button></td>
+  </tr>
+</table>
+</form>
+
+    </div><!-- .span12 -->
+  </div><!-- .row-fluid -->
+
+{% endblock content %}
