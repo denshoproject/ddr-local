@@ -71,6 +71,11 @@ def enforce_git_credentials(request):
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
 
+def check_file(file_):
+    if not file_:
+        raise Http404
+
+
 
 # views ----------------------------------------------------------------
 
@@ -79,6 +84,7 @@ def detail( request, fid ):
     """Add file to entity.
     """
     file_ = DDRFile.from_identifier(Identifier(fid))
+    check_file(file_)
     entity = file_.parent()
     collection = file_.collection()
     file_.model_def_commits()
@@ -243,6 +249,7 @@ def new_access( request, fid ):
     """
     enforce_git_credentials(request)
     file_ = DDRFile.from_identifier(Identifier(fid))
+    check_file(file_)
     entity = file_.parent()
     collection = file_.collection()
     if collection.locked():
@@ -328,6 +335,7 @@ def batch( request, rid ):
 def edit( request, fid ):
     enforce_git_credentials(request)
     file_ = DDRFile.from_identifier(Identifier(fid))
+    check_file(file_)
     module = file_.identifier.fields_module()
     entity = file_.parent()
     collection = file_.collection()
@@ -383,6 +391,7 @@ def set_signature( request, fid ):
     """
     enforce_git_credentials(request)
     file_ = DDRFile.from_identifier(Identifier(fid))
+    check_file(file_)
     entity = file_.parent()
     collection = file_.collection()
     if collection.locked():
@@ -430,8 +439,9 @@ def set_signature( request, fid ):
 @storage_required
 def delete( request, fid ):
     enforce_git_credentials(request)
+    file_ = DDRFile.from_identifier(Identifier(fid))
+    check_file(file_)
     try:
-        file_ = DDRFile.from_identifier(Identifier(fid))
         entity = file_.parent()
         collection = file_.collection()
     except:
