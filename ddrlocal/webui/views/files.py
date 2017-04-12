@@ -65,6 +65,12 @@ def prep_newfile_form_fields(FIELDS):
     FIELDS.insert(0, path)
     return FIELDS
 
+def enforce_git_credentials(request):
+    git_name = request.session.get('git_name')
+    git_mail = request.session.get('git_mail')
+    if not git_name and git_mail:
+        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
+
 
 # views ----------------------------------------------------------------
 
@@ -142,10 +148,7 @@ def browse( request, rid ):
 @login_required
 @storage_required
 def new( request, rid ):
-    git_name = request.session.get('git_name')
-    git_mail = request.session.get('git_mail')
-    if not git_name and git_mail:
-        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
+    enforce_git_credentials(request)
     file_role = Stub.from_identifier(Identifier(rid))
     role = file_role.identifier.parts['role']
     #child_models = CHILDREN_ALL[file_role.identifier.model]
@@ -176,7 +179,10 @@ def new( request, rid ):
                 inherited.append( (field,getattr(entity,field)) )
             # start tasks
             result = tasks.entity_add_file.apply_async(
-                (git_name, git_mail, entity, src_path, role, data, settings.AGENT),
+                (
+                    request.session['git_name'], request.session['git_mail'],
+                    entity, src_path, role, data, settings.AGENT
+                ),
                 countdown=2)
             result_dict = result.__dict__
             log = addfile_logger(entity.identifier)
@@ -235,10 +241,7 @@ def new_access( request, fid ):
     
     NOTE: There is no GET for this view.  GET requests will redirect to entity.
     """
-    git_name = request.session.get('git_name')
-    git_mail = request.session.get('git_mail')
-    if not git_name and git_mail:
-        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
+    enforce_git_credentials(request)
     file_ = DDRFile.from_identifier(Identifier(fid))
     entity = file_.parent()
     collection = file_.collection()
@@ -259,7 +262,10 @@ def new_access( request, fid ):
             src_path = form.cleaned_data['path']
             # start tasks
             result = tasks.entity_add_access.apply_async(
-                (git_name, git_mail, entity, file_),
+                (
+                    request.session['git_name'], request.session['git_mail'],
+                    entity, file_
+                ),
                 countdown=2
             )
             result_dict = result.__dict__
@@ -320,10 +326,7 @@ def batch( request, rid ):
 @login_required
 @storage_required
 def edit( request, fid ):
-    git_name = request.session.get('git_name')
-    git_mail = request.session.get('git_mail')
-    if not git_name and git_mail:
-        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
+    enforce_git_credentials(request)
     file_ = DDRFile.from_identifier(Identifier(fid))
     module = file_.identifier.fields_module()
     entity = file_.parent()
@@ -354,7 +357,7 @@ def edit( request, fid ):
             tasks.entity_file_edit(
                 request,
                 collection, file_, form.cleaned_data,
-                git_name, git_mail
+                request.session['git_name'], request.session['git_mail'],
             )
             
             return HttpResponseRedirect( file_.absolute_url() )
@@ -378,10 +381,7 @@ def edit( request, fid ):
 def set_signature( request, fid ):
     """Make file the signature of the specified entity or collection.
     """
-    git_name = request.session.get('git_name')
-    git_mail = request.session.get('git_mail')
-    if not git_name and git_mail:
-        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
+    enforce_git_credentials(request)
     file_ = DDRFile.from_identifier(Identifier(fid))
     entity = file_.parent()
     collection = file_.collection()
@@ -410,7 +410,8 @@ def set_signature( request, fid ):
                 collection,
                 entity,
                 cleaned_data,
-                git_name, git_mail, settings.AGENT
+                request.session['git_name'], request.session['git_mail'],
+                settings.AGENT
             )
         elif request.POST.get('object_id') == collection.id:
             cleaned_data = collection.form_prep()
@@ -419,7 +420,7 @@ def set_signature( request, fid ):
                 request,
                 collection,
                 cleaned_data,
-                git_name, git_mail
+                request.session['git_name'], request.session['git_mail'],
             )
             
     return HttpResponseRedirect( file_.absolute_url() )
@@ -428,6 +429,7 @@ def set_signature( request, fid ):
 @login_required
 @storage_required
 def delete( request, fid ):
+    enforce_git_credentials(request)
     try:
         file_ = DDRFile.from_identifier(Identifier(fid))
         entity = file_.parent()
@@ -440,17 +442,13 @@ def delete( request, fid ):
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect(entity.absolute_url())
-    git_name = request.session.get('git_name')
-    git_mail = request.session.get('git_mail')
-    if not git_name and git_mail:
-        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     #
     if request.method == 'POST':
         form = DeleteFileForm(request.POST)
         if form.is_valid() and form.cleaned_data['confirmed']:
             tasks.entity_delete_file(
                 request,
-                git_name, git_mail,
+                request.session['git_name'], request.session['git_mail'],
                 collection, entity, file_,
                 settings.AGENT
             )
