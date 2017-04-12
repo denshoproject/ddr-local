@@ -75,6 +75,23 @@ def check_file(file_):
     if not file_:
         raise Http404
 
+def check_parents(entity, collection, check_locks=True, fetch=True):
+    if not entity:
+        raise Exception('No parent object!')
+    if not collection:
+        raise Exception('No parent collection!')
+    if check_locks and entity.locked():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
+        return HttpResponseRedirect(entity.absolute_url())
+    if check_locks and collection.locked():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
+        return HttpResponseRedirect(entity.absolute_url())
+    if fetch:
+        collection.repo_fetch()
+    if collection.repo_behind():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
+        return HttpResponseRedirect(entity.absolute_url())
+
 
 
 # views ----------------------------------------------------------------
@@ -87,6 +104,7 @@ def detail( request, fid ):
     check_file(file_)
     entity = file_.parent()
     collection = file_.collection()
+    check_parents(entity, collection, check_locks=0, fetch=0)
     file_.model_def_commits()
     file_.model_def_fields()
     formdata = {'path':file_.path_rel}
@@ -111,6 +129,7 @@ def browse( request, rid ):
     role = file_role.identifier.parts['role']
     entity = file_role.parent(stubs=True)
     collection = entity.collection()
+    check_parents(entity, collection, check_locks=0, fetch=0)
     path = request.GET.get('path')
     home = None
     parent = None
@@ -156,21 +175,13 @@ def browse( request, rid ):
 def new( request, rid ):
     enforce_git_credentials(request)
     file_role = Stub.from_identifier(Identifier(rid))
+    entity = file_role.parent(stubs=True)
+    collection = entity.collection()
+    check_parents(entity, collection, fetch=0)
     role = file_role.identifier.parts['role']
     #child_models = CHILDREN_ALL[file_role.identifier.model]
     FILE_MODEL = 'file'
     module = MODULES[FILE_MODEL]
-    entity = file_role.parent(stubs=True)
-    collection = entity.collection()
-    if collection.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-        return HttpResponseRedirect(entity.absolute_url())
-    if collection.repo_behind():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
-        return HttpResponseRedirect(entity.absolute_url())
-    if entity.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
-        return HttpResponseRedirect(entity.absolute_url())
     #
     path = request.GET.get('path', None)
     FIELDS = prep_newfile_form_fields(module.FIELDS_NEW)
@@ -252,16 +263,7 @@ def new_access( request, fid ):
     check_file(file_)
     entity = file_.parent()
     collection = file_.collection()
-    if collection.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-        return HttpResponseRedirect(entity.absolute_url())
-    collection.repo_fetch()
-    if collection.repo_behind():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
-        return HttpResponseRedirect(entity.absolute_url())
-    if entity.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
-        return HttpResponseRedirect(entity.absolute_url())
+    check_parents(entity, collection)
     #
     if request.method == 'POST':
         form = NewAccessFileForm(request.POST)
@@ -312,16 +314,7 @@ def batch( request, rid ):
     file_role = Stub.from_identifier(Identifier(rid))
     entity = Entity.from_request(request)
     collection = entity.collection()
-    if collection.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-        return HttpResponseRedirect(entity.absolute_url())
-    collection.repo_fetch()
-    if collection.repo_behind():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
-        return HttpResponseRedirect(entity.absolute_url())
-    if entity.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
-        return HttpResponseRedirect(entity.absolute_url())
+    check_parents(entity, collection)
     return render_to_response(
         'webui/files/new.html',
         {'collection': collection,
@@ -336,21 +329,12 @@ def edit( request, fid ):
     enforce_git_credentials(request)
     file_ = DDRFile.from_identifier(Identifier(fid))
     check_file(file_)
-    module = file_.identifier.fields_module()
     entity = file_.parent()
     collection = file_.collection()
-    if collection.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-        return HttpResponseRedirect(entity.absolute_url())
-    collection.repo_fetch()
-    if collection.repo_behind():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
-        return HttpResponseRedirect(entity.absolute_url())
-    if entity.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
-        return HttpResponseRedirect(entity.absolute_url())
+    check_parents(entity, collection)
     file_.model_def_commits()
     file_.model_def_fields()
+    module = file_.identifier.fields_module()
     #
     if request.method == 'POST':
         form = DDRForm(request.POST, fields=module.FIELDS)
@@ -394,16 +378,7 @@ def set_signature( request, fid ):
     check_file(file_)
     entity = file_.parent()
     collection = file_.collection()
-    if collection.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-        return HttpResponseRedirect(entity.absolute_url())
-    collection.repo_fetch()
-    if collection.repo_behind():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
-        return HttpResponseRedirect(entity.absolute_url())
-    if entity.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
-        return HttpResponseRedirect(entity.absolute_url())
+    check_parents(entity, collection)
     #
     if (request.method == 'POST') and (request.POST.get('object_id')):
             
@@ -441,17 +416,9 @@ def delete( request, fid ):
     enforce_git_credentials(request)
     file_ = DDRFile.from_identifier(Identifier(fid))
     check_file(file_)
-    try:
-        entity = file_.parent()
-        collection = file_.collection()
-    except:
-        raise Http404
-    if entity.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
-        return HttpResponseRedirect(entity.absolute_url())
-    if collection.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-        return HttpResponseRedirect(entity.absolute_url())
+    entity = file_.parent()
+    collection = file_.collection()
+    check_parents(entity, collection)
     #
     if request.method == 'POST':
         form = DeleteFileForm(request.POST)
