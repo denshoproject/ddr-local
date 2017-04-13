@@ -13,10 +13,17 @@
   <div class="row-fluid">
     <div class="span12">
 
+<div class="alert alert-warning" role="alert">
+<p>
+  <strong>Warning!</strong>
+  It is your responsibility to coordinate with others to ensure that you do not create multiple objects with the same ID.
+</p>
+</div><!-- .alert-warning -->
+
 <h1>New Object</h1>
 
 <form name="entity-new" action="" method="POST">{% csrf_token %}
-<table>
+<table class="table">
   {{ form.as_table }}
   <tr>
     <th></th>
@@ -24,6 +31,23 @@
   </tr>
 </table>
 </form>
+
+<div class="alert alert-info" role="alert">
+{% if entity_ids %}
+<p>
+  <strong>Existing objects in this collection</strong>
+</p>
+<p>
+  {% for oid in entity_ids %}
+  <a href="{% url "webui-entity" oid %}">{{ oid }}<a/><br/>
+  {% endfor %}
+</p>
+{% else %}
+<p>
+  Collection contains no objects
+</p>
+{% endif %}
+</div><!-- .alert-info -->
 
     </div><!-- .span12 -->
   </div><!-- .row-fluid -->

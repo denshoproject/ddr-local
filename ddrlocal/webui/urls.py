@@ -56,8 +56,9 @@ urlpatterns = patterns(
     url(r'^collection/(?P<cid>[\w\d-]+)/git-status/$', 'webui.views.collections.git_status', name='webui-collection-git-status'),
     url(r'^collection/(?P<cid>[\w\d-]+)/$', 'webui.views.collections.detail', name='webui-collection'),
 
-    url(r'^collection(?P<oid>[\w\d-]+)/new-expert/$', 'webui.views.collections.newexpert', name='webui-collection-newexpert'),
-    url(r'^collection(?P<oid>[\w\d-]+)/new/$', 'webui.views.collections.new', name='webui-collection-new'),
+    url(r'^collection/(?P<oid>[\w\d-]+)/new-idservice/$', 'webui.views.collections.new_idservice', name='webui-collection-newidservice'),
+    url(r'^collection/(?P<oid>[\w\d-]+)/new-manual/$', 'webui.views.collections.new_manual', name='webui-collection-newmanual'),
+    url(r'^collection/(?P<oid>[\w\d-]+)/new/$', 'webui.views.collections.new', name='webui-collection-new'),
 
     # entities
 
@@ -75,7 +76,8 @@ urlpatterns = patterns(
     # segments Just Work with entity patterns except for this one
     url(r'^segment/(?P<eid>[\w\d-]+)/$', 'webui.views.entities.detail', name='webui-segment'),
 
-    url(r'^entity/(?P<cid>[\w\d-]+)/new-expert/$', 'webui.views.entities.newexpert', name='webui-entity-newexpert'),
+    url(r'^entity/(?P<cid>[\w\d-]+)/new-idservice/$', 'webui.views.entities.new_idservice', name='webui-entity-newidservice'),
+    url(r'^entity/(?P<cid>[\w\d-]+)/new-manual/$', 'webui.views.entities.new_manual', name='webui-entity-newmanual'),
     url(r'^entity/(?P<cid>[\w\d-]+)/new/$', 'webui.views.entities.new', name='webui-entity-new'),
 
     # files

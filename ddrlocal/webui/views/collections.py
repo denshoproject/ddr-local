@@ -206,11 +206,41 @@ def sync( request, cid ):
         context_instance=RequestContext(request, processors=[])
     )
 
-
 @ddrview
 @login_required
 @storage_required
 def new( request, oid ):
+    """Redirect to new_idservice or new_manual.
+    """
+    if settings.IDSERVICE_API_BASE:
+        return HttpResponseRedirect(reverse('webui-collection-newidservice', args=[oid]))
+    return HttpResponseRedirect(reverse('webui-collection-newmanual', args=[oid]))
+
+def _create_collection(request, cidentifier, git_name, git_mail):
+    """used by both new_idservice and new_manual
+    """
+    exit,status = Collection.new(cidentifier, git_name, git_mail, settings.AGENT)
+    collection = Collection.from_identifier(cidentifier)
+    if exit:
+        logger.error(exit)
+        logger.error(status)
+        messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
+    else:
+        # update search index
+        try:
+            collection.post_json()
+        except ConnectionError:
+            logger.error('Could not post to Elasticsearch.')
+        tasks.gitstatus_update.apply_async(
+            (cidentifier.path_abs(),),
+            countdown=2
+        )
+    return collection
+
+@ddrview
+@login_required
+@storage_required
+def new_idservice( request, oid ):
     """Gets new CID from workbench, creates new collection record.
     
     If it messes up, goes back to collection list.
@@ -247,24 +277,11 @@ def new( request, oid ):
         return HttpResponseRedirect(reverse('webui-collections'))
     
     cidentifier = Identifier(id=collection_id, base_path=settings.MEDIA_BASE)
-    exit,status = Collection.new(cidentifier, git_name, git_mail, settings.AGENT)
-    if exit:
-        logger.error(exit)
-        logger.error(status)
-        messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
-    else:
-        # update search index
-        collection = Collection.from_identifier(cidentifier)
-        try:
-            collection.post_json()
-        except ConnectionError:
-            logger.error('Could not post to Elasticsearch.')
-        tasks.gitstatus_update.apply_async(
-            (cidentifier.path_abs(),),
-            countdown=2
-        )
-        # positive feedback
+    # Create collection and redirect to edit page
+    collection = _create_collection(request, cidentifier, git_name, git_mail)
+    if collection:
         return HttpResponseRedirect( reverse('webui-collection-edit', args=[collection.id]) )
+    
     # something happened...
     logger.error('Could not create new collecion!')
     messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_ERR_CREATE'])
@@ -273,7 +290,7 @@ def new( request, oid ):
 @ddrview
 @login_required
 @storage_required
-def newexpert( request, oid ):
+def new_manual( request, oid ):
     """Ask for Entity ID, then create new Entity.
     """
     git_name = request.session.get('git_name')
@@ -281,47 +298,52 @@ def newexpert( request, oid ):
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     
+    oidentifier = Identifier(oid).object()
+    idparts = oidentifier.idparts
+    collection_ids = sorted([
+        os.path.basename(cpath)
+        for cpath in Collection.collection_paths(
+            settings.MEDIA_BASE,
+            idparts['repo'],
+            idparts['org']
+        )
+    ])
+    collection_ids.reverse()
+    
     if request.method == 'POST':
         form = NewCollectionForm(request.POST)
         if form.is_valid():
-
-            oidentifier = Identifier(oid)
-            idparts = {
-                'model':'collection',
-                'repo':oidentifier.repo, 'org':oidentifier.org,
-                'cid':str(form.cleaned_data['cid'])
-            }
-            identifier = Identifier(parts=idparts)
-            collection_id = identifier.id
-            collection_ids = [
-                os.path.basename(cpath)
-                for cpath
-                in Collection.collection_paths(settings.MEDIA_BASE, repo, org)
-            ]
-            already_exists = False
-            if collection_id in collection_ids:
-                already_exists = True
-                messages.error(request, "That collection ID already exists. Try again.")
             
-            if collection_id and not already_exists:
-                tasks.collection_new_expert(
-                    request,
-                    settings.MEDIA_BASE,
-                    collection_id,
-                    git_name, git_mail
-                )
-                return HttpResponseRedirect(reverse('webui-collections'))
+            # TODO get this from Entity class or something
+            idparts['model'] = 'collection'
+            idparts['cid'] = str(form.cleaned_data['cid'])
+            cidentifier = Identifier(parts=idparts)
+            if not cidentifier:
+                messages.error(request, "Could not generate a legal ID from your input. Try again.")
+            elif cidentifier.parent_id(stubs=True) != oidentifier.id:
+                messages.error(request, "Can only create collections for this organization. Try again.")
+            elif cidentifier.id in collection_ids:
+                messages.error(request, "Object ID %s already exists. Try again." % cidentifier.id)
+            else:
+                
+                # Create collection and redirect to edit page
+                collection = _create_collection(request, cidentifier, git_name, git_mail)
+                if collection:
+                    messages.warning(request, 'IMPORTANT: Register this ID with the ID service as soon as possible!')
+                    return HttpResponseRedirect(reverse('webui-collection-edit', args=[collection.id]))
             
     else:
         data = {
-            'repo':repo,
-            'org':org,
+            'repo': idparts['repo'],
+            'org': idparts['org'],
         }
         form = NewCollectionForm(data)
     return render_to_response(
-        'webui/collections/new.html',
-        {'form': form,
-         },
+        'webui/collections/new-manual.html',
+        {
+            'form': form,
+            'collection_ids': collection_ids,
+        },
         context_instance=RequestContext(request, processors=[])
     )
 

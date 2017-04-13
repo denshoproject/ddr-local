@@ -297,7 +297,41 @@ def changelog( request, eid ):
 @login_required
 @storage_required
 def new( request, cid ):
-    """Gets new EID from workbench, creates new entity record.
+    """Redirect to new_idservice or new_manual.
+    """
+    if settings.IDSERVICE_API_BASE:
+        return HttpResponseRedirect(reverse('webui-entity-newidservice', args=[cid]))
+    return HttpResponseRedirect(reverse('webui-entity-newmanual', args=[cid]))
+
+def _create_entity(request, eidentifier, collection, git_name, git_mail):
+    """used by both new_idservice and new_manual
+    """
+    # load Entity object, inherit values from parent, write back to file
+    exit,status = Entity.new(eidentifier, git_name, git_mail, agent=settings.AGENT)
+    entity = Entity.from_identifier(eidentifier)
+    
+    collection.cache_delete()
+    if exit:
+        logger.error(exit)
+        logger.error(status)
+        messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
+    else:
+        # update search index
+        try:
+            entity.post_json()
+        except ConnectionError:
+            logger.error('Could not post to Elasticsearch.')
+        tasks.gitstatus_update.apply_async(
+            (collection.path,),
+            countdown=2
+        )
+    return entity
+
+@ddrview
+@login_required
+@storage_required
+def new_idservice( request, cid ):
+    """Gets new EID from idservice, creates new entity record.
     
     If it messes up, goes back to collection.
     """
@@ -340,27 +374,9 @@ def new( request, cid ):
         return HttpResponseRedirect(collection.absolute_url())
     
     eidentifier = Identifier(id=new_entity_id)
-    # create new entity
-    # load Entity object, inherit values from parent, write back to file
-    exit,status = Entity.new(eidentifier, git_name, git_mail, agent=settings.AGENT)
-    entity = Entity.from_identifier(eidentifier)
-    
-    collection.cache_delete()
-    if exit:
-        logger.error(exit)
-        logger.error(status)
-        messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
-    else:
-        # update search index
-        try:
-            entity.post_json()
-        except ConnectionError:
-            logger.error('Could not post to Elasticsearch.')
-        tasks.gitstatus_update.apply_async(
-            (collection.path,),
-            countdown=2
-        )
-        # positive feedback
+    # Create entity and redirect to edit page
+    entity = _create_entity(request, eidentifier, collection, git_name, git_mail)
+    if entity:
         return HttpResponseRedirect(reverse('webui-entity-edit', args=[entity.id]))
     
     # something happened...
@@ -371,7 +387,7 @@ def new( request, cid ):
 @ddrview
 @login_required
 @storage_required
-def newexpert( request, cid ):
+def new_manual( request, cid ):
     """Ask for Entity ID, then create new Entity.
     """
     git_name = request.session.get('git_name')
@@ -386,47 +402,47 @@ def newexpert( request, cid ):
     if collection.repo_behind():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
         return HttpResponseRedirect(entity.absolute_url())
-    
+
+    idparts = collection.identifier.idparts
+    entity_ids = sorted([entity.id for entity in collection.children(quick=True)])
+    entity_ids.reverse()
+
     if request.method == 'POST':
         form = NewEntityForm(request.POST)
         if form.is_valid():
-
-            # TODO replace with Identifier
-            entity_id = '-'.join([repo, org, str(cid), str(form.cleaned_data['eid'])])
-            entity_ids = [entity.id for entity in collection.entities(quick=True)]
-            is_legal = False
-            already_exists = False
-            if '-'.join([repo, org, str(cid)]) == collection.id:
-                is_legal = True
-            else:
-                messages.error(request, "Can only create objects in this collection. Try again.")
-            if entity_id in entity_ids:
-                already_exists = True
-                messages.error(request, "That object ID already exists. Try again.")
             
-            if entity_id and is_legal and not already_exists:
-                tasks.collection_entity_newexpert(
-                    request,
-                    collection, entity_id,
-                    git_name, git_mail
-                )
-                return HttpResponseRedirect(reverse('webui-collection-children', args=[collection.id]))
+            # TODO get this from Entity class or something
+            idparts['model'] = 'entity'
+            idparts['eid'] = str(form.cleaned_data['eid'])
+            eidentifier  = Identifier(parts=idparts)
+            if not eidentifier:
+                messages.error(request, "Could not generate a legal ID from your input. Try again.")
+            elif eidentifier.parent_id() != collection.id:
+                messages.error(request, "Can only create objects in this collection. Try again.")
+            elif eidentifier.id in entity_ids:
+                messages.error(request, "Object ID %s already exists. Try again." % eidentifier.id)
+            else:
+                
+                # Create entity and redirect to edit page
+                entity = _create_entity(request, eidentifier, collection, git_name, git_mail)
+                if entity:
+                    messages.warning(request, 'IMPORTANT: Register this ID with the ID service as soon as possible!')
+                    return HttpResponseRedirect(reverse('webui-entity-edit', args=[entity.id]))
             
     else:
         data = {
-            'repo':repo,
-            'org':org,
-            'cid':cid,
+            'repo': idparts['repo'],
+            'org': idparts['org'],
+            'cid': idparts['cid'],
         }
         form = NewEntityForm(data)
     return render_to_response(
-        'webui/entities/new.html',
-        {'repo': repo,
-         'org': org,
-         'cid': cid,
-         'collection': collection,
-         'form': form,
-         },
+        'webui/entities/new-manual.html',
+        {
+            'collection': collection,
+            'form': form,
+            'entity_ids': entity_ids,
+        },
         context_instance=RequestContext(request, processors=[])
     )
     

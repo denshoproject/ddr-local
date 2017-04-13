@@ -5,10 +5,9 @@ from django import forms
 from django.conf import settings
 
 class NewEntityForm(forms.Form):
-    # TODO build form from Identifier.parts
-    repo = forms.CharField(max_length=100)
-    org = forms.CharField(max_length=100)
-    cid = forms.IntegerField()
+    repo = forms.CharField(max_length=100)  # TODO should be disabled/non-editable
+    org = forms.CharField(max_length=100)  # TODO should be disabled/non-editable
+    cid = forms.IntegerField()  # TODO should be disabled/non-editabel
     eid = forms.IntegerField()
 
 class JSONForm(forms.Form):
