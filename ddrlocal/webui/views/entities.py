@@ -189,12 +189,39 @@ def tagmanager_process_tags( form_terms ):
         cleaned.append(t)
     return '; '.join(cleaned)
 
+def enforce_git_credentials(request):
+    git_name = request.session.get('git_name')
+    git_mail = request.session.get('git_mail')
+    if not git_name and git_mail:
+        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
+    return git_name,git_mail
+
+def check_object(entity, check_locks=True):
+    if not entity:
+        raise Http404
+    if check_locks and entity.locked():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
+        return HttpResponseRedirect(entity.absolute_url())
+
+def check_parent(collection, check_locks=True, fetch=True):
+    if not collection:
+        raise Exception('No parent collection!')
+    if check_locks and collection.locked():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
+        return HttpResponseRedirect(collection.absolute_url())
+    if fetch:
+        collection.repo_fetch()
+    if collection.repo_behind():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
+        return HttpResponseRedirect(collection.absolute_url())
+
 
 # views ----------------------------------------------------------------
 
 @storage_required
 def detail( request, eid ):
     entity = Entity.from_identifier(Identifier(eid))
+    check_object(entity, check_locks=False)
     collection = entity.collection()
     entity.model_def_commits()
     entity.model_def_fields()
@@ -212,6 +239,7 @@ def detail( request, eid ):
 @storage_required
 def children(request, eid):
     entity = Entity.from_identifier(Identifier(eid))
+    check_object(entity, check_locks=False)
     collection = entity.collection()
     
     # models that are under entity but are not nodes (i.e. files)
@@ -257,6 +285,7 @@ def file_role( request, rid ):
     file_role = Stub.from_identifier(Identifier(rid))
     role = file_role.identifier.parts['role']
     entity = file_role.parent(stubs=True)
+    check_object(entity, check_locks=False)
     collection = entity.collection()
     duplicates = entity.detect_file_duplicates(role)
     if duplicates:
@@ -283,6 +312,7 @@ def file_role( request, rid ):
 @storage_required
 def addfile_log( request, eid ):
     entity = Entity.from_identifier(Identifier(eid))
+    check_object(entity, check_locks=False)
     collection = entity.collection()
     return render_to_response(
         'webui/entities/addfiles-log.html',
@@ -294,6 +324,7 @@ def addfile_log( request, eid ):
 @storage_required
 def changelog( request, eid ):
     entity = Entity.from_identifier(Identifier(eid))
+    check_object(entity, check_locks=False)
     collection = entity.collection()
     return render_to_response(
         'webui/entities/changelog.html',
@@ -346,21 +377,12 @@ def new_idservice( request, oid ):
     
     If it messes up, goes back to collection.
     """
-    git_name = request.session.get('git_name')
-    git_mail = request.session.get('git_mail')
-    if not (git_name and git_mail):
-        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
+    git_name,git_mail = enforce_git_credentials(request)
     # note: oid could be either a Collection or an Entity
     collection = Collection.from_identifier(
         Identifier(oid).collection()
     )
-    if collection.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-        return HttpResponseRedirect(collection.absolute_url())
-    collection.repo_fetch()
-    if collection.repo_behind():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
-        return HttpResponseRedirect(collection.absolute_url())
+    check_parent(collection)
     
     ic = idservice.IDServiceClient()
     # resume session
@@ -404,22 +426,13 @@ def new_idservice( request, oid ):
 def new_manual( request, oid ):
     """Ask for Entity ID, then create new Entity.
     """
-    git_name = request.session.get('git_name')
-    git_mail = request.session.get('git_mail')
-    if not git_name and git_mail:
-        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
+    git_name,git_mail = enforce_git_credentials(request)
     # note: oid could be either a Collection or an Entity
     parent = Identifier(oid).object()
     collection = Collection.from_identifier(
         Identifier(oid).collection()
     )
-    if collection.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-        return HttpResponseRedirect(entity.absolute_url())
-    collection.repo_fetch()
-    if collection.repo_behind():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
-        return HttpResponseRedirect(entity.absolute_url())
+    check_parent(collection)
 
     oidentifier = Identifier(oid)
     model = request.GET.get('model', 'entity')
@@ -474,24 +487,13 @@ def edit( request, eid ):
     UI for Entity topics uses TagManager to represent topics as tags,
     and typeahead.js so users only have to type part of a topic.
     """
-    git_name = request.session.get('git_name')
-    git_mail = request.session.get('git_mail')
-    if not git_name and git_mail:
-        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
+    git_name,git_mail = enforce_git_credentials(request)
     entity = Entity.from_identifier(Identifier(eid))
+    check_object(entity)
     module = entity.identifier.fields_module()
     collection = entity.collection()
-    if collection.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-        return HttpResponseRedirect(entity.absolute_url())
-    collection.repo_fetch()
-    if collection.repo_behind():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
-        return HttpResponseRedirect(entity.absolute_url())
-    if entity.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
-        return HttpResponseRedirect(entity.absolute_url())
-    #
+    check_parent(collection)
+    
     # load topics choices data
     # TODO This should be baked into models somehow.
     topics_terms = tagmanager_terms('topics')
@@ -578,22 +580,12 @@ def edit_vocab_terms( request, field ):
 def delete( request, eid, confirm=False ):
     """Delete the requested entity from the collection.
     """
-    try:
-        entity = Entity.from_identifier(Identifier(eid))
-    except:
-        raise Http404
+    git_name,git_mail = enforce_git_credentials(request)
+    entity = Entity.from_identifier(Identifier(eid))
+    check_object(entity)
     collection = entity.collection()
-    if collection.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-        return HttpResponseRedirect(entity.absolute_url())
-    if entity.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
-        return HttpResponseRedirect(entity.absolute_url())
-    git_name = request.session.get('git_name')
-    git_mail = request.session.get('git_mail')
-    if not git_name and git_mail:
-        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    #
+    check_parent(collection)
+    
     if request.method == 'POST':
         form = DeleteEntityForm(request.POST)
         if form.is_valid() and form.cleaned_data['confirmed']:
@@ -619,18 +611,11 @@ def delete( request, eid, confirm=False ):
 def files_reload( request, eid ):
     """Regenerates list of file info dicts with list of File objects
     """
-    git_name = request.session.get('git_name')
-    git_mail = request.session.get('git_mail')
-    if not (git_name and git_mail):
-        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
+    git_name,git_mail = enforce_git_credentials(request)
     entity = Entity.from_identifier(Identifier(eid))
+    check_object(entity)
     collection = entity.collection()
-    if entity.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
-        return HttpResponseRedirect(entity.absolute_url())
-    if collection.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-        return HttpResponseRedirect(collection.absolute_url())
+    check_parent(collection)
     
     tasks.entity_reload_files(
         request,
@@ -649,18 +634,16 @@ def files_reload( request, eid ):
 @login_required
 @storage_required
 def files_dedupe( request, eid ):
-    git_name = request.session.get('git_name')
-    git_mail = request.session.get('git_mail')
-    if not (git_name and git_mail):
-        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
+    git_name,git_mail = enforce_git_credentials(request)
     entity = Entity.from_identifier(Identifier(eid))
+    check_object(entity)
     collection = entity.collection()
-    if collection.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-        return HttpResponseRedirect(collection.absolute_url())
+    check_parent(collection)
+    
     duplicate_masters = entity.detect_file_duplicates('master')
     duplicate_mezzanines = entity.detect_file_duplicates('mezzanine')
     duplicates = duplicate_masters + duplicate_mezzanines
+    
     if request.method == 'POST':
         form = RmDuplicatesForm(request.POST)
         if form.is_valid() and form.cleaned_data.get('confirmed',None) \
@@ -712,12 +695,11 @@ def files_dedupe( request, eid ):
 def unlock( request, eid, task_id ):
     """Provides a way to remove entity lockfile through the web UI.
     """
-    git_name = request.session.get('git_name')
-    git_mail = request.session.get('git_mail')
-    if not git_name and git_mail:
-        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
+    git_name,git_mail = enforce_git_credentials(request)
     entity = Entity.from_identifier(Identifier(eid))
+    check_object(entity)
     collection = entity.collection()
+    
     if task_id and entity.locked() and (task_id == entity.locked()):
         entity.unlock(task_id)
         messages.success(request, 'Object <b>%s</b> unlocked.' % entity.id)
