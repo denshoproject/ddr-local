@@ -311,7 +311,7 @@ def new( request, oid ):
     if settings.IDSERVICE_API_BASE:
         return HttpResponseRedirect(reverse('webui-entity-newidservice', args=[oid]))
     # pass ID template in request.GET
-    url = reverse('webui-entity-newmanual', args=[oid]) + '?model=%s' % request.GET.get('model')
+    url = reverse('webui-entity-newmanual', args=[oid]) + '?model=%s' % request.GET.get('model', 'entity')
     return HttpResponseRedirect(url)
 
 def _create_entity(request, eidentifier, collection, git_name, git_mail):
@@ -422,8 +422,8 @@ def new_manual( request, oid ):
         return HttpResponseRedirect(entity.absolute_url())
 
     oidentifier = Identifier(oid)
-    model = request.GET.get('model')
-
+    model = request.GET.get('model', 'entity')
+    
     if request.method == 'POST':
         form = ObjectIDForm(request.POST)
         if form.is_valid():
