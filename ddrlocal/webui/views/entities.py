@@ -447,8 +447,11 @@ def new_manual( request, oid ):
             'model': model,
             'parent_id': oidentifier.id,
         })
-    
-    existing_ids = sorted([entity.id for entity in parent.children(quick=True)])
+
+    if isinstance(parent, Collection):
+        existing_ids = sorted([entity.id for entity in parent.children(quick=True)])
+    elif isinstance(parent, Entity):
+        existing_ids = sorted([e['id'] for e in parent.children_meta])
     existing_ids.reverse()
     
     return render_to_response(
