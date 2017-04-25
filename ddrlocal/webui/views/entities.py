@@ -30,7 +30,8 @@ from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
 from webui.decorators import ddrview
 from webui.forms import DDRForm
-from webui.forms.entities import NewEntityForm, JSONForm, UpdateForm, DeleteEntityForm, RmDuplicatesForm
+from webui.forms import ObjectIDForm
+from webui.forms.entities import JSONForm, UpdateForm, DeleteEntityForm, RmDuplicatesForm
 from webui.identifier import Identifier
 from webui.models import Stub, Collection, Entity
 from webui import tasks
@@ -212,6 +213,13 @@ def detail( request, eid ):
 def children(request, eid):
     entity = Entity.from_identifier(Identifier(eid))
     collection = entity.collection()
+    
+    # models that are under entity but are not nodes (i.e. files)
+    from DDR.identifier import CHILDREN, NODES, MODELS_IDPARTS
+    children_models = [
+        m for m in CHILDREN['entity'] if m not in NODES
+    ]
+    
     # paginate
     children_meta = sorted(
         entity.children_meta,
@@ -235,6 +243,7 @@ def children(request, eid):
         {
             'collection': collection,
             'entity': entity,
+            'children_models': children_models,
             'children_urls': entity.children_urls(active='children'),
             'paginator': paginator,
             'page': page,
@@ -296,12 +305,14 @@ def changelog( request, eid ):
 @ddrview
 @login_required
 @storage_required
-def new( request, cid ):
+def new( request, oid ):
     """Redirect to new_idservice or new_manual.
     """
     if settings.IDSERVICE_API_BASE:
-        return HttpResponseRedirect(reverse('webui-entity-newidservice', args=[cid]))
-    return HttpResponseRedirect(reverse('webui-entity-newmanual', args=[cid]))
+        return HttpResponseRedirect(reverse('webui-entity-newidservice', args=[oid]))
+    # pass ID template in request.GET
+    url = reverse('webui-entity-newmanual', args=[oid]) + '?model=%s' % request.GET.get('model')
+    return HttpResponseRedirect(url)
 
 def _create_entity(request, eidentifier, collection, git_name, git_mail):
     """used by both new_idservice and new_manual
@@ -330,7 +341,7 @@ def _create_entity(request, eidentifier, collection, git_name, git_mail):
 @ddrview
 @login_required
 @storage_required
-def new_idservice( request, cid ):
+def new_idservice( request, oid ):
     """Gets new EID from idservice, creates new entity record.
     
     If it messes up, goes back to collection.
@@ -339,7 +350,10 @@ def new_idservice( request, cid ):
     git_mail = request.session.get('git_mail')
     if not (git_name and git_mail):
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    collection = Collection.from_identifier(Identifier(cid))
+    # note: oid could be either a Collection or an Entity
+    collection = Collection.from_identifier(
+        Identifier(oid).collection()
+    )
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect(collection.absolute_url())
@@ -387,14 +401,18 @@ def new_idservice( request, cid ):
 @ddrview
 @login_required
 @storage_required
-def new_manual( request, cid ):
+def new_manual( request, oid ):
     """Ask for Entity ID, then create new Entity.
     """
     git_name = request.session.get('git_name')
     git_mail = request.session.get('git_mail')
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    collection = Collection.from_identifier(Identifier(cid))
+    # note: oid could be either a Collection or an Entity
+    parent = Identifier(oid).object()
+    collection = Collection.from_identifier(
+        Identifier(oid).collection()
+    )
     if collection.locked():
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
         return HttpResponseRedirect(entity.absolute_url())
@@ -403,45 +421,44 @@ def new_manual( request, cid ):
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
         return HttpResponseRedirect(entity.absolute_url())
 
-    idparts = collection.identifier.idparts
-    entity_ids = sorted([entity.id for entity in collection.children(quick=True)])
-    entity_ids.reverse()
+    oidentifier = Identifier(oid)
+    model = request.GET.get('model')
 
     if request.method == 'POST':
-        form = NewEntityForm(request.POST)
+        form = ObjectIDForm(request.POST)
         if form.is_valid():
-            
-            # TODO get this from Entity class or something
-            idparts['model'] = 'entity'
-            idparts['eid'] = str(form.cleaned_data['eid'])
-            eidentifier  = Identifier(parts=idparts)
-            if not eidentifier:
-                messages.error(request, "Could not generate a legal ID from your input. Try again.")
-            elif eidentifier.parent_id() != collection.id:
-                messages.error(request, "Can only create objects in this collection. Try again.")
-            elif eidentifier.id in entity_ids:
-                messages.error(request, "Object ID %s already exists. Try again." % eidentifier.id)
-            else:
-                
-                # Create entity and redirect to edit page
-                entity = _create_entity(request, eidentifier, collection, git_name, git_mail)
-                if entity:
-                    messages.warning(request, 'IMPORTANT: Register this ID with the ID service as soon as possible!')
-                    return HttpResponseRedirect(reverse('webui-entity-edit', args=[entity.id]))
+
+            eid = form.cleaned_data['object_id']
+            eidentifier = Identifier(id=eid)
+            # Create entity and redirect to edit page
+            entity = _create_entity(
+                request,
+                eidentifier, collection,
+                git_name, git_mail
+            )
+            if entity:
+                messages.warning(request, 'IMPORTANT: Register this ID with the ID service as soon as possible!')
+                return HttpResponseRedirect(
+                    reverse('webui-entity-edit', args=[entity.id])
+                )
             
     else:
-        data = {
-            'repo': idparts['repo'],
-            'org': idparts['org'],
-            'cid': idparts['cid'],
-        }
-        form = NewEntityForm(data)
+        form = ObjectIDForm(initial={
+            'model': model,
+            'parent_id': oidentifier.id,
+        })
+    
+    existing_ids = sorted([entity.id for entity in parent.children(quick=True)])
+    existing_ids.reverse()
+    
     return render_to_response(
         'webui/entities/new-manual.html',
         {
             'collection': collection,
+            'parent': parent,
+            'model': model,
             'form': form,
-            'entity_ids': entity_ids,
+            'existing_ids': existing_ids,
         },
         context_instance=RequestContext(request, processors=[])
     )
