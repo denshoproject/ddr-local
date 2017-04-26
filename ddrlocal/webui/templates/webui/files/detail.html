@@ -140,7 +140,7 @@
 <b>Trusted remotes</b><br/>
 <table class="table table-condensed small">
   {% for r in annex_whereis.whereis %}
-  <tr>
+  <tr {% if r.this %}class="info"{% endif %}>
     <td>{% if r.here %}<span class="label label-info">here</span>{% endif %}</td>
     <td>{{ r.description }}</td>
     <td>{{ r.uuid }}</td>
@@ -154,8 +154,8 @@
 <p>
 <b>UN-trusted remotes</b><br/>
 <table class="table table-condensed">
-  {% for r in annex_whereis.whereis %}
-  <tr>
+  {% for r in annex_whereis.untrusted %}
+  <tr {% if r.this %}class="info"{% endif %}>
     <td>{% if r.here %}<span class="label label-info">here</span>{% endif %}</td>
     <td>{{ r.description }}</td>
     <td>{{ r.uuid }}</td>
