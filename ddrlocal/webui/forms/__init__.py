@@ -1,6 +1,7 @@
 from copy import deepcopy
 import logging
 logger = logging.getLogger(__name__)
+import os
 import traceback
 
 from django import forms
@@ -38,6 +39,67 @@ class TaskDismissForm( forms.Form ):
         # Django Form object takes a SortedDict rather than list
         self.fields = SortedDict(fields)
 
+class ObjectIDForm(forms.Form):
+    """Accept new ID as text, check that it's a legal object ID
+    
+    given a parent object, we know what the children could be
+    form:
+    - radio btn to select child model
+    - CharField for new ID
+    display existing child under the form for reference
+    on POST, check that
+    - user input can be used to generate an Identifier
+    - the identifier is of the specified model
+    - the identifier's parent is the specified parent
+    """
+    model = forms.CharField(max_length=100, required=True, widget=forms.HiddenInput)
+    parent_id = forms.CharField(max_length=100, required=True, widget=forms.HiddenInput)
+    object_id = forms.CharField(max_length=100, required=True)
+
+    def clean(self):
+        """
+        on POST, check that
+        - user input can be used to generate an Identifier
+        - the identifier is of the specified model
+        - the identifier's parent is the specified parent
+        """
+        cleaned_data_copy = deepcopy(super(ObjectIDForm, self).clean())
+        model = cleaned_data_copy['model']
+        pid = cleaned_data_copy['parent_id']
+        oid = cleaned_data_copy['object_id']
+        try:
+            pidentifier = Identifier(pid)
+        except:
+            raise forms.ValidationError(
+                '"%s" is not a valid parent ID.' % pid
+            )
+        try:
+            oidentifier = Identifier(oid)
+        except:
+            raise forms.ValidationError(
+                '"%s" is not a valid object ID.' % oid
+            )
+        if oidentifier.model != model:
+            raise forms.ValidationError(
+                '"%s" should be a %s but is a %s.' % (
+                    oidentifier.id, model, oidentifier.model
+                )
+            )
+        if oidentifier.parent_id() != pidentifier.id:
+            raise forms.ValidationError(
+                '"%s" parent should be %s but is %s.' % (
+                    oidentifier.id,
+                    pidentifier.id,
+                    oidentifier.parent_id()
+                )
+            )
+        # already exists
+        if os.path.exists(oidentifier.path_abs('json')):
+            raise forms.ValidationError(
+                '"%s" already exists! Pick another ID' % (
+                    oidentifier.id
+                )
+            )
 
 class DDRForm(forms.Form):
     def __init__(self, *args, **kwargs):

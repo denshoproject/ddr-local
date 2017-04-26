@@ -4,7 +4,7 @@
 {% block title %}New Object{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-{% breadcrumbs collection "New Object" %}
+{% breadcrumbs parent "New Object" %}
 {% endblock breadcrumbs %}
 
 
@@ -33,18 +33,20 @@
 </form>
 
 <div class="alert alert-info" role="alert">
-{% if entity_ids %}
+{% if existing_ids %}
 <p>
-  <strong>Existing objects in this collection</strong>
+  <strong>
+    Existing objects in this {{ parent.identifier.model }}.
+  </strong>
 </p>
 <p>
-  {% for oid in entity_ids %}
+  {% for oid in existing_ids %}
   <a href="{% url "webui-entity" oid %}">{{ oid }}<a/><br/>
   {% endfor %}
 </p>
 {% else %}
 <p>
-  Collection contains no objects
+  This {{ parent.identifier.model }} contains no {{ model }}s.
 </p>
 {% endif %}
 </div><!-- .alert-info -->

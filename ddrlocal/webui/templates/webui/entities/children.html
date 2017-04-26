@@ -31,30 +31,26 @@
       </ul>
 
 
-<!--
 {% if username and models_valid %}
 {% if entity.locked or collection.locked or collection.repo_behind or collection.repo_conflicted %}
 <p>
-<button class="btn btn-mini" href="{{ browse_url }}"><span class="glyphicon glyphicon-plus"></span> New object</button>
--->
-<!--
-or <a class="btn btn-mini" href="{{ batch_url }}">Add a batch of files</a>
--->
-<!--
-{% if collection.repo_behind %}
-<span id="edit-alert" class="alert alert-error">Editing is disabled until collection is synced.</span>
-{% endif %}
-{% if collection.repo_conflicted %}
-<span id="edit-alert" class="alert alert-error">Editing is disabled until merge conflict is resolved.</span>
-{% endif %}
+<button class="btn btn-mini" title="This object or collection is locked"><span class="glyphicon glyphicon-lock"></span> New object [locked]</button>
+{% if collection.repo_behind %}<span id="edit-alert" class="alert alert-error">Editing is disabled until collection is synced.</span>{% endif %}
+{% if collection.repo_conflicted %}<span id="edit-alert" class="alert alert-error">Editing is disabled until merge conflict is resolved.</span>{% endif %}
 </p>
-{% else %}{# locked/conflicted #}
+{% else %}
 <p>
-<a href="{{ collection.new_entity_url }}" class="btn btn-primary btn-small"><span class="glyphicon glyphicon-plus icon-white"></span> New object</a>
+  {% for model in children_models %}
+  <a href="{% url "webui-entity-new" entity.id %}?model={{ model }}" class="btn btn-primary btn-small">
+    <span class="glyphicon glyphicon-plus icon-white"></span>
+    Add a {{ model }}
+  </a>
+  
+  {% endfor %}
+  
 </p>
-{% endif %}{# locked/conflicted #}
-{% endif %}{# username #}
--->
+{% endif %}{# conflicted #}
+{% endif %}{#username #}
 
 
 {% if page.object_list %}
