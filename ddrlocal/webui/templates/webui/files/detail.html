@@ -135,6 +135,36 @@
 {% endif %}
 
 
+{% if annex_whereis.whereis %}
+<p>
+<b>Trusted remotes</b><br/>
+<table class="table table-condensed small">
+  {% for r in annex_whereis.whereis %}
+  <tr>
+    <td>{% if r.here %}<span class="label label-info">here</span>{% endif %}</td>
+    <td>{{ r.description }}</td>
+    <td>{{ r.uuid }}</td>
+  </tr>
+  {% endfor %}
+</table>
+</p>
+{% endif %}
+
+{% if annex_whereis.untrusted %}
+<p>
+<b>UN-trusted remotes</b><br/>
+<table class="table table-condensed">
+  {% for r in annex_whereis.whereis %}
+  <tr>
+    <td>{% if r.here %}<span class="label label-info">here</span>{% endif %}</td>
+    <td>{{ r.description }}</td>
+    <td>{{ r.uuid }}</td>
+  </tr>
+  {% endfor %}
+</table>
+</p>
+{% endif %}
+
     </div><!-- .span12 -->
   </div><!-- .row-fluid -->
 

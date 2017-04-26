@@ -17,6 +17,7 @@ from django.shortcuts import Http404, get_object_or_404, render_to_response
 from django.template import RequestContext
 
 from DDR import converters
+from DDR import dvcs
 from DDR.ingest import addfile_logger
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
@@ -109,14 +110,21 @@ def detail( request, fid ):
     file_.model_def_commits()
     file_.model_def_fields()
     formdata = {'path':file_.path_rel}
+    annex_whereis = dvcs.annex_whereis_file(
+        dvcs.repository(collection.path_abs),
+        file_.path_rel
+    )
     return render_to_response(
         'webui/files/detail.html',
-        {'collection': collection,
-         'entity': entity,
-         'role': file_.identifier.parts['role'],
-         'file': file_,
-         'new_access_url': file_.new_access_url,
-         'new_access_form': NewAccessFileForm(formdata),},
+        {
+            'collection': collection,
+            'entity': entity,
+            'role': file_.identifier.parts['role'],
+            'file': file_,
+            'new_access_url': file_.new_access_url,
+            'new_access_form': NewAccessFileForm(formdata),
+            'annex_whereis': annex_whereis,
+        },
         context_instance=RequestContext(request, processors=[])
     )
 
