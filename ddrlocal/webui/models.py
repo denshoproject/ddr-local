@@ -202,7 +202,7 @@ class Collection( DDRCollection ):
         >>> c.cgit_url()
         'http://partner.densho.org/cgit/cgit.cgi/ddr-testing-123/'
         """
-        return '{}/cgit.cgi/{}/'.format(settings.CGIT_URL, [self.id])
+        return '{}/cgit.cgi/{}/'.format(settings.CGIT_URL, self.id)
     
     def fs_url( self ):
         """URL of the collection directory browsable via Nginx.
