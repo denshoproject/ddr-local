@@ -196,13 +196,20 @@ class Collection( DDRCollection ):
     def cgit_url( self ):
         """Returns cgit URL for collection.
         
-        TODO Move to webui.models
-        
         >>> c = DDRLocalCollection('/tmp/ddr-testing-123')
         >>> c.cgit_url()
         'http://partner.densho.org/cgit/cgit.cgi/ddr-testing-123/'
         """
         return '{}/cgit.cgi/{}/'.format(settings.CGIT_URL, self.id)
+    
+    def cgit_url_local( self ):
+        """Returns local cgit URL for collection.
+        
+        >>> c = DDRLocalCollection('/tmp/ddr-testing-123')
+        >>> c.cgit_url_local()
+        '/cgit/cgit.cgi/ddr-testing-123/'
+        """
+        return '/cgit/cgit.cgi/{}/'.format(self.id)
     
     def fs_url( self ):
         """URL of the collection directory browsable via Nginx.
