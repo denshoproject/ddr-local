@@ -467,7 +467,7 @@ def queue_generate( base_dir, repos_orgs ):
         queue['collections'].append( (status['timestamp'],collection_id) )
         cids.append(collection_id)
     # collections without gitstatuses
-    epoch = datetime.fromtimestamp(0)
+    epoch = datetime(1969, 12, 31, 16, 0, tzinfo=settings.TZ)
     for o in repos_orgs:
         repo,org = o.split('-')
         for path in Collection.collection_paths(base_dir, repo, org):
