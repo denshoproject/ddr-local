@@ -32,6 +32,7 @@ from webui.decorators import ddrview
 from webui.forms import DDRForm
 from webui.forms import ObjectIDForm
 from webui.forms.entities import JSONForm, UpdateForm, DeleteEntityForm, RmDuplicatesForm
+from webui.gitstatus import repository, annex_info
 from webui.identifier import Identifier
 from webui.models import Stub, Collection, Entity
 from webui import tasks
@@ -228,11 +229,15 @@ def detail( request, eid ):
     tasks = request.session.get('celery-tasks', [])
     return render_to_response(
         'webui/entities/detail.html',
-        {'collection': collection,
-         'entity': entity,
-         'children_urls': entity.children_urls(),
-         'tasks': tasks,
-         'entity_unlock_url': entity.unlock_url(entity.locked()),},
+        {
+            'collection': collection,
+            'entity': entity,
+            'children_urls': entity.children_urls(),
+            'tasks': tasks,
+            'entity_unlock_url': entity.unlock_url(entity.locked()),
+            # cache this for later
+            'annex_info': annex_info(repository(collection.path_abs)),
+        },
         context_instance=RequestContext(request, processors=[])
     )
 

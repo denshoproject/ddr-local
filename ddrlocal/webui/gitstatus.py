@@ -66,6 +66,49 @@ from webui import COLLECTION_STATUS_TIMEOUT
 from webui import gitolite
 from webui.identifier import Identifier
 
+COLLECTION_SYNC_STATUS_CACHE_KEY = 'webui:collection:%s:sync-status'
+
+SYNC_STATUS_BOOTSTRAP_COLOR = {
+    'unknown': 'muted',
+    'synced': 'success',
+    'ahead': 'warning',
+    'behind': 'warning',
+    'conflicted': 'danger',
+    'locked': 'warning',
+}
+
+COLLECTION_ANNEX_INFO_CACHE_KEY = 'webui:collection:%s:annex-info'
+ANNEX_WHEREIS_CACHE_KEY = 'webui:file:%s:annex-whereis'
+
+def repository(collection_path):
+    return dvcs.repository(collection_path)
+
+def annex_info(repo):
+    collection_id = os.path.basename(repo.working_dir)
+    key = COLLECTION_ANNEX_INFO_CACHE_KEY % collection_id
+    cached = cache.get(key)
+    if not cached:
+        data = dvcs.annex_info(repo)
+        if data['success']:
+            cached = data
+            cache.set(key, data, COLLECTION_STATUS_TIMEOUT)
+    return cached
+
+def annex_whereis_file(repo, file_):
+    key = ANNEX_WHEREIS_CACHE_KEY % file_.id
+    cached = cache.get(key)
+    if not cached:
+        data = dvcs.annex_whereis_file(
+            repo,
+            file_.path_rel,
+            annex_info(repo)
+        )
+        if data['success']:
+            cached = data
+            cache.set(key, data, COLLECTION_STATUS_TIMEOUT)
+    return cached
+
+
 
 def log(msg):
     """celery does not like writing to logs, so write to separate logfile
@@ -184,17 +227,6 @@ def read( base_dir, collection_path ):
             text = f.read()
         return loads(text)
     return {}
-
-COLLECTION_SYNC_STATUS_CACHE_KEY = 'webui:collection:%s:sync-status'
-
-SYNC_STATUS_BOOTSTRAP_COLOR = {
-    'unknown': 'muted',
-    'synced': 'success',
-    'ahead': 'warning',
-    'behind': 'warning',
-    'conflicted': 'danger',
-    'locked': 'warning',
-}
 
 def sync_status( collection_path, git_status, timestamp, cache_set=False, force=False ):
     """Cache collection repo sync status info for collections list page.

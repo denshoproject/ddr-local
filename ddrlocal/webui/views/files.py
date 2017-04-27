@@ -17,7 +17,6 @@ from django.shortcuts import Http404, get_object_or_404, render_to_response
 from django.template import RequestContext
 
 from DDR import converters
-from DDR import dvcs
 from DDR.ingest import addfile_logger
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
@@ -26,6 +25,7 @@ from webui.forms import DDRForm
 from webui.forms.files import NewFileDDRForm, NewExternalFileForm, NewAccessFileForm
 from webui.forms.files import DeleteFileForm
 from webui.forms.files import shared_folder_files
+from webui.gitstatus import repository, annex_info, annex_whereis_file
 from webui.models import Stub, Collection, Entity, DDRFile
 from webui.models import MODULES
 from webui.identifier import Identifier, CHILDREN_ALL
@@ -110,9 +110,8 @@ def detail( request, fid ):
     file_.model_def_commits()
     file_.model_def_fields()
     formdata = {'path':file_.path_rel}
-    annex_whereis = dvcs.annex_whereis_file(
-        dvcs.repository(collection.path_abs),
-        file_.path_rel
+    annex_whereis = annex_whereis_file(
+        repository(collection.path_abs), file_
     )
     return render_to_response(
         'webui/files/detail.html',

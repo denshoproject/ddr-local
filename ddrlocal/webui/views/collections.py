@@ -35,6 +35,7 @@ from webui.forms import DDRForm
 from webui.forms.collections import NewCollectionForm, UpdateForm
 from webui.forms.collections import SyncConfirmForm, SignaturesConfirmForm
 from webui import gitolite
+from webui.gitstatus import repository, annex_info
 from webui.models import Collection, COLLECTION_STATUS_CACHE_KEY, COLLECTION_STATUS_TIMEOUT
 from webui.identifier import Identifier
 from webui import tasks
@@ -96,8 +97,12 @@ def detail( request, cid ):
     alert_if_conflicted(request, collection)
     return render_to_response(
         'webui/collections/detail.html',
-        {'collection': collection,
-         'collection_unlock_url': collection.unlock_url(collection.locked()),},
+        {
+            'collection': collection,
+            'collection_unlock_url': collection.unlock_url(collection.locked()),
+            # cache this for later
+            'annex_info': annex_info(repository(collection.path_abs)),
+        },
         context_instance=RequestContext(request, processors=[])
     )
 
