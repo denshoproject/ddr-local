@@ -1,17 +1,22 @@
 from copy import deepcopy
 import logging
 logger = logging.getLogger(__name__)
+import os
+import traceback
 
 from django import forms
 from django.conf import settings
 from django.utils.datastructures import SortedDict
 
+from DDR import modules
+from webui.identifier import Identifier
 
 
 class LoginForm(forms.Form):
     username = forms.CharField(max_length=100)
     password = forms.CharField(widget=forms.PasswordInput)
     next = forms.CharField(max_length=255, required=False, widget=forms.HiddenInput)
+
 
 class TaskDismissForm( forms.Form ):
     next = forms.CharField(max_length=255, required=False, widget=forms.HiddenInput)
@@ -33,6 +38,68 @@ class TaskDismissForm( forms.Form ):
                 )
         # Django Form object takes a SortedDict rather than list
         self.fields = SortedDict(fields)
+
+class ObjectIDForm(forms.Form):
+    """Accept new ID as text, check that it's a legal object ID
+    
+    given a parent object, we know what the children could be
+    form:
+    - radio btn to select child model
+    - CharField for new ID
+    display existing child under the form for reference
+    on POST, check that
+    - user input can be used to generate an Identifier
+    - the identifier is of the specified model
+    - the identifier's parent is the specified parent
+    """
+    model = forms.CharField(max_length=100, required=True, widget=forms.HiddenInput)
+    parent_id = forms.CharField(max_length=100, required=True, widget=forms.HiddenInput)
+    object_id = forms.CharField(max_length=100, required=True)
+
+    def clean(self):
+        """
+        on POST, check that
+        - user input can be used to generate an Identifier
+        - the identifier is of the specified model
+        - the identifier's parent is the specified parent
+        """
+        cleaned_data_copy = deepcopy(super(ObjectIDForm, self).clean())
+        model = cleaned_data_copy['model']
+        pid = cleaned_data_copy['parent_id']
+        oid = cleaned_data_copy['object_id']
+        try:
+            pidentifier = Identifier(pid)
+        except:
+            raise forms.ValidationError(
+                '"%s" is not a valid parent ID.' % pid
+            )
+        try:
+            oidentifier = Identifier(oid)
+        except:
+            raise forms.ValidationError(
+                '"%s" is not a valid object ID.' % oid
+            )
+        if oidentifier.model != model:
+            raise forms.ValidationError(
+                '"%s" should be a %s but is a %s.' % (
+                    oidentifier.id, model, oidentifier.model
+                )
+            )
+        if oidentifier.parent_id() != pidentifier.id:
+            raise forms.ValidationError(
+                '"%s" parent should be %s but is %s.' % (
+                    oidentifier.id,
+                    pidentifier.id,
+                    oidentifier.parent_id()
+                )
+            )
+        # already exists
+        if os.path.exists(oidentifier.path_abs('json')):
+            raise forms.ValidationError(
+                '"%s" already exists! Pick another ID' % (
+                    oidentifier.id
+                )
+            )
 
 class DDRForm(forms.Form):
     def __init__(self, *args, **kwargs):
@@ -60,6 +127,59 @@ class DDRForm(forms.Form):
             MODEL_FIELDS = []
         super(DDRForm, self).__init__(*args, **kwargs)
         self.fields = construct_form(deepcopy(MODEL_FIELDS))
+
+    def clean(self):
+        """Run form_post on each field and report errors.
+        
+        This instead of just crashing the page. :)
+        Do each field separately so errors are attached to the individual
+        form fields.
+        
+        Tracebacks are added to a form.tracebacks dict so they can be
+        printed in the page source.
+        """
+        # self.add_error modifies cleaned_data so work with copy
+        cleaned_data_copy = deepcopy(super(DDRForm, self).clean())
+
+        # Custom validation depends on having a FIELDS list in a module
+        # object.  On the first stage of file import the user hasn't yet
+        # decided which file to import.  We haven't calc'd the file hash
+        # so we have no ID, no Identifier, and no module object.
+        # Just give up. We'll validate later when they edit.
+        if 'id' not in cleaned_data_copy.keys():
+            return
+        
+        try:
+            obj = Identifier(cleaned_data_copy.pop('id')).object()
+        except:
+            raise forms.ValidationError(
+                "Form data does not contain a valid object ID."
+            )
+        # run form_post on field
+        module = obj.identifier.fields_module()
+        # put per-field error tracebacks here
+        self.tracebacks = {}
+        for fieldname,value in cleaned_data_copy.iteritems():
+            try:
+                data = modules.Module(module).function(
+                    'formpost_%s' % fieldname,
+                    value
+                )
+            except Exception as err:
+                # attach error to field
+                self.add_error(fieldname, str(err))
+                self.tracebacks[fieldname] = traceback.format_exc().strip()
+            # can't validate signature_id without causing an import loop
+            # so do it here
+            if (fieldname == 'signature_id') and value:
+                si = None
+                try:
+                    si = Identifier(id=value)
+                except:
+                    self.add_error(fieldname, 'Not a valid object ID')
+                if si and not (si.model == 'file'):
+                    self.add_error(fieldname, 'Only files can be used as signatures.')
+
 
 def construct_form(model_fields):
     fields = []

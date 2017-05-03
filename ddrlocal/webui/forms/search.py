@@ -5,7 +5,7 @@ import os
 from django import forms
 from django.conf import settings
 
-from DDR.docstore import index_names, index_exists, make_index_name
+from DDR import docstore
 from webui import set_docstore_index
 
 
@@ -21,7 +21,8 @@ def _index_choices( request, show_missing=False, default=None ):
     """
     # current indices in Elasticsearch
     indices = []
-    for index in index_names(settings.DOCSTORE_HOSTS):
+    ds = docstore.Docstore()
+    for index in ds.index_names():
         indices.append(index)
     if show_missing:
         # session index
@@ -35,7 +36,7 @@ def _index_choices( request, show_missing=False, default=None ):
         storage_label = request.session.get('storage_label', None)
         if request and storage_label:
             if storage_label:
-                store_index = make_index_name(storage_label)
+                store_index = docstore.make_index_name(storage_label)
                 if store_index and (store_index not in indices):
                     indices.append(store_index)
     # make list of tuples for choices menu

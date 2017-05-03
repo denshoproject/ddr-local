@@ -4,13 +4,6 @@ logger = logging.getLogger(__name__)
 from django import forms
 from django.conf import settings
 
-class NewEntityForm(forms.Form):
-    # TODO build form from Identifier.parts
-    repo = forms.CharField(max_length=100)
-    org = forms.CharField(max_length=100)
-    cid = forms.IntegerField()
-    eid = forms.IntegerField()
-
 class JSONForm(forms.Form):
     json = forms.CharField(widget=forms.Textarea)
 

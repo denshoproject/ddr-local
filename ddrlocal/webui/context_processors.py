@@ -7,7 +7,7 @@ from django.conf import settings
 from django.core.urlresolvers import reverse
 
 from webui.models import repo_models_valid
-from webui.tasks import session_tasks_list
+from webui import tasks
 
 
 def sitewide(request):
@@ -25,18 +25,18 @@ def sitewide(request):
     return {
         'request': request,
         # ddr-local info
-        'time': datetime.now().isoformat(),
+        'time': datetime.now(settings.TZ).isoformat(),
         'pid': os.getpid(),
         'host': os.uname()[1],
-        'ddrcmdln_commit': settings.DDRCMDLN_COMMIT,
-        'ddrlocal_commit': settings.DDRLOCAL_COMMIT,
+        'commits': settings.COMMITS_TEXT,
         'models_valid': repo_models_valid(request),
         # user info
         'username': request.session.get('idservice_username', None),
         'git_name': request.session.get('git_name', None),
         'git_mail': request.session.get('git_mail', None),
-        'celery_tasks': session_tasks_list(request),
+        'celery_tasks': tasks.session_tasks_list(request),
         'celery_status_url': reverse("webui-task-status"),
+        'celery_status_update': request.session.get('celery_status_update', False),
         'supervisord_url': settings.SUPERVISORD_URL,
         'elasticsearch_url': elasticsearch_url,
         'munin_url': settings.MUNIN_URL,

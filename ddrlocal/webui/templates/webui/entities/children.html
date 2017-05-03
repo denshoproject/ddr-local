@@ -1,11 +1,11 @@
-{% extends "webui/collections/base.html" %}
+{% extends "webui/entities/base.html" %}
 {% load bootstrap_pagination thumbnail webui_tags %}
 
 
-{% block title %}Objects | {{ collection.id }}{% endblock %}
+{% block title %}Children | {{ entity.id }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-{% breadcrumbs collection "Objects" %}
+{% breadcrumbs entity "Children" %}
 {% endblock breadcrumbs %}
 
 
@@ -14,28 +14,40 @@
   <div class="row-fluid">
     <div class="span12">
 
-<h1>
-{{ collection.id }}
-{% if collection.title %}&mdash; {{ collection.title }}{% endif %}
-</h1>
+<h1>{{ entity.id }}</h1>
+
 
 
       <ul class="nav nav-tabs" id="tabs">
-        <li><a href="{{ collection.absolute_url }}">Collection Metadata</a></li>
-        <li class="active"><a href="#">Objects</a></li>
+        <li><a href="{{ entity.absolute_url }}">Object Metadata</a></li>
+{% for role in children_urls %}
+        <li {% if role.active %}class="active"{% endif %}>
+          <a href="{{ role.url }}">
+            {{ role.name|capfirst }}
+            {% if role.count %}({{ role.count }}){% endif %}
+          </a>
+        </li>
+{% endfor %}
       </ul>
 
 
 {% if username and models_valid %}
-{% if collection.locked or collection.repo_behind or collection.repo_conflicted %}
+{% if entity.locked or collection.locked or collection.repo_behind or collection.repo_conflicted %}
 <p>
-<button class="btn btn-mini" title="This collection is locked"><span class="glyphicon glyphicon-lock"></span> New object [locked]</button>
+<button class="btn btn-mini" title="This object or collection is locked"><span class="glyphicon glyphicon-lock"></span> New object [locked]</button>
 {% if collection.repo_behind %}<span id="edit-alert" class="alert alert-error">Editing is disabled until collection is synced.</span>{% endif %}
 {% if collection.repo_conflicted %}<span id="edit-alert" class="alert alert-error">Editing is disabled until merge conflict is resolved.</span>{% endif %}
 </p>
 {% else %}
 <p>
-<a href="{{ collection.new_entity_url }}" class="btn btn-primary btn-small"><span class="glyphicon glyphicon-plus icon-white"></span> New object</a>
+  {% for model in children_models %}
+  <a href="{% url "webui-entity-new" entity.id %}?model={{ model }}" class="btn btn-primary btn-small">
+    <span class="glyphicon glyphicon-plus icon-white"></span>
+    Add a {{ model }}
+  </a>
+  
+  {% endfor %}
+  
 </p>
 {% endif %}{# conflicted #}
 {% endif %}{#username #}
@@ -46,6 +58,7 @@
     {{ paginator.count }} items<br/>
   </div>
 
+{% bootstrap_paginate page range=10 show_first_last="true" %}
 
 <table class="table table-condensed">
   <thead>
@@ -90,12 +103,15 @@
 
 {% else %}
 <p>
-This collection has no objects.
+This object has no child objects.
 </p>
 {% endif %}
 
- 
-    </div><!-- .span4 -->
-  </div><!-- .row -->
+
+</tbody>
+</table>
+
+    </div><!-- .span12 -->
+  </div><!-- .row-fluid -->
 
 {% endblock content %}

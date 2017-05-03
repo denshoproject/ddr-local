@@ -63,6 +63,18 @@ form td { padding-bottom:20px; }
 
 #delete.btn { float:right; }
 
+.callout{padding:20px;margin:20px 0;border:1px solid #eee;border-left-width:5px;border-radius:3px}
+.callout h4{margin-top:0;margin-bottom:5px}
+.callout p:last-child{margin-bottom:0}
+.callout code{border-radius:3px}
+.callout+.callout{margin-top:-5px}
+.callout-danger{border-left-color:#ce4844}
+.callout-danger h4{color:#ce4844}
+.callout-warning{border-left-color:#aa6708}
+.callout-warning h4{color:#aa6708}
+.callout-info{border-left-color:#1b809e}
+.callout-info h4{color:#1b809e}
+
 .debuginfo { text-align:right; }
 .debuginfo .content { display:none; }
 </style>
@@ -203,15 +215,17 @@ form td { padding-bottom:20px; }
 <p class="debuginfo small text-muted">
 <span class="icon">&pi;</span>&nbsp;
 <span class="content">
-Rendered at {{ time }} by PID {{ pid }} on {{ host }}
-<br/>
-ddr-cmdln: {{ ddrcmdln_commit }}
-<br/>
-ddr-local: {{ ddrlocal_commit }}
-<br/>
+Rendered at {{ time }} by PID {{ pid }} on {{ host }}<br/>
+{{ commits|safe }}<br/>
+<a href="{% url "debug" %}">debug</a>
+&bull;
 <a href="{{ supervisord_url }}" target="supervisor">supervisor</a>
+&bull;
 <a href="{{ elasticsearch_url }}" target="elasticsearch">elasticsearch</a>
+&bull;
 <a href="{{ munin_url }}" target="munin">munin</a>
+&bull;
+<a href="{% url "webui-gitstatus-toggle" %}">gitstatus updates ({% if celery_status_update %}ON{% else %}OFF{% endif %})</a>
 </span>
 </p>
 
@@ -238,7 +252,7 @@ ddr-local: {{ ddrlocal_commit }}
     $(".debuginfo .content").toggle();
   });
 </script>
-{% if not hide_celery_tasks %}
+{% if celery_status_update and not hide_celery_tasks %}
 <script>
   /* update celery status */
   /* NOTE: see code in task-include.html. */

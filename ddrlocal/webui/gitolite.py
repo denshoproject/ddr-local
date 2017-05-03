@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 from django.conf import settings
 from django.core.cache import cache
 
+from DDR import converters
 from DDR import dvcs
 
 from webui import GITOLITE_INFO_CACHE_KEY
@@ -49,14 +50,18 @@ def get_repos_orgs():
     
     IMPORTANT: cached value of gitolite_info is in the following format:
         timestamp + '\n' + gitolite_info
+
+    @returns: list of org IDs (e.g. ['ddr-densho', 'ddr-janm']).
     """
+    gitolite = dvcs.Gitolite()
     repos_orgs = []
     cached = cache.get(GITOLITE_INFO_CACHE_KEY)
     if not cached:
         # cache miss!  This should not happen very often
         # Same code as webui.tasks.gitolite_info_refresh(),
         # but copied to prevent import loop.
-        info = dvcs.gitolite_info(settings.GITOLITE, settings.GITOLITE_TIMEOUT)
+        gitolite.initialize()
+        info = gitolite.info
         cached = dumps(info, settings.GITOLITE)
         cache.set(
             GITOLITE_INFO_CACHE_KEY,
@@ -69,7 +74,8 @@ def get_repos_orgs():
         except ValueError:
             timestamp,source,info = None,None,None
         if info:
-            repos_orgs = dvcs.gitolite_orgs(info)
+            gitolite.info = info
+            repos_orgs = gitolite.orgs()
     return repos_orgs
 
 def refresh():
@@ -79,6 +85,7 @@ def refresh():
     then hit the Gitolite server for an update and re-cache.
     """
     logger.debug('gitolite_info_check')
+    gitolite = dvcs.Gitolite()
     feedback = []
     needs_update = None
     cached = cache.get(GITOLITE_INFO_CACHE_KEY)
@@ -86,14 +93,14 @@ def refresh():
         feedback.append('cached')
         try:
             timestamp,source,info = loads(cached)
-            feedback.append(timestamp.strftime(settings.TIMESTAMP_FORMAT))
+            feedback.append(converters.datetime_to_text(timestamp))
             feedback.append(source)
         except ValueError:
             timestamp,source,info = None,None,None
             feedback.append('malformed')
             needs_update = True
         if timestamp:
-            elapsed = datetime.now() - timestamp
+            elapsed = datetime.now(settings.TZ) - timestamp
             cutoff = timedelta(seconds=settings.GITOLITE_INFO_CACHE_CUTOFF)
             if elapsed > cutoff:
                 needs_update = True
@@ -102,9 +109,9 @@ def refresh():
         needs_update = True
         feedback.append('missing')
     if needs_update:
-        info = dvcs.gitolite_info(settings.GITOLITE, settings.GITOLITE_TIMEOUT)
-        if info:
-            cached = dumps(info, settings.GITOLITE)
+        gitolite.initialize()
+        if gitolite.info:
+            cached = dumps(gitolite.info, settings.GITOLITE)
             cache.set(
                 GITOLITE_INFO_CACHE_KEY,
                 cached,
@@ -137,7 +144,7 @@ def dumps(info, source):
     @param source: str
     @returns: str
     """
-    timestamp = datetime.now().strftime(settings.TIMESTAMP_FORMAT)
+    timestamp = converters.datetime_to_text(datetime.now(settings.TZ))
     text = '%s %s\n%s' % (timestamp, source, info)
     return text
 
@@ -149,5 +156,5 @@ def loads(text):
     """
     line0,info = text.split('\n', 1)
     ts,source = line0.split(' ')
-    timestamp = datetime.strptime(ts, settings.TIMESTAMP_FORMAT)
+    timestamp = converters.text_to_datetime(ts)
     return timestamp,source,info

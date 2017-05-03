@@ -36,84 +36,62 @@
 {% endif %}
 {% endif %}{#username #}
 
-<dl class="dl-horizontal">
-{% for lv in file.labels_values %}
-  {% if lv.value %}<dt>{{ lv.label }}</dt><dd>{{ lv.value|safe|linebreaks }}</dd>{% endif %}
-{% endfor %}
-</dl>
 
-{% if file and file.access_abs %}
+{% if file.access_present %}
+<div id="thumbnail" style="float:right; text-align:right;">
 {% thumbnail file.access_abs "500x500" crop="center" as img %}
-<img src="{{ img.url }}" width="{{ img.width }}" height="{{ img.height }}">
+<img class="img-responsive img-thumbnail" src="{{ img.url }}" width="{{ img.width }}" height="{{ img.height }}">
 {% empty %}
 <p>No image</p>
 {% endthumbnail %}
+</div><!-- #thumbnail -->
 {% endif %}
 
-<table class="table table-condensed table-striped muted">
-  <tr>
-    <td>role</td><td>{{ file.role }}</td>
-  </tr>
-  <tr>
-    <td>size</td><td>{{ file.size|filesizeformat }}</td>
-  </tr>
-  <tr>
-    <td>path_abs</td><td>{{ file.path_abs }}</td>
-  </tr>
-  <tr>
-    <td>path_rel</td>
-    <td>
+
+<dl class="dl-horizontal clearfix">
+{% for lv in file.labels_values %}
+  {% if lv.value %}<dt>{{ lv.label }}</dt><dd>{{ lv.value|safe|linebreaks }}</dd>{% endif %}
+{% endfor %}
+
+  <dt>role</dt><dd><p>{{ file.role }}</p></dd>
+  <dt>original name</dt><dd><p>{{ file.basename_orig }}</p></dd>
+  <dt>size</dt><dd><p>{{ file.size|filesizeformat }}</p></dd>
+  <dt>MD5</dt><dd><p>{{ file.md5 }}</p></dd>
+  <dt>SHA1</dt><dd><p>{{ file.sha1 }}</p></dd>
+  <dt>SHA256</dt><dd><p>{{ file.sha256 }}</p></dd>
+  <dt>path_abs</dt><dd><p>{{ file.path_abs }}</p></dd>
+  <dt>access_abs</dt><dd><p>{{ file.access_abs }}</p></dd>
+  <dt>path_rel</dt>
+  <dd><p>
       {{ file.path_rel }}
 {% if file.present %}
       &nbsp;&bull;&nbsp; <a class="btn btn-mini btn-primary" href="{{ file.media_url }}"><span class="glyphicon glyphicon-download-alt icon-white"></span> download fullsize</a>
 {% else %}
       &nbsp;&bull;&nbsp; <a class="btn btn-mini muted"><span class="glyphicon glyphicon-download-alt"></span> download fullsize</a>
 {% endif %}
-    </td>
-  </tr>
-  <tr>
-    <td>original name</td><td>{{ file.basename_orig }}</td>
-  </tr>
+  </p></dd>
 <!--
   <tr>
-    <td>src</td><td>{{ file.src }}</td>
+    <dd><p>src</p></dd><dd>{{ file.src }}</dd>
   </tr>
 -->
-  <tr>
-    <td>access_abs</td><td>{{ file.access_abs }}</td>
-  <tr>
-  <tr>
-    <td>access_rel</td>
-    <td>
+  <dt>access_rel</dt>
+  <dd><p>
       {{ file.access_rel }}
 {% if file.access_present %}
       &nbsp;&bull;&nbsp; <a class="btn btn-mini btn-primary" href="{{ file.access_url }}"><span class="glyphicon glyphicon-download-alt icon-white"></span> download access</a>
 {% else %}
       &nbsp;&bull;&nbsp; <a class="btn btn-mini muted"><span class="glyphicon glyphicon-download-alt"></span> download access</a>
 {% endif %}
-    </td>
-  <tr>
-  <tr>
-    <td>SHA256</td><td>{{ file.sha256 }}</td>
-  </tr>
-  <tr>
-    <td>SHA1</td><td>{{ file.sha1 }}</td>
-  </tr>
-  <tr>
-    <td>MD5</td><td>{{ file.md5 }}</td>
-  </tr>
-  <tr>
-    <td>xmp</td><td>{{ file.xmp }}</td>
-  </tr>
-  <tr>
-    <td>links</td>
-    <td>
+  </p></dd>
+  <dt>xmp</dt><dd><p>{{ file.xmp }}</p></dd>
+  <dt>links</dt>
+  <dd><p>
     {% for link in file.links_all %}
     {{ link }}<br/>
     {% endfor %}
-    </td>
-  </tr>
-</table>
+  </p></dd>
+</dl>
 
 {% if username %}
 {% if file.present %}
@@ -126,6 +104,19 @@
 {% endif %}
 {% endif %}{#username #}
 
+{% if username and models_valid %}
+{% if entity.locked or collection.locked or collection.repo_behind or collection.repo_conflicted %}
+{% else %}
+<form name="edit" action="{% url "webui-file-sig" file.id %}" method="POST">{% csrf_token %}
+  <input id="id_object_id" name="object_id" type="hidden" value="{{ entity.id }}" />
+  <button class="btn btn-primary btn-mini" type="submit" value="Object signature">Make object signature</button>
+</form>
+<form name="edit" action="{% url "webui-file-sig" file.id %}" method="POST">{% csrf_token %}
+  <input id="id_object_id" name="object_id" type="hidden" value="{{ collection.id }}" />
+  <button class="btn btn-primary btn-mini" type="submit" value="Object signature">Make collection signature</button>
+</form>
+{% endif %}
+{% endif %}{#username #}
 
 {% if file.model_def_fields_removed %}
   <div class="text-danger bg-danger">
@@ -143,6 +134,36 @@
   </div>
 {% endif %}
 
+
+{% if annex_whereis.whereis %}
+<p>
+<b>Trusted remotes</b><br/>
+<table class="table table-condensed small">
+  {% for r in annex_whereis.whereis %}
+  <tr {% if r.this %}class="info"{% endif %}>
+    <td>{% if r.here %}<span class="label label-info">here</span>{% endif %}</td>
+    <td>{{ r.description }}</td>
+    <td>{{ r.uuid }}</td>
+  </tr>
+  {% endfor %}
+</table>
+</p>
+{% endif %}
+
+{% if annex_whereis.untrusted %}
+<p>
+<b>UN-trusted remotes</b><br/>
+<table class="table table-condensed">
+  {% for r in annex_whereis.untrusted %}
+  <tr {% if r.this %}class="info"{% endif %}>
+    <td>{% if r.here %}<span class="label label-info">here</span>{% endif %}</td>
+    <td>{{ r.description }}</td>
+    <td>{{ r.uuid }}</td>
+  </tr>
+  {% endfor %}
+</table>
+</p>
+{% endif %}
 
     </div><!-- .span12 -->
   </div><!-- .row-fluid -->

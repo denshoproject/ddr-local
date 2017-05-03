@@ -1,4 +1,3 @@
-from datetime import datetime
 import json
 import logging
 logger = logging.getLogger(__name__)
@@ -12,13 +11,14 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import Http404, get_object_or_404, render_to_response
 from django.template import RequestContext
 
+from DDR import converters
 from DDR import idservice
 
 from webui import WEBUI_MESSAGES
 from webui import gitstatus
 from webui.decorators import ddrview
 from webui.forms import LoginForm, TaskDismissForm
-from webui.tasks import dismiss_session_task, session_tasks_list
+from webui import tasks
 from webui.views.decorators import login_required
 
 # helpers --------------------------------------------------------------
@@ -147,13 +147,15 @@ def gitstatus_queue(request):
         context_instance=RequestContext(request, processors=[])
     )
 
-def tasks( request ):
+def task_list( request ):
     """Show pending/successful/failed tasks; UI for dismissing tasks.
     """
     # add start datetime to tasks list
-    celery_tasks = session_tasks_list(request)
+    celery_tasks = tasks.session_tasks_list(
+        request
+    )
     for task in celery_tasks:
-        task['startd'] = datetime.strptime(task['start'], settings.TIMESTAMP_FORMAT)
+        task['startd'] = converters.text_to_datetime(task['start'])
 
     if request.method == 'POST':
         form = TaskDismissForm(request.POST, celery_tasks=celery_tasks)
@@ -161,7 +163,10 @@ def tasks( request ):
             for task in celery_tasks:
                 fieldname = 'dismiss_%s' % task['task_id']
                 if (fieldname in form.cleaned_data.keys()) and form.cleaned_data[fieldname]:
-                    dismiss_session_task(request, task['task_id'])
+                    tasks.dismiss_session_task(
+                        request,
+                        task['task_id']
+                    )
             # redirect
             redirect_uri = form.cleaned_data['next']
             if not redirect_uri:
@@ -194,6 +199,23 @@ def task_status( request ):
 
 @login_required
 def task_dismiss( request, task_id ):
-    dismiss_session_task(request, task_id)
+    tasks.dismiss_session_task(
+        request,
+        task_id
+    )
     data = {'status':'ok'}
     return HttpResponse(json.dumps(data), content_type="application/json")
+
+@ddrview
+def gitstatus_toggle(request):
+    """Toggle the Celery status update that runs every N seconds; remember for session.
+    """
+    if request.session.get('celery_status_update', False):
+        request.session['celery_status_update'] = False
+        messages.success(request, 'Celery status updates DISABLED for the duration of this session.')
+    else:
+        request.session['celery_status_update'] = True
+        messages.success(request, 'Celery status updates ENABLED for the duration of this session.')
+    return HttpResponseRedirect(
+        request.META.get('HTTP_REFERER', reverse('webui-index'))
+    )

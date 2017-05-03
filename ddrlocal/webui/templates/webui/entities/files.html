@@ -1,5 +1,5 @@
 {% extends "webui/entities/base.html" %}
-{% load bootstrap_pagination webui_tags thumbnail %}
+{% load bootstrap_pagination thumbnail webui_tags %}
 
 
 {% block title %}files | {{ entity.id }}{% endblock %}
@@ -21,7 +21,12 @@
       <ul class="nav nav-tabs" id="tabs">
         <li><a href="{{ entity.absolute_url }}">Object Metadata</a></li>
 {% for role in children_urls %}
-        <li {% if role.active %}class="active"{% endif %}><a href="{{ role.url }}">{{ role.name|capfirst }} Files</a></li>
+        <li {% if role.active %}class="active"{% endif %}>
+          <a href="{{ role.url }}">
+            {{ role.name|capfirst }}
+            {% if role.count %}({{ role.count }}){% endif %}
+          </a>
+        </li>
 {% endfor %}
       </ul>
 
@@ -52,21 +57,22 @@ or <a class="btn btn-primary btn-mini" href="{{ batch_url }}">Add a batch of fil
 
 {% if page.object_list %}
 
+<div>
+  {{ paginator.count }} items<br/>
+</div>
+
 <table class="table table-condensed">
   <thead>
 	<tr>
 {% if username %}
 		<th></th>
 {% endif %}
+		<th></th>
 		<th>Filename</th>
 		<th>Label</th>
 	</tr>
   </thead>
   <tbody>	
-
-  <div>
-    {{ paginator.count }} items<br/>
-  </div>
 
 {% for file in page.object_list %}
   <tr>
@@ -83,6 +89,17 @@ or <a class="btn btn-primary btn-mini" href="{{ batch_url }}">Add a batch of fil
     </td>
 {% endif %}{#username #}
 
+  <td>
+  {% if file.access_present %}
+  {% thumbnail file.access_abs "100x100" crop="center" as img %}
+    <a href="{{ file.absolute_url }}">
+      <img class="img-responsive img-thumbnail" src="{{ img.url }}" width="{{ img.width }}" height="{{ img.height }}">
+    </a>
+  {% endthumbnail %}
+  {% else %}
+    <p>No image</p>
+  {% endif %}{# file.access_present #}
+    </td>
     <td>
       <a href="{{ file.absolute_url }}">{{ file.basename }}</a>
       ({{ file.size|filesizeformat }})

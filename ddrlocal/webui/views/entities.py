@@ -1,4 +1,3 @@
-from datetime import datetime
 import json
 import logging
 logger = logging.getLogger(__name__)
@@ -8,7 +7,6 @@ import sys
 
 from bs4 import BeautifulSoup
 from elasticsearch.exceptions import ConnectionError
-import requests
 
 from django.conf import settings
 from django.contrib import messages
@@ -22,23 +20,23 @@ from django.shortcuts import Http404, get_object_or_404, render_to_response
 from django.template import RequestContext
 
 from DDR import commands
+from DDR import converters
 from DDR import docstore
 from DDR import fileio
 from DDR import idservice
+from DDR import vocab
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
 from webui.decorators import ddrview
 from webui.forms import DDRForm
-from webui.forms.entities import NewEntityForm, JSONForm, UpdateForm, DeleteEntityForm, RmDuplicatesForm
+from webui.forms import ObjectIDForm
+from webui.forms.entities import JSONForm, UpdateForm, DeleteEntityForm, RmDuplicatesForm
+from webui.gitstatus import repository, annex_info
 from webui.identifier import Identifier
-from webui.mets import NAMESPACES, NAMESPACES_XPATH
-from webui.mets import METS_FIELDS, MetsForm
-from webui.models import Collection, Entity
-from webui.tasks import collection_entity_newexpert, collection_entity_edit, collection_delete_entity
-from webui.tasks import gitstatus_update
+from webui.models import Stub, Collection, Entity
+from webui import tasks
 from webui.views.decorators import login_required
-from xmlforms.models import XMLModel
 
 
 
@@ -55,12 +53,7 @@ def vocab_terms( fieldname ):
     timeout = 60*60*1  # 1 hour
     data = cache.get(key)
     if not data:
-        url = settings.VOCAB_TERMS_URL % fieldname
-        r = requests.get(url)
-        if r.status_code != 200:
-            raise Exception(
-                '%s vocabulary file missing: %s' % (fieldname.capitalize(), url))
-        data = json.loads(r.text)
+        data = vocab.http_get_terms(fieldname)
         cache.set(key, data, timeout)
     return data
 
@@ -181,36 +174,123 @@ def tagmanager_process_tags( form_terms ):
     
     TODO This should probably be somewhere else
     
-    >>> hidden_terms = u'Topic 1 [94],Topic 2 [95],Topic 3 [244]'
+    >>> hidden_terms = u'Topic 1 [94],Topic 2: Subtopic 2 [95]'
     >>> process_cleaned_terms(hidden_terms, all_terms)
-    u'Topic 1 [94]; Topic 2 [95]; Topic 3 [244]'
+    u'Topic 1 [94]; Subtopic 2 [95]'
     """
-    return ']; '.join(form_terms.split('],'))
+    cleaned = []
+    for term in form_terms.replace('],', '];').split(';'):
+        if ':' in term:
+            # term has parent; get only the final subtopic
+            last_colon = term.rindex(':')
+            t = term[last_colon+1:].strip()
+        else:
+            # no subtopics
+            t = term
+        cleaned.append(t)
+    return '; '.join(cleaned)
+
+def enforce_git_credentials(request):
+    git_name = request.session.get('git_name')
+    git_mail = request.session.get('git_mail')
+    if not git_name and git_mail:
+        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
+    return git_name,git_mail
+
+def check_object(entity, check_locks=True):
+    if not entity:
+        raise Http404
+    if check_locks and entity.locked():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
+        return HttpResponseRedirect(entity.absolute_url())
+
+def check_parent(collection, check_locks=True, fetch=True):
+    if not collection:
+        raise Exception('No parent collection!')
+    if check_locks and collection.locked():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
+        return HttpResponseRedirect(collection.absolute_url())
+    if fetch:
+        collection.repo_fetch()
+    if collection.repo_behind():
+        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
+        return HttpResponseRedirect(collection.absolute_url())
 
 
 # views ----------------------------------------------------------------
 
-
 @storage_required
-def detail( request, repo, org, cid, eid ):
-    entity = Entity.from_request(request)
+def detail( request, eid ):
+    entity = Entity.from_identifier(Identifier(eid))
+    check_object(entity, check_locks=False)
     collection = entity.collection()
     entity.model_def_commits()
     entity.model_def_fields()
     tasks = request.session.get('celery-tasks', [])
     return render_to_response(
         'webui/entities/detail.html',
-        {'collection': collection,
-         'entity': entity,
-         'children_urls': entity.children_urls(),
-         'tasks': tasks,
-         'entity_unlock_url': entity.unlock_url(entity.locked()),},
+        {
+            'collection': collection,
+            'entity': entity,
+            'children_urls': entity.children_urls(),
+            'tasks': tasks,
+            'entity_unlock_url': entity.unlock_url(entity.locked()),
+            # cache this for later
+            'annex_info': annex_info(repository(collection.path_abs)),
+        },
         context_instance=RequestContext(request, processors=[])
     )
 
 @storage_required
-def children( request, repo, org, cid, eid, role ):
-    entity = Entity.from_request(request)
+def children(request, eid):
+    entity = Entity.from_identifier(Identifier(eid))
+    check_object(entity, check_locks=False)
+    collection = entity.collection()
+    
+    # models that are under entity but are not nodes (i.e. files)
+    from DDR.identifier import CHILDREN, NODES, MODELS_IDPARTS
+    children_models = [
+        m for m in CHILDREN['entity'] if m not in NODES
+    ]
+    
+    # paginate
+    children_meta = sorted(
+        entity.children_meta,
+        key=lambda entity: (
+            int(entity.get('sort',1000000)),
+            entity['id']
+        )
+    )
+    children = [
+        Entity.from_identifier(Identifier(item['id']))
+        for item in children_meta
+    ]
+    thispage = request.GET.get('page', 1)
+    paginator = Paginator(
+        children,
+        settings.RESULTS_PER_PAGE
+    )
+    page = paginator.page(thispage)
+    return render_to_response(
+        'webui/entities/children.html',
+        {
+            'collection': collection,
+            'entity': entity,
+            'children_models': children_models,
+            'children_urls': entity.children_urls(active='children'),
+            'paginator': paginator,
+            'page': page,
+            'thispage': thispage,
+        },
+        context_instance=RequestContext(request, processors=[])
+    )
+
+@storage_required
+def file_role( request, rid ):
+    file_role = Stub.from_identifier(Identifier(rid))
+    role = file_role.identifier.parts['role']
+    entity = file_role.parent(stubs=True)
+    check_object(entity, check_locks=False)
     collection = entity.collection()
     duplicates = entity.detect_file_duplicates(role)
     if duplicates:
@@ -235,8 +315,9 @@ def children( request, repo, org, cid, eid, role ):
     )
 
 @storage_required
-def addfile_log( request, repo, org, cid, eid ):
-    entity = Entity.from_request(request)
+def addfile_log( request, eid ):
+    entity = Entity.from_identifier(Identifier(eid))
+    check_object(entity, check_locks=False)
     collection = entity.collection()
     return render_to_response(
         'webui/entities/addfiles-log.html',
@@ -246,8 +327,9 @@ def addfile_log( request, repo, org, cid, eid ):
     )
 
 @storage_required
-def changelog( request, repo, org, cid, eid ):
-    entity = Entity.from_request(request)
+def changelog( request, eid ):
+    entity = Entity.from_identifier(Identifier(eid))
+    check_object(entity, check_locks=False)
     collection = entity.collection()
     return render_to_response(
         'webui/entities/changelog.html',
@@ -256,39 +338,56 @@ def changelog( request, repo, org, cid, eid ):
         context_instance=RequestContext(request, processors=[])
     )
 
+@ddrview
+@login_required
 @storage_required
-def entity_json( request, repo, org, cid, eid ):
-    entity = Entity.from_request(request)
-    collection = entity.collection()
-    return HttpResponse(entity.dump_json(), content_type="application/json")
+def new( request, oid ):
+    """Redirect to new_idservice or new_manual.
+    """
+    if settings.IDSERVICE_API_BASE:
+        return HttpResponseRedirect(reverse('webui-entity-newidservice', args=[oid]))
+    # pass ID template in request.GET
+    url = reverse('webui-entity-newmanual', args=[oid]) + '?model=%s' % request.GET.get('model', 'entity')
+    return HttpResponseRedirect(url)
 
-@storage_required
-def mets_xml( request, repo, org, cid, eid ):
-    entity = Entity.from_request(request)
-    collection = entity.collection()
-    soup = BeautifulSoup(entity.mets().xml, 'xml')
-    return HttpResponse(soup.prettify(), content_type="application/xml")
+def _create_entity(request, eidentifier, collection, git_name, git_mail):
+    """used by both new_idservice and new_manual
+    """
+    # load Entity object, inherit values from parent, write back to file
+    exit,status = Entity.new(eidentifier, git_name, git_mail, agent=settings.AGENT)
+    entity = Entity.from_identifier(eidentifier)
+    
+    collection.cache_delete()
+    if exit:
+        logger.error(exit)
+        logger.error(status)
+        messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
+    else:
+        # update search index
+        try:
+            entity.post_json()
+        except ConnectionError:
+            logger.error('Could not post to Elasticsearch.')
+        tasks.gitstatus_update.apply_async(
+            (collection.path,),
+            countdown=2
+        )
+    return entity
 
 @ddrview
 @login_required
 @storage_required
-def new( request, repo, org, cid ):
-    """Gets new EID from workbench, creates new entity record.
+def new_idservice( request, oid ):
+    """Gets new EID from idservice, creates new entity record.
     
     If it messes up, goes back to collection.
     """
-    git_name = request.session.get('git_name')
-    git_mail = request.session.get('git_mail')
-    if not (git_name and git_mail):
-        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    collection = Collection.from_request(request)
-    if collection.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-        return HttpResponseRedirect(collection.absolute_url())
-    collection.repo_fetch()
-    if collection.repo_behind():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
-        return HttpResponseRedirect(collection.absolute_url())
+    git_name,git_mail = enforce_git_credentials(request)
+    # note: oid could be either a Collection or an Entity
+    collection = Collection.from_identifier(
+        Identifier(oid).collection()
+    )
+    check_parent(collection)
     
     ic = idservice.IDServiceClient()
     # resume session
@@ -316,49 +415,10 @@ def new( request, repo, org, cid ):
         return HttpResponseRedirect(collection.absolute_url())
     
     eidentifier = Identifier(id=new_entity_id)
-    # create new entity
-    entity_path = eidentifier.path_abs()
-    # write entity.json template to entity location
-    fileio.write_text(
-        Entity(entity_path).dump_json(template=True),
-        settings.TEMPLATE_EJSON
-    )
-    
-    # commit files
-    exit,status = commands.entity_create(
-        git_name, git_mail,
-        collection, eidentifier,
-        [collection.json_path_rel, collection.ead_path_rel],
-        [settings.TEMPLATE_EJSON, settings.TEMPLATE_METS],
-        agent=settings.AGENT
-    )
-    
-    # load Entity object, inherit values from parent, write back to file
-    entity = Entity.from_identifier(eidentifier)
-    entity.inherit(collection)
-    entity.write_json()
-    updated_files = [entity.json_path]
-    exit,status = commands.entity_update(
-        git_name, git_mail,
-        collection, entity,
-        updated_files,
-        agent=settings.AGENT
-    )
-    
-    collection.cache_delete()
-    if exit:
-        logger.error(exit)
-        logger.error(status)
-        messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
-    else:
-        # update search index
-        try:
-            entity.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
-        except ConnectionError:
-            logger.error('Could not post to Elasticsearch.')
-        gitstatus_update.apply_async((collection.path,), countdown=2)
-        # positive feedback
-        return HttpResponseRedirect(reverse('webui-entity-edit', args=entity.idparts))
+    # Create entity and redirect to edit page
+    entity = _create_entity(request, eidentifier, collection, git_name, git_mail)
+    if entity:
+        return HttpResponseRedirect(reverse('webui-entity-edit', args=[entity.id]))
     
     # something happened...
     logger.error('Could not create new entity!')
@@ -368,91 +428,77 @@ def new( request, repo, org, cid ):
 @ddrview
 @login_required
 @storage_required
-def newexpert( request, repo, org, cid ):
+def new_manual( request, oid ):
     """Ask for Entity ID, then create new Entity.
     """
-    git_name = request.session.get('git_name')
-    git_mail = request.session.get('git_mail')
-    if not git_name and git_mail:
-        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    collection = Collection.from_request(request)
-    if collection.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-        return HttpResponseRedirect(entity.absolute_url())
-    collection.repo_fetch()
-    if collection.repo_behind():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
-        return HttpResponseRedirect(entity.absolute_url())
+    git_name,git_mail = enforce_git_credentials(request)
+    # note: oid could be either a Collection or an Entity
+    parent = Identifier(oid).object()
+    collection = Collection.from_identifier(
+        Identifier(oid).collection()
+    )
+    check_parent(collection)
+
+    oidentifier = Identifier(oid)
+    model = request.GET.get('model', 'entity')
     
     if request.method == 'POST':
-        form = NewEntityForm(request.POST)
+        form = ObjectIDForm(request.POST)
         if form.is_valid():
 
-            # TODO replace with Identifier
-            entity_id = '-'.join([repo, org, str(cid), str(form.cleaned_data['eid'])])
-            entity_ids = [entity.id for entity in collection.entities(quick=True)]
-            is_legal = False
-            already_exists = False
-            if '-'.join([repo, org, str(cid)]) == collection.id:
-                is_legal = True
-            else:
-                messages.error(request, "Can only create objects in this collection. Try again.")
-            if entity_id in entity_ids:
-                already_exists = True
-                messages.error(request, "That object ID already exists. Try again.")
-            
-            if entity_id and is_legal and not already_exists:
-                collection_entity_newexpert(
-                    request,
-                    collection, entity_id,
-                    git_name, git_mail
+            eid = form.cleaned_data['object_id']
+            eidentifier = Identifier(id=eid)
+            # Create entity and redirect to edit page
+            entity = _create_entity(
+                request,
+                eidentifier, collection,
+                git_name, git_mail
+            )
+            if entity:
+                messages.warning(request, 'IMPORTANT: Register this ID with the ID service as soon as possible!')
+                return HttpResponseRedirect(
+                    reverse('webui-entity-edit', args=[entity.id])
                 )
-                return HttpResponseRedirect(reverse('webui-collection-children', args=collection.idparts))
             
     else:
-        data = {
-            'repo':repo,
-            'org':org,
-            'cid':cid,
-        }
-        form = NewEntityForm(data)
+        form = ObjectIDForm(initial={
+            'model': model,
+            'parent_id': oidentifier.id,
+        })
+
+    if isinstance(parent, Collection):
+        existing_ids = sorted([entity.id for entity in parent.children(quick=True)])
+    elif isinstance(parent, Entity):
+        existing_ids = sorted([e['id'] for e in parent.children_meta])
+    existing_ids.reverse()
+    
     return render_to_response(
-        'webui/entities/new.html',
-        {'repo': repo,
-         'org': org,
-         'cid': cid,
-         'collection': collection,
-         'form': form,
-         },
+        'webui/entities/new-manual.html',
+        {
+            'collection': collection,
+            'parent': parent,
+            'model': model,
+            'form': form,
+            'existing_ids': existing_ids,
+        },
         context_instance=RequestContext(request, processors=[])
     )
     
 @ddrview
 @login_required
 @storage_required
-def edit( request, repo, org, cid, eid ):
+def edit( request, eid ):
     """
     UI for Entity topics uses TagManager to represent topics as tags,
     and typeahead.js so users only have to type part of a topic.
     """
-    git_name = request.session.get('git_name')
-    git_mail = request.session.get('git_mail')
-    if not git_name and git_mail:
-        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    entity = Entity.from_request(request)
+    git_name,git_mail = enforce_git_credentials(request)
+    entity = Entity.from_identifier(Identifier(eid))
+    check_object(entity)
     module = entity.identifier.fields_module()
     collection = entity.collection()
-    if collection.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-        return HttpResponseRedirect(entity.absolute_url())
-    collection.repo_fetch()
-    if collection.repo_behind():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
-        return HttpResponseRedirect(entity.absolute_url())
-    if entity.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
-        return HttpResponseRedirect(entity.absolute_url())
-    #
+    check_parent(collection)
+    
     # load topics choices data
     # TODO This should be baked into models somehow.
     topics_terms = tagmanager_terms('topics')
@@ -465,39 +511,45 @@ def edit( request, repo, org, cid, eid ):
             
             # clean up after TagManager
             hidden_topics = request.POST.get('hidden-topics', None)
+            hidden_facility = request.POST.get('hidden-facility', None)
             if hidden_topics:
                 form.cleaned_data['topics'] = tagmanager_process_tags(hidden_topics)
-            hidden_facility = request.POST.get('hidden-facility', None)
             if hidden_facility:
                 form.cleaned_data['facility'] = tagmanager_process_tags(hidden_facility)
-            
-            # run module_functions on raw form data
-            entity.form_post(form)
-            inheritables = entity.selected_inheritables(form.cleaned_data)
-            
-            # write basic changes to disk (this is quick)
+
+            entity.form_post(form.cleaned_data)
+            # write these so we see a change on refresh
+            # will be rewritten in entity.save()
             entity.write_json()
-            entity.write_mets()
-            updated_files = [entity.json_path, entity.mets_path,]
             
             # do the rest in the background:
             # update inheriable fields, commit files, delete cache,
             # update search index, update git status
-            collection_entity_edit(
+            tasks.collection_entity_edit(
                 request,
-                collection, entity, updated_files, form.cleaned_data,
+                collection, entity, form.cleaned_data,
                 git_name, git_mail, settings.AGENT
             )
             
             return HttpResponseRedirect(entity.absolute_url())
     else:
         form = DDRForm(entity.form_prep(), fields=module.FIELDS)
-    
-    topics_prefilled = tagmanager_prefilled_terms(entity.topics, topics_terms)
-    facility_prefilled = tagmanager_prefilled_terms(entity.facility, facility_terms)
+
+    # coerce term:id dicts into old-style "term [id]" strings
+    entity_topics = [
+        converters.dict_to_textbracketid(item, ['term','id'])
+        for item in entity.topics
+    ]
+    entity_facility = [
+        converters.dict_to_textbracketid(item, ['term','id'])
+        for item in entity.facility
+    ]
+
+    topics_prefilled = tagmanager_prefilled_terms(entity_topics, topics_terms)
+    facility_prefilled = tagmanager_prefilled_terms(entity_facility, facility_terms)
     # selected terms that don't appear in field_terms
-    topics_legacy = tagmanager_legacy_terms(entity.topics, topics_terms)
-    facility_legacy = tagmanager_legacy_terms(entity.facility, facility_terms)
+    topics_legacy = tagmanager_legacy_terms(entity_topics, topics_terms)
+    facility_legacy = tagmanager_legacy_terms(entity_facility, facility_terms)
     return render_to_response(
         'webui/entities/edit-json.html',
         {'collection': collection,
@@ -530,87 +582,24 @@ def edit_vocab_terms( request, field ):
 @ddrview
 @login_required
 @storage_required
-def edit_json( request, repo, org, cid, eid ):
-    """
-    NOTE: will permit editing even if entity is locked!
-    (which you need to do sometimes).
-    """
-    entity = Entity.from_request(request)
-    collection = entity.collection()
-    #if collection.locked():
-    #    messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-    #    return HttpResponseRedirect(entity.absolute_url())
-    #collection.repo_fetch()
-    #if collection.repo_behind():
-    #    messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
-    #    return HttpResponseRedirect(entity.absolute_url())
-    #if entity.locked():
-    #    messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
-    #    return HttpResponseRedirect(entity.absolute_url())
-    #
-    if request.method == 'POST':
-        form = JSONForm(request.POST)
-        if form.is_valid():
-            git_name = request.session.get('git_name')
-            git_mail = request.session.get('git_mail')
-            if git_name and git_mail:
-                json_text = form.cleaned_data['json']
-                fileio.write_text(json_text, entity.json_path)
-                
-                exit,status = commands.entity_update(
-                    git_name, git_mail,
-                    collection, entity,
-                    [entity.json_path],
-                    agent=settings.AGENT
-                )
-                
-                collection.cache_delete()
-                if exit:
-                    messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
-                else:
-                    gitstatus_update.apply_async((collection.path,), countdown=2)
-                    messages.success(request, WEBUI_MESSAGES['VIEWS_ENT_UPDATED'])
-                    return HttpResponseRedirect(entity.absolute_url())
-            else:
-                messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    else:
-        form = JSONForm({'json': entity.dump_json(),})
-    return render_to_response(
-        'webui/entities/edit-raw.html',
-        {'entity': entity,
-         'form': form,},
-        context_instance=RequestContext(request, processors=[])
-    )
-
-@ddrview
-@login_required
-@storage_required
-def delete( request, repo, org, cid, eid, confirm=False ):
+def delete( request, eid, confirm=False ):
     """Delete the requested entity from the collection.
     """
-    try:
-        entity = Entity.from_request(request)
-    except:
-        raise Http404
+    git_name,git_mail = enforce_git_credentials(request)
+    entity = Entity.from_identifier(Identifier(eid))
+    check_object(entity)
     collection = entity.collection()
-    if collection.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-        return HttpResponseRedirect(entity.absolute_url())
-    if entity.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
-        return HttpResponseRedirect(entity.absolute_url())
-    git_name = request.session.get('git_name')
-    git_mail = request.session.get('git_mail')
-    if not git_name and git_mail:
-        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    #
+    check_parent(collection)
+    
     if request.method == 'POST':
         form = DeleteEntityForm(request.POST)
         if form.is_valid() and form.cleaned_data['confirmed']:
-            collection_delete_entity(request,
-                                     git_name, git_mail,
-                                     collection, entity,
-                                     settings.AGENT)
+            tasks.collection_delete_entity(
+                request,
+                git_name, git_mail,
+                collection, entity,
+                settings.AGENT
+            )
             return HttpResponseRedirect(collection.absolute_url())
     else:
         form = DeleteEntityForm()
@@ -624,19 +613,42 @@ def delete( request, repo, org, cid, eid, confirm=False ):
 
 @login_required
 @storage_required
-def files_dedupe( request, repo, org, cid, eid ):
-    git_name = request.session.get('git_name')
-    git_mail = request.session.get('git_mail')
-    if not (git_name and git_mail):
-        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    entity = Entity.from_request(request)
+def files_reload( request, eid ):
+    """Regenerates list of file info dicts with list of File objects
+    """
+    git_name,git_mail = enforce_git_credentials(request)
+    entity = Entity.from_identifier(Identifier(eid))
+    check_object(entity)
     collection = entity.collection()
-    if collection.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
-        return HttpResponseRedirect(collection.absolute_url())
+    check_parent(collection)
+    
+    tasks.entity_reload_files(
+        request,
+        collection, entity,
+        git_name, git_mail, settings.AGENT
+    )
+    
+    messages.success(
+        request,
+        'Regenerating files list for <a href="%s">%s</a>.' % (
+            entity.absolute_url(), entity.id
+        )
+    )
+    return HttpResponseRedirect(entity.absolute_url())
+
+@login_required
+@storage_required
+def files_dedupe( request, eid ):
+    git_name,git_mail = enforce_git_credentials(request)
+    entity = Entity.from_identifier(Identifier(eid))
+    check_object(entity)
+    collection = entity.collection()
+    check_parent(collection)
+    
     duplicate_masters = entity.detect_file_duplicates('master')
     duplicate_mezzanines = entity.detect_file_duplicates('mezzanine')
     duplicates = duplicate_masters + duplicate_mezzanines
+    
     if request.method == 'POST':
         form = RmDuplicatesForm(request.POST)
         if form.is_valid() and form.cleaned_data.get('confirmed',None) \
@@ -660,10 +672,13 @@ def files_dedupe( request, repo, org, cid, eid ):
             else:
                 # update search index
                 try:
-                    entity.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+                    entity.post_json()
                 except ConnectionError:
                     logger.error('Could not post to Elasticsearch.')
-                gitstatus_update.apply_async((collection.path,), countdown=2)
+                tasks.gitstatus_update.apply_async(
+                    (collection.path,),
+                    countdown=2
+                )
                 # positive feedback
                 messages.success(request, success_msg)
                 return HttpResponseRedirect(entity.absolute_url())
@@ -682,15 +697,14 @@ def files_dedupe( request, repo, org, cid, eid ):
 @ddrview
 @login_required
 @storage_required
-def unlock( request, repo, org, cid, eid, task_id ):
+def unlock( request, eid, task_id ):
     """Provides a way to remove entity lockfile through the web UI.
     """
-    git_name = request.session.get('git_name')
-    git_mail = request.session.get('git_mail')
-    if not git_name and git_mail:
-        messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    entity = Entity.from_request(request)
+    git_name,git_mail = enforce_git_credentials(request)
+    entity = Entity.from_identifier(Identifier(eid))
+    check_object(entity)
     collection = entity.collection()
+    
     if task_id and entity.locked() and (task_id == entity.locked()):
         entity.unlock(task_id)
         messages.success(request, 'Object <b>%s</b> unlocked.' % entity.id)

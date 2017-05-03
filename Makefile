@@ -1,5 +1,13 @@
 SHELL = /bin/bash
 DEBIAN_CODENAME := $(shell lsb_release -sc)
+DEBIAN_RELEASE := $(shell lsb_release -sr)
+
+# current branch name minus dashes or underscores
+PACKAGE_BRANCH := $(shell git rev-parse --abbrev-ref HEAD | tr -d _ | tr -d -)
+# current commit hash
+PACKAGE_COMMIT := $(shell git log -1 --pretty="%h")
+# current commit date minus dashes
+PACKAGE_TIMESTAMP := $(shell git log -1 --pretty="%ad" --date=short | tr -d -)
 
 PACKAGE_SERVER=ddr.densho.org/static/ddrlocal
 
@@ -9,13 +17,21 @@ SRC_REPO_DEFS=https://github.com/densho/ddr-defs.git
 SRC_REPO_MANUAL=https://github.com/densho/ddr-manual.git
 
 INSTALL_BASE=/usr/local/src
-INSTALL_CMDLN=$(INSTALL_BASE)/ddr-cmdln
 INSTALL_LOCAL=$(INSTALL_BASE)/ddr-local
-INSTALL_DEFS=$(INSTALL_BASE)/ddr-defs
-INSTALL_MANUAL=$(INSTALL_BASE)/ddr-manual
+INSTALL_CMDLN=$(INSTALL_LOCAL)/ddr-cmdln
+INSTALL_DEFS=$(INSTALL_LOCAL)/ddr-defs
+INSTALL_MANUAL=$(INSTALL_LOCAL)/ddr-manual
 
-VIRTUALENV=$(INSTALL_BASE)/env/ddrlocal
+VIRTUALENV=$(INSTALL_LOCAL)/venv/ddrlocal
 SETTINGS=$(INSTALL_LOCAL)/ddrlocal/ddrlocal/settings.py
+
+PACKAGE_BASE=/tmp/ddrlocal
+PACKAGE_TMP=$(PACKAGE_BASE)/ddr-local
+PACKAGE_VENV=$(PACKAGE_TMP)/venv/ddrlocal
+PACKAGE_TGZ=ddrlocal-$(PACKAGE_BRANCH)-$(PACKAGE_TIMESTAMP)-$(PACKAGE_COMMIT).tgz
+# The directory into which ddr-local will be placed and synced
+# Should not include "ddr-local", and should not end with a slash (see man rsync)
+PACKAGE_RSYNC_DEST=takezo@takezo:~/packaging
 
 CONF_BASE=/etc/ddr
 CONF_DEFS=$(CONF_BASE)/ddr-defs
@@ -32,13 +48,13 @@ MEDIA_BASE=/var/www
 MEDIA_ROOT=$(MEDIA_BASE)/media
 STATIC_ROOT=$(MEDIA_BASE)/static
 
-ELASTICSEARCH=elasticsearch-1.0.1.deb
+ELASTICSEARCH=elasticsearch-2.4.4.deb
 MODERNIZR=modernizr-2.6.2.js
 JQUERY=jquery-1.11.0.min.js
 BOOTSTRAP=bootstrap-3.1.1-dist.zip
 TAGMANAGER=tagmanager-3.0.1
 TYPEAHEAD=typeahead-0.10.2
-# wget https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.0.1.deb
+# wget https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-2.4.4.deb
 # wget http://code.jquery.com/jquery-1.11.0.min.js
 # wget https://github.com/twbs/bootstrap/releases/download/v3.1.1/bootstrap-3.1.1-dist.zip
 # wget https://github.com/max-favilli/tagmanager/archive/v3.0.1.tar.gz
@@ -96,6 +112,8 @@ help:
 	@echo "uninstall - Deletes 'compiled' Python files. Leaves build dirs and configs."
 	@echo "clean   - Deletes files created by building the program. Leaves configs."
 	@echo ""
+	@echo "package - Package project in a self-contained .tgz for installation."
+	@echo ""
 	@echo "More install info: make howto-install"
 
 howto-install:
@@ -137,7 +155,7 @@ ddr-user:
 	-addgroup ddr plugdev
 	-addgroup ddr vboxsf
 	if ! grep "bin/activate" /home/ddr/.bashrc ; \
-	then printf "\n\n# ddrlocal: Activate virtualnv on login\nsource /usr/local/src/env/ddrlocal/bin/activate\n" >> /home/ddr/.bashrc; \
+	then printf "\n\n# ddrlocal: Activate virtualnv on login\nsource $(VIRTUALENV)/bin/activate\n" >> /home/ddr/.bashrc; \
 	fi
 
 apt-backports:
@@ -244,20 +262,27 @@ install-elasticsearch:
 install-virtualenv:
 	@echo ""
 	@echo "install-virtualenv -----------------------------------------------------"
-	apt-get --assume-yes install python-pip python-virtualenv
+	apt-get --assume-yes install python-pip python-virtualenv python-dev
 	test -d $(VIRTUALENV) || virtualenv --distribute --setuptools $(VIRTUALENV)
-
-install-setuptools: install-virtualenv
-	@echo ""
-	@echo "install-setuptools -----------------------------------------------------"
-	apt-get --assume-yes install python-dev
 	source $(VIRTUALENV)/bin/activate; \
-	pip install -U bpython setuptools
+	pip install -U setuptools
+#	virtualenv --relocatable $(VIRTUALENV)  # Make venv relocatable
+
+
+install-dependencies: install-core install-misc-tools install-daemons install-git-annex
+	@echo ""
+	@echo "install-dependencies ---------------------------------------------------"
+	apt-get --assume-yes install python-pip python-virtualenv
+	apt-get --assume-yes install python-dev
+	apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev libz-dev pmount udisks
+	apt-get --assume-yes install imagemagick libexempi3 libssl-dev python-dev libxml2 libxml2-dev libxslt1-dev supervisor
+
+mkdirs: mkdir-ddr-cmdln mkdir-ddr-local
 
 
 get-app: get-ddr-cmdln get-ddr-local get-ddr-manual
 
-install-app: install-git-annex install-virtualenv install-setuptools install-ddr-cmdln install-ddr-local install-ddr-manual install-configs install-daemon-configs
+install-app: install-git-annex install-virtualenv install-ddr-cmdln install-ddr-local install-ddr-manual install-configs install-daemon-configs
 
 uninstall-app: uninstall-ddr-cmdln uninstall-ddr-local uninstall-ddr-manual uninstall-configs uninstall-daemon-configs
 
@@ -280,11 +305,11 @@ get-ddr-cmdln:
 	else cd $(INSTALL_BASE) && git clone $(SRC_REPO_CMDLN); \
 	fi
 
-setup-ddr-cmdln:
+setup-ddr-cmdln: install-virtualenv
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_CMDLN)/ddr && python setup.py install
 
-install-ddr-cmdln:
+install-ddr-cmdln: install-virtualenv mkdir-ddr-cmdln
 	@echo ""
 	@echo "install-ddr-cmdln ------------------------------------------------------"
 	apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev libz-dev pmount udisks
@@ -292,6 +317,10 @@ install-ddr-cmdln:
 	cd $(INSTALL_CMDLN)/ddr && python setup.py install
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_CMDLN)/ddr && pip install -U -r $(INSTALL_CMDLN)/ddr/requirements/production.txt
+
+mkdir-ddr-cmdln:
+	@echo ""
+	@echo "mkdir-ddr-cmdln --------------------------------------------------------"
 	-mkdir $(LOG_BASE)
 	chown -R ddr.root $(LOG_BASE)
 	chmod -R 755 $(LOG_BASE)
@@ -299,7 +328,7 @@ install-ddr-cmdln:
 	chown -R ddr.root $(MEDIA_ROOT)
 	chmod -R 755 $(MEDIA_ROOT)
 
-uninstall-ddr-cmdln:
+uninstall-ddr-cmdln: install-virtualenv
 	@echo ""
 	@echo "uninstall-ddr-cmdln ----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
@@ -317,12 +346,16 @@ get-ddr-local:
 	@echo "get-ddr-local ----------------------------------------------------------"
 	git pull
 
-install-ddr-local:
+install-ddr-local: install-virtualenv mkdir-ddr-local
 	@echo ""
 	@echo "install-ddr-local ------------------------------------------------------"
 	apt-get --assume-yes install imagemagick libexempi3 libssl-dev python-dev libxml2 libxml2-dev libxslt1-dev supervisor
 	source $(VIRTUALENV)/bin/activate; \
 	pip install -U -r $(INSTALL_LOCAL)/ddrlocal/requirements/production.txt
+
+mkdir-ddr-local:
+	@echo ""
+	@echo "mkdir-ddr-local --------------------------------------------------------"
 # logs dir
 	-mkdir $(LOG_BASE)
 	chown -R ddr.root $(LOG_BASE)
@@ -340,7 +373,7 @@ install-ddr-local:
 	chown -R ddr.root $(STATIC_ROOT)
 	chmod -R 755 $(STATIC_ROOT)
 
-uninstall-ddr-local:
+uninstall-ddr-local: install-virtualenv
 	@echo ""
 	@echo "uninstall-ddr-local ----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
@@ -361,7 +394,7 @@ get-ddr-defs:
 	fi
 
 
-syncdb:
+syncdb: install-virtualenv
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_LOCAL)/ddrlocal && ./manage.py syncdb --noinput
 	chown -R ddr.root $(SQLITE_BASE)
@@ -511,13 +544,16 @@ reload-supervisor:
 reload-app: reload-supervisor
 
 
-stop: stop-elasticsearch stop-redis stop-nginx stop-munin stop-supervisor
+stop: stop-elasticsearch stop-redis stop-cgit stop-nginx stop-munin stop-supervisor
 
 stop-elasticsearch:
 	/etc/init.d/elasticsearch stop
 
 stop-redis:
 	/etc/init.d/redis-server stop
+
+stop-cgit:
+	/etc/init.d/fcgiwrap stop
 
 stop-nginx:
 	/etc/init.d/nginx stop
@@ -557,6 +593,10 @@ restart-supervisor:
 restart-app: restart-supervisor
 
 
+# just Redis and Supervisor
+restart-minimal: stop-elasticsearch restart-redis stop-nginx stop-munin restart-supervisor
+
+
 status:
 	@echo "------------------------------------------------------------------------"
 	-/etc/init.d/elasticsearch status
@@ -585,7 +625,7 @@ get-ddr-manual:
 	else cd $(INSTALL_BASE) && git clone $(SRC_REPO_MANUAL); \
 	fi
 
-install-ddr-manual:
+install-ddr-manual: install-virtualenv
 	@echo ""
 	@echo "install-ddr-manual -----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
@@ -600,3 +640,25 @@ uninstall-ddr-manual:
 
 clean-ddr-manual:
 	-rm -Rf $(INSTALL_MANUAL)/build
+
+
+package:
+	@echo ""
+	@echo "packaging --------------------------------------------------------------"
+	-rm -Rf $(PACKAGE_TMP)
+	-rm -Rf $(PACKAGE_BASE)/*.tgz
+	-mkdir -p $(PACKAGE_BASE)
+	cp -R $(INSTALL_LOCAL) $(PACKAGE_TMP)
+	cd $(PACKAGE_TMP)
+	git clean -fd   # Remove all untracked files
+	virtualenv --relocatable $(PACKAGE_VENV)  # Make venv relocatable
+	-cd $(PACKAGE_BASE); tar czf $(PACKAGE_TGZ) ddr-local
+
+rsync-packaged:
+	@echo ""
+	@echo "rsync-packaged ---------------------------------------------------------"
+	rsync -avz --delete $(PACKAGE_BASE)/ddr-local $(PACKAGE_RSYNC_DEST)
+
+install-packaged: install-prep install-dependencies install-static install-configs mkdirs syncdb install-daemon-configs
+	@echo ""
+	@echo "install packaged -------------------------------------------------------"

@@ -1,10 +1,10 @@
-{% extends "webui/collections/base.html" %}
+{% extends "webui/files/base.html" %}
+{% load webui_tags %}
 
-
-{% block title %}New{% endblock %}
+{% block title %}{{ entity.title }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
-<li class="active">New</li>
+{% breadcrumbs file_role "Add file" %}
 {% endblock breadcrumbs %}
 
 
@@ -13,10 +13,11 @@
   <div class="row-fluid">
     <div class="span12">
 
-<h1>New Collection</h1>
+<h1>Add File Metadata</h1>
 
-<form name="collection-new" action="" method="POST">{% csrf_token %}
+<form name="entity-add" action="" method="POST" enctype="multipart/form-data">{% csrf_token %}
 <table>
+<tr><th><label>Path:</label></th><td>{{ path }}</td></tr>
   {{ form.as_table }}
   <tr>
     <th></th>

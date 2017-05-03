@@ -1,0 +1,64 @@
+{% extends "webui/collections/base.html" %}
+{% load thumbnail webui_tags%}
+
+{% block title %}Signatures | {{ collection.id }}{% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+{% breadcrumbs collection "Signatures" %}
+{% endblock breadcrumbs %}
+
+
+{% block content %}
+
+  <div class="row-fluid">
+    <div class="span12">
+
+<h1>
+{{ collection.id }}
+</h1>
+
+<div class="alert alert-danger" role="alert">
+
+<h2 style="margin-top:0px;">
+<span class="glyphicon glyphicon-warning-sign"></span>
+IMPORTANT
+</h2>
+<p>
+Choosing signatures for the collection and each object requires reading each and
+every metadata file in the collection and can sometimes take a long time.
+</p>
+<p>
+<strong>Interrupting this operation may result in loss of data!</strong>
+</p>
+<p>
+Please do not start this operation unless you are prepared to let it finish!
+</p>
+
+<table>
+<form name="signatures-confirm" action="" method="post">{% csrf_token %}
+  <tr>
+    <td>
+{{ form.confirmed }}
+Yes, I'm sure I want to do this.
+    </td>
+    <td>
+&nbsp;
+&nbsp;
+<button class="btn btn-danger btn-mini" type="submit" value="Choose Signatures">Choose Signatures</button>
+&nbsp;
+&nbsp;
+/
+&nbsp;
+&nbsp;
+<a href="{{ collection.absolute_url }}" class="btn btn-primary btn-mini">Cancel</a>
+    </td>
+  </tr>
+</form>
+</table>
+
+</div><!-- .alert-danger -->
+ 
+    </div><!-- .span12 -->
+  </div><!-- .row -->
+
+{% endblock content %}

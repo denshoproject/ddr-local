@@ -3,7 +3,7 @@ logger = logging.getLogger(__name__)
 
 from django.conf import settings
 
-from DDR.docstore import make_index_name, index_exists, target_index
+from DDR import docstore
 
 
 COLLECTION_FETCH_CACHE_KEY = 'webui:collection:%s:fetch'
@@ -57,6 +57,9 @@ WEBUI_MESSAGES = {
     # webui.models.model_def_commits
     'MODEL_DEF_COMMITS_STATUS_-m': ('warning', "Missing model definitions commit info."),
     'MODEL_DEF_COMMITS_STATUS_-d': ('warning', "Missing document commit info."),
+    # 'a!' and 'b!' occur if source code was on an unmerged branch when document was committed
+    'MODEL_DEF_COMMITS_STATUS_a!': ('warning', "Model definitions commit A not in commit log."),
+    'MODEL_DEF_COMMITS_STATUS_b!': ('warning', "Model definitions commit B not in commit log."),
     'MODEL_DEF_COMMITS_STATUS_lt': ('info', "Document model definitions OLDER than module's."),
     'MODEL_DEF_COMMITS_STATUS_eq': ('info', "Document model definitions SAME as module's."),
     'MODEL_DEF_COMMITS_STATUS_gt': ('info', "Document model definitions NEWER than module's."),
@@ -86,11 +89,11 @@ def set_docstore_index( request ):
     docstore_index_exists = None
     storage_label = request.session.get('storage_label', None)
     if not storage_label:
-        storage_label = target_index(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+        storage_label = docstore.Docstore().target_index(settings.DOCSTORE_INDEX)
     if storage_label:
-        docstore_index = make_index_name(storage_label)
+        docstore_index = docstore.make_index_name(storage_label)
         if docstore_index:
-            docstore_index_exists = index_exists(settings.DOCSTORE_HOSTS, docstore_index)
+            docstore_index_exists = docstore.Docstore(index=docstore_index).index_exists()
     # rm index from session
     if not (storage_label or docstore_index_exists):
         request.session['docstore_index'] = None

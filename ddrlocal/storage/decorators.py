@@ -9,11 +9,10 @@ from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
 from django.utils.decorators import available_attrs
 
-from DDR import commands
 from webui import models
 
 from storage import STORAGE_MESSAGES
-from storage import base_path
+from storage import base_path, ddrstorage
 from webui import gitolite
 
 
@@ -71,7 +70,7 @@ def storage_required(func):
             messages.error(request, STORAGE_MESSAGES['NO_REPOS_ORGS'])
         if not readable:
             logger.debug('storage not readable')
-            status,msg = commands.status(basepath)
+            status,msg = ddrstorage.status(basepath)
             logger.debug('storage status: %s' % status)
             logger.debug('storage msg: %s' % msg)
             remount_uri = request.META.get('PATH_INFO',None)

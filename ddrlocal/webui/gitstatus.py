@@ -58,6 +58,7 @@ import re
 from django.conf import settings
 from django.core.cache import cache
 
+from DDR import converters
 from DDR import dvcs
 from DDR.storage import is_writable
 from ddrlocal.models import DDRLocalCollection as Collection
@@ -65,11 +66,54 @@ from webui import COLLECTION_STATUS_TIMEOUT
 from webui import gitolite
 from webui.identifier import Identifier
 
+COLLECTION_SYNC_STATUS_CACHE_KEY = 'webui:collection:%s:sync-status'
+
+SYNC_STATUS_BOOTSTRAP_COLOR = {
+    'unknown': 'muted',
+    'synced': 'success',
+    'ahead': 'warning',
+    'behind': 'warning',
+    'conflicted': 'danger',
+    'locked': 'warning',
+}
+
+COLLECTION_ANNEX_INFO_CACHE_KEY = 'webui:collection:%s:annex-info'
+ANNEX_WHEREIS_CACHE_KEY = 'webui:file:%s:annex-whereis'
+
+def repository(collection_path):
+    return dvcs.repository(collection_path)
+
+def annex_info(repo):
+    collection_id = os.path.basename(repo.working_dir)
+    key = COLLECTION_ANNEX_INFO_CACHE_KEY % collection_id
+    cached = cache.get(key)
+    if not cached:
+        data = dvcs.annex_info(repo)
+        if data['success']:
+            cached = data
+            cache.set(key, data, COLLECTION_STATUS_TIMEOUT)
+    return cached
+
+def annex_whereis_file(repo, file_):
+    key = ANNEX_WHEREIS_CACHE_KEY % file_.id
+    cached = cache.get(key)
+    if not cached:
+        data = dvcs.annex_whereis_file(
+            repo,
+            file_.path_rel,
+            annex_info(repo)
+        )
+        if data['success']:
+            cached = data
+            cache.set(key, data, COLLECTION_STATUS_TIMEOUT)
+    return cached
+
+
 
 def log(msg):
     """celery does not like writing to logs, so write to separate logfile
     """
-    entry = '%s %s\n' % (datetime.now().strftime(settings.TIMESTAMP_FORMAT), msg)
+    entry = '%s %s\n' % (converters.datetime_to_text(datetime.now(settings.TZ)), msg)
     with open(settings.GITSTATUS_LOG, 'a') as f:
         f.write(entry)
 
@@ -128,7 +172,7 @@ def dumps( timestamp, elapsed, status, annex_status, syncstatus ):
         {sync status}
     """
     timestamp_elapsed = ' '.join([
-        timestamp.strftime(settings.TIMESTAMP_FORMAT),
+        converters.datetime_to_text(timestamp),
         str(elapsed)
     ])
     return '\n%%\n'.join([
@@ -151,14 +195,14 @@ def loads( text ):
     meta = variables[0]
     if meta:
         ts,elapsed = meta.split(' ')
-        timestamp = datetime.strptime(ts, settings.TIMESTAMP_FORMAT)
+        timestamp = converters.text_to_datetime(ts)
     status = variables[1]
     annex_status = variables[2]
     syncstatus = variables[3]
     if syncstatus: # may not be present
         syncstatus = json.loads(syncstatus)
         if syncstatus.get('timestamp',None):
-            syncstatus['timestamp'] = datetime.strptime(syncstatus['timestamp'], settings.TIMESTAMP_FORMAT)
+            syncstatus['timestamp'] = converters.text_to_datetime(syncstatus['timestamp'])
     return {
         'timestamp': timestamp,
         'elapsed': elapsed,
@@ -183,17 +227,6 @@ def read( base_dir, collection_path ):
             text = f.read()
         return loads(text)
     return {}
-
-COLLECTION_SYNC_STATUS_CACHE_KEY = 'webui:collection:%s:sync-status'
-
-SYNC_STATUS_BOOTSTRAP_COLOR = {
-    'unknown': 'muted',
-    'synced': 'success',
-    'ahead': 'warning',
-    'behind': 'warning',
-    'conflicted': 'danger',
-    'locked': 'warning',
-}
 
 def sync_status( collection_path, git_status, timestamp, cache_set=False, force=False ):
     """Cache collection repo sync status info for collections list page.
@@ -220,7 +253,7 @@ def sync_status( collection_path, git_status, timestamp, cache_set=False, force=
         elif dvcs.conflicted(git_status): status = 'conflicted'
         elif disposable_collection.locked(): status = 'locked'
         if isinstance(timestamp, datetime):
-            timestamp = timestamp.strftime(settings.TIMESTAMP_FORMAT)
+            timestamp = converters.datetime_to_text(timestamp)
         data = {
             'timestamp': timestamp,
             'status': status,
@@ -239,11 +272,11 @@ def update( base_dir, collection_path ):
     @param force: Boolean Forces refresh of status
     @returns: dict
     """
-    start = datetime.now()
+    start = datetime.now(settings.TZ)
     repo = dvcs.repository(collection_path)
     status = dvcs.repo_status(repo, short=True)
     annex_status = dvcs.annex_status(repo)
-    timestamp = datetime.now()
+    timestamp = datetime.now(settings.TZ)
     syncstatus = sync_status(collection_path, git_status=status, timestamp=timestamp, force=True)
     elapsed = timestamp - start
     text = write(base_dir, collection_path, timestamp, elapsed, status, annex_status, syncstatus)
@@ -291,7 +324,7 @@ def lock( base_dir, task_id ):
     @param task_id: Unique identifier for task.
     @returns: Complete text of lockfile
     """
-    ts = datetime.now().strftime(settings.TIMESTAMP_FORMAT)
+    ts = converters.datetime_to_text(datetime.now(settings.TZ))
     text = '%s %s' % (ts, task_id)
     LOCK = lock_path(base_dir)
     locks = []
@@ -371,11 +404,11 @@ def queue_loads( text ):
     }
     """
     lines = text.strip().split('\n')
-    generated = datetime.strptime(lines.pop(0).strip().split()[1], settings.TIMESTAMP_FORMAT)
+    generated = converters.text_to_datetime(lines.pop(0).strip().split()[1])
     queue = {'generated':generated, 'collections':[]}
     for line in lines:
         ts,collection_id = line.split()
-        timestamp = datetime.strptime(ts, settings.TIMESTAMP_FORMAT)
+        timestamp = converters.text_to_datetime(ts)
         queue['collections'].append( [timestamp,collection_id] )
     return queue
 
@@ -392,11 +425,11 @@ def queue_dumps( queue ):
     lines = []
     for c in queue['collections']:
         lines.append(' '.join([
-            c[0].strftime(settings.TIMESTAMP_FORMAT),
+            converters.datetime_to_text(c[0]),
             c[1],
         ]))
     lines.sort()
-    lines.insert(0, 'generated %s' % queue['generated'].strftime(settings.TIMESTAMP_FORMAT))
+    lines.insert(0, 'generated %s' % converters.datetime_to_text(queue['generated']))
     return '\n'.join(lines) + '\n'
 
 def queue_read( base_dir ):
@@ -434,7 +467,7 @@ def queue_generate( base_dir, repos_orgs ):
         queue['collections'].append( (status['timestamp'],collection_id) )
         cids.append(collection_id)
     # collections without gitstatuses
-    epoch = datetime.fromtimestamp(0)
+    epoch = datetime(1969, 12, 31, 16, 0, tzinfo=settings.TZ)
     for o in repos_orgs:
         repo,org = o.split('-')
         for path in Collection.collection_paths(base_dir, repo, org):
@@ -442,7 +475,7 @@ def queue_generate( base_dir, repos_orgs ):
             if not collection_id in cids:
                 cids.append(collection_id)
                 queue['collections'].append( (epoch,collection_id) )
-    queue['generated'] = datetime.now()
+    queue['generated'] = datetime.now(settings.TZ)
     return queue
 
 def queue_mark_updated( queue, collection_id, delta, minimum ):
@@ -481,7 +514,7 @@ def next_time( queue, delta, minimum ):
         if (not latest) or (ts > latest):
             latest = ts
     timestamp = latest + timedelta(seconds=delta)
-    earliest = datetime.now() + timedelta(seconds=minimum)
+    earliest = datetime.now(settings.TZ) + timedelta(seconds=minimum)
     if timestamp < earliest:
         timestamp = earliest
     return timestamp
@@ -502,7 +535,7 @@ def next_repo( queue, local=False ):
     if local:
         # choose first collection that is not locked
         for timestamp,cid in collections:
-            if datetime.now() > timestamp:
+            if datetime.now(settings.TZ) > timestamp:
                 ci = Identifier(id=cid)
                 if not Collection.from_identifier(ci).locked():
                     return ci.path_abs()
@@ -511,7 +544,7 @@ def next_repo( queue, local=False ):
     else:
         # global lock - just take the first collection
         for timestamp,cid in collections:
-            if datetime.now() > timestamp:
+            if datetime.now(settings.TZ) > timestamp:
                 ci = Identifier(id=cid)
                 return ci.path_abs()
             if (not next_available) or (timestamp < next_available):

@@ -13,7 +13,6 @@ from celery import states
 from celery.result import AsyncResult
 from celery.utils.encoding import safe_repr
 from celery.utils import get_full_cls_name
-import requests
 
 from django.conf import settings
 from django.contrib import messages
@@ -28,9 +27,11 @@ from webui.identifier import Identifier
 
 from DDR import batch
 from DDR import commands
+from DDR import converters
 from DDR import docstore
 from DDR import dvcs
 from DDR import models
+from DDR import signatures
 from DDR import util
 from DDR.ingest import addfile_logger
 
@@ -71,6 +72,14 @@ TASK_STATUS_MESSAGES = {
         'PENDING': 'Syncing <b><a href="{collection_url}">{collection_id}</a></b> with the workbench server.',
         'SUCCESS': 'Synced <b><a href="{collection_url}">{collection_id}</a></b> with the workbench server.',
         'FAILURE': 'Could not sync <b><a href="{collection_url}">{collection_id}</a></b> with the workbench server.',
+        #'RETRY': '',
+        #'REVOKED': '',
+        },
+    'webui-collection-signatures': {
+        #'STARTED': '',
+        'PENDING': 'Choosing signatures for <b><a href="{collection_url}">{collection_id}</a></b>.',
+        'SUCCESS': 'Signatures chosen for <b><a href="{collection_url}">{collection_id}</a></b>.',
+        'FAILURE': 'Could not choose signatures for <b><a href="{collection_url}">{collection_id}</a></b>.',
         #'RETRY': '',
         #'REVOKED': '',
         },
@@ -116,27 +125,31 @@ def reindex( index ):
         raise NameError('MEDIA_BASE does not exist - you need to remount!')
     logger.debug('webui.tasks.reindex(%s)' % index)
     logger.debug('DOCSTORE_HOSTS: %s' % settings.DOCSTORE_HOSTS)
+    ds = docstore.Docstore(index=index)
     logger.debug('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ')
     logger.debug('deleting existing index: %s' % index)
-    delete_status = docstore.delete_index(settings.DOCSTORE_HOSTS, index)
+    delete_status = ds.delete_index()
     logger.debug(delete_status)
     logger.debug('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ')
     logger.debug('creating new index: %s' % index)
-    create_status = docstore.create_index(settings.DOCSTORE_HOSTS, index)
+    create_status = ds.create_index()
     logger.debug(create_status)
     logger.debug('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ')
     logger.debug('mappings: %s, %s' % (docstore.HARD_CODED_MAPPINGS_PATH, models.MODELS_DIR))
-    mappings_status = docstore.put_mappings(settings.DOCSTORE_HOSTS, index,
-                                            docstore.HARD_CODED_MAPPINGS_PATH, models.MODELS_DIR)
+    mappings_status = ds.put_mappings(
+        docstore.HARD_CODED_MAPPINGS_PATH, models.MODELS_DIR
+    )
     logger.debug(mappings_status)
     logger.debug('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ')
     logger.debug('facets')
-    facets_status = docstore.put_facets(settings.DOCSTORE_HOSTS, index)
+    facets_status = ds.put_facets()
     logger.debug(facets_status)
     logger.debug('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ')
     logger.debug('indexing')
-    index_status = docstore.index(settings.DOCSTORE_HOSTS, index, path=settings.MEDIA_BASE,
-                                  recursive=True, public=False)
+    index_status = ds.index(
+        path=settings.MEDIA_BASE,
+        recursive=True, public=False
+    )
     logger.debug(index_status)
     return statuses
 
@@ -144,17 +157,23 @@ def reindex_and_notify( index ):
     """Drop existing index and build another from scratch; hand off to Celery.
     This function is intended for use in a view.
     """
-    result = reindex(index).apply_async(countdown=2)
+    result = reindex(index).apply_async(
+        countdown=2
+    )
     celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
     # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
-    task = {'task_id': result.task_id,
-            'action': 'webui-search-reindex',
-            'index': index,
-            'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
+    task = {
+        'task_id': result.task_id,
+        'action': 'webui-search-reindex',
+        'index': index,
+        'start': converters.datetime_to_text(datetime.now(settings.TZ)),
+    }
     celery_tasks[result.task_id] = task
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
 
 
+
+# ----------------------------------------------------------------------
 
 @task(base=DebugTask, name='webui.tasks.gitolite_info_refresh')
 def gitolite_info_refresh():
@@ -166,6 +185,8 @@ def gitolite_info_refresh():
     return gitolite.refresh()
 
 
+
+# ----------------------------------------------------------------------
 
 class GitStatusTask(Task):
     abstract = True
@@ -208,6 +229,9 @@ def gitstatus_update_store():
         minimum=settings.GITSTATUS_INTERVAL,
     )
 
+
+
+# ----------------------------------------------------------------------
 
 class FileAddDebugTask(Task):
     abstract = True
@@ -253,11 +277,50 @@ def entity_add_file( git_name, git_mail, entity, src_path, role, data, agent='' 
     @param agent: (optional) Name of software making the change.
     """
     gitstatus.lock(settings.MEDIA_BASE, 'entity_add_file')
-    file_,repo,log = entity.add_file(src_path, role, data, git_name, git_mail, agent)
-    file_,repo,log = entity.add_file_commit(file_, repo, log, git_name, git_mail, agent)
+    
+    file_,repo,log = entity.add_local_file(
+        src_path, role, data,
+        git_name, git_mail, agent
+    )
+    file_,repo,log = entity.add_file_commit(
+        file_, repo, log,
+        git_name, git_mail, agent
+    )
+    
     log.ok('Updating Elasticsearch')
     try:
-        result = file_.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+        result = file_.post_json()
+        log.ok('| %s' % result)
+    except ConnectionError:
+        log.not_ok('Could not post to Elasticsearch.')
+    return {
+        'id': file_.id,
+        'status': 'ok'
+    }
+
+@task(base=FileAddDebugTask, name='entity-add-external')
+def entity_add_external( git_name, git_mail, entity, data, agent='' ):
+    """
+    @param entity: Entity
+    @param data: Dict containing form data.
+    @param git_name: Username of git committer.
+    @param git_mail: Email of git committer.
+    @param agent: (optional) Name of software making the change.
+    """
+    gitstatus.lock(settings.MEDIA_BASE, 'entity_add_external')
+    
+    file_,repo,log = entity.add_external_file(
+        data,
+        git_name, git_mail, agent
+    )
+    file_,repo,log = entity.add_file_commit(
+        file_, repo, log,
+        git_name, git_mail, agent
+    )
+    
+    log.ok('Updating Elasticsearch')
+    try:
+        result = file_.post_json()
         log.ok('| %s' % result)
     except ConnectionError:
         log.not_ok('Could not post to Elasticsearch.')
@@ -277,13 +340,21 @@ def entity_add_access( git_name, git_mail, entity, ddrfile, agent='' ):
     @param agent: (optional) Name of software making the change.
     """
     gitstatus.lock(settings.MEDIA_BASE, 'entity_add_access')
-    file_,repo,log,op = entity.add_access(ddrfile, git_name, git_mail, agent)
+    
+    file_,repo,log,op = entity.add_access(
+        ddrfile, ddrfile.path_abs,
+        git_name, git_mail, agent
+    )
     if op and (op == 'pass'):
         log.ok('Things are okay as they are.  Leaving them alone.')
         return file_.__dict__
-    file_,repo,log = entity.add_file_commit(file_, repo, log, git_name, git_mail, agent)
+    file_,repo,log = entity.add_file_commit(
+        file_, repo, log,
+        git_name, git_mail, agent
+    )
+    
     try:
-        file_.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+        file_.post_json()
     except ConnectionError:
         log.not_ok('Could not post to Elasticsearch.')
     return {
@@ -292,63 +363,6 @@ def entity_add_access( git_name, git_mail, entity, ddrfile, agent='' ):
     }
 
 
-
-# ----------------------------------------------------------------------
-
-TASK_STATUS_MESSAGES['webui-collection-newexpert'] = {
-    #'STARTED': '',
-    'PENDING': 'Creating new collection <b>{collection_id}</b>...',
-    'SUCCESS': 'Created new collection <b><a href="{collection_url}">{collection_id}</a></b>.',
-    'FAILURE': 'Could not create new collection <b>{collection_id}</b>.',
-    #'RETRY': '',
-    #'REVOKED': '',
-}
-
-def collection_new_expert(request, base_dir, collection_id, git_name, git_mail):
-    # start tasks
-    repo,org,cid = collection_id.split('-')
-    collection_path = os.path.join(base_dir, collection_id)
-    collection_url = reverse('webui-collection', args=[repo,org,cid])
-    result = collection_newexpert.apply_async(
-        (collection_path, git_name, git_mail),
-        countdown=2)
-    # add celery task_id to session
-    celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
-    # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
-    celery_tasks[result.task_id] = {
-        'task_id': result.task_id,
-        'action': 'webui-collection-newexpert',
-        'collection_url': collection_url,
-        'collection_id': collection_id,
-        'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
-    request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
-
-class CollectionNewExpertTask(Task):
-    abstract = True
-    
-    def after_return(self, status, retval, task_id, args, kwargs, einfo):
-        logger.debug('CollectionNewExpertTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
-        collection_path = args[0]
-        collection = Collection.from_identifier(Identifier(path=collection_path))
-        lockstatus = collection.unlock(task_id)
-        gitstatus.update(settings.MEDIA_BASE, collection_path)
-        gitstatus.unlock(settings.MEDIA_BASE, 'collection_newexpert')
-
-@task(base=CollectionNewExpertTask, name='webui-collection-newexpert')
-def collection_newexpert(collection_path, git_name, git_mail):
-    """Create new collection using known ID.
-    
-    @param collection_path: str Absolute path to collection
-    @param git_name: Username of git committer.
-    @param git_mail: Email of git committer.
-    """
-    logger.debug('collection_newexpert(%s,%s,%s)' % (
-        collection_path, git_name, git_mail))
-    
-    collection = Collection.create(collection_path, git_name, git_mail)
-    gitstatus_update.apply_async((collection.path,), countdown=2)
-    
-    return 'status',collection_path
 
 # ----------------------------------------------------------------------
 
@@ -361,11 +375,14 @@ TASK_STATUS_MESSAGES['webui-collection-edit'] = {
     #'REVOKED': '',
 }
 
-def collection_edit(request, collection, updated_files, git_name, git_mail):
+def collection_edit(request, collection, cleaned_data, git_name, git_mail):
     # start tasks
+    
     result = collection_save.apply_async(
-        (collection.path, updated_files, git_name, git_mail),
-        countdown=2)
+        (collection.path, cleaned_data, git_name, git_mail),
+        countdown=2
+    )
+    
     # lock collection
     lockstatus = collection.lock(result.task_id)
     # add celery task_id to session
@@ -376,7 +393,7 @@ def collection_edit(request, collection, updated_files, git_name, git_mail):
         'action': 'webui-collection-edit',
         'collection_url': collection.absolute_url(),
         'collection_id': collection.id,
-        'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
+        'start': converters.datetime_to_text(datetime.now(settings.TZ)),}
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
 
 class CollectionEditTask(Task):
@@ -391,93 +408,31 @@ class CollectionEditTask(Task):
         gitstatus.unlock(settings.MEDIA_BASE, 'collection_edit')
 
 @task(base=CollectionEditTask, name='webui-collection-edit')
-def collection_save(collection_path, updated_files, git_name, git_mail):
+def collection_save(collection_path, cleaned_data, git_name, git_mail):
     """The time-consuming parts of collection-edit.
     
     @param collection_path: str Absolute path to collection
+    @param cleaned_data: dict form.cleaned_data
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
     """
-    logger.debug('collection_save(%s,%s,%s,%s)' % (
-        git_name, git_mail, collection_path, updated_files))
+    logger.debug('collection_save(%s,%s,%s)' % (
+        git_name, git_mail, collection_path))
     
     collection = Collection.from_identifier(Identifier(path=collection_path))
-    
     gitstatus.lock(settings.MEDIA_BASE, 'collection_edit')
-    exit,status = collection.save(updated_files, git_name, git_mail)
-    gitstatus_update.apply_async((collection_path,), countdown=2)
+    
+    exit,status,updated_files = collection.save(
+        git_name, git_mail,
+        cleaned_data
+    )
+    
+    gitstatus_update.apply_async(
+        (collection_path,),
+        countdown=2
+    )
     
     return status,collection_path
-
-# ----------------------------------------------------------------------
-
-TASK_STATUS_MESSAGES['webui-entity-newexpert'] = {
-    #'STARTED': '',
-    'PENDING': 'Creating new object <b>{entity_id}</b>...',
-    'SUCCESS': 'Created new object <b><a href="{entity_url}">{entity_id}</a></b>.',
-    'FAILURE': 'Could not create new object <b>{entity_id}</b>.',
-    #'RETRY': '',
-    #'REVOKED': '',
-}
-
-def collection_entity_newexpert(request, collection, entity_id, git_name, git_mail):
-    # start tasks
-    repo,org,cid,eid = entity_id.split('-')
-    entity_url = reverse('webui-entity', args=[repo,org,cid,eid])
-    result = entity_newexpert.apply_async(
-        (collection.path, entity_id, git_name, git_mail),
-        countdown=2)
-    # lock collection
-    lockstatus = collection.lock(result.task_id)
-    # add celery task_id to session
-    celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
-    # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
-    celery_tasks[result.task_id] = {
-        'task_id': result.task_id,
-        'action': 'webui-entity-newexpert',
-        'collection_url': collection.absolute_url(),
-        'collection_id': collection.id,
-        'entity_url': entity_url,
-        'entity_id': entity_id,
-        'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
-    request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
-
-class EntityNewExpertTask(Task):
-    abstract = True
-    
-    def on_failure(self, exc, task_id, args, kwargs, einfo):
-        logger.debug('EntityNewExpertTask.on_failure(%s, %s, %s, %s)' % (exc, task_id, args, kwargs))
-    
-    def on_success(self, retval, task_id, args, kwargs):
-        logger.debug('EntityNewExpertTask.on_success(%s, %s, %s, %s)' % (retval, task_id, args, kwargs))
-    
-    def after_return(self, status, retval, task_id, args, kwargs, einfo):
-        logger.debug('EntityNewExpertTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
-        collection_path = args[0]
-        collection = Collection.from_identifier(Identifier(path=collection_path))
-        lockstatus = collection.unlock(task_id)
-        gitstatus.update(settings.MEDIA_BASE, collection.path)
-        gitstatus.unlock(settings.MEDIA_BASE, 'entity_newexpert')
-
-@task(base=EntityNewExpertTask, name='webui-entity-newexpert')
-def entity_newexpert(collection_path, entity_id, git_name, git_mail):
-    """Create new entity using known entity ID.
-    
-    @param collection_path: str Absolute path to collection
-    @param entity_id: str
-    @param git_name: Username of git committer.
-    @param git_mail: Email of git committer.
-    """
-    logger.debug('collection_entity_newexpert(%s,%s,%s,%s)' % (
-        collection_path, entity_id, git_name, git_mail))
-    
-    collection = Collection.from_identifier(Identifier(path=collection_path))
-    
-    gitstatus.lock(settings.MEDIA_BASE, 'entity_newexpert')
-    entity = Entity.create(collection, entity_id, git_name, git_mail)
-    gitstatus_update.apply_async((collection.path,), countdown=2)
-
-    return 'status',collection_path,entity.id
 
 # ----------------------------------------------------------------------
 
@@ -490,11 +445,14 @@ TASK_STATUS_MESSAGES['webui-file-edit'] = {
     #'REVOKED': '',
 }
 
-def entity_file_edit(request, collection, file_, git_name, git_mail):
+def entity_file_edit(request, collection, file_, form_data, git_name, git_mail):
     # start tasks
+    
     result = file_edit.apply_async(
-        (collection.path, file_.id, git_name, git_mail),
-        countdown=2)
+        (collection.path, file_.id, form_data, git_name, git_mail),
+        countdown=2
+    )
+    
     # lock collection
     lockstatus = collection.lock(result.task_id)
     # add celery task_id to session
@@ -505,8 +463,10 @@ def entity_file_edit(request, collection, file_, git_name, git_mail):
         'action': 'webui-file-edit',
         'file_url': file_.absolute_url(),
         'file_id': file_.id,
-        'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
+        'start': converters.datetime_to_text(datetime.now(settings.TZ)),}
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
+
+# ----------------------------------------------------------------------
 
 class FileEditTask(Task):
     abstract = True
@@ -520,11 +480,12 @@ class FileEditTask(Task):
         gitstatus.unlock(settings.MEDIA_BASE, 'file_edit')
 
 @task(base=FileEditTask, name='webui-file-edit')
-def file_edit(collection_path, file_id, git_name, git_mail):
+def file_edit(collection_path, file_id, form_data, git_name, git_mail):
     """The time-consuming parts of file-edit.
     
     @param collection_path: str Absolute path to collection
     @param file_id: str
+    @param form_data: dict
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
     """
@@ -532,8 +493,16 @@ def file_edit(collection_path, file_id, git_name, git_mail):
     fidentifier = Identifier(id=file_id)
     file_ = DDRFile.from_identifier(fidentifier)
     gitstatus.lock(settings.MEDIA_BASE, 'file_edit')
-    exit,status = file_.save(git_name, git_mail)
-    gitstatus_update.apply_async((collection_path,), countdown=2)
+    
+    exit,status,updated_files = file_.save(
+        git_name, git_mail,
+        form_data
+    )
+    
+    gitstatus_update.apply_async(
+        (collection_path,),
+        countdown=2
+    )
     return status,collection_path,file_id
 
 # ----------------------------------------------------------------------
@@ -547,11 +516,14 @@ TASK_STATUS_MESSAGES['webui-entity-edit'] = {
     #'REVOKED': '',
 }
 
-def collection_entity_edit(request, collection, entity, updated_files, form_data, git_name, git_mail, agent):
+def collection_entity_edit(request, collection, entity, form_data, git_name, git_mail, agent):
     # start tasks
+    
     result = entity_edit.apply_async(
-        (collection.path, entity.id, updated_files, form_data, git_name, git_mail, agent),
-        countdown=2)
+        (collection.path, entity.id, form_data, git_name, git_mail, agent),
+        countdown=2
+    )
+    
     # lock collection
     lockstatus = collection.lock(result.task_id)
     # add celery task_id to session
@@ -564,8 +536,7 @@ def collection_entity_edit(request, collection, entity, updated_files, form_data
         'collection_id': collection.id,
         'entity_url': entity.absolute_url(),
         'entity_id': entity.id,
-        'updated_files': updated_files,
-        'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
+        'start': converters.datetime_to_text(datetime.now(settings.TZ)),}
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
 
 class EntityEditTask(Task):
@@ -586,11 +557,12 @@ class EntityEditTask(Task):
         gitstatus.unlock(settings.MEDIA_BASE, 'entity_edit')
 
 @task(base=EntityEditTask, name='webui-entity-edit')
-def entity_edit(collection_path, entity_id, updated_files, form_data, git_name, git_mail, agent=''):
+def entity_edit(collection_path, entity_id, form_data, git_name, git_mail, agent=''):
     """The time-consuming parts of entity-edit.
     
     @param collection_path: str Absolute path to collection
     @param entity_id: str
+    @param form_data: dict
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
     @param agent: (optional) Name of software making the change.
@@ -600,8 +572,17 @@ def entity_edit(collection_path, entity_id, updated_files, form_data, git_name, 
     collection = Collection.from_identifier(Identifier(path=collection_path))
     entity = Entity.from_identifier(Identifier(id=entity_id))
     gitstatus.lock(settings.MEDIA_BASE, 'entity_edit')
-    exit,status = entity.save_part2(collection, updated_files, form_data, git_name, git_mail)
-    gitstatus_update.apply_async((collection.path,), countdown=2)
+    
+    exit,status,updated_files = entity.save(
+        git_name, git_mail,
+        collection,
+        form_data
+    )
+    
+    gitstatus_update.apply_async(
+        (collection.path,),
+        countdown=2
+    )
     return status,collection_path,entity_id
 
 # ------------------------------------------------------------------------
@@ -617,9 +598,12 @@ TASK_STATUS_MESSAGES['webui-entity-delete'] = {
 
 def collection_delete_entity(request, git_name, git_mail, collection, entity, agent):
     # start tasks
+    
     result = delete_entity.apply_async(
         (git_name, git_mail, collection.path, entity.id, agent),
-        countdown=2)
+        countdown=2
+    )
+    
     # lock collection
     lockstatus = collection.lock(result.task_id)
     # add celery task_id to session
@@ -632,7 +616,7 @@ def collection_delete_entity(request, git_name, git_mail, collection, entity, ag
         'collection_id': collection.id,
         'entity_url': entity.absolute_url(),
         'entity_id': entity.id,
-        'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
+        'start': converters.datetime_to_text(datetime.now(settings.TZ)),}
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
 
 class DeleteEntityTask(Task):
@@ -666,19 +650,94 @@ def delete_entity( git_name, git_mail, collection_path, entity_id, agent='' ):
     # remove the entity
     collection = Collection.from_identifier(Identifier(collection_path))
     entity = Entity.from_identifier(Identifier(entity_id))
+    
     status,message = commands.entity_destroy(
         git_name, git_mail,
         collection, entity,
         agent
     )
+    
     # update search index
+    ds = docstore.Docstore()
     try:
-        docstore.delete(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, entity_id)
+        ds.delete(entity_id)
     except ConnectionError:
         logger.error('Could not delete document from Elasticsearch.')
     return status,message,collection_path,entity_id
 
+# ----------------------------------------------------------------------
 
+
+def entity_reload_files(request, collection, entity, git_name, git_mail, agent):
+    # start tasks
+    
+    result = reload_files.apply_async(
+        (collection.path, entity.id, git_name, git_mail, agent),
+        countdown=2
+    )
+    
+    # lock collection
+    lockstatus = entity.lock(result.task_id)
+    # add celery task_id to session
+    celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
+    # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
+    celery_tasks[result.task_id] = {
+        'task_id': result.task_id,
+        'action': 'webui-entity-reload-files',
+        'entity_url': entity.absolute_url(),
+        'entity_id': entity.id,
+        'start': converters.datetime_to_text(datetime.now(settings.TZ)),}
+    request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
+
+class EntityReloadTask(Task):
+    abstract = True
+        
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
+        logger.debug('EntityReloadTask.on_failure(%s, %s, %s, %s)' % (exc, task_id, args, kwargs))
+    
+    def on_success(self, retval, task_id, args, kwargs):
+        logger.debug('EntityReloadTask.on_success(%s, %s, %s, %s)' % (retval, task_id, args, kwargs))
+    
+    def after_return(self, status, retval, task_id, args, kwargs, einfo):
+        logger.debug('EntityReloadTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
+        collection_path = args[0]
+        collection = Collection.from_identifier(Identifier(path=collection_path))
+        entity_id = args[1]
+        entity = Entity.from_identifier(Identifier(id=entity_id))
+        lockstatus = entity.unlock(task_id)
+        gitstatus.update(settings.MEDIA_BASE, collection_path)
+        gitstatus.unlock(settings.MEDIA_BASE, 'reload_files')
+
+@task(base=EntityReloadTask, name='webui-entity-reload-files')
+def reload_files(collection_path, entity_id, git_name, git_mail, agent=''):
+    """Regenerate entity.json's list of child files.
+    
+    @param collection_path: string
+    @param entity_id: string
+    @param git_name: Username of git committer.
+    @param git_mail: Email of git committer.
+    @param agent: (optional) Name of software making the change.
+    """
+    logger.debug('reload_files(%s,%s,%s,%s,%s)' % (collection_path, entity_id, git_name, git_mail, agent))
+    gitstatus.lock(settings.MEDIA_BASE, 'reload_files')
+    entity = Entity.from_identifier(Identifier(entity_id))
+    collection = Collection.from_identifier(Identifier(path=collection_path))
+    
+    exit,status,updated_files = entity.save(
+        git_name, git_mail,
+        collection,
+        {}
+    )
+    
+    logger.debug('delete from search index')
+    ds = docstore.Docstore()
+    try:
+        ds.delete(entity.id)
+    except ConnectionError:
+        logger.error('Could not delete document from Elasticsearch.')
+    return status,collection_path,entity_id
+
+# ----------------------------------------------------------------------
 
 TASK_STATUS_MESSAGES['webui-file-delete'] = {
     #'STARTED': '',
@@ -691,9 +750,12 @@ TASK_STATUS_MESSAGES['webui-file-delete'] = {
 
 def entity_delete_file(request, git_name, git_mail, collection, entity, file_, agent):
     # start tasks
+    
     result = delete_file.apply_async(
         (git_name, git_mail, collection.path, entity.id, file_.basename, agent),
-        countdown=2)
+        countdown=2
+    )
+    
     # lock collection
     lockstatus = collection.lock(result.task_id)
     # add celery task_id to session
@@ -706,7 +768,7 @@ def entity_delete_file(request, git_name, git_mail, collection, entity, file_, a
         'entity_id': entity.id,
         'filename': file_.basename,
         'file_url': file_.absolute_url(),
-        'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
+        'start': converters.datetime_to_text(datetime.now(settings.TZ)),}
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
 
 class DeleteFileTask(Task):
@@ -737,27 +799,24 @@ def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, 
     @param agent: (optional) Name of software making the change.
     """
     logger.debug('delete_file(%s,%s,%s,%s,%s,%s)' % (git_name, git_mail, collection_path, entity_id, file_basename, agent))
+    
     gitstatus.lock(settings.MEDIA_BASE, 'delete_file')
     file_id = os.path.splitext(file_basename)[0]
     file_ = DDRFile.from_identifier(Identifier(file_id))
-    entity = Entity.from_identifier(Identifier(entity_id))
-    collection = Collection.from_identifier(Identifier(path=collection_path))
-    logger.debug('delete from repository')
-    rm_files,updated_files = entity.prep_rm_file(file_)
-    status,message = commands.file_destroy(
-        git_name, git_mail,
-        collection, entity,
-        rm_files, updated_files,
-        agent
+
+    exit,status,rm_files,updated_files = file_.delete(
+        git_name, git_mail, agent
     )
+    
     logger.debug('delete from search index')
+    ds = docstore.Docstore()
     try:
-        docstore.delete(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX, file_.id)
+        ds.delete(file_.id)
     except ConnectionError:
         logger.error('Could not delete document from Elasticsearch.')
-    return status,message,collection_path,file_basename
+    return exit,status,collection_path,file_basename
 
-
+# ----------------------------------------------------------------------
 
 class CollectionSyncDebugTask(Task):
     abstract = True
@@ -789,19 +848,73 @@ def collection_sync( git_name, git_mail, collection_path ):
     """
     gitstatus.lock(settings.MEDIA_BASE, 'collection_sync')
     collection = Collection.from_identifier(Identifier(path=collection_path))
+    
     exit,status = commands.sync(
         git_name, git_mail,
         collection
     )
+    
     # update search index
     collection = Collection.from_identifier(Identifier(path=collection_path))
     try:
-        collection.post_json(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+        collection.post_json()
     except ConnectionError:
         logger.error('Could not update search index')
     return collection_path
 
 
+# ----------------------------------------------------------------------
+
+class CollectionSignaturesDebugTask(Task):
+    abstract = True
+    
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
+        pass
+    
+    def on_success(self, retval, task_id, args, kwargs):
+        pass
+    
+    def after_return(self, status, retval, task_id, args, kwargs, cinfo):
+        collection_path = args[0]
+        collection = Collection.from_identifier(Identifier(path=collection_path))
+        # NOTE: collection is locked immediately after collection_signatures task
+        #       starts in webui.views.collections.signatures
+        collection.unlock(task_id)
+        collection.cache_delete()
+        gitstatus.update(settings.MEDIA_BASE, collection_path)
+        gitstatus.unlock(settings.MEDIA_BASE, 'collection_signatures')
+
+@task(base=CollectionSignaturesDebugTask, name='webui-collection-signatures')
+def collection_signatures(collection_path, git_name, git_mail):
+    """Identifies signature files for collection and entities.
+    
+    @param collection_path: Absolute path to collection repo.
+    @param git_name: Username of git committer.
+    @param git_mail: Email of git committer.
+    @return collection_path: Absolute path to collection.
+    """
+    gitstatus.lock(settings.MEDIA_BASE, 'collection_signatures')
+    collection = Collection.from_identifier(Identifier(path=collection_path))
+    updates = signatures.find_updates(collection)
+    files_written = signatures.write_updates(updates)
+    
+    status,msg = signatures.commit_updates(
+        collection,
+        files_written,
+        git_name, git_mail, agent='ddr-local'
+    )
+    logger.debug('DONE')
+    
+    # update search index
+    collection = Collection.from_identifier(Identifier(path=collection_path))
+    try:
+        collection.post_json()
+    except ConnectionError:
+        logger.error('Could not update search index')
+    return collection_path
+
+
+# ----------------------------------------------------------------------
 
 TASK_STATUS_MESSAGES['webui-csv-export-model'] = {
     #'STARTED': '',
@@ -842,6 +955,8 @@ def csv_export_model( collection_path, model ):
     return csv_path
 
 
+# ----------------------------------------------------------------------
+
 def session_tasks( request ):
     """Gets task statuses from Celery API, appends to task dicts from session.
     
@@ -861,8 +976,7 @@ def session_tasks( request ):
                                        'webui-file-new-mezzanine',
                                        'webui-file-new-access']:
                 # Add entity_url to task for newly-created file
-                repo,org,cid,eid = task['entity_id'].split('-')
-                task['entity_url'] = reverse('webui-entity', args=[repo,org,cid,eid])
+                task['entity_url'] = reverse('webui-entity', args=[task['entity_id']])
     # Hit the celery-task_status view for status updates on each task.
     # get status, retval from celery
     # TODO Don't create a new ctask/task dict here!!! >:-O
@@ -891,7 +1005,7 @@ def session_tasks( request ):
                 if type(r) == type({}):
                     if r.get('id', None):
                         oid = Identifier(r['id'])
-                        object_url = reverse('webui-%s' % oid.model, args=oid.parts.values())
+                        object_url = reverse('webui-%s' % oid.model, args=[oid.id])
                         ctask['%s_url' % oid.model] = object_url
             tasks[task['id']] = ctask
     # pretty status messages

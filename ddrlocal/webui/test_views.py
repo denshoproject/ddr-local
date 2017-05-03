@@ -136,7 +136,7 @@ class Webui01CollectionEditTest(TestCase):
         session['git_mail'] = GIT_MAIL
         session.save()
         # The test string
-        test_string = datetime.now().strftime('tested on %Y-%m-%d at %H:%M:%S')
+        test_string = datetime.now(settings.TZ).strftime('tested on %Y-%m-%d at %H:%M:%S')
         # GET
         url = reverse('webui-collection-edit', args=[REPO, ORG, CID])
         response0 = self.client.get(url, follow=True)
@@ -223,7 +223,7 @@ class Webui02EntityEditTest(TestCase):
         session['git_mail'] = GIT_MAIL
         session.save()
         # The test string
-        test_string = datetime.now().strftime('tested on %Y-%m-%d at %H:%M:%S')
+        test_string = datetime.now(settings.TZ).strftime('tested on %Y-%m-%d at %H:%M:%S')
         # GET
         url = reverse('webui-entity-edit', args=[REPO, ORG, CID, EID])
         response0 = self.client.get(url, follow=True)

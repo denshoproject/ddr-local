@@ -116,6 +116,7 @@ import doctest
 from django.conf import settings
 
 from DDR import commands
+from DDR import converters
 from DDR import fileio
 from DDR import modules
 from DDR import util
@@ -302,7 +303,7 @@ def dtfmt(dt, fmt='%Y-%m-%dT%H:%M:%S.%f'):
     @param fmt: str Format string (default: '%Y-%m-%dT%H:%M:%S.%f')
     @returns: str
     """
-    return dt.strftime(fmt)
+    return converters.datetime_to_text(fmt)
 
 def make_tmpdir(tmpdir):
     """Make tmp dir if doesn't exist.
@@ -686,11 +687,11 @@ def import_entities( csv_path, collection_path, git_name, git_mail ):
         # --------------------------------------------------
         
         print('Data file looks ok')
-        started = datetime.now()
+        started = datetime.now(settings.TZ)
         print('%s starting import' % dtfmt(started))
         print('')
         for n,row in enumerate(rows):
-            rowstarted = datetime.now()
+            rowstarted = datetime.now(settings.TZ)
             rowd = make_row_dict(headers, row)
             
             # create new entity
@@ -722,8 +723,8 @@ def import_entities( csv_path, collection_path, git_name, git_mail ):
             # insert values from CSV
             for key in rowd.keys():
                 setattr(entity, key, rowd[key])
-            entity.record_created = datetime.now()
-            entity.record_lastmod = datetime.now()
+            entity.record_created = datetime.now(settings.TZ)
+            entity.record_lastmod = datetime.now(settings.TZ)
             
             # write back to file
             entity.write_json()
@@ -733,10 +734,10 @@ def import_entities( csv_path, collection_path, git_name, git_mail ):
                                                  updated_files,
                                                  agent=AGENT)
             
-            rowfinished = datetime.now()
+            rowfinished = datetime.now(settings.TZ)
             rowelapsed = rowfinished - rowstarted
             print('%s %s/%s %s (%s)' % (dtfmt(rowfinished), n+1, len(rows), entity.id, rowelapsed))
-        finished = datetime.now()
+        finished = datetime.now(settings.TZ)
         elapsed = finished - started
         print('')
         print('%s done (%s rows)' % (dtfmt(finished), len(rows)))
@@ -799,7 +800,7 @@ def import_files( csv_path, collection_path, git_name, git_mail ):
         if not (bad_entities or missing_files or unreadable_files):
             print('Data file looks ok and files are present')
             print('"$ tail -f /var/log/ddr/local.log" in a separate console for more details')
-            started = datetime.now()
+            started = datetime.now(settings.TZ)
             print('%s starting import' % started)
             print('')
             for n,row in enumerate(rows):
@@ -810,14 +811,14 @@ def import_files( csv_path, collection_path, git_name, git_mail ):
                 entity = Entity.from_json(entity_path)
                 src_path = os.path.join(csv_dir, rowd.pop('basename_orig'))
                 role = rowd.pop('role')
-                rowstarted = datetime.now()
+                rowstarted = datetime.now(settings.TZ)
                 print('%s %s/%s %s %s (%s)' % (dtfmt(rowstarted), n+1, len(rows), entity.id, src_path, humanize_bytes(os.path.getsize(src_path))))
                 #print('add_file(%s, %s, %s, %s, %s, %s)' % (git_name, git_mail, entity, src_path, role, rowd))
-                entity.add_file( git_name, git_mail, src_path, role, rowd, agent=AGENT )
-                rowfinished = datetime.now()
+                entity.add_local_file( git_name, git_mail, src_path, role, rowd, agent=AGENT )
+                rowfinished = datetime.now(settings.TZ)
                 rowelapsed = rowfinished - rowstarted
                 print('%s done (%s)' % (dtfmt(rowfinished), rowelapsed))
-            finished = datetime.now()
+            finished = datetime.now(settings.TZ)
             elapsed = finished - started
             print('')
             print('%s done (%s rows)' % (dtfmt(finished), len(rows)))
@@ -841,7 +842,7 @@ def export_entities( collection_path, csv_path ):
     @param collection_path: Absolute path to collection repo.
     @param csv_path: Absolute path to CSV data file.
     """
-    started = datetime.now()
+    started = datetime.now(settings.TZ)
     print('%s starting import' % started)
     make_tmpdir(CSV_TMPDIR)
     fieldnames = [field['name'] for field in entitymodule.ENTITY_FIELDS]
@@ -859,7 +860,7 @@ def export_entities( collection_path, csv_path ):
         writer.writerow(fieldnames)
         # everything else
         for n,path in enumerate(paths):
-            rowstarted = datetime.now()
+            rowstarted = datetime.now(settings.TZ)
             
             entity_dir = os.path.dirname(path)
             entity_id = os.path.basename(entity_dir)
@@ -883,11 +884,11 @@ def export_entities( collection_path, csv_path ):
                 values.append(value)
             writer.writerow(values)
             
-            rowfinished = datetime.now()
+            rowfinished = datetime.now(settings.TZ)
             rowelapsed = rowfinished - rowstarted
             print('%s %s/%s %s (%s)' % (dtfmt(rowfinished), n+1, len(paths), entity_id, rowelapsed))
     
-    finished = datetime.now()
+    finished = datetime.now(settings.TZ)
     elapsed = finished - started
     print('%s DONE (%s entities)' % (dtfmt(finished), len(paths)))
     print('%s elapsed' % elapsed)
@@ -903,7 +904,7 @@ def export_files( collection_path, csv_path ):
     @param collection_path: Absolute path to collection repo.
     @param csv_path: Absolute path to CSV data file.
     """
-    started = datetime.now()
+    started = datetime.now(settings.TZ)
     print('%s starting import' % started)
     make_tmpdir(CSV_TMPDIR)
     fieldnames = [field['name'] for field in filemodule.FILE_FIELDS]
@@ -919,7 +920,7 @@ def export_files( collection_path, csv_path ):
         writer.writerow(fieldnames)
         # everything else
         for n,path in enumerate(paths):
-            rowstarted = datetime.now()
+            rowstarted = datetime.now(settings.TZ)
             
             # load file object
             filename = os.path.basename(path)
@@ -944,13 +945,13 @@ def export_files( collection_path, csv_path ):
                     values.append(value)
                 writer.writerow(values)
             
-                rowfinished = datetime.now()
+                rowfinished = datetime.now(settings.TZ)
                 rowelapsed = rowfinished - rowstarted
                 print('%s %s/%s %s (%s)' % (dtfmt(rowfinished), n+1, len(paths), file_id, rowelapsed))
             else:
                 print('NO FILE FOR %s' % path)
     
-    finished = datetime.now()
+    finished = datetime.now(settings.TZ)
     elapsed = finished - started
     print('%s DONE (%s files)' % (dtfmt(finished), len(paths)))
     print('%s elapsed' % elapsed)

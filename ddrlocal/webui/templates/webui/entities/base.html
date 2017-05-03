@@ -6,19 +6,10 @@
 {% if entity %}
 <div class="muted" id="expert">
 
-  <span>
-    <a href="{{ entity.json_url }}">json</a>,
-    <a href="{{ entity.mets_xml_url }}">xml</a>
-  </span>
-  <span class="bullsep">&bull;</span>
-
   <span><a href="{{ entity.changelog_url }}">changelog</a></span>
   <span class="bullsep">&bull;</span>
 
   <span><a href="{{ entity.addfile_url }}">addfile.log</a></span>
-  <span class="bullsep">&bull;</span>
-
-  <span><a href="{{ entity.fs_url }}" target="fs">fs</a></span>
   <span class="bullsep">&bull;</span>
 
   <span>
@@ -36,7 +27,7 @@
   <br/>
 
   <span>
-  {{ entity.path }}
+    <a href="{{ entity.fs_url }}" target="fs">{{ entity.path }}</a>
   </span>
 
 </div>

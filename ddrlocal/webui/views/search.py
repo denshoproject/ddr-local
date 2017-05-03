@@ -3,8 +3,6 @@ from decimal import Decimal
 import logging
 logger = logging.getLogger(__name__)
 
-from dateutil import parser
-
 from django.conf import settings
 from django.contrib import messages
 from django.core.cache import cache
@@ -17,7 +15,9 @@ from django.utils.http import urlquote  as django_urlquote
 
 from elasticsearch import Elasticsearch
 
-from DDR import docstore, models
+from DDR import converters
+from DDR import docstore
+from DDR import models
 from webui import tasks
 from webui.decorators import search_index
 from webui.forms.search import SearchForm, IndexConfirmForm, DropConfirmForm
@@ -34,22 +34,12 @@ def kosher( query ):
             return False
     return True
 
-def make_object_url(object_id):
-    """Takes a list of object ID parts and returns URL for that object.
-    """
-    i = Identifier(id=object_id)
-    if i.model == 'file': return reverse('webui-file', args=i.parts)
-    elif i.model == 'entity': return reverse('webui-entity', args=i.parts)
-    elif i.model == 'collection': return reverse('webui-collection', args=i.parts)
-    return None
-
-
 def massage_query_results( results, thispage, size ):
     objects = docstore.massage_query_results(results, thispage, size)
     results = None
     for o in objects:
         if not o.get('placeholder',False):
-            o['absolute_url'] = make_object_url(o['id'])
+            o['absolute_url'] = Identifier(id=o['id']).absolute_url()
     return objects
 
 
@@ -57,7 +47,11 @@ def massage_query_results( results, thispage, size ):
 
 @search_index
 def index( request ):
-    target_index = docstore.target_index(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+    ds = docstore.Docstore()
+    if settings.DOCSTORE_INDEX in ds.aliases():
+        target_index = ds.target_index(settings.DOCSTORE_INDEX)
+    else:
+        target_index = None
     return render_to_response(
         'webui/search/index.html',
         {'hide_header_search': True,
@@ -71,7 +65,11 @@ def index( request ):
 def results( request ):
     """Results of a search query or a DDR ID query.
     """
-    target_index = docstore.target_index(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+    ds = docstore.Docstore()
+    if settings.DOCSTORE_INDEX in ds.aliases():
+        target_index = ds.target_index(settings.DOCSTORE_INDEX)
+    else:
+        target_index = None
     template = 'webui/search/results.html'
     context = {
         'hide_header_search': True,
@@ -102,9 +100,10 @@ def results( request ):
                 'record_lastmod': request.GET.get('record_lastmod', ''),}
         
         # do query and cache the results
-        results = docstore.search(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX,
-                                  query=query, filters=filters,
-                                  model='collection,entity,file', fields=fields, sort=sort)
+        results = ds.search(
+            query=query, filters=filters,
+            model='collection,entity,file', fields=fields, sort=sort
+        )
         if results.get('hits',None) and not results.get('status',None):
             # OK -- prep results for display
             thispage = request.GET.get('page', 1)
@@ -129,7 +128,7 @@ def results( request ):
 def admin( request ):
     """Administrative stuff like re-indexing.
     """
-    target_index = docstore.target_index(settings.DOCSTORE_HOSTS, settings.DOCSTORE_INDEX)
+    target_index = docstore.Docstore().target_index()
     server_info = []
     index_names = []
     indices = []
@@ -160,11 +159,11 @@ def admin( request ):
         for name in status['indices'].keys():
             no_indices = False
             server_info.append( {'label':name, 'data':'', 'class':''} )
-            size = status['indices'][name]['index']['size_in_bytes']
+            size = status['indices'][name]['total']['store']['size_in_bytes']
             ONEPLACE = Decimal(10) ** -1
             size_nice = Decimal(size/1024/1024.0).quantize(ONEPLACE)
             size_formatted = '%sMB (%s bytes)' % (size_nice, size)
-            num_docs = status['indices'][name]['docs']['num_docs']
+            num_docs = status['indices'][name]['total']['docs']['num_docs']
             server_info.append( {'label':'size', 'data':size_formatted, 'class':'info'} )
             server_info.append( {'label':'documents', 'data':num_docs, 'class':'info'} )
             
@@ -201,7 +200,7 @@ def reindex( request ):
                 task = {'task_id': result.task_id,
                         'action': 'webui-search-reindex',
                         'index': index,
-                        'start': datetime.now().strftime(settings.TIMESTAMP_FORMAT),}
+                        'start': converters.datetime_to_text(datetime.now(settings.TZ)),}
                 celery_tasks[result.task_id] = task
                 request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
     return HttpResponseRedirect( reverse('webui-search-admin') )
@@ -211,7 +210,8 @@ def drop_index( request ):
         form = DropConfirmForm(request.POST, request=request)
         if form.is_valid():
             index = form.cleaned_data['index']
-            docstore.delete_index(settings.DOCSTORE_HOSTS, index)
+            ds = docstore.Docstore(index=index)
+            ds.delete_index()
             messages.error(request,
                            'Search index "%s" dropped. ' \
                            'Click "Re-index" to reindex your collections.' % index)

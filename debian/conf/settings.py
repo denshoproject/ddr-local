@@ -22,6 +22,10 @@ from datetime import timedelta
 import logging
 import sys
 
+import pytz
+
+from DDR import config as ddrconfig
+
 os.environ['USER'] = 'ddr'
 
 AGENT = 'ddr-local'
@@ -41,8 +45,14 @@ if REPO_MODELS_PATH not in sys.path:
 # and so commits are visible in error pages and in page footers.
 from DDR import dvcs
 DDRCMDLN_INSTALL_PATH = config.get('cmdln','install_path')
-DDRCMDLN_COMMIT = dvcs.latest_commit(DDRCMDLN_INSTALL_PATH)
-DDRLOCAL_COMMIT = dvcs.latest_commit(os.path.dirname(__file__))
+COMMITS_DDRCMDLN = dvcs.latest_commit(DDRCMDLN_INSTALL_PATH)
+COMMITS_DDRLOCAL = dvcs.latest_commit(os.path.dirname(__file__))
+COMMITS_DDRDEFS = dvcs.latest_commit(REPO_MODELS_PATH)
+COMMITS_TEXT = '<br/>\n'.join([
+    'cmd: %s' % COMMITS_DDRCMDLN,
+    'loc: %s' % COMMITS_DDRLOCAL,
+    'def: %s' % COMMITS_DDRDEFS,
+])
 
 # The following settings are in debian/config/ddr.cfg.
 # See that file for comments on the settings.
@@ -58,13 +68,23 @@ IDSERVICE_API_BASE   = config.get('idservice','api_base')
 MEDIA_BASE           = config.get('cmdln','media_base')
 # Location of Repository 'ddr' repo, which should contain repo_models
 # for the Repository.
-DATE_FORMAT          = config.get('cmdln','date_format')
-TIME_FORMAT          = config.get('cmdln','time_format')
-DATETIME_FORMAT      = config.get('cmdln','datetime_format')
-TIMESTAMP_FORMAT     = config.get('cmdln','timestamp_format')
-PRETTY_DATE_FORMAT   = config.get('cmdln','pretty_date_format')
-PRETTY_TIME_FORMAT   = config.get('cmdln','pretty_time_format')
+
+# see notes in ddrlocal.cfg
+try:
+    DEFAULT_TIMEZONE = config.get('cmdln','default_timezone')
+except:
+    DEFAULT_TIMEZONE = 'America/Los_Angeles'
+TZ = pytz.timezone(DEFAULT_TIMEZONE)
+ALT_TIMEZONES = ddrconfig._parse_alt_timezones(config.get('cmdln','alt_timezones'))
+DATETIME_FORMAT = config.get('cmdln','datetime_format')
+DATE_FORMAT = config.get('cmdln','date_format')
+TIME_FORMAT = config.get('cmdln','time_format')
 PRETTY_DATETIME_FORMAT = config.get('cmdln','pretty_datetime_format')
+PRETTY_DATE_FORMAT = config.get('cmdln','pretty_date_format')
+PRETTY_TIME_FORMAT = config.get('cmdln','pretty_time_format')
+ELASTICSEARCH_DATETIME_FORMAT  = "%Y-%m-%dT%H:%M:%S"
+ELASTICSEARCH_DATETIME_MAPPING = "yyyy-MM-dd'T'HH:mm:ss"
+
 TEMPLATE_CJSON       = config.get('cmdln','template_cjson')
 TEMPLATE_EJSON       = config.get('cmdln','template_ejson')
 TEMPLATE_EAD         = os.path.join(REPO_MODELS_PATH, 'templates', 'ead.xml')
@@ -281,15 +301,14 @@ MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 ALLOWED_HOSTS = []
 
 TEMPLATE_DIRS = (
-    '/usr/local/src/ddr-local/ddrlocal/ddrlocal/templates',
-    '/usr/local/src/ddr-local/ddrlocal/storage/templates',
-    '/usr/local/src/ddr-local/ddrlocal/webui/templates',
+    '%s/ddrlocal/templates' % BASE_DIR,
+    '%s/storage/templates' % BASE_DIR,
+    '%s/webui/templates' % BASE_DIR,
 )
 
 STATICFILES_DIRS = (
-    #'/opt/ddr-local/ddrlocal/ddrlocal/static',
-    #'/usr/local/src/ddr-local/ddrlocal/storage/static',
-    '/usr/local/src/ddr-local/ddrlocal/webui/static',
+    #'%s/storage/static' % BASE_DIR,
+    '%s/webui/static' % BASE_DIR,
 )
 
 LOGGING = {
@@ -309,6 +328,9 @@ LOGGING = {
             '()': 'django.utils.log.RequireDebugFalse'
         },
         'suppress_celery_newconnect': {
+            # NOTE: Import problems here may indicate problems in the definitions
+            # modules, such as a syntax error or a missing dependency (e.g. lxml).
+            # They may also indicate an import problem elsewhere.
             '()': 'webui.log.SuppressCeleryNewConnections'
         },
     },
