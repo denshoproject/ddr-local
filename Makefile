@@ -34,7 +34,6 @@ PACKAGE_TGZ=ddrlocal-$(PACKAGE_BRANCH)-$(PACKAGE_TIMESTAMP)-$(PACKAGE_COMMIT).tg
 PACKAGE_RSYNC_DEST=takezo@takezo:~/packaging
 
 CONF_BASE=/etc/ddr
-CONF_DEFS=$(CONF_BASE)/ddr-defs
 CONF_PRODUCTION=$(CONF_BASE)/ddrlocal.cfg
 CONF_LOCAL=$(CONF_BASE)/ddrlocal-local.cfg
 CONF_SECRET=$(CONF_BASE)/ddrlocal-secret-key.txt
@@ -88,7 +87,7 @@ help:
 	@echo "    install-app     - Just installer tasks for ddr-cmdln and ddr-local"
 	@echo "    install-static  - Downloads static media (Bootstrap, jquery, etc)"
 	@echo ""
-	@echo "get-ddr-defs - Installs ddr-defs in $(CONF_DEFS)."
+	@echo "get-ddr-defs - Installs ddr-defs in $(INSTALL_DEFS)."
 	@echo ""
 	@echo "enable-bkgnd  - Enable background processes. (Run make reload on completion)"
 	@echo "disable-bkgnd - Disablebackground processes. (Run make reload on completion)"
@@ -388,9 +387,9 @@ clean-ddr-local:
 get-ddr-defs:
 	@echo ""
 	@echo "get-ddr-defs -----------------------------------------------------------"
-	if test -d $(CONF_DEFS); \
-	then cd $(CONF_DEFS) && git pull; \
-	else cd $(CONF_BASE) && git clone $(SRC_REPO_DEFS) $(CONF_DEFS); \
+	if test -d $(INSTALL_DEFS); \
+	then cd $(INSTALL_DEFS) && git pull; \
+	else cd $(INSTALL_BASE) && git clone $(SRC_REPO_DEFS) $(INSTALL_DEFS); \
 	fi
 
 
