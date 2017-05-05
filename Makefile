@@ -301,7 +301,7 @@ get-ddr-cmdln:
 	@echo "get-ddr-cmdln ----------------------------------------------------------"
 	if test -d $(INSTALL_CMDLN); \
 	then cd $(INSTALL_CMDLN) && git pull; \
-	else cd $(INSTALL_BASE) && git clone $(SRC_REPO_CMDLN); \
+	else cd $(INSTALL_LOCAL) && git clone $(SRC_REPO_CMDLN); \
 	fi
 
 setup-ddr-cmdln: install-virtualenv
@@ -389,7 +389,7 @@ get-ddr-defs:
 	@echo "get-ddr-defs -----------------------------------------------------------"
 	if test -d $(INSTALL_DEFS); \
 	then cd $(INSTALL_DEFS) && git pull; \
-	else cd $(INSTALL_BASE) && git clone $(SRC_REPO_DEFS) $(INSTALL_DEFS); \
+	else cd $(INSTALL_LOCAL) && git clone $(SRC_REPO_DEFS) $(INSTALL_DEFS); \
 	fi
 
 
@@ -621,7 +621,7 @@ get-ddr-manual:
 	@echo "get-ddr-manual ---------------------------------------------------------"
 	if test -d $(INSTALL_MANUAL); \
 	then cd $(INSTALL_MANUAL) && git pull; \
-	else cd $(INSTALL_BASE) && git clone $(SRC_REPO_MANUAL); \
+	else cd $(INSTALL_LOCAL) && git clone $(SRC_REPO_MANUAL); \
 	fi
 
 install-ddr-manual: install-virtualenv
