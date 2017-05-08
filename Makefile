@@ -262,11 +262,11 @@ install-virtualenv:
 	@echo ""
 	@echo "install-virtualenv -----------------------------------------------------"
 ifeq ($(DEBIAN_CODENAME), wheezy)
-	apt-get --assume-yes install python-dev libssl-dev
+	apt-get --assume-yes install libffi-dev libssl-dev python-dev
 	apt-get --assume-yes -t wheezy-backports install python-pip python-virtualenv
 	test -d $(VIRTUALENV) || virtualenv --distribute --setuptools $(VIRTUALENV)
 	source $(VIRTUALENV)/bin/activate; \
-	pip install -U appdirs bpython packaging six
+	pip install -U appdirs bpython ndg-httpsclient packaging pyasn1 pyopenssl six
 	source $(VIRTUALENV)/bin/activate; \
 	pip install -U setuptools
 endif
