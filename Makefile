@@ -274,7 +274,7 @@ ifeq ($(DEBIAN_CODENAME), jessie)
 	apt-get --assume-yes install python-six python-pip python-virtualenv python-dev
 	test -d $(VIRTUALENV) || virtualenv --distribute --setuptools $(VIRTUALENV)
 	source $(VIRTUALENV)/bin/activate; \
-	pip install -U bpython curtsies greenlet pygments pyparsing setuptools
+	pip install -U bpython appdirs curtsies greenlet packaging pygments pyparsing setuptools
 #	virtualenv --relocatable $(VIRTUALENV)  # Make venv relocatable
 endif
 
