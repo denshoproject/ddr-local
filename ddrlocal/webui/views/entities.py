@@ -294,7 +294,7 @@ def file_role( request, rid ):
     collection = entity.collection()
     duplicates = entity.detect_file_duplicates(role)
     if duplicates:
-        url = reverse('webui-entity-files-dedupe', args=entity.idparts)
+        url = reverse('webui-entity-files-dedupe', args=[entity.id])
         messages.error(request, 'Duplicate files detected. <a href="%s">More info</a>' % url)
     files = entity.children(role)
     # paginate
