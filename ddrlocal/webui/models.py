@@ -462,6 +462,31 @@ class Entity( DDREntity ):
         """
         return settings.MEDIA_URL + os.path.dirname(self.json_path).replace(settings.MEDIA_ROOT, '')
     
+    def cgit_url( self ):
+        """Returns cgit URL for entity.
+        
+        >>> e = DDRLocalEntity('/tmp/ddr-testing-123-456')
+        >>> e.cgit_url()
+        'http://partner.densho.org/cgit/cgit.cgi/ddr-testing-123/tree/files/ddr-testing-123/'
+        """
+        return '{}/cgit.cgi/{}/tree/files/{}'.format(
+            settings.CGIT_URL,
+            self.collection_id,
+            self.id
+        )
+    
+    def cgit_url_local( self ):
+        """Returns local cgit URL for entity.
+        
+        >>> e = DDRLocalEntity('/tmp/ddr-testing-123-456')
+        >>> e.cgit_url()
+        '/cgit/cgit.cgi/ddr-testing-123/tree/files/ddr-testing-123/'
+        """
+        return '/cgit/cgit.cgi/{}/tree/files/{}'.format(
+            self.collection_id,
+            self.id
+        )
+    
     def gitweb_url( self ):
         """Returns local gitweb URL for entity directory.
         """
