@@ -24,7 +24,7 @@ Remove duplicate files
 
 
 <p>
-Multiple copies of the following file(s) were uploaded.
+Multiple copies of the following file(s) were found in this object's list of files.
 </p>
 
 <ul>
@@ -34,11 +34,13 @@ Multiple copies of the following file(s) were uploaded.
 </ul>
 
 <p>
-Unfortunately, when this happens only the most recent file metadata remains.
-It's possible to get the earlier metadata but you need to contact an administrator.
+  <a href="{{ entity.fs_url }}" class="btn btn-info" target="fs">View entity.json</a>
+</p>
+<p>
+Duplicate file data often overwrites earlier, more accurate data.
+It's possible to get the earlier metadata&mdash;ask an administrator to review the Git commit history.
 If you don't care about the metadata, feel free to just click and remove the duplicates.
 </p>
-
 
 <form name="rm-duplicates" action="" method="post">{% csrf_token %}
 <p>
