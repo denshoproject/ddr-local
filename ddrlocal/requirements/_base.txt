@@ -25,5 +25,4 @@ sorl-thumbnail==11.12.1b      # BSD      y
 
 #-e git://github.com/densho/ddr-cmdln.git#egg=DDR
 
-bpython==0.16
 envoy==0.0.3                  # MIT      y

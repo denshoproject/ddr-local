@@ -34,7 +34,6 @@ PACKAGE_TGZ=ddrlocal-$(PACKAGE_BRANCH)-$(PACKAGE_TIMESTAMP)-$(PACKAGE_COMMIT).tg
 PACKAGE_RSYNC_DEST=takezo@takezo:~/packaging
 
 CONF_BASE=/etc/ddr
-CONF_DEFS=$(CONF_BASE)/ddr-defs
 CONF_PRODUCTION=$(CONF_BASE)/ddrlocal.cfg
 CONF_LOCAL=$(CONF_BASE)/ddrlocal-local.cfg
 CONF_SECRET=$(CONF_BASE)/ddrlocal-secret-key.txt
@@ -88,7 +87,7 @@ help:
 	@echo "    install-app     - Just installer tasks for ddr-cmdln and ddr-local"
 	@echo "    install-static  - Downloads static media (Bootstrap, jquery, etc)"
 	@echo ""
-	@echo "get-ddr-defs - Installs ddr-defs in $(CONF_DEFS)."
+	@echo "get-ddr-defs - Installs ddr-defs in $(INSTALL_DEFS)."
 	@echo ""
 	@echo "enable-bkgnd  - Enable background processes. (Run make reload on completion)"
 	@echo "disable-bkgnd - Disablebackground processes. (Run make reload on completion)"
@@ -262,11 +261,22 @@ install-elasticsearch:
 install-virtualenv:
 	@echo ""
 	@echo "install-virtualenv -----------------------------------------------------"
-	apt-get --assume-yes install python-pip python-virtualenv python-dev
+ifeq ($(DEBIAN_CODENAME), wheezy)
+	apt-get --assume-yes install libffi-dev libssl-dev python-dev
+	apt-get --assume-yes -t wheezy-backports install python-pip python-virtualenv
 	test -d $(VIRTUALENV) || virtualenv --distribute --setuptools $(VIRTUALENV)
 	source $(VIRTUALENV)/bin/activate; \
+	pip install -U appdirs bpython ndg-httpsclient packaging pyasn1 pyopenssl six
+	source $(VIRTUALENV)/bin/activate; \
 	pip install -U setuptools
+endif
+ifeq ($(DEBIAN_CODENAME), jessie)
+	apt-get --assume-yes install python-six python-pip python-virtualenv python-dev
+	test -d $(VIRTUALENV) || virtualenv --distribute --setuptools $(VIRTUALENV)
+	source $(VIRTUALENV)/bin/activate; \
+	pip install -U bpython appdirs blessings curtsies greenlet packaging pygments pyparsing setuptools wcwidth
 #	virtualenv --relocatable $(VIRTUALENV)  # Make venv relocatable
+endif
 
 
 install-dependencies: install-core install-misc-tools install-daemons install-git-annex
@@ -282,7 +292,7 @@ mkdirs: mkdir-ddr-cmdln mkdir-ddr-local
 
 get-app: get-ddr-cmdln get-ddr-local get-ddr-manual
 
-install-app: install-git-annex install-virtualenv install-ddr-cmdln install-ddr-local install-ddr-manual install-configs install-daemon-configs
+install-app: install-git-annex install-virtualenv install-ddr-cmdln install-ddr-local install-configs install-daemon-configs
 
 uninstall-app: uninstall-ddr-cmdln uninstall-ddr-local uninstall-ddr-manual uninstall-configs uninstall-daemon-configs
 
@@ -302,7 +312,7 @@ get-ddr-cmdln:
 	@echo "get-ddr-cmdln ----------------------------------------------------------"
 	if test -d $(INSTALL_CMDLN); \
 	then cd $(INSTALL_CMDLN) && git pull; \
-	else cd $(INSTALL_BASE) && git clone $(SRC_REPO_CMDLN); \
+	else cd $(INSTALL_LOCAL) && git clone $(SRC_REPO_CMDLN); \
 	fi
 
 setup-ddr-cmdln: install-virtualenv
@@ -388,9 +398,9 @@ clean-ddr-local:
 get-ddr-defs:
 	@echo ""
 	@echo "get-ddr-defs -----------------------------------------------------------"
-	if test -d $(CONF_DEFS); \
-	then cd $(CONF_DEFS) && git pull; \
-	else cd $(CONF_BASE) && git clone $(SRC_REPO_DEFS) $(CONF_DEFS); \
+	if test -d $(INSTALL_DEFS); \
+	then cd $(INSTALL_DEFS) && git pull; \
+	else cd $(INSTALL_LOCAL) && git clone $(SRC_REPO_DEFS) $(INSTALL_DEFS); \
 	fi
 
 
@@ -622,7 +632,7 @@ get-ddr-manual:
 	@echo "get-ddr-manual ---------------------------------------------------------"
 	if test -d $(INSTALL_MANUAL); \
 	then cd $(INSTALL_MANUAL) && git pull; \
-	else cd $(INSTALL_BASE) && git clone $(SRC_REPO_MANUAL); \
+	else cd $(INSTALL_LOCAL) && git clone $(SRC_REPO_MANUAL); \
 	fi
 
 install-ddr-manual: install-virtualenv
