@@ -26,6 +26,7 @@ from DDR.models import COLLECTION_FILES_PREFIX, ENTITY_FILES_PREFIX
 
 from webui import gitstatus
 from webui import WEBUI_MESSAGES
+from webui import COLLECTION_CHILDREN_CACHE_KEY
 from webui import COLLECTION_FETCH_CACHE_KEY
 from webui import COLLECTION_STATUS_CACHE_KEY
 from webui import COLLECTION_ANNEX_STATUS_CACHE_KEY
@@ -153,14 +154,18 @@ class Collection( DDRCollection ):
     def parent(self):
         return None
     
-    def children(self, quick=None):
+    def children(self):
         """Returns list of the Collection's Entity objects.
-        @param quick: Boolean List only titles and IDs
         """
-        objects = super(Collection, self).children(quick=quick)
-        for o in objects:
-            o.absolute_url = reverse('webui-entity', args=[o.id])
-        return objects
+        key = COLLECTION_CHILDREN_CACHE_KEY % self.id
+        timeout = 60*15  # 1 hour
+        cached = cache.get(key)
+        if not cached:
+            cached = super(Collection, self).children(dicts=True)
+            for o in cached:
+                o['absolute_url'] = reverse('webui-entity', args=[o['id']])
+            cache.set(key, cached, timeout)
+        return cached
     
     def gitstatus_path( self ):
         """Returns absolute path to collection .gitstatus cache file.
@@ -227,6 +232,7 @@ class Collection( DDRCollection ):
         return None
         
     def cache_delete( self ):
+        cache.delete(COLLECTION_CHILDREN_CACHE_KEY % self.id)
         cache.delete(COLLECTION_FETCH_CACHE_KEY % self.id)
         cache.delete(COLLECTION_STATUS_CACHE_KEY % self.id)
         cache.delete(COLLECTION_ANNEX_STATUS_CACHE_KEY % self.id)
