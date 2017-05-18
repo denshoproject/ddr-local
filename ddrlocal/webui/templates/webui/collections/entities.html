@@ -47,6 +47,10 @@
   </div>
 
 
+{% if paginator.num_pages > 1 %}
+{% bootstrap_paginate page range=10 show_first_last="true" %}
+{% endif %}
+
 <table class="table table-condensed">
   <thead>
 	<tr>
