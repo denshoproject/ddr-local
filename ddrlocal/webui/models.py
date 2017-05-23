@@ -20,7 +20,7 @@ from DDR import modules
 from DDR.models import from_json
 from DDR.models import Stub as DDRStub
 from DDR.models import Collection as DDRCollection
-from DDR.models import Entity as DDREntity
+from DDR.models import ListEntity, Entity as DDREntity
 from DDR.models import File
 from DDR.models import COLLECTION_FILES_PREFIX, ENTITY_FILES_PREFIX
 
@@ -160,12 +160,15 @@ class Collection( DDRCollection ):
         key = COLLECTION_CHILDREN_CACHE_KEY % self.id
         timeout = 60*15  # 1 hour
         cached = cache.get(key)
-        if not cached:
-            cached = super(Collection, self).children(dicts=True)
-            for o in cached:
-                o['absolute_url'] = reverse('webui-entity', args=[o['id']])
-            cache.set(key, cached, timeout)
-        return cached
+        if cached:
+            return cached
+        else:
+            # note: these are AttrDicts
+            kids = super(Collection, self).children(quick=True)
+            for o in kids:
+                o.absolute_url = reverse('webui-entity', args=[o.id])
+            cache.set(key, kids, timeout)
+            return kids
     
     def gitstatus_path( self ):
         """Returns absolute path to collection .gitstatus cache file.
