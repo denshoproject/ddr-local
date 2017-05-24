@@ -41,6 +41,7 @@ def sitewide(request):
         'elasticsearch_url': elasticsearch_url,
         'munin_url': settings.MUNIN_URL,
         'logout_next': logout_next,
+        'cgit_url': settings.CGIT_URL,
         'idservice_url': settings.IDSERVICE_API_BASE,
         'manual_url': settings.MANUAL_URL,
     }
