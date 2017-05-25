@@ -24,6 +24,7 @@ from DDR import converters
 from DDR import docstore
 from DDR import fileio
 from DDR import idservice
+from DDR import util
 from DDR import vocab
 
 from storage.decorators import storage_required
@@ -36,8 +37,8 @@ from webui.gitstatus import repository, annex_info
 from webui.identifier import Identifier
 from webui.models import Stub, Collection, Entity
 from webui import tasks
+from webui.views import idservice_resume
 from webui.views.decorators import login_required
-
 
 
 # helpers --------------------------------------------------------------
@@ -389,19 +390,7 @@ def new_idservice( request, oid ):
     )
     check_parent(collection)
     
-    ic = idservice.IDServiceClient()
-    # resume session
-    auth_status,auth_reason = ic.resume(request.session['idservice_token'])
-    if auth_status != 200:
-        request.session['idservice_username'] = None
-        request.session['idservice_token'] = None
-        messages.warning(
-            request,
-            'Session resume failed: %s %s (%s)' % (
-                auth_status,auth_reason,settings.IDSERVICE_API_BASE
-            )
-        )
-        return HttpResponseRedirect(collection.absolute_url())
+    ic = idservice_resume(request)
     # get new entity ID
     http_status,http_reason,new_entity_id = ic.next_object_id(
         collection.identifier,
@@ -410,6 +399,14 @@ def new_idservice( request, oid ):
     if http_status not in [200,201]:
         err = '%s %s' % (http_status, http_reason)
         msg = WEBUI_MESSAGES['VIEWS_ENT_ERR_NO_IDS'] % (settings.IDSERVICE_API_BASE, err)
+        logger.error(msg)
+        messages.error(request, msg)
+        return HttpResponseRedirect(collection.absolute_url())
+    
+    if not new_entity_id:
+        msg = "Did not get a new ID from ID service! (status:%s, reason:%s, id:%s)" % (
+            http_status,http_reason,new_entity_id
+        )
         logger.error(msg)
         messages.error(request, msg)
         return HttpResponseRedirect(collection.absolute_url())
@@ -443,7 +440,11 @@ def new_manual( request, oid ):
     model = request.GET.get('model', 'entity')
     
     if request.method == 'POST':
-        form = ObjectIDForm(request.POST)
+        form = ObjectIDForm(
+            request.POST,
+            request=request,
+            checks='fi'  # filesystem, idservice
+        )
         if form.is_valid():
 
             eid = form.cleaned_data['object_id']
@@ -455,23 +456,42 @@ def new_manual( request, oid ):
                 git_name, git_mail
             )
             if entity:
-                messages.warning(request, 'IMPORTANT: Register this ID with the ID service as soon as possible!')
+                messages.warning(
+                    request,
+                    'IMPORTANT: Register this ID with the ID service as soon as possible!'
+                )
                 return HttpResponseRedirect(
                     reverse('webui-entity-edit', args=[entity.id])
                 )
             
     else:
-        form = ObjectIDForm(initial={
-            'model': model,
-            'parent_id': oidentifier.id,
-        })
+        form = ObjectIDForm(
+            initial={
+                'model': model,
+                'parent_id': oidentifier.id,
+            },
+            request=request,
+            checks='fi'  # filesystem, idservice
+        )
 
+    # existing ids -----------------------
+    # filesystem
     if isinstance(parent, Collection):
-        existing_ids = sorted([entity.id for entity in parent.children(quick=True)])
+        local_ids = sorted([entity.id for entity in parent.children()])
     elif isinstance(parent, Entity):
-        existing_ids = sorted([e['id'] for e in parent.children_meta])
+        local_ids = sorted([e['id'] for e in parent.children_meta])
+    
+    # ID service
+    idservice_ids = []
+    if settings.IDSERVICE_API_BASE:
+        status,msg,idservice_ids = idservice.IDServiceClient().child_ids(parent.id)
+    
+    existing_ids = util.natural_sort(
+        list(set(local_ids + idservice_ids))
+    )
     existing_ids.reverse()
     
+
     return render_to_response(
         'webui/entities/new-manual.html',
         {
@@ -480,6 +500,7 @@ def new_manual( request, oid ):
             'model': model,
             'form': form,
             'existing_ids': existing_ids,
+            'local_ids': local_ids,
         },
         context_instance=RequestContext(request, processors=[])
     )

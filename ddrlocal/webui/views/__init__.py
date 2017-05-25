@@ -90,12 +90,13 @@ def login( request ):
         context_instance=RequestContext(request, processors=[])
     )
 
-@ddrview
-def logout( request ):
-    redirect_uri = request.GET.get('redirect',None)
-    if not redirect_uri:
-        redirect_uri = reverse('webui-index')
+def idservice_resume(request, redirect=True):
+    """[Not a view] Get IDServiceClient with resumed session
     
+    @param request
+    @param redirect: boolen Redirect if not authorized
+    @returns: IDServiceClient
+    """
     ic = idservice.IDServiceClient()
     # resume session
     auth_status,auth_reason = ic.resume(request.session['idservice_token'])
@@ -109,6 +110,15 @@ def logout( request ):
             )
         )
         return HttpResponseRedirect(redirect_uri)
+    return ic
+
+@ddrview
+def logout( request ):
+    redirect_uri = request.GET.get('redirect',None)
+    if not redirect_uri:
+        redirect_uri = reverse('webui-index')
+
+    ic = idservice_resume(request)
     # log out
     logout_status,logout_reason = ic.logout()
     if logout_status == 200:

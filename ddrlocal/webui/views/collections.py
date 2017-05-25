@@ -27,18 +27,20 @@ from DDR import docstore
 from DDR import dvcs
 from DDR import fileio
 from DDR import idservice
+from DDR import util
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
 from webui.decorators import ddrview, search_index
-from webui.forms import DDRForm
-from webui.forms.collections import NewCollectionForm, UpdateForm
+from webui.forms import DDRForm, ObjectIDForm
+from webui.forms.collections import UpdateForm
 from webui.forms.collections import SyncConfirmForm, SignaturesConfirmForm
 from webui import gitolite
 from webui.gitstatus import repository, annex_info
 from webui.models import Collection, COLLECTION_STATUS_CACHE_KEY, COLLECTION_STATUS_TIMEOUT
 from webui.identifier import Identifier
 from webui import tasks
+from webui.views import idservice_resume
 from webui.views.decorators import login_required
 
 
@@ -48,7 +50,6 @@ def alert_if_conflicted(request, collection):
     if collection.repo_conflicted():
         url = reverse('webui-merge', args=[collection.id])
         messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_CONFLICTED'].format(collection.id, url))
-    
 
 
 # views ----------------------------------------------------------------
@@ -250,40 +251,70 @@ def new_idservice( request, oid ):
     
     If it messes up, goes back to collection list.
     """
-    oidentifier = Identifier(oid)
+    parent = Identifier(oid)
     git_name = request.session.get('git_name')
     git_mail = request.session.get('git_mail')
     if not (git_name and git_mail):
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     
-    ic = idservice.IDServiceClient()
-    # resume session
-    auth_status,auth_reason = ic.resume(request.session['idservice_token'])
-    if auth_status != 200:
-        request.session['idservice_username'] = None
-        request.session['idservice_token'] = None
-        messages.warning(
-            request,
-            'Session resume failed: %s %s (%s)' % (
-                auth_status,auth_reason,settings.IDSERVICE_API_BASE
-            )
-        )
-        return HttpResponseRedirect(reverse('webui-collections'))
-    # get new collection ID
-    http_status,http_reason,collection_id = ic.next_object_id(
-        oidentifier,
-        'collection'
+    ic = idservice_resume(request)
+    # get new collection ID (dont register just get!)
+    http_status,http_reason,next_id = ic.next_object_id(
+        parent,
+        model='collection',
+        register=False
     )
-    if http_status not in [200,201]:
-        err = '%s %s' % (http_status, http_reason)
-        msg = WEBUI_MESSAGES['VIEWS_COLL_ERR_NO_IDS'] % (settings.IDSERVICE_API_BASE, err)
-        logger.error(msg)
-        messages.error(request, msg)
+    # quit if can't get an ID
+    if (http_status not in [200,201]) or (not next_id):
+        logger.error('%s %s' % (http_status, http_reason))
+        messages.error(
+            request,
+            'Did not get new ID from ID service! (%s)' % (
+                settings.IDSERVICE_API_BASE))
+        return HttpResponseRedirect(reverse('webui-collections'))
+    next_identifier = Identifier(next_id)
+
+    # confirm collection not already present in filesystem or Gitolite
+    g = dvcs.Gitolite()
+    g.initialize()
+    results = Collection.exists(
+        next_identifier,
+        basepath=next_identifier.path_abs(),
+        gitolite=g,
+        idservice=None
+    )
+    # quit if exists
+    exists = False
+    if results.get('filesystem'):
+        messages.error(request, 'Collection %s already present in filesystem!' % next_id)
+        exists = True
+    if results.get('idservice'):
+        messages.error(request, 'Collection %s already exists in the ID service! (%s)' % (next_id, settings.IDSERVICE_API_BASE))
+        exists = True
+    if results.get('gitolite'):
+        messages.error(request, 'Collection %s repository already exists on remote server! (%s)' % (next_id, settings.GITOLITE))
+        exists = True
+    if exists:
         return HttpResponseRedirect(reverse('webui-collections'))
     
-    cidentifier = Identifier(id=collection_id, base_path=settings.MEDIA_BASE)
+    # register new ID
+    # TODO should be ic.register_id!!! >:-O
+    http_status,http_reason,new_id = ic.next_object_id(
+        parent,
+        model='collection',
+        register=True
+    )
+    if (http_status not in [200,201]) or (not new_id):
+        logger.error('%s %s' % (http_status, http_reason))
+        messages.error(
+            request,
+            'Could not register new ID with ID service! (%s)' % (
+                settings.IDSERVICE_API_BASE))
+        return HttpResponseRedirect(reverse('webui-collections'))
+    new_identifier = Identifier(new_id)
+
     # Create collection and redirect to edit page
-    collection = _create_collection(request, cidentifier, git_name, git_mail)
+    collection = _create_collection(request, new_identifier, git_name, git_mail)
     if collection:
         return HttpResponseRedirect( reverse('webui-collection-edit', args=[collection.id]) )
     
@@ -303,51 +334,89 @@ def new_manual( request, oid ):
     if not git_name and git_mail:
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     
-    oidentifier = Identifier(oid).object()
-    idparts = oidentifier.idparts
-    collection_ids = sorted([
+    parent = Identifier(oid).object()
+    
+    if request.method == 'POST':
+        form = ObjectIDForm(
+            request.POST,
+            request=request,
+            checks='fgi'  # filesystem, gitolite, idservice
+        )
+        if form.is_valid():
+            
+            # TODO get this from Entity class or something
+            cid = form.cleaned_data['object_id']
+            cidentifier = Identifier(id=cid)
+            # Create collection and redirect to edit page
+            collection = _create_collection(
+                request,
+                cidentifier,
+                git_name, git_mail
+            )
+            if collection:
+                messages.warning(
+                    request,
+                    'IMPORTANT: Register this ID with the ID service as soon as possible!'
+                )
+                return HttpResponseRedirect(
+                    reverse('webui-collection-edit', args=[collection.id])
+                )
+            
+    else:
+        form = ObjectIDForm(
+            initial={
+                'model': 'collection',
+                'parent_id': parent.id,
+            },
+            request=request,
+            checks='fgi'  # filesystem, gitolite, idservice
+        )
+
+    # existing ids -----------------------
+    # filesystem
+    idparts = parent.idparts
+    local_ids = [
         os.path.basename(cpath)
         for cpath in Collection.collection_paths(
             settings.MEDIA_BASE,
             idparts['repo'],
             idparts['org']
         )
-    ])
-    collection_ids.reverse()
+    ]
     
-    if request.method == 'POST':
-        form = NewCollectionForm(request.POST)
-        if form.is_valid():
-            
-            # TODO get this from Entity class or something
-            idparts['model'] = 'collection'
-            idparts['cid'] = str(form.cleaned_data['cid'])
-            cidentifier = Identifier(parts=idparts)
-            if not cidentifier:
-                messages.error(request, "Could not generate a legal ID from your input. Try again.")
-            elif cidentifier.parent_id(stubs=True) != oidentifier.id:
-                messages.error(request, "Can only create collections for this organization. Try again.")
-            elif cidentifier.id in collection_ids:
-                messages.error(request, "Object ID %s already exists. Try again." % cidentifier.id)
-            else:
-                
-                # Create collection and redirect to edit page
-                collection = _create_collection(request, cidentifier, git_name, git_mail)
-                if collection:
-                    messages.warning(request, 'IMPORTANT: Register this ID with the ID service as soon as possible!')
-                    return HttpResponseRedirect(reverse('webui-collection-edit', args=[collection.id]))
-            
-    else:
-        data = {
-            'repo': idparts['repo'],
-            'org': idparts['org'],
-        }
-        form = NewCollectionForm(data)
+    # Gitolite
+    gitolite_ids = []
+    if settings.GITOLITE:
+        g = dvcs.Gitolite(server=settings.GITOLITE)
+        g.initialize()
+        gitolite_ids = [
+            cid for cid in g.collections() if (parent.id in cid)
+        ]
+    
+    # ID service
+    idservice_ids = []
+    if settings.IDSERVICE_API_BASE:
+        status,msg,idservice_ids_raw = idservice.IDServiceClient().child_ids(parent.id)
+        idservice_ids = []
+        for oid in idservice_ids_raw:
+            try:
+                oi = identifier.Identifier(id=oi)
+            except:
+                oi = None
+            if oi and (oi.model == 'collection'):
+                idservice_ids.append(oi)
+    
+    existing_ids = util.natural_sort(
+        list(set(local_ids + gitolite_ids + idservice_ids))
+    )
+    existing_ids.reverse()
+    
     return render_to_response(
         'webui/collections/new-manual.html',
         {
             'form': form,
-            'collection_ids': collection_ids,
+            'existing_ids': existing_ids,
+            'local_ids': local_ids,
         },
         context_instance=RequestContext(request, processors=[])
     )

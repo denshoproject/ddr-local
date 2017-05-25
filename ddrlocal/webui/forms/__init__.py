@@ -8,8 +8,11 @@ from django import forms
 from django.conf import settings
 from django.utils.datastructures import SortedDict
 
+from DDR import dvcs
+from DDR import idservice
 from DDR import modules
 from webui.identifier import Identifier
+from webui import models
 
 
 class LoginForm(forms.Form):
@@ -55,7 +58,16 @@ class ObjectIDForm(forms.Form):
     model = forms.CharField(max_length=100, required=True, widget=forms.HiddenInput)
     parent_id = forms.CharField(max_length=100, required=True, widget=forms.HiddenInput)
     object_id = forms.CharField(max_length=100, required=True)
-
+    request = None
+    checks = None
+    
+    def __init__(self, *args, **kwargs):
+        if kwargs.get('request', None):
+            self.request = kwargs.pop('request')
+        if kwargs.get('checks', None):
+            self.checks = kwargs.pop('checks')
+        super(ObjectIDForm, self).__init__(*args, **kwargs)
+    
     def clean(self):
         """
         on POST, check that
@@ -79,13 +91,16 @@ class ObjectIDForm(forms.Form):
             raise forms.ValidationError(
                 '"%s" is not a valid object ID.' % oid
             )
-        if oidentifier.model != model:
+        oidentifier_model = oidentifier.model
+        oidentifier_parent_id = oidentifier.parent_id(stubs=1)
+        pidentifier_id = pidentifier.id
+        if oidentifier_model != model:
             raise forms.ValidationError(
                 '"%s" should be a %s but is a %s.' % (
                     oidentifier.id, model, oidentifier.model
                 )
             )
-        if oidentifier.parent_id() != pidentifier.id:
+        if oidentifier.parent_id(stubs=1) != pidentifier.id:
             raise forms.ValidationError(
                 '"%s" parent should be %s but is %s.' % (
                     oidentifier.id,
@@ -93,10 +108,49 @@ class ObjectIDForm(forms.Form):
                     oidentifier.parent_id()
                 )
             )
-        # already exists
-        if os.path.exists(oidentifier.path_abs('json')):
+        
+        fs = None
+        g = None
+        ic = None
+        if ('f' in self.checks):
+            fs = oidentifier.path_abs()
+        if ('g' in self.checks) and settings.GITOLITE:
+            g = dvcs.Gitolite(server=settings.GITOLITE)
+            g.initialize()
+        if ('i' in self.checks) and self.request and settings.IDSERVICE_API_BASE:
+            ic = idservice.IDServiceClient()
+            # resume session
+            auth_status,auth_reason = ic.resume(
+                self.request.session['idservice_token']
+            )
+
+        EXISTS_FUNCTIONS = {
+            'collection': models.Collection.exists,
+            'entity': models.Entity.exists,
+            'segment': models.Entity.exists,
+        }
+        exists_function = EXISTS_FUNCTIONS[model]
+        results = exists_function(
+            oidentifier,
+            basepath=fs,
+            gitolite=g,
+            idservice=ic,
+        )
+        if results.get('filesystem'):
             raise forms.ValidationError(
-                '"%s" already exists! Pick another ID' % (
+                '"%s": Already exists in filesystem! Pick another ID' % (
+                    oidentifier.id
+                )
+            )
+        if results.get('gitolite'):
+            raise forms.ValidationError(
+                '"%s": Remote object already exists! Pick another ID' % (
+                    oidentifier.id
+                )
+            )
+        if results.get('idservice'):
+            raise forms.ValidationError(
+                '"%s": That ID already exists! Pick another ID' % (
                     oidentifier.id
                 )
             )

@@ -41,7 +41,7 @@
 </p>
 <p>
   {% for oid in existing_ids %}
-  <a href="{% url "webui-entity" oid %}">{{ oid }}<a/><br/>
+  {% if oid in local_ids %}<a href="{% url "webui-entity" oid %}">{{ oid }}</a>{% else %}{{ oid }}{% endif %}<br/>
   {% endfor %}
 </p>
 {% else %}
@@ -49,6 +49,7 @@
   This {{ parent.identifier.model }} contains no {{ model }}s.
 </p>
 {% endif %}
+
 </div><!-- .alert-info -->
 
     </div><!-- .span12 -->
