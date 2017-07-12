@@ -313,7 +313,7 @@ get-ddr-cmdln:
 	else cd $(INSTALL_LOCAL) && git clone $(SRC_REPO_CMDLN); \
 	fi
 
-setup-ddr-cmdln: install-virtualenv
+setup-ddr-cmdln:
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_CMDLN)/ddr && python setup.py install
 
