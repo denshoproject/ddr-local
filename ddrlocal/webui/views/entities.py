@@ -398,7 +398,8 @@ def new_idservice( request, oid ):
     # get new entity ID
     http_status,http_reason,new_entity_id = ic.next_object_id(
         collection.identifier,
-        'entity'
+        'entity',
+        register=True,
     )
     if http_status not in [200,201]:
         err = '%s %s' % (http_status, http_reason)
