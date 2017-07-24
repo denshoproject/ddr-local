@@ -272,7 +272,8 @@ def new_idservice( request, oid ):
     # get new collection ID
     http_status,http_reason,collection_id = ic.next_object_id(
         oidentifier,
-        'collection'
+        'collection',
+        register=True,
     )
     if http_status not in [200,201]:
         err = '%s %s' % (http_status, http_reason)
