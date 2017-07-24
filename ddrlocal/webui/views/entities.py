@@ -172,22 +172,15 @@ def tagmanager_legacy_terms( entity_terms, all_terms ):
 def tagmanager_process_tags( form_terms ):
     """Formats TagManager tags in format expected by Entity.topics.
     
+    TagManager separates tags by commas, by DDR expects semicolons
     TODO This should probably be somewhere else
     
     >>> hidden_terms = u'Topic 1 [94],Topic 2: Subtopic 2 [95]'
     >>> process_cleaned_terms(hidden_terms, all_terms)
-    u'Topic 1 [94]; Subtopic 2 [95]'
+    u'Topic 1 [94]; Topic 2: Subtopic 2 [95]'
     """
-    cleaned = []
-    for term in form_terms.replace('],', '];').split(';'):
-        if ':' in term:
-            # term has parent; get only the final subtopic
-            last_colon = term.rindex(':')
-            t = term[last_colon+1:].strip()
-        else:
-            # no subtopics
-            t = term
-        cleaned.append(t)
+    form_terms = form_terms.replace('],', '];')
+    cleaned = form_terms.split(';')
     return '; '.join(cleaned)
 
 def enforce_git_credentials(request):
@@ -405,7 +398,8 @@ def new_idservice( request, oid ):
     # get new entity ID
     http_status,http_reason,new_entity_id = ic.next_object_id(
         collection.identifier,
-        'entity'
+        'entity',
+        register=True,
     )
     if http_status not in [200,201]:
         err = '%s %s' % (http_status, http_reason)

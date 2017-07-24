@@ -52,6 +52,7 @@ COMMITS_TEXT = '<br/>\n'.join([
     'cmd: %s' % COMMITS_DDRCMDLN,
     'loc: %s' % COMMITS_DDRLOCAL,
     'def: %s' % COMMITS_DDRDEFS,
+    'def: %s' % REPO_MODELS_PATH,
 ])
 
 # The following settings are in debian/config/ddr.cfg.

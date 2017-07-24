@@ -153,9 +153,7 @@ install-prep: ddr-user apt-backports apt-update install-core git-config install-
 ddr-user:
 	-addgroup ddr plugdev
 	-addgroup ddr vboxsf
-	if ! grep "bin/activate" /home/ddr/.bashrc ; \
-	then printf "\n\n# ddrlocal: Activate virtualnv on login\nsource $(VIRTUALENV)/bin/activate\n" >> /home/ddr/.bashrc; \
-	fi
+	printf "\n\n# ddrlocal: Activate virtualnv on login\nsource $(VIRTUALENV)/bin/activate\n" >> /home/ddr/.bashrc; \
 
 apt-backports:
 ifeq "$(DEBIAN_CODENAME)" "wheezy"
@@ -315,7 +313,7 @@ get-ddr-cmdln:
 	else cd $(INSTALL_LOCAL) && git clone $(SRC_REPO_CMDLN); \
 	fi
 
-setup-ddr-cmdln: install-virtualenv
+setup-ddr-cmdln:
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_CMDLN)/ddr && python setup.py install
 
