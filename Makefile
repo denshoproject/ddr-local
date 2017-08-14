@@ -36,7 +36,6 @@ PACKAGE_RSYNC_DEST=takezo@takezo:~/packaging
 CONF_BASE=/etc/ddr
 CONF_PRODUCTION=$(CONF_BASE)/ddrlocal.cfg
 CONF_LOCAL=$(CONF_BASE)/ddrlocal-local.cfg
-CONF_SECRET=$(CONF_BASE)/ddrlocal-secret-key.txt
 
 SQLITE_BASE=/var/lib/ddr
 LOG_BASE=/var/log/ddr
