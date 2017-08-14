@@ -1,7 +1,13 @@
+PROJECT=ddr
+APP=ddrlocal
+USER=ddr
+
 SHELL = /bin/bash
 DEBIAN_CODENAME := $(shell lsb_release -sc)
 DEBIAN_RELEASE := $(shell lsb_release -sr)
 VERSION := $(shell cat VERSION)
+
+GIT_SOURCE_URL=https://github.com/densho/ddr-local
 
 # current branch name minus dashes or underscores
 PACKAGE_BRANCH := $(shell git rev-parse --abbrev-ref HEAD | tr -d _ | tr -d -)
@@ -25,14 +31,6 @@ INSTALL_MANUAL=$(INSTALL_LOCAL)/ddr-manual
 
 VIRTUALENV=$(INSTALL_LOCAL)/venv/ddrlocal
 SETTINGS=$(INSTALL_LOCAL)/ddrlocal/ddrlocal/settings.py
-
-PACKAGE_BASE=/tmp/ddrlocal
-PACKAGE_TMP=$(PACKAGE_BASE)/ddr-local
-PACKAGE_VENV=$(PACKAGE_TMP)/venv/ddrlocal
-PACKAGE_TGZ=ddrlocal-$(PACKAGE_BRANCH)-$(PACKAGE_TIMESTAMP)-$(PACKAGE_COMMIT).tgz
-# The directory into which ddr-local will be placed and synced
-# Should not include "ddr-local", and should not end with a slash (see man rsync)
-PACKAGE_RSYNC_DEST=takezo@takezo:~/packaging
 
 CONF_BASE=/etc/ddr
 CONF_PRODUCTION=$(CONF_BASE)/ddrlocal.cfg
@@ -67,6 +65,15 @@ NGINX_CONF=/etc/nginx/sites-available/ddrlocal.conf
 NGINX_CONF_LINK=/etc/nginx/sites-enabled/ddrlocal.conf
 MUNIN_CONF=/etc/munin/munin.conf
 CGIT_CONF=/etc/cgitrc
+
+FPM_BRANCH := $(shell git rev-parse --abbrev-ref HEAD | tr -d _ | tr -d -)
+FPM_ARCH=amd64
+FPM_NAME=$(APP)-$(FPM_BRANCH)
+FPM_FILE=$(FPM_NAME)_$(VERSION)_$(FPM_ARCH).deb
+FPM_VENDOR=Densho.org
+FPM_MAINTAINER=<geoffrey.jost@densho.org>
+FPM_DESCRIPTION=Densho Digital Repository editor
+FPM_BASE=opt/ddr-local
 
 
 .PHONY: help
@@ -636,3 +643,69 @@ rsync-packaged:
 install-packaged: install-prep install-dependencies install-static install-configs mkdirs syncdb install-daemon-configs
 	@echo ""
 	@echo "install packaged -------------------------------------------------------"
+
+
+# http://fpm.readthedocs.io/en/latest/
+# https://stackoverflow.com/questions/32094205/set-a-custom-install-directory-when-making-a-deb-package-with-fpm
+# https://brejoc.com/tag/fpm/
+deb:
+	@echo ""
+	@echo "FPM packaging ----------------------------------------------------------"
+	-rm -Rf $(FPM_FILE)
+	virtualenv --relocatable $(VIRTUALENV)  # Make venv relocatable
+	fpm   \
+	--verbose   \
+	--input-type dir   \
+	--output-type deb   \
+	--name $(FPM_NAME)   \
+	--version $(VERSION)   \
+	--package $(FPM_FILE)   \
+	--url "$(GIT_SOURCE_URL)"   \
+	--vendor "$(FPM_VENDOR)"   \
+	--maintainer "$(FPM_MAINTAINER)"   \
+	--description "$(FPM_DESCRIPTION)"   \
+	--depends "cgit"   \
+	--depends "fcgiwrap"   \
+	--depends "git-annex"   \
+	--depends "git-core"   \
+	--depends "imagemagick"   \
+	--depends "libexempi3"   \
+	--depends "libssl-dev"   \
+	--depends "libwww-perl"   \
+	--depends "libxml2"   \
+	--depends "libxml2-dev"   \
+	--depends "libxslt1-dev"   \
+	--depends "libz-dev"   \
+	--depends "munin"   \
+	--depends "munin-node"   \
+	--depends "nginx"   \
+	--depends "openjdk-7-jre"   \
+	--depends "pmount"   \
+	--depends "python-dev"   \
+	--depends "python-pip"   \
+	--depends "python-six"   \
+	--depends "python-virtualenv"   \
+	--depends "redis-server"   \
+	--depends "supervisor"   \
+	--depends "udisks"   \
+	--after-install "bin/fpm-mkdir-log.sh"   \
+	--chdir $(INSTALL_LOCAL)   \
+	conf/ddrlocal.cfg=etc/ddr/ddrlocal.cfg   \
+	conf/celerybeat.conf=etc/supervisor/conf.d/celerybeat.conf   \
+	conf/celeryd.conf=etc/supervisor/conf.d/celeryd.conf   \
+	conf/supervisor.conf=etc/supervisor/conf.d/ddrlocal.conf   \
+	conf/nginx.conf=etc/nginx/sites-available/ddrlocal.conf   \
+	bin=$(FPM_BASE)   \
+	conf=$(FPM_BASE)   \
+	COPYRIGHT=$(FPM_BASE)   \
+	ddr-cmdln=$(FPM_BASE)   \
+	ddr-defs=$(FPM_BASE)   \
+	ddrlocal=$(FPM_BASE)   \
+	.git=$(FPM_BASE)   \
+	.gitignore=$(FPM_BASE)   \
+	INSTALL=$(FPM_BASE)   \
+	LICENSE=$(FPM_BASE)   \
+	Makefile=$(FPM_BASE)   \
+	README.rst=$(FPM_BASE)   \
+	venv=$(FPM_BASE)   \
+	VERSION=$(FPM_BASE)
