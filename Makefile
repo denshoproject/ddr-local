@@ -61,7 +61,7 @@ TYPEAHEAD=typeahead-0.10.2
 
 SUPERVISOR_CELERY_CONF=/etc/supervisor/conf.d/celeryd.conf
 SUPERVISOR_CELERYBEAT_CONF=/etc/supervisor/conf.d/celerybeat.conf
-SUPERVISOR_GUNICORN_CONF=/etc/supervisor/conf.d/gunicorn_ddrlocal.conf
+SUPERVISOR_GUNICORN_CONF=/etc/supervisor/conf.d/ddrlocal.conf
 SUPERVISOR_CONF=/etc/supervisor/supervisord.conf
 NGINX_CONF=/etc/nginx/sites-available/ddrlocal.conf
 NGINX_CONF_LINK=/etc/nginx/sites-enabled/ddrlocal.conf
@@ -249,7 +249,7 @@ install-elasticsearch:
 	apt-get --assume-yes install openjdk-7-jre
 	wget -nc -P /tmp/downloads http://$(PACKAGE_SERVER)/$(ELASTICSEARCH)
 	gdebi --non-interactive /tmp/downloads/$(ELASTICSEARCH)
-#cp $(INSTALL_BASE)/ddr-public/debian/conf/elasticsearch.yml /etc/elasticsearch/
+#cp $(INSTALL_BASE)/ddr-public/conf/elasticsearch.yml /etc/elasticsearch/
 #chown root.root /etc/elasticsearch/elasticsearch.yml
 #chmod 644 /etc/elasticsearch/elasticsearch.yml
 # 	@echo "${bldgrn}search engine (re)start${txtrst}"
@@ -480,14 +480,14 @@ install-configs:
 	@echo "configuring ddr-local --------------------------------------------------"
 # base settings file
 	-mkdir /etc/ddr
-	cp $(INSTALL_LOCAL)/debian/conf/ddrlocal.cfg $(CONF_PRODUCTION)
+	cp $(INSTALL_LOCAL)/conf/ddrlocal.cfg $(CONF_PRODUCTION)
 	chown root.root $(CONF_PRODUCTION)
 	chmod 644 $(CONF_PRODUCTION)
 	touch $(CONF_LOCAL)
 	chown ddr.root $(CONF_LOCAL)
 	chmod 640 $(CONF_LOCAL)
 # web app settings
-	cp $(INSTALL_LOCAL)/debian/conf/settings.py $(SETTINGS)
+	cp $(INSTALL_LOCAL)/conf/settings.py $(SETTINGS)
 	chown root.root $(SETTINGS)
 	chmod 644 $(SETTINGS)
 
@@ -500,26 +500,25 @@ install-daemon-configs:
 	@echo ""
 	@echo "install-daemon-configs -------------------------------------------------"
 # nginx settings
-	cp $(INSTALL_LOCAL)/debian/conf/ddrlocal.conf $(NGINX_CONF)
+	cp $(INSTALL_LOCAL)/conf/nginx.conf $(NGINX_CONF)
 	chown root.root $(NGINX_CONF)
 	chmod 644 $(NGINX_CONF)
 	-ln -s $(NGINX_CONF) $(NGINX_CONF_LINK)
 	-rm /etc/nginx/sites-enabled/default
 # supervisord
-	cp $(INSTALL_LOCAL)/debian/conf/celeryd.conf $(SUPERVISOR_CELERY_CONF)
-	cp $(INSTALL_LOCAL)/debian/conf/gunicorn_ddrlocal.conf $(SUPERVISOR_GUNICORN_CONF)
-	cp $(INSTALL_LOCAL)/debian/conf/supervisord.conf $(SUPERVISOR_CONF)
+	cp $(INSTALL_LOCAL)/conf/celeryd.conf $(SUPERVISOR_CELERY_CONF)
+	cp $(INSTALL_LOCAL)/conf/supervisor.conf $(SUPERVISOR_GUNICORN_CONF)
+	cp $(INSTALL_LOCAL)/conf/supervisord.conf $(SUPERVISOR_CONF)
 	chown root.root $(SUPERVISOR_CELERY_CONF)
 	chown root.root $(SUPERVISOR_GUNICORN_CONF)
 	chown root.root $(SUPERVISOR_CONF)
 	chmod 644 $(SUPERVISOR_CELERY_CONF)
 	chmod 644 $(SUPERVISOR_GUNICORN_CONF)
 	chmod 644 $(SUPERVISOR_CONF)
-# gitweb
-	cp $(INSTALL_LOCAL)/debian/conf/gitweb.conf $(GITWEB_CONF)
-	cp $(INSTALL_LOCAL)/debian/conf/cgitrc $(CGIT_CONF)
+# cgitrc
+	cp $(INSTALL_LOCAL)/conf/cgitrc $(CGIT_CONF)
 # munin settings
-	cp $(INSTALL_LOCAL)/debian/conf/munin.conf $(MUNIN_CONF)
+	cp $(INSTALL_LOCAL)/conf/munin.conf $(MUNIN_CONF)
 	chown root.root $(MUNIN_CONF)
 	chmod 644 $(MUNIN_CONF)
 
@@ -533,7 +532,7 @@ uninstall-daemon-configs:
 
 
 enable-bkgnd:
-	cp $(INSTALL_LOCAL)/debian/conf/celerybeat.conf $(SUPERVISOR_CELERYBEAT_CONF)
+	cp $(INSTALL_LOCAL)/conf/celerybeat.conf $(SUPERVISOR_CELERYBEAT_CONF)
 	chown root.root $(SUPERVISOR_CELERYBEAT_CONF)
 	chmod 644 $(SUPERVISOR_CELERYBEAT_CONF)
 
