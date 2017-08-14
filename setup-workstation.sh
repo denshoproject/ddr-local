@@ -251,7 +251,7 @@ option 'Add ddr user?' && {
 # ----------------------------------------------------------------------
 
 INSTALL_SRC=gjost@bonanza.dreamhost.com:~/densho/releases/*.tgz
-INSTALL_DIR=/usr/local/src
+INSTALL_DIR=/opt
 INSTALL_FILE=ddr-local-201703171500.tgz
 
 bigmsg "Download ddr-local."

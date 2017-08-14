@@ -19,7 +19,7 @@
 DDR_USER=ddr
 PROJECT=ddr-local
 BRANCH=master
-INSTALL_DIR=/usr/local/src
+INSTALL_DIR=/opt
 INSTALL_FILE=ddrlocal_debian8.7_amd64.tgz
 
 MLINE="========================================================================"
