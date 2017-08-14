@@ -314,9 +314,6 @@ uninstall-ddr-cmdln: install-virtualenv
 	@echo "uninstall-ddr-cmdln ----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_CMDLN)/ddr && pip uninstall -y -r $(INSTALL_CMDLN)/ddr/requirements/production.txt
-	-rm /usr/local/bin/ddr*
-	-rm -Rf /usr/local/lib/python2.7/dist-packages/DDR*
-	-rm -Rf /usr/local/lib/python2.7/dist-packages/ddr*
 
 clean-ddr-cmdln:
 	-rm -Rf $(INSTALL_CMDLN)/ddr/build
@@ -359,8 +356,6 @@ uninstall-ddr-local: install-virtualenv
 	@echo "uninstall-ddr-local ----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_LOCAL)/ddrlocal && pip uninstall -y -r $(INSTALL_LOCAL)/ddrlocal/requirements/production.txt
-	-rm /usr/local/lib/python2.7/dist-packages/ddrlocal-*
-	-rm -Rf /usr/local/lib/python2.7/dist-packages/ddrlocal
 
 clean-ddr-local:
 	-rm -Rf $(INSTALL_LOCAL)/ddrlocal/src
