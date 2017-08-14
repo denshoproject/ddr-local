@@ -65,7 +65,6 @@ SUPERVISOR_CONF=/etc/supervisor/supervisord.conf
 NGINX_CONF=/etc/nginx/sites-available/ddrlocal.conf
 NGINX_CONF_LINK=/etc/nginx/sites-enabled/ddrlocal.conf
 MUNIN_CONF=/etc/munin/munin.conf
-GITWEB_CONF=/etc/gitweb.conf
 CGIT_CONF=/etc/cgitrc
 
 
@@ -147,17 +146,12 @@ uninstall: uninstall-app uninstall-configs
 clean: clean-app
 
 
-install-prep: ddr-user apt-backports apt-update install-core git-config install-misc-tools
+install-prep: ddr-user apt-update install-core git-config install-misc-tools
 
 ddr-user:
 	-addgroup ddr plugdev
 	-addgroup ddr vboxsf
 	printf "\n\n# ddrlocal: Activate virtualnv on login\nsource $(VIRTUALENV)/bin/activate\n" >> /home/ddr/.bashrc; \
-
-apt-backports:
-ifeq "$(DEBIAN_CODENAME)" "wheezy"
-	cp $(INSTALL_LOCAL)/debian/conf/wheezy-backports.list /etc/apt/sources.list.d/
-endif
 
 apt-update:
 	@echo ""
@@ -188,13 +182,8 @@ install-daemons: install-elasticsearch install-redis install-cgit install-munin 
 
 install-cgit:
 	@echo ""
-	@echo "gitweb/cgit ------------------------------------------------------------"
-#ifeq ($(DEBIAN_CODENAME), wheezy)
-# 	apt-get --assume-yes -t wheezy-backports install cgit
-#endif
-ifeq ($(DEBIAN_CODENAME), jessie)
+	@echo "cgit ------------------------------------------------------------"
 	apt-get --assume-yes install cgit fcgiwrap
-endif
 	-mkdir /var/www/cgit
 	-ln -s /usr/lib/cgit/cgit.cgi /var/www/cgit/cgit.cgi
 	-ln -s /usr/share/cgit/cgit.css /var/www/cgit/cgit.css
@@ -258,22 +247,11 @@ install-elasticsearch:
 install-virtualenv:
 	@echo ""
 	@echo "install-virtualenv -----------------------------------------------------"
-ifeq ($(DEBIAN_CODENAME), wheezy)
-	apt-get --assume-yes install libffi-dev libssl-dev python-dev
-	apt-get --assume-yes -t wheezy-backports install python-pip python-virtualenv
-	test -d $(VIRTUALENV) || virtualenv --distribute --setuptools $(VIRTUALENV)
-	source $(VIRTUALENV)/bin/activate; \
-	pip install -U appdirs bpython ndg-httpsclient packaging pyasn1 pyopenssl six
-	source $(VIRTUALENV)/bin/activate; \
-	pip install -U setuptools
-endif
-ifeq ($(DEBIAN_CODENAME), jessie)
 	apt-get --assume-yes install python-six python-pip python-virtualenv python-dev
 	test -d $(VIRTUALENV) || virtualenv --distribute --setuptools $(VIRTUALENV)
 	source $(VIRTUALENV)/bin/activate; \
 	pip install -U bpython appdirs blessings curtsies greenlet packaging pygments pyparsing setuptools wcwidth
 #	virtualenv --relocatable $(VIRTUALENV)  # Make venv relocatable
-endif
 
 
 install-dependencies: install-core install-misc-tools install-daemons install-git-annex
@@ -297,12 +275,7 @@ clean-app: clean-ddr-cmdln clean-ddr-local clean-ddr-manual
 
 
 install-git-annex:
-ifeq "$(DEBIAN_CODENAME)" "wheezy"
-	apt-get --assume-yes -t wheezy-backports install git-core git-annex
-endif
-ifeq "($(DEBIAN_CODENAME)" "jessie"
 	apt-get --assume-yes install git-core git-annex
-endif
 
 get-ddr-cmdln:
 	@echo ""
@@ -527,7 +500,6 @@ uninstall-daemon-configs:
 	-rm $(MUNIN_CONF)
 	-rm $(SUPERVISOR_CELERY_CONF)
 	-rm $(SUPERVISOR_CONF)
-	-rm $(GITWEB_CONF)
 
 
 enable-bkgnd:
