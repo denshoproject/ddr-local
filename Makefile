@@ -691,7 +691,6 @@ deb:
 	--after-install "bin/fpm-mkdir-log.sh"   \
 	--chdir $(INSTALL_LOCAL)   \
 	conf/ddrlocal.cfg=etc/ddr/ddrlocal.cfg   \
-	conf/celerybeat.conf=etc/supervisor/conf.d/celerybeat.conf   \
 	conf/celeryd.conf=etc/supervisor/conf.d/celeryd.conf   \
 	conf/supervisor.conf=etc/supervisor/conf.d/ddrlocal.conf   \
 	conf/nginx.conf=etc/nginx/sites-available/ddrlocal.conf   \
