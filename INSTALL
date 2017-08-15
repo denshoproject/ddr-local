@@ -4,7 +4,7 @@ INSTALL
 For more complete instructions, see the "Admins/Workstations" section in `ddr-manual <https://github.com/densho/ddr-manual/>`_.
 
 The `ddr-local` install and update scripts below have been tested on Debian 7.0 running as a VM in VirtualBox.
-They install `ddr-local` and `ddr-cmdln` in `/usr/local/src` rather than in a `virtualenv`, so it is recommended that you install in a virtual machine.
+They install `ddr-local` and `ddr-cmdln` in `/opt` rather than in a `virtualenv`, so it is recommended that you install in a virtual machine.
 
 
 Initial Installation

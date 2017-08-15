@@ -1,7 +1,0 @@
-Format-Specification: http://svn.debian.org/wsvn/dep/web/deps/dep5.mdwn?op=file&rev=135
-Name: ddr-local
-Maintainer: geoffrey jost <geoffrey.jost@densho.org>
-Source: https://github.com/densho/ddr-local
-
-Copyright: 2012 Densho <contact@densho.org>
-License: TBD

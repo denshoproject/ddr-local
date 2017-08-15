@@ -302,14 +302,14 @@ MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 ALLOWED_HOSTS = []
 
 TEMPLATE_DIRS = (
-    '%s/ddrlocal/templates' % BASE_DIR,
-    '%s/storage/templates' % BASE_DIR,
-    '%s/webui/templates' % BASE_DIR,
+    os.path.join(BASE_DIR, 'ddrlocal/templates'),
+    os.path.join(BASE_DIR, 'storage/templates'),
+    os.path.join(BASE_DIR, 'webui/templates'),
 )
 
 STATICFILES_DIRS = (
-    #'%s/storage/static' % BASE_DIR,
-    '%s/webui/static' % BASE_DIR,
+    #os.path.join(BASE_DIR, 'storage/static'),
+    os.path.join(BASE_DIR, 'webui/static'),
 )
 
 LOGGING = {

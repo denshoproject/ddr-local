@@ -1,9 +1,0 @@
-debian/conf/ddr.cfg etc/ddr
-debian/conf/settings.py etc/ddr
-debian/conf/gunicorn_ddrlocal.py etc/supervisor/conf.d
-ddrlocal/ opt/ddr-local
-env/ddr-local opt/virtualenvs
-COPYRIGHT opt/ddr-local
-INSTALL opt/ddr-local
-LICENSE opt/ddr-local
-README.rst opt/ddr-local
