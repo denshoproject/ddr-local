@@ -681,12 +681,16 @@ deb:
 	--depends "redis-server"   \
 	--depends "supervisor"   \
 	--depends "udisks"   \
-	--after-install "bin/fpm-mkdir-log.sh"   \
+	--after-install "bin/after-install.sh"   \
 	--chdir $(INSTALL_LOCAL)   \
 	conf/ddrlocal.cfg=etc/ddr/ddrlocal.cfg   \
 	conf/celeryd.conf=etc/supervisor/conf.d/celeryd.conf   \
 	conf/supervisor.conf=etc/supervisor/conf.d/ddrlocal.conf   \
 	conf/nginx.conf=etc/nginx/sites-available/ddrlocal.conf   \
+	conf/README-logs=$(LOG_BASE)/README  \
+	conf/README-sqlite=$(SQLITE_BASE)/README  \
+	conf/README-media=$(MEDIA_ROOT)/README  \
+	conf/README-static=$(STATIC_ROOT)/README  \
 	static=var/www   \
 	bin=$(FPM_BASE)   \
 	conf=$(FPM_BASE)   \
