@@ -25,6 +25,7 @@ SRC_REPO_MANUAL=https://github.com/densho/ddr-manual.git
 
 INSTALL_BASE=/opt
 INSTALL_LOCAL=$(INSTALL_BASE)/ddr-local
+INSTALL_STATIC=$(INSTALL_LOCAL)/static
 INSTALL_CMDLN=$(INSTALL_LOCAL)/ddr-cmdln
 INSTALL_DEFS=$(INSTALL_LOCAL)/ddr-defs
 INSTALL_MANUAL=$(INSTALL_LOCAL)/ddr-manual
@@ -48,7 +49,7 @@ STATIC_ROOT=$(MEDIA_BASE)/static
 ELASTICSEARCH=elasticsearch-2.4.4.deb
 MODERNIZR=modernizr-2.6.2.js
 JQUERY=jquery-1.11.0.min.js
-BOOTSTRAP=bootstrap-3.1.1-dist.zip
+BOOTSTRAP=bootstrap-3.1.1-dist
 TAGMANAGER=tagmanager-3.0.1
 TYPEAHEAD=typeahead-0.10.2
 # wget https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-2.4.4.deb
@@ -389,65 +390,57 @@ branch:
 	cd $(INSTALL_LOCAL)/ddrlocal; python ./bin/git-checkout-branch.py $(BRANCH)
 
 
-install-static: install-modernizr install-bootstrap install-jquery install-tagmanager install-typeahead
-
-clean-static: clean-modernizr clean-bootstrap clean-jquery clean-tagmanager clean-typeahead
-
-
-install-modernizr:
-	@echo ""
-	@echo "Modernizr --------------------------------------------------------------"
-	-rm $(STATIC_ROOT)/js/$(MODERNIZR)*
-	wget -nc -P $(STATIC_ROOT)/js http://$(PACKAGE_SERVER)/$(MODERNIZR)
-
-clean-modernizr:
-	-rm $(STATIC_ROOT)/js/$(MODERNIZR)*
-
-install-bootstrap:
-	@echo ""
-	@echo "Bootstrap --------------------------------------------------------------"
-	wget -nc -P $(STATIC_ROOT) http://$(PACKAGE_SERVER)/$(BOOTSTRAP)
-	7z x -y -o$(STATIC_ROOT) $(STATIC_ROOT)/$(BOOTSTRAP)
-
-clean-bootstrap:
-	-rm -Rf $(STATIC_ROOT)/$(BOOTSTRAP)
-
-install-jquery:
-	@echo ""
-	@echo "jQuery -----------------------------------------------------------------"
-	wget -nc -P $(STATIC_ROOT)/js http://$(PACKAGE_SERVER)/$(JQUERY)
+install-static: get-static
+	mkdir -p $(STATIC_ROOT)/
+	cp -R $(INSTALL_STATIC)/* $(STATIC_ROOT)/
+	chown -R root.root $(STATIC_ROOT)/
+	-ln -s $(STATIC_ROOT)/js/$(MODERNIZR) $(STATIC_ROOT)/js/modernizr.js
+	-ln -s $(STATIC_ROOT)/$(BOOTSTRAP) $(STATIC_ROOT)/bootstrap
 	-ln -s $(STATIC_ROOT)/js/$(JQUERY) $(STATIC_ROOT)/js/jquery.js
-
-clean-jquery:
-	-rm -Rf $(STATIC_ROOT)/js/$(JQUERY)
-	-rm $(STATIC_ROOT)/js/jquery.js
-
-install-tagmanager:
-	@echo ""
-	@echo "tagmanager -------------------------------------------------------------"
-	wget -nc -P $(STATIC_ROOT)/ http://$(PACKAGE_SERVER)/$(TAGMANAGER).tgz
-	cd $(STATIC_ROOT)/ && tar xzf $(STATIC_ROOT)/$(TAGMANAGER).tgz
-	chown -R root.root $(STATIC_ROOT)/$(TAGMANAGER)
-	chmod 755 $(STATIC_ROOT)/$(TAGMANAGER)
 	-ln -s $(STATIC_ROOT)/$(TAGMANAGER) $(STATIC_ROOT)/js/tagmanager
-
-clean-tagmanager:
-	-rm -Rf $(STATIC_ROOT)/$(TAGMANAGER).tgz
-	-rm -Rf $(STATIC_ROOT)/$(TAGMANAGER)
-	-rm $(STATIC_ROOT)/js/tagmanager
-
-install-typeahead: clean-typeahead
-	@echo ""
-	@echo "typeahead --------------------------------------------------------------"
-	wget -nc -P $(STATIC_ROOT)/ http://$(PACKAGE_SERVER)/$(TYPEAHEAD).tgz
-	cd $(STATIC_ROOT)/ && tar xzf $(STATIC_ROOT)/$(TYPEAHEAD).tgz
-	chown -R root.root $(STATIC_ROOT)/$(TYPEAHEAD)
 	-ln -s $(STATIC_ROOT)/$(TYPEAHEAD) $(STATIC_ROOT)/js/typeahead
 
-clean-typeahead:
-	-rm -Rf $(STATIC_ROOT)/$(TYPEAHEAD).tgz
-	-rm -Rf $(STATIC_ROOT)/$(TYPEAHEAD)
-	-rm $(STATIC_ROOT)/js/typeahead
+clean-static:
+	-rm -Rf $(STATIC_ROOT)/
+	-rm -Rf $(INSTALL_STATIC)/*
+
+get-static: get-modernizr get-bootstrap get-jquery get-tagmanager get-typeahead
+
+get-modernizr:
+	@echo ""
+	@echo "Modernizr --------------------------------------------------------------"
+	mkdir -p $(INSTALL_STATIC)/js/
+	wget -nc -P $(INSTALL_STATIC)/js http://$(PACKAGE_SERVER)/$(MODERNIZR)
+
+get-bootstrap:
+	@echo ""
+	@echo "Bootstrap --------------------------------------------------------------"
+	mkdir -p $(INSTALL_STATIC)/
+	wget -nc -P $(INSTALL_STATIC) http://$(PACKAGE_SERVER)/$(BOOTSTRAP).zip
+	7z x -y -o$(INSTALL_STATIC) $(INSTALL_STATIC)/$(BOOTSTRAP).zip
+	-rm $(INSTALL_STATIC)/$(BOOTSTRAP).zip
+
+get-jquery:
+	@echo ""
+	@echo "jQuery -----------------------------------------------------------------"
+	mkdir -p $(INSTALL_STATIC)/js/
+	wget -nc -P $(INSTALL_STATIC)/js http://$(PACKAGE_SERVER)/$(JQUERY)
+
+get-tagmanager:
+	@echo ""
+	@echo "tagmanager -------------------------------------------------------------"
+	mkdir -p $(INSTALL_STATIC)/
+	wget -nc -P $(INSTALL_STATIC)/ http://$(PACKAGE_SERVER)/$(TAGMANAGER).tgz
+	cd $(INSTALL_STATIC)/ && tar xzf $(INSTALL_STATIC)/$(TAGMANAGER).tgz
+	-rm $(INSTALL_STATIC)/$(TAGMANAGER).tgz
+
+get-typeahead:
+	@echo ""
+	@echo "typeahead --------------------------------------------------------------"
+	mkdir -p $(INSTALL_STATIC)/
+	wget -nc -P $(INSTALL_STATIC)/ http://$(PACKAGE_SERVER)/$(TYPEAHEAD).tgz
+	cd $(INSTALL_STATIC)/ && tar xzf $(INSTALL_STATIC)/$(TYPEAHEAD).tgz
+	-rm $(INSTALL_STATIC)/$(TYPEAHEAD).tgz
 
 
 install-configs:
@@ -694,6 +687,7 @@ deb:
 	conf/celeryd.conf=etc/supervisor/conf.d/celeryd.conf   \
 	conf/supervisor.conf=etc/supervisor/conf.d/ddrlocal.conf   \
 	conf/nginx.conf=etc/nginx/sites-available/ddrlocal.conf   \
+	static=var/www   \
 	bin=$(FPM_BASE)   \
 	conf=$(FPM_BASE)   \
 	COPYRIGHT=$(FPM_BASE)   \
@@ -706,5 +700,6 @@ deb:
 	LICENSE=$(FPM_BASE)   \
 	Makefile=$(FPM_BASE)   \
 	README.rst=$(FPM_BASE)   \
+	static=$(FPM_BASE)   \
 	venv=$(FPM_BASE)   \
 	VERSION=$(FPM_BASE)
