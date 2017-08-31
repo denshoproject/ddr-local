@@ -1,6 +1,13 @@
+PROJECT=ddr
+APP=ddrlocal
+USER=ddr
+
 SHELL = /bin/bash
 DEBIAN_CODENAME := $(shell lsb_release -sc)
 DEBIAN_RELEASE := $(shell lsb_release -sr)
+VERSION := $(shell cat VERSION)
+
+GIT_SOURCE_URL=https://github.com/densho/ddr-local
 
 # current branch name minus dashes or underscores
 PACKAGE_BRANCH := $(shell git rev-parse --abbrev-ref HEAD | tr -d _ | tr -d -)
@@ -16,8 +23,9 @@ SRC_REPO_LOCAL=https://github.com/densho/ddr-local.git
 SRC_REPO_DEFS=https://github.com/densho/ddr-defs.git
 SRC_REPO_MANUAL=https://github.com/densho/ddr-manual.git
 
-INSTALL_BASE=/usr/local/src
+INSTALL_BASE=/opt
 INSTALL_LOCAL=$(INSTALL_BASE)/ddr-local
+INSTALL_STATIC=$(INSTALL_LOCAL)/static
 INSTALL_CMDLN=$(INSTALL_LOCAL)/ddr-cmdln
 INSTALL_DEFS=$(INSTALL_LOCAL)/ddr-defs
 INSTALL_MANUAL=$(INSTALL_LOCAL)/ddr-manual
@@ -25,18 +33,9 @@ INSTALL_MANUAL=$(INSTALL_LOCAL)/ddr-manual
 VIRTUALENV=$(INSTALL_LOCAL)/venv/ddrlocal
 SETTINGS=$(INSTALL_LOCAL)/ddrlocal/ddrlocal/settings.py
 
-PACKAGE_BASE=/tmp/ddrlocal
-PACKAGE_TMP=$(PACKAGE_BASE)/ddr-local
-PACKAGE_VENV=$(PACKAGE_TMP)/venv/ddrlocal
-PACKAGE_TGZ=ddrlocal-$(PACKAGE_BRANCH)-$(PACKAGE_TIMESTAMP)-$(PACKAGE_COMMIT).tgz
-# The directory into which ddr-local will be placed and synced
-# Should not include "ddr-local", and should not end with a slash (see man rsync)
-PACKAGE_RSYNC_DEST=takezo@takezo:~/packaging
-
 CONF_BASE=/etc/ddr
 CONF_PRODUCTION=$(CONF_BASE)/ddrlocal.cfg
 CONF_LOCAL=$(CONF_BASE)/ddrlocal-local.cfg
-CONF_SECRET=$(CONF_BASE)/ddrlocal-secret-key.txt
 
 SQLITE_BASE=/var/lib/ddr
 LOG_BASE=/var/log/ddr
@@ -50,7 +49,7 @@ STATIC_ROOT=$(MEDIA_BASE)/static
 ELASTICSEARCH=elasticsearch-2.4.4.deb
 MODERNIZR=modernizr-2.6.2.js
 JQUERY=jquery-1.11.0.min.js
-BOOTSTRAP=bootstrap-3.1.1-dist.zip
+BOOTSTRAP=bootstrap-3.1.1-dist
 TAGMANAGER=tagmanager-3.0.1
 TYPEAHEAD=typeahead-0.10.2
 # wget https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-2.4.4.deb
@@ -61,13 +60,21 @@ TYPEAHEAD=typeahead-0.10.2
 
 SUPERVISOR_CELERY_CONF=/etc/supervisor/conf.d/celeryd.conf
 SUPERVISOR_CELERYBEAT_CONF=/etc/supervisor/conf.d/celerybeat.conf
-SUPERVISOR_GUNICORN_CONF=/etc/supervisor/conf.d/gunicorn_ddrlocal.conf
+SUPERVISOR_GUNICORN_CONF=/etc/supervisor/conf.d/ddrlocal.conf
 SUPERVISOR_CONF=/etc/supervisor/supervisord.conf
 NGINX_CONF=/etc/nginx/sites-available/ddrlocal.conf
 NGINX_CONF_LINK=/etc/nginx/sites-enabled/ddrlocal.conf
 MUNIN_CONF=/etc/munin/munin.conf
-GITWEB_CONF=/etc/gitweb.conf
 CGIT_CONF=/etc/cgitrc
+
+FPM_BRANCH := $(shell git rev-parse --abbrev-ref HEAD | tr -d _ | tr -d -)
+FPM_ARCH=amd64
+FPM_NAME=$(APP)-$(FPM_BRANCH)
+FPM_FILE=$(FPM_NAME)_$(VERSION)_$(FPM_ARCH).deb
+FPM_VENDOR=Densho.org
+FPM_MAINTAINER=<geoffrey.jost@densho.org>
+FPM_DESCRIPTION=Densho Digital Repository editor
+FPM_BASE=opt/ddr-local
 
 
 .PHONY: help
@@ -148,17 +155,12 @@ uninstall: uninstall-app uninstall-configs
 clean: clean-app
 
 
-install-prep: ddr-user apt-backports apt-update install-core git-config install-misc-tools
+install-prep: ddr-user apt-update install-core git-config install-misc-tools
 
 ddr-user:
 	-addgroup ddr plugdev
 	-addgroup ddr vboxsf
 	printf "\n\n# ddrlocal: Activate virtualnv on login\nsource $(VIRTUALENV)/bin/activate\n" >> /home/ddr/.bashrc; \
-
-apt-backports:
-ifeq "$(DEBIAN_CODENAME)" "wheezy"
-	cp $(INSTALL_LOCAL)/debian/conf/wheezy-backports.list /etc/apt/sources.list.d/
-endif
 
 apt-update:
 	@echo ""
@@ -189,13 +191,8 @@ install-daemons: install-elasticsearch install-redis install-cgit install-munin 
 
 install-cgit:
 	@echo ""
-	@echo "gitweb/cgit ------------------------------------------------------------"
-#ifeq ($(DEBIAN_CODENAME), wheezy)
-# 	apt-get --assume-yes -t wheezy-backports install cgit
-#endif
-ifeq ($(DEBIAN_CODENAME), jessie)
+	@echo "cgit ------------------------------------------------------------"
 	apt-get --assume-yes install cgit fcgiwrap
-endif
 	-mkdir /var/www/cgit
 	-ln -s /usr/lib/cgit/cgit.cgi /var/www/cgit/cgit.cgi
 	-ln -s /usr/share/cgit/cgit.css /var/www/cgit/cgit.css
@@ -249,7 +246,7 @@ install-elasticsearch:
 	apt-get --assume-yes install openjdk-7-jre
 	wget -nc -P /tmp/downloads http://$(PACKAGE_SERVER)/$(ELASTICSEARCH)
 	gdebi --non-interactive /tmp/downloads/$(ELASTICSEARCH)
-#cp $(INSTALL_BASE)/ddr-public/debian/conf/elasticsearch.yml /etc/elasticsearch/
+#cp $(INSTALL_BASE)/ddr-public/conf/elasticsearch.yml /etc/elasticsearch/
 #chown root.root /etc/elasticsearch/elasticsearch.yml
 #chmod 644 /etc/elasticsearch/elasticsearch.yml
 # 	@echo "${bldgrn}search engine (re)start${txtrst}"
@@ -259,22 +256,11 @@ install-elasticsearch:
 install-virtualenv:
 	@echo ""
 	@echo "install-virtualenv -----------------------------------------------------"
-ifeq ($(DEBIAN_CODENAME), wheezy)
-	apt-get --assume-yes install libffi-dev libssl-dev python-dev
-	apt-get --assume-yes -t wheezy-backports install python-pip python-virtualenv
-	test -d $(VIRTUALENV) || virtualenv --distribute --setuptools $(VIRTUALENV)
-	source $(VIRTUALENV)/bin/activate; \
-	pip install -U appdirs bpython ndg-httpsclient packaging pyasn1 pyopenssl six
-	source $(VIRTUALENV)/bin/activate; \
-	pip install -U setuptools
-endif
-ifeq ($(DEBIAN_CODENAME), jessie)
 	apt-get --assume-yes install python-six python-pip python-virtualenv python-dev
 	test -d $(VIRTUALENV) || virtualenv --distribute --setuptools $(VIRTUALENV)
 	source $(VIRTUALENV)/bin/activate; \
 	pip install -U bpython appdirs blessings curtsies greenlet packaging pygments pyparsing setuptools wcwidth
 #	virtualenv --relocatable $(VIRTUALENV)  # Make venv relocatable
-endif
 
 
 install-dependencies: install-core install-misc-tools install-daemons install-git-annex
@@ -298,12 +284,7 @@ clean-app: clean-ddr-cmdln clean-ddr-local clean-ddr-manual
 
 
 install-git-annex:
-ifeq "$(DEBIAN_CODENAME)" "wheezy"
-	apt-get --assume-yes -t wheezy-backports install git-core git-annex
-endif
-ifeq "($(DEBIAN_CODENAME)" "jessie"
 	apt-get --assume-yes install git-core git-annex
-endif
 
 get-ddr-cmdln:
 	@echo ""
@@ -341,9 +322,6 @@ uninstall-ddr-cmdln: install-virtualenv
 	@echo "uninstall-ddr-cmdln ----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_CMDLN)/ddr && pip uninstall -y -r $(INSTALL_CMDLN)/ddr/requirements/production.txt
-	-rm /usr/local/bin/ddr*
-	-rm -Rf /usr/local/lib/python2.7/dist-packages/DDR*
-	-rm -Rf /usr/local/lib/python2.7/dist-packages/ddr*
 
 clean-ddr-cmdln:
 	-rm -Rf $(INSTALL_CMDLN)/ddr/build
@@ -386,8 +364,6 @@ uninstall-ddr-local: install-virtualenv
 	@echo "uninstall-ddr-local ----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_LOCAL)/ddrlocal && pip uninstall -y -r $(INSTALL_LOCAL)/ddrlocal/requirements/production.txt
-	-rm /usr/local/lib/python2.7/dist-packages/ddrlocal-*
-	-rm -Rf /usr/local/lib/python2.7/dist-packages/ddrlocal
 
 clean-ddr-local:
 	-rm -Rf $(INSTALL_LOCAL)/ddrlocal/src
@@ -414,65 +390,57 @@ branch:
 	cd $(INSTALL_LOCAL)/ddrlocal; python ./bin/git-checkout-branch.py $(BRANCH)
 
 
-install-static: install-modernizr install-bootstrap install-jquery install-tagmanager install-typeahead
-
-clean-static: clean-modernizr clean-bootstrap clean-jquery clean-tagmanager clean-typeahead
-
-
-install-modernizr:
-	@echo ""
-	@echo "Modernizr --------------------------------------------------------------"
-	-rm $(STATIC_ROOT)/js/$(MODERNIZR)*
-	wget -nc -P $(STATIC_ROOT)/js http://$(PACKAGE_SERVER)/$(MODERNIZR)
-
-clean-modernizr:
-	-rm $(STATIC_ROOT)/js/$(MODERNIZR)*
-
-install-bootstrap:
-	@echo ""
-	@echo "Bootstrap --------------------------------------------------------------"
-	wget -nc -P $(STATIC_ROOT) http://$(PACKAGE_SERVER)/$(BOOTSTRAP)
-	7z x -y -o$(STATIC_ROOT) $(STATIC_ROOT)/$(BOOTSTRAP)
-
-clean-bootstrap:
-	-rm -Rf $(STATIC_ROOT)/$(BOOTSTRAP)
-
-install-jquery:
-	@echo ""
-	@echo "jQuery -----------------------------------------------------------------"
-	wget -nc -P $(STATIC_ROOT)/js http://$(PACKAGE_SERVER)/$(JQUERY)
+install-static: get-static
+	mkdir -p $(STATIC_ROOT)/
+	cp -R $(INSTALL_STATIC)/* $(STATIC_ROOT)/
+	chown -R root.root $(STATIC_ROOT)/
+	-ln -s $(STATIC_ROOT)/js/$(MODERNIZR) $(STATIC_ROOT)/js/modernizr.js
+	-ln -s $(STATIC_ROOT)/$(BOOTSTRAP) $(STATIC_ROOT)/bootstrap
 	-ln -s $(STATIC_ROOT)/js/$(JQUERY) $(STATIC_ROOT)/js/jquery.js
-
-clean-jquery:
-	-rm -Rf $(STATIC_ROOT)/js/$(JQUERY)
-	-rm $(STATIC_ROOT)/js/jquery.js
-
-install-tagmanager:
-	@echo ""
-	@echo "tagmanager -------------------------------------------------------------"
-	wget -nc -P $(STATIC_ROOT)/ http://$(PACKAGE_SERVER)/$(TAGMANAGER).tgz
-	cd $(STATIC_ROOT)/ && tar xzf $(STATIC_ROOT)/$(TAGMANAGER).tgz
-	chown -R root.root $(STATIC_ROOT)/$(TAGMANAGER)
-	chmod 755 $(STATIC_ROOT)/$(TAGMANAGER)
 	-ln -s $(STATIC_ROOT)/$(TAGMANAGER) $(STATIC_ROOT)/js/tagmanager
-
-clean-tagmanager:
-	-rm -Rf $(STATIC_ROOT)/$(TAGMANAGER).tgz
-	-rm -Rf $(STATIC_ROOT)/$(TAGMANAGER)
-	-rm $(STATIC_ROOT)/js/tagmanager
-
-install-typeahead: clean-typeahead
-	@echo ""
-	@echo "typeahead --------------------------------------------------------------"
-	wget -nc -P $(STATIC_ROOT)/ http://$(PACKAGE_SERVER)/$(TYPEAHEAD).tgz
-	cd $(STATIC_ROOT)/ && tar xzf $(STATIC_ROOT)/$(TYPEAHEAD).tgz
-	chown -R root.root $(STATIC_ROOT)/$(TYPEAHEAD)
 	-ln -s $(STATIC_ROOT)/$(TYPEAHEAD) $(STATIC_ROOT)/js/typeahead
 
-clean-typeahead:
-	-rm -Rf $(STATIC_ROOT)/$(TYPEAHEAD).tgz
-	-rm -Rf $(STATIC_ROOT)/$(TYPEAHEAD)
-	-rm $(STATIC_ROOT)/js/typeahead
+clean-static:
+	-rm -Rf $(STATIC_ROOT)/
+	-rm -Rf $(INSTALL_STATIC)/*
+
+get-static: get-modernizr get-bootstrap get-jquery get-tagmanager get-typeahead
+
+get-modernizr:
+	@echo ""
+	@echo "Modernizr --------------------------------------------------------------"
+	mkdir -p $(INSTALL_STATIC)/js/
+	wget -nc -P $(INSTALL_STATIC)/js http://$(PACKAGE_SERVER)/$(MODERNIZR)
+
+get-bootstrap:
+	@echo ""
+	@echo "Bootstrap --------------------------------------------------------------"
+	mkdir -p $(INSTALL_STATIC)/
+	wget -nc -P $(INSTALL_STATIC) http://$(PACKAGE_SERVER)/$(BOOTSTRAP).zip
+	7z x -y -o$(INSTALL_STATIC) $(INSTALL_STATIC)/$(BOOTSTRAP).zip
+	-rm $(INSTALL_STATIC)/$(BOOTSTRAP).zip
+
+get-jquery:
+	@echo ""
+	@echo "jQuery -----------------------------------------------------------------"
+	mkdir -p $(INSTALL_STATIC)/js/
+	wget -nc -P $(INSTALL_STATIC)/js http://$(PACKAGE_SERVER)/$(JQUERY)
+
+get-tagmanager:
+	@echo ""
+	@echo "tagmanager -------------------------------------------------------------"
+	mkdir -p $(INSTALL_STATIC)/
+	wget -nc -P $(INSTALL_STATIC)/ http://$(PACKAGE_SERVER)/$(TAGMANAGER).tgz
+	cd $(INSTALL_STATIC)/ && tar xzf $(INSTALL_STATIC)/$(TAGMANAGER).tgz
+	-rm $(INSTALL_STATIC)/$(TAGMANAGER).tgz
+
+get-typeahead:
+	@echo ""
+	@echo "typeahead --------------------------------------------------------------"
+	mkdir -p $(INSTALL_STATIC)/
+	wget -nc -P $(INSTALL_STATIC)/ http://$(PACKAGE_SERVER)/$(TYPEAHEAD).tgz
+	cd $(INSTALL_STATIC)/ && tar xzf $(INSTALL_STATIC)/$(TYPEAHEAD).tgz
+	-rm $(INSTALL_STATIC)/$(TYPEAHEAD).tgz
 
 
 install-configs:
@@ -480,14 +448,14 @@ install-configs:
 	@echo "configuring ddr-local --------------------------------------------------"
 # base settings file
 	-mkdir /etc/ddr
-	cp $(INSTALL_LOCAL)/debian/conf/ddrlocal.cfg $(CONF_PRODUCTION)
+	cp $(INSTALL_LOCAL)/conf/ddrlocal.cfg $(CONF_PRODUCTION)
 	chown root.root $(CONF_PRODUCTION)
 	chmod 644 $(CONF_PRODUCTION)
 	touch $(CONF_LOCAL)
 	chown ddr.root $(CONF_LOCAL)
 	chmod 640 $(CONF_LOCAL)
 # web app settings
-	cp $(INSTALL_LOCAL)/debian/conf/settings.py $(SETTINGS)
+	cp $(INSTALL_LOCAL)/conf/settings.py $(SETTINGS)
 	chown root.root $(SETTINGS)
 	chmod 644 $(SETTINGS)
 
@@ -500,26 +468,25 @@ install-daemon-configs:
 	@echo ""
 	@echo "install-daemon-configs -------------------------------------------------"
 # nginx settings
-	cp $(INSTALL_LOCAL)/debian/conf/ddrlocal.conf $(NGINX_CONF)
+	cp $(INSTALL_LOCAL)/conf/nginx.conf $(NGINX_CONF)
 	chown root.root $(NGINX_CONF)
 	chmod 644 $(NGINX_CONF)
 	-ln -s $(NGINX_CONF) $(NGINX_CONF_LINK)
 	-rm /etc/nginx/sites-enabled/default
 # supervisord
-	cp $(INSTALL_LOCAL)/debian/conf/celeryd.conf $(SUPERVISOR_CELERY_CONF)
-	cp $(INSTALL_LOCAL)/debian/conf/gunicorn_ddrlocal.conf $(SUPERVISOR_GUNICORN_CONF)
-	cp $(INSTALL_LOCAL)/debian/conf/supervisord.conf $(SUPERVISOR_CONF)
+	cp $(INSTALL_LOCAL)/conf/celeryd.conf $(SUPERVISOR_CELERY_CONF)
+	cp $(INSTALL_LOCAL)/conf/supervisor.conf $(SUPERVISOR_GUNICORN_CONF)
+	cp $(INSTALL_LOCAL)/conf/supervisord.conf $(SUPERVISOR_CONF)
 	chown root.root $(SUPERVISOR_CELERY_CONF)
 	chown root.root $(SUPERVISOR_GUNICORN_CONF)
 	chown root.root $(SUPERVISOR_CONF)
 	chmod 644 $(SUPERVISOR_CELERY_CONF)
 	chmod 644 $(SUPERVISOR_GUNICORN_CONF)
 	chmod 644 $(SUPERVISOR_CONF)
-# gitweb
-	cp $(INSTALL_LOCAL)/debian/conf/gitweb.conf $(GITWEB_CONF)
-	cp $(INSTALL_LOCAL)/debian/conf/cgitrc $(CGIT_CONF)
+# cgitrc
+	cp $(INSTALL_LOCAL)/conf/cgitrc $(CGIT_CONF)
 # munin settings
-	cp $(INSTALL_LOCAL)/debian/conf/munin.conf $(MUNIN_CONF)
+	cp $(INSTALL_LOCAL)/conf/munin.conf $(MUNIN_CONF)
 	chown root.root $(MUNIN_CONF)
 	chmod 644 $(MUNIN_CONF)
 
@@ -529,11 +496,10 @@ uninstall-daemon-configs:
 	-rm $(MUNIN_CONF)
 	-rm $(SUPERVISOR_CELERY_CONF)
 	-rm $(SUPERVISOR_CONF)
-	-rm $(GITWEB_CONF)
 
 
 enable-bkgnd:
-	cp $(INSTALL_LOCAL)/debian/conf/celerybeat.conf $(SUPERVISOR_CELERYBEAT_CONF)
+	cp $(INSTALL_LOCAL)/conf/celerybeat.conf $(SUPERVISOR_CELERYBEAT_CONF)
 	chown root.root $(SUPERVISOR_CELERYBEAT_CONF)
 	chmod 644 $(SUPERVISOR_CELERYBEAT_CONF)
 
@@ -670,3 +636,74 @@ rsync-packaged:
 install-packaged: install-prep install-dependencies install-static install-configs mkdirs syncdb install-daemon-configs
 	@echo ""
 	@echo "install packaged -------------------------------------------------------"
+
+
+# http://fpm.readthedocs.io/en/latest/
+# https://stackoverflow.com/questions/32094205/set-a-custom-install-directory-when-making-a-deb-package-with-fpm
+# https://brejoc.com/tag/fpm/
+deb:
+	@echo ""
+	@echo "FPM packaging ----------------------------------------------------------"
+	-rm -Rf $(FPM_FILE)
+	virtualenv --relocatable $(VIRTUALENV)  # Make venv relocatable
+	fpm   \
+	--verbose   \
+	--input-type dir   \
+	--output-type deb   \
+	--name $(FPM_NAME)   \
+	--version $(VERSION)   \
+	--package $(FPM_FILE)   \
+	--url "$(GIT_SOURCE_URL)"   \
+	--vendor "$(FPM_VENDOR)"   \
+	--maintainer "$(FPM_MAINTAINER)"   \
+	--description "$(FPM_DESCRIPTION)"   \
+	--depends "cgit"   \
+	--depends "fcgiwrap"   \
+	--depends "git-annex"   \
+	--depends "git-core"   \
+	--depends "imagemagick"   \
+	--depends "libexempi3"   \
+	--depends "libssl-dev"   \
+	--depends "libwww-perl"   \
+	--depends "libxml2"   \
+	--depends "libxml2-dev"   \
+	--depends "libxslt1-dev"   \
+	--depends "libz-dev"   \
+	--depends "munin"   \
+	--depends "munin-node"   \
+	--depends "nginx"   \
+	--depends "openjdk-7-jre"   \
+	--depends "pmount"   \
+	--depends "python-dev"   \
+	--depends "python-pip"   \
+	--depends "python-six"   \
+	--depends "python-virtualenv"   \
+	--depends "redis-server"   \
+	--depends "supervisor"   \
+	--depends "udisks"   \
+	--after-install "bin/after-install.sh"   \
+	--chdir $(INSTALL_LOCAL)   \
+	conf/ddrlocal.cfg=etc/ddr/ddrlocal.cfg   \
+	conf/celeryd.conf=etc/supervisor/conf.d/celeryd.conf   \
+	conf/supervisor.conf=etc/supervisor/conf.d/ddrlocal.conf   \
+	conf/nginx.conf=etc/nginx/sites-available/ddrlocal.conf   \
+	conf/README-logs=$(LOG_BASE)/README  \
+	conf/README-sqlite=$(SQLITE_BASE)/README  \
+	conf/README-media=$(MEDIA_ROOT)/README  \
+	conf/README-static=$(STATIC_ROOT)/README  \
+	static=var/www   \
+	bin=$(FPM_BASE)   \
+	conf=$(FPM_BASE)   \
+	COPYRIGHT=$(FPM_BASE)   \
+	ddr-cmdln=$(FPM_BASE)   \
+	ddr-defs=$(FPM_BASE)   \
+	ddrlocal=$(FPM_BASE)   \
+	.git=$(FPM_BASE)   \
+	.gitignore=$(FPM_BASE)   \
+	INSTALL=$(FPM_BASE)   \
+	LICENSE=$(FPM_BASE)   \
+	Makefile=$(FPM_BASE)   \
+	README.rst=$(FPM_BASE)   \
+	static=$(FPM_BASE)   \
+	venv=$(FPM_BASE)   \
+	VERSION=$(FPM_BASE)
