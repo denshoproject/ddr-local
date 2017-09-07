@@ -605,6 +605,8 @@ status:
 	-supervisorctl status
 	@echo " - - - - -"
 	-git annex version | grep version
+	@echo " - - - - -"
+	-uptime
 	@echo ""
 
 git-status:
