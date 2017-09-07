@@ -250,7 +250,14 @@ install-elasticsearch:
 #chown root.root /etc/elasticsearch/elasticsearch.yml
 #chmod 644 /etc/elasticsearch/elasticsearch.yml
 # 	@echo "${bldgrn}search engine (re)start${txtrst}"
-	/etc/init.d/elasticsearch restart
+	-service elasticsearch stop
+	-systemctl disable elasticsearch.service
+
+enable-elasticsearch:
+	systemctl enable elasticsearch.service
+
+disable-elasticsearch:
+	systemctl disable elasticsearch.service
 
 
 install-virtualenv:
@@ -542,7 +549,7 @@ stop-supervisor:
 stop-app: stop-supervisor
 
 
-restart: restart-elasticsearch restart-redis restart-cgit restart-nginx restart-munin restart-supervisor
+restart: restart-supervisor restart-redis restart-cgit restart-nginx restart-munin
 
 restart-elasticsearch:
 	-service elasticsearch restart
