@@ -121,32 +121,34 @@ help:
 	@echo "uninstall - Deletes 'compiled' Python files. Leaves build dirs and configs."
 	@echo "clean   - Deletes files created by building the program. Leaves configs."
 	@echo ""
-	@echo "package - Package project in a self-contained .tgz for installation."
+	@echo "deb     - Make a DEB package install file."
 	@echo ""
 	@echo "More install info: make howto-install"
 
 howto-install:
 	@echo "HOWTO INSTALL"
-	@echo "- Basic Debian netinstall"
-	@echo "- edit /etc/network/interfaces"
-	@echo "- reboot"
-	@echo "- apt-get install openssh fail2ban ufw"
-	@echo "- ufw allow 22/tcp"
-	@echo "- ufw allow 80/tcp"
-	@echo "- ufw enable"
-	@echo "- apt-get install make"
-	@echo "- adduser ddr"
-	@echo "- git clone $(SRC_REPO_LOCAL) $(INSTALL_LOCAL)"
-	@echo "- cd $(INSTALL_LOCAL)/ddrlocal"
-	@echo "- make install"
-	@echo "- [make branch BRANCH=develop]"
-	@echo "- [make install]"
-	@echo "- Place copy of 'ddr' repo in $(DDR_REPO_BASE)/ddr."
-	@echo "- make install-defs"
-	@echo "- make enable-bkgnd"
-	@echo "- make syncdb"
-	@echo "- make restart"
-	@echo "- [make clear-munin-logs]"
+	@echo "# Basic Debian netinstall"
+	@echo "#edit /etc/network/interfaces"
+	@echo "#reboot"
+	@echo "apt-get update && apt-get upgrade"
+	@echo "apt-get install -u openssh ufw"
+	@echo "ufw allow 22/tcp"
+	@echo "ufw allow 80/tcp"
+	@echo "ufw allow 9001/tcp"
+	@echo "ufw allow 9200/tcp"
+	@echo "ufw enable"
+	@echo "apt-get install --assume-yes make"
+	@echo "git clone $(SRC_REPO_LOCAL) $(INSTALL_LOCAL)"
+	@echo "cd $(INSTALL_LOCAL)/ddrlocal"
+	@echo "make install"
+	@echo "#make branch BRANCH=develop"
+	@echo "#make install"
+	@echo "# Place copy of 'ddr' repo in $(DDR_REPO_BASE)/ddr."
+	@echo "#make install-defs"
+	@echo "#make enable-bkgnd"
+	@echo "#make syncdb"
+	@echo "make restart"
+	@echo "#make clear-munin-logs"
 
 
 get: get-app get-ddr-defs get-elasticsearch get-static
@@ -451,6 +453,8 @@ get-typeahead:
 	-rm $(INSTALL_STATIC)/$(TYPEAHEAD).tgz
 
 install-static:
+	@echo ""
+	@echo "install-static ---------------------------------------------------------"
 	mkdir -p $(STATIC_ROOT)/
 	cp -R $(INSTALL_STATIC)/* $(STATIC_ROOT)/
 	chown -R root.root $(STATIC_ROOT)/
