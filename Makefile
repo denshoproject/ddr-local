@@ -510,7 +510,7 @@ disable-bkgnd:
 reload: reload-nginx reload-supervisor
 
 reload-nginx:
-	/etc/init.d/nginx reload
+	sudo service nginx reload
 
 reload-supervisor:
 	supervisorctl reload
@@ -521,23 +521,23 @@ reload-app: reload-supervisor
 stop: stop-elasticsearch stop-redis stop-cgit stop-nginx stop-munin stop-supervisor
 
 stop-elasticsearch:
-	/etc/init.d/elasticsearch stop
+	-service elasticsearch stop
 
 stop-redis:
-	/etc/init.d/redis-server stop
+	-service redis-server stop
 
 stop-cgit:
-	/etc/init.d/fcgiwrap stop
+	-service fcgiwrap stop
 
 stop-nginx:
-	/etc/init.d/nginx stop
+	-service nginx stop
 
 stop-munin:
-	/etc/init.d/munin-node stop
-	/etc/init.d/munin stop
+	-service munin-node stop
+	-service munin stop
 
 stop-supervisor:
-	/etc/init.d/supervisor stop
+	-service supervisor stop
 
 stop-app: stop-supervisor
 
@@ -545,24 +545,24 @@ stop-app: stop-supervisor
 restart: restart-elasticsearch restart-redis restart-cgit restart-nginx restart-munin restart-supervisor
 
 restart-elasticsearch:
-	/etc/init.d/elasticsearch restart
+	-service elasticsearch restart
 
 restart-redis:
-	/etc/init.d/redis-server restart
+	-service redis-server restart
 
 restart-cgit:
-	/etc/init.d/fcgiwrap restart
+	-service fcgiwrap restart
 
 restart-nginx:
-	/etc/init.d/nginx restart
+	-service nginx restart
 
 restart-munin:
-	/etc/init.d/munin-node restart
-	/etc/init.d/munin restart
+	-service munin-node restart
+	-service munin restart
 
 restart-supervisor:
-	/etc/init.d/supervisor stop
-	/etc/init.d/supervisor start
+	-service supervisor stop
+	-service supervisor start
 
 restart-app: restart-supervisor
 
@@ -573,12 +573,13 @@ restart-minimal: stop-elasticsearch restart-redis stop-nginx stop-munin restart-
 
 status:
 	@echo "------------------------------------------------------------------------"
-	-/etc/init.d/elasticsearch status
+	-systemctl status elasticsearch
 	@echo " - - - - -"
-	-/etc/init.d/redis-server status
+	-systemctl status redis-server
 	@echo " - - - - -"
-	-/etc/init.d/nginx status
+	-systemctl status nginx
 	@echo " - - - - -"
+	-systemctl status supervisor
 	-supervisorctl status
 	@echo " - - - - -"
 	-git annex version | grep version
