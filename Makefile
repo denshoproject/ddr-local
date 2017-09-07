@@ -115,6 +115,7 @@ help:
 	@echo ""
 	@echo "status  - Server status"
 	@echo ""
+	@echo "remove  - Removes Debian packages for dependencies."
 	@echo "uninstall - Deletes 'compiled' Python files. Leaves build dirs and configs."
 	@echo "clean   - Deletes files created by building the program. Leaves configs."
 	@echo ""
@@ -189,6 +190,9 @@ install-misc-tools:
 
 install-daemons: install-elasticsearch install-redis install-cgit install-munin install-nginx
 
+remove-daemons: remove-elasticsearch remove-redis remove-cgit remove-munin remove-nginx
+
+
 install-cgit:
 	@echo ""
 	@echo "cgit ------------------------------------------------------------"
@@ -198,6 +202,10 @@ install-cgit:
 	-ln -s /usr/share/cgit/cgit.css /var/www/cgit/cgit.css
 	-ln -s /usr/share/cgit/favicon.ico /var/www/cgit/favicon.ico
 	-ln -s /usr/share/cgit/robots.txt /var/www/cgit/robots.txt
+
+remove-cgit:
+	apt-get --assume-yes remove cgit fcgiwrap
+
 
 install-munin:
 	@echo ""
@@ -227,6 +235,9 @@ clear-munin-logs:
 # NOTE: This erases Munin history!
 	rm -Rf /var/cache/munin/www/*
 
+remove-munin:
+	apt-get --assume-yes remove munin munin-node libwww-perl
+
 
 install-nginx:
 	@echo ""
@@ -234,10 +245,17 @@ install-nginx:
 	apt-get --assume-yes remove apache2
 	apt-get --assume-yes install nginx
 
+remove-nginx:
+	apt-get --assume-yes remove nginx
+
 install-redis:
 	@echo ""
 	@echo "Redis ------------------------------------------------------------------"
 	apt-get --assume-yes install redis-server
+
+remove-redis:
+	apt-get --assume-yes remove redis-server
+
 
 install-elasticsearch:
 	@echo ""
@@ -258,6 +276,9 @@ enable-elasticsearch:
 
 disable-elasticsearch:
 	systemctl disable elasticsearch.service
+
+remove-elasticsearch:
+	apt-get --assume-yes remove openjdk-7-jre elasticsearch
 
 
 install-virtualenv:
