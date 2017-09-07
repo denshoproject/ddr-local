@@ -84,6 +84,8 @@ help:
 	@echo "--------------------------------------------------------------------------------"
 	@echo "ddr-local Install Helper"
 	@echo ""
+	@echo "get     - Clones ddr-local, ddr-cmdln, and ddr-defs and downloads static files."
+	@echo ""
 	@echo "install - Does a complete install. Idempotent, so run as many times as you like."
 	@echo "          IMPORTANT: Run 'adduser ddr' first to install ddr user and group."
 	@echo "          Installation instructions: make howto-install"
@@ -147,31 +149,21 @@ howto-install:
 	@echo "- [make clear-munin-logs]"
 
 
-get: get-ddr-cmdln get-ddr-local
+get: get-app get-ddr-defs get-elasticsearch get-static
 
-install: install-prep get-app install-daemons install-app install-static install-configs
+install: install-prep install-daemons install-app install-static install-configs
 
 uninstall: uninstall-app uninstall-configs
 
 clean: clean-app
 
 
-install-prep: ddr-user apt-update install-core git-config install-misc-tools
+install-prep: ddr-user install-core git-config install-misc-tools
 
 ddr-user:
 	-addgroup ddr plugdev
 	-addgroup ddr vboxsf
 	printf "\n\n# ddrlocal: Activate virtualnv on login\nsource $(VIRTUALENV)/bin/activate\n" >> /home/ddr/.bashrc; \
-
-apt-update:
-	@echo ""
-	@echo "Package update ---------------------------------------------------------"
-	apt-get --assume-yes update
-
-apt-upgrade:
-	@echo ""
-	@echo "Package upgrade --------------------------------------------------------"
-	apt-get --assume-yes upgrade
 
 install-core:
 	apt-get --assume-yes install bzip2 curl gdebi-core git-core logrotate ntp p7zip-full wget
@@ -257,13 +249,15 @@ remove-redis:
 	apt-get --assume-yes remove redis-server
 
 
+get-elasticsearch:
+	wget -nc -P /tmp/downloads http://$(PACKAGE_SERVER)/$(ELASTICSEARCH)
+
 install-elasticsearch:
 	@echo ""
 	@echo "Elasticsearch ----------------------------------------------------------"
 # Elasticsearch is configured/restarted here so it's online by the time script is done.
 	apt-get --assume-yes install openjdk-7-jre
-	wget -nc -P /tmp/downloads http://$(PACKAGE_SERVER)/$(ELASTICSEARCH)
-	gdebi --non-interactive /tmp/downloads/$(ELASTICSEARCH)
+	-gdebi --non-interactive /tmp/downloads/$(ELASTICSEARCH)
 #cp $(INSTALL_BASE)/ddr-public/conf/elasticsearch.yml /etc/elasticsearch/
 #chown root.root /etc/elasticsearch/elasticsearch.yml
 #chmod 644 /etc/elasticsearch/elasticsearch.yml
@@ -418,20 +412,6 @@ branch:
 	cd $(INSTALL_LOCAL)/ddrlocal; python ./bin/git-checkout-branch.py $(BRANCH)
 
 
-install-static: get-static
-	mkdir -p $(STATIC_ROOT)/
-	cp -R $(INSTALL_STATIC)/* $(STATIC_ROOT)/
-	chown -R root.root $(STATIC_ROOT)/
-	-ln -s $(STATIC_ROOT)/js/$(MODERNIZR) $(STATIC_ROOT)/js/modernizr.js
-	-ln -s $(STATIC_ROOT)/$(BOOTSTRAP) $(STATIC_ROOT)/bootstrap
-	-ln -s $(STATIC_ROOT)/js/$(JQUERY) $(STATIC_ROOT)/js/jquery.js
-	-ln -s $(STATIC_ROOT)/$(TAGMANAGER) $(STATIC_ROOT)/js/tagmanager
-	-ln -s $(STATIC_ROOT)/$(TYPEAHEAD) $(STATIC_ROOT)/js/typeahead
-
-clean-static:
-	-rm -Rf $(STATIC_ROOT)/
-	-rm -Rf $(INSTALL_STATIC)/*
-
 get-static: get-modernizr get-bootstrap get-jquery get-tagmanager get-typeahead
 
 get-modernizr:
@@ -469,6 +449,20 @@ get-typeahead:
 	wget -nc -P $(INSTALL_STATIC)/ http://$(PACKAGE_SERVER)/$(TYPEAHEAD).tgz
 	cd $(INSTALL_STATIC)/ && tar xzf $(INSTALL_STATIC)/$(TYPEAHEAD).tgz
 	-rm $(INSTALL_STATIC)/$(TYPEAHEAD).tgz
+
+install-static:
+	mkdir -p $(STATIC_ROOT)/
+	cp -R $(INSTALL_STATIC)/* $(STATIC_ROOT)/
+	chown -R root.root $(STATIC_ROOT)/
+	-ln -s $(STATIC_ROOT)/js/$(MODERNIZR) $(STATIC_ROOT)/js/modernizr.js
+	-ln -s $(STATIC_ROOT)/$(BOOTSTRAP) $(STATIC_ROOT)/bootstrap
+	-ln -s $(STATIC_ROOT)/js/$(JQUERY) $(STATIC_ROOT)/js/jquery.js
+	-ln -s $(STATIC_ROOT)/$(TAGMANAGER) $(STATIC_ROOT)/js/tagmanager
+	-ln -s $(STATIC_ROOT)/$(TYPEAHEAD) $(STATIC_ROOT)/js/typeahead
+
+clean-static:
+	-rm -Rf $(STATIC_ROOT)/
+	-rm -Rf $(INSTALL_STATIC)/*
 
 
 install-configs:
