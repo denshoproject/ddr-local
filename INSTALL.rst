@@ -14,7 +14,7 @@ Package File
 You can install directly from a `ddrlocal-BRANCH_VERSION_ARCH.deb`
 file.  Debian packaged dependencies (Nginx, Redis, etc) are
 automatically installed as required.
-
+::
     # gdebi ddrlocal-BRANCH_VERSION_ARCH.deb
     ...
 
@@ -40,7 +40,7 @@ using the `apt-key` tool and then add the repository itself to your
 list of APT sources. Commands for accomplishing this are listed below
 (for completeness we include commands to install curl and the apt
 tools - you may already have these installed).
-
+::
     # apt-get update && apt-get install curl apt-transport-https gnupg
     ...
     # curl -s http://packages.densho.org/debian/keys/archive.asc |apt-key add -
@@ -51,7 +51,7 @@ tools - you may already have these installed).
 **Installing the Package**
 
 You can now install the DDR Editor with a single command:
-
+::
     # apt-get update && apt-get install ddrlocal-master
     ...
 
@@ -71,7 +71,7 @@ Uninstalling
 
 A normal `apt-get remove` uninstalls the software from your system,
 leaving config and data files in place.
-
+::
     # apt-get remove ddrlocal-master
     ...
 
@@ -79,7 +79,7 @@ To completely remove all files installed as part of `ddr-local`
 (e.g. configs, static, and media files), use `apt-get purge`.
 IMPORTANT: this removes the `/media/` directory which contains your
 data!
-
+::
     # apt-get purge ddrlocal-master
     ...
     # rm /etc/apt/sources.list.d/packages_densho_org_debian.list && apt-get update
@@ -93,7 +93,7 @@ Technically you can clone `ddr-local` anywhere you want.  You can also
 build the project manually but it's much easier to use `make install`.
 When you run `make install` it will attempt to install the app in
 `/opt/ddr-local`, so you might as well just clone it to that location.
-
+::
     # apt-get update && apt-get upgrade
     # apt-get install git
     # git clone https://github.com/densho/ddr-local.git /opt/ddr-local
@@ -101,13 +101,13 @@ When you run `make install` it will attempt to install the app in
 
 Git-cloning and downloading static files are a separate step from the
 actual installation.  GitHub may ask you for passwords.
-
+::
     # make get
 
 This step installs dependencies from Debian packages, installs Python
 dependencies in a virtualenv, and places static assets and config
 files in their places.
-
+::
     # make install
 
 Problems installing `lxml` may be due to memory constraints,
@@ -126,7 +126,7 @@ The `ddr-local` makefile has a number of useful options for
 installing, removing, stopping, restarting, and otherwise interacting
 with parts of the editor.  Run `make` with no arguments for a list or
 (better) look through the Makefile itself.
-
+::
     $ make
 
 
@@ -153,12 +153,12 @@ If you installed from a package the latest model definitions should be
 installed in the `ddr-local` directory.  If you installed from source
 the definitions should have been downloaded as part of `make get`.  If
 for some reason they are absent you can clone a copy thusly:
-
+::
     $ sudo make get-ddr-defs
 
 If you want to install the model definitions in some non-standard
 location, you can clone them:
-
+::
     $ sudo git clone https://github.com/densho/ddr-defs.git /PATH/TO/ddr-defs/
 
 
@@ -167,6 +167,6 @@ Firewall Rules
 
 If you want to access Supervisor or Elasticsearch via a web browser,
 open ports in the firewall.
-
+::
     $ sudo ufw allow 9001/tcp  # supervisor
     $ sudo ufw allow 9200/tcp  # elasticsearch
