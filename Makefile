@@ -182,6 +182,25 @@ install-misc-tools:
 	apt-get --assume-yes install ack-grep byobu elinks htop mg multitail
 
 
+# Copies network config into /etc/network/interfaces
+# CHANGES IP ADDRESS TO 192.168.56.101!
+network-config:
+	@echo ""
+	@echo "configuring network ---------------------------------------------"
+	-cp $(INSTALL_LOCAL)/conf/network-interfaces /etc/network/interfaces
+
+
+# Installs VirtualBox Guest Additions and prerequisites
+vbox-guest:
+	@echo ""
+	@echo "installing VirtualBox Guest Additions ---------------------------"
+	@echo "In the VM window, click on \"Devices > Install Guest Additions\"."
+	apt-get --quiet install build-essential module-assistant
+	m-a prepare
+	mount /media/cdrom
+	sh /media/cdrom/VBoxLinuxAdditions.run
+
+
 install-daemons: install-elasticsearch install-redis install-cgit install-munin install-nginx
 
 remove-daemons: remove-elasticsearch remove-redis remove-cgit remove-munin remove-nginx
