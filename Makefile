@@ -82,95 +82,71 @@ FPM_BASE=opt/ddr-local
 
 help:
 	@echo "--------------------------------------------------------------------------------"
-	@echo "ddr-local Install Helper"
+	@echo "ddr-local make commands"
 	@echo ""
-	@echo "install - Does a complete install. Idempotent, so run as many times as you like."
-	@echo "          IMPORTANT: Run 'adduser ddr' first to install ddr user and group."
-	@echo "          Installation instructions: make howto-install"
-	@echo "Subcommands:"
-	@echo "    install-prep    - Various preperatory tasks"
-	@echo "    install-daemons - Installs Nginx, Redis, Elasticsearch"
-	@echo "    get-app         - Runs git-clone or git-pull on ddr-cmdln and ddr-local"
-	@echo "    install-app     - Just installer tasks for ddr-cmdln and ddr-local"
-	@echo "    install-static  - Downloads static media (Bootstrap, jquery, etc)"
+	@echo "Most commands have subcommands (ex: install-ddr-cmdln, restart-supervisor)"
 	@echo ""
-	@echo "get-ddr-defs - Installs ddr-defs in $(INSTALL_DEFS)."
-	@echo ""
-	@echo "enable-bkgnd  - Enable background processes. (Run make reload on completion)"
-	@echo "disable-bkgnd - Disablebackground processes. (Run make reload on completion)"
-	@echo ""
-	@echo "syncdb  - Initialize or update Django app's database tables."
-	@echo ""
-	@echo "branch BRANCH=[branch] - Switches ddr-local and ddr-cmdln repos to [branch]."
-	@echo ""
+	@echo "get     - Clones ddr-local, ddr-cmdln, ddr-defs, wgets static files & ES pkg."
+	@echo "install - Performs complete install. See also: make howto-install"
 	@echo "reload  - Reloads supervisord and nginx configs"
-	@echo "    reload-nginx"
-	@echo "    reload-supervisors     (also: supervisorctl reload)"
-	@echo ""
-	@echo "restart - Restarts all servers"
-	@echo "    restart-elasticsearch"
-	@echo "    restart-redis"
-	@echo "    restart-nginx"
-	@echo "    restart-supervisord    (also: supervisorctl restart all)"
-	@echo ""
+	@echo "restart - Restarts all daemons"
 	@echo "status  - Server status"
 	@echo ""
+	@echo "vbox-guest     - Installs VirtualBox Guest Additions"
+	@echo "network-config - Installs standard network conf (CHANGES IP TO 192.168.56.101!)"
+	@echo "get-ddr-defs   - Downloads ddr-defs to $(INSTALL_DEFS)."
+	@echo "enable-bkgnd   - Enable background processes. (Run make reload on completion)"
+	@echo "disable-bkgnd  - Disablebackground processes. (Run make reload on completion)"
+	@echo "syncdb         - Init/update Django app's database tables."
+	@echo "branch BRANCH=[branch] - Switches ddr-local and ddr-cmdln repos to [branch]."
+	@echo ""
+	@echo "deb       - Makes a DEB package install file."
+	@echo "remove    - Removes Debian packages for dependencies."
 	@echo "uninstall - Deletes 'compiled' Python files. Leaves build dirs and configs."
-	@echo "clean   - Deletes files created by building the program. Leaves configs."
+	@echo "clean     - Deletes files created while building app, leaves configs."
 	@echo ""
-	@echo "package - Package project in a self-contained .tgz for installation."
-	@echo ""
-	@echo "More install info: make howto-install"
 
 howto-install:
 	@echo "HOWTO INSTALL"
-	@echo "- Basic Debian netinstall"
-	@echo "- edit /etc/network/interfaces"
-	@echo "- reboot"
-	@echo "- apt-get install openssh fail2ban ufw"
-	@echo "- ufw allow 22/tcp"
-	@echo "- ufw allow 80/tcp"
-	@echo "- ufw enable"
-	@echo "- apt-get install make"
-	@echo "- adduser ddr"
-	@echo "- git clone $(SRC_REPO_LOCAL) $(INSTALL_LOCAL)"
-	@echo "- cd $(INSTALL_LOCAL)/ddrlocal"
-	@echo "- make install"
-	@echo "- [make branch BRANCH=develop]"
-	@echo "- [make install]"
-	@echo "- Place copy of 'ddr' repo in $(DDR_REPO_BASE)/ddr."
-	@echo "- make install-defs"
-	@echo "- make enable-bkgnd"
-	@echo "- make syncdb"
-	@echo "- make restart"
-	@echo "- [make clear-munin-logs]"
+	@echo "# Basic Debian netinstall"
+	@echo "#edit /etc/network/interfaces"
+	@echo "#reboot"
+	@echo "apt-get update && apt-get upgrade"
+	@echo "apt-get install -u openssh ufw"
+	@echo "ufw allow 22/tcp"
+	@echo "ufw allow 80/tcp"
+	@echo "ufw allow 9001/tcp"
+	@echo "ufw allow 9200/tcp"
+	@echo "ufw enable"
+	@echo "apt-get install --assume-yes make"
+	@echo "git clone $(SRC_REPO_LOCAL) $(INSTALL_LOCAL)"
+	@echo "cd $(INSTALL_LOCAL)/ddrlocal"
+	@echo "make install"
+	@echo "#make branch BRANCH=develop"
+	@echo "#make install"
+	@echo "# Place copy of 'ddr' repo in $(DDR_REPO_BASE)/ddr."
+	@echo "#make install-defs"
+	@echo "#make enable-bkgnd"
+	@echo "#make syncdb"
+	@echo "make restart"
+	@echo "#make clear-munin-logs"
 
 
-get: get-ddr-cmdln get-ddr-local
+get: get-app get-ddr-defs get-elasticsearch get-static
 
-install: install-prep get-app install-daemons install-app install-static install-configs
+install: install-prep install-daemons install-app install-static install-configs
 
 uninstall: uninstall-app uninstall-configs
 
 clean: clean-app
 
 
-install-prep: ddr-user apt-update install-core git-config install-misc-tools
+install-prep: ddr-user install-core git-config install-misc-tools
 
 ddr-user:
 	-addgroup ddr plugdev
 	-addgroup ddr vboxsf
 	printf "\n\n# ddrlocal: Activate virtualnv on login\nsource $(VIRTUALENV)/bin/activate\n" >> /home/ddr/.bashrc; \
-
-apt-update:
-	@echo ""
-	@echo "Package update ---------------------------------------------------------"
-	apt-get --assume-yes update
-
-apt-upgrade:
-	@echo ""
-	@echo "Package upgrade --------------------------------------------------------"
-	apt-get --assume-yes upgrade
 
 install-core:
 	apt-get --assume-yes install bzip2 curl gdebi-core git-core logrotate ntp p7zip-full wget
@@ -187,7 +163,31 @@ install-misc-tools:
 	apt-get --assume-yes install ack-grep byobu elinks htop mg multitail
 
 
+# Copies network config into /etc/network/interfaces
+# CHANGES IP ADDRESS TO 192.168.56.101!
+network-config:
+	@echo ""
+	@echo "Configuring network ---------------------------------------------"
+	-cp $(INSTALL_LOCAL)/conf/network-interfaces /etc/network/interfaces
+	@echo "/etc/network/interfaces updated."
+	@echo "New config will take effect on next reboot."
+
+
+# Installs VirtualBox Guest Additions and prerequisites
+vbox-guest:
+	@echo ""
+	@echo "Installing VirtualBox Guest Additions ---------------------------"
+	@echo "In the VM window, click on \"Devices > Install Guest Additions\"."
+	apt-get --quiet install build-essential module-assistant
+	m-a prepare
+	mount /media/cdrom
+	sh /media/cdrom/VBoxLinuxAdditions.run
+
+
 install-daemons: install-elasticsearch install-redis install-cgit install-munin install-nginx
+
+remove-daemons: remove-elasticsearch remove-redis remove-cgit remove-munin remove-nginx
+
 
 install-cgit:
 	@echo ""
@@ -198,6 +198,10 @@ install-cgit:
 	-ln -s /usr/share/cgit/cgit.css /var/www/cgit/cgit.css
 	-ln -s /usr/share/cgit/favicon.ico /var/www/cgit/favicon.ico
 	-ln -s /usr/share/cgit/robots.txt /var/www/cgit/robots.txt
+
+remove-cgit:
+	apt-get --assume-yes remove cgit fcgiwrap
+
 
 install-munin:
 	@echo ""
@@ -227,6 +231,9 @@ clear-munin-logs:
 # NOTE: This erases Munin history!
 	rm -Rf /var/cache/munin/www/*
 
+remove-munin:
+	apt-get --assume-yes remove munin munin-node libwww-perl
+
 
 install-nginx:
 	@echo ""
@@ -234,23 +241,42 @@ install-nginx:
 	apt-get --assume-yes remove apache2
 	apt-get --assume-yes install nginx
 
+remove-nginx:
+	apt-get --assume-yes remove nginx
+
 install-redis:
 	@echo ""
 	@echo "Redis ------------------------------------------------------------------"
 	apt-get --assume-yes install redis-server
+
+remove-redis:
+	apt-get --assume-yes remove redis-server
+
+
+get-elasticsearch:
+	wget -nc -P /tmp/downloads http://$(PACKAGE_SERVER)/$(ELASTICSEARCH)
 
 install-elasticsearch:
 	@echo ""
 	@echo "Elasticsearch ----------------------------------------------------------"
 # Elasticsearch is configured/restarted here so it's online by the time script is done.
 	apt-get --assume-yes install openjdk-7-jre
-	wget -nc -P /tmp/downloads http://$(PACKAGE_SERVER)/$(ELASTICSEARCH)
-	gdebi --non-interactive /tmp/downloads/$(ELASTICSEARCH)
+	-gdebi --non-interactive /tmp/downloads/$(ELASTICSEARCH)
 #cp $(INSTALL_BASE)/ddr-public/conf/elasticsearch.yml /etc/elasticsearch/
 #chown root.root /etc/elasticsearch/elasticsearch.yml
 #chmod 644 /etc/elasticsearch/elasticsearch.yml
 # 	@echo "${bldgrn}search engine (re)start${txtrst}"
-	/etc/init.d/elasticsearch restart
+	-service elasticsearch stop
+	-systemctl disable elasticsearch.service
+
+enable-elasticsearch:
+	systemctl enable elasticsearch.service
+
+disable-elasticsearch:
+	systemctl disable elasticsearch.service
+
+remove-elasticsearch:
+	apt-get --assume-yes remove openjdk-7-jre elasticsearch
 
 
 install-virtualenv:
@@ -390,20 +416,6 @@ branch:
 	cd $(INSTALL_LOCAL)/ddrlocal; python ./bin/git-checkout-branch.py $(BRANCH)
 
 
-install-static: get-static
-	mkdir -p $(STATIC_ROOT)/
-	cp -R $(INSTALL_STATIC)/* $(STATIC_ROOT)/
-	chown -R root.root $(STATIC_ROOT)/
-	-ln -s $(STATIC_ROOT)/js/$(MODERNIZR) $(STATIC_ROOT)/js/modernizr.js
-	-ln -s $(STATIC_ROOT)/$(BOOTSTRAP) $(STATIC_ROOT)/bootstrap
-	-ln -s $(STATIC_ROOT)/js/$(JQUERY) $(STATIC_ROOT)/js/jquery.js
-	-ln -s $(STATIC_ROOT)/$(TAGMANAGER) $(STATIC_ROOT)/js/tagmanager
-	-ln -s $(STATIC_ROOT)/$(TYPEAHEAD) $(STATIC_ROOT)/js/typeahead
-
-clean-static:
-	-rm -Rf $(STATIC_ROOT)/
-	-rm -Rf $(INSTALL_STATIC)/*
-
 get-static: get-modernizr get-bootstrap get-jquery get-tagmanager get-typeahead
 
 get-modernizr:
@@ -441,6 +453,22 @@ get-typeahead:
 	wget -nc -P $(INSTALL_STATIC)/ http://$(PACKAGE_SERVER)/$(TYPEAHEAD).tgz
 	cd $(INSTALL_STATIC)/ && tar xzf $(INSTALL_STATIC)/$(TYPEAHEAD).tgz
 	-rm $(INSTALL_STATIC)/$(TYPEAHEAD).tgz
+
+install-static:
+	@echo ""
+	@echo "install-static ---------------------------------------------------------"
+	mkdir -p $(STATIC_ROOT)/
+	cp -R $(INSTALL_STATIC)/* $(STATIC_ROOT)/
+	chown -R root.root $(STATIC_ROOT)/
+	-ln -s $(STATIC_ROOT)/js/$(MODERNIZR) $(STATIC_ROOT)/js/modernizr.js
+	-ln -s $(STATIC_ROOT)/$(BOOTSTRAP) $(STATIC_ROOT)/bootstrap
+	-ln -s $(STATIC_ROOT)/js/$(JQUERY) $(STATIC_ROOT)/js/jquery.js
+	-ln -s $(STATIC_ROOT)/$(TAGMANAGER) $(STATIC_ROOT)/js/tagmanager
+	-ln -s $(STATIC_ROOT)/$(TYPEAHEAD) $(STATIC_ROOT)/js/typeahead
+
+clean-static:
+	-rm -Rf $(STATIC_ROOT)/
+	-rm -Rf $(INSTALL_STATIC)/*
 
 
 install-configs:
@@ -510,7 +538,7 @@ disable-bkgnd:
 reload: reload-nginx reload-supervisor
 
 reload-nginx:
-	/etc/init.d/nginx reload
+	sudo service nginx reload
 
 reload-supervisor:
 	supervisorctl reload
@@ -521,48 +549,48 @@ reload-app: reload-supervisor
 stop: stop-elasticsearch stop-redis stop-cgit stop-nginx stop-munin stop-supervisor
 
 stop-elasticsearch:
-	/etc/init.d/elasticsearch stop
+	-service elasticsearch stop
 
 stop-redis:
-	/etc/init.d/redis-server stop
+	-service redis-server stop
 
 stop-cgit:
-	/etc/init.d/fcgiwrap stop
+	-service fcgiwrap stop
 
 stop-nginx:
-	/etc/init.d/nginx stop
+	-service nginx stop
 
 stop-munin:
-	/etc/init.d/munin-node stop
-	/etc/init.d/munin stop
+	-service munin-node stop
+	-service munin stop
 
 stop-supervisor:
-	/etc/init.d/supervisor stop
+	-service supervisor stop
 
 stop-app: stop-supervisor
 
 
-restart: restart-elasticsearch restart-redis restart-cgit restart-nginx restart-munin restart-supervisor
+restart: restart-supervisor restart-redis restart-cgit restart-nginx restart-munin
 
 restart-elasticsearch:
-	/etc/init.d/elasticsearch restart
+	-service elasticsearch restart
 
 restart-redis:
-	/etc/init.d/redis-server restart
+	-service redis-server restart
 
 restart-cgit:
-	/etc/init.d/fcgiwrap restart
+	-service fcgiwrap restart
 
 restart-nginx:
-	/etc/init.d/nginx restart
+	-service nginx restart
 
 restart-munin:
-	/etc/init.d/munin-node restart
-	/etc/init.d/munin restart
+	-service munin-node restart
+	-service munin restart
 
 restart-supervisor:
-	/etc/init.d/supervisor stop
-	/etc/init.d/supervisor start
+	-service supervisor stop
+	-service supervisor start
 
 restart-app: restart-supervisor
 
@@ -573,15 +601,18 @@ restart-minimal: stop-elasticsearch restart-redis stop-nginx stop-munin restart-
 
 status:
 	@echo "------------------------------------------------------------------------"
-	-/etc/init.d/elasticsearch status
+	-systemctl status elasticsearch
 	@echo " - - - - -"
-	-/etc/init.d/redis-server status
+	-systemctl status redis-server
 	@echo " - - - - -"
-	-/etc/init.d/nginx status
+	-systemctl status nginx
 	@echo " - - - - -"
+	-systemctl status supervisor
 	-supervisorctl status
 	@echo " - - - - -"
 	-git annex version | grep version
+	@echo " - - - - -"
+	-uptime
 	@echo ""
 
 git-status:
@@ -614,28 +645,6 @@ uninstall-ddr-manual:
 
 clean-ddr-manual:
 	-rm -Rf $(INSTALL_MANUAL)/build
-
-
-package:
-	@echo ""
-	@echo "packaging --------------------------------------------------------------"
-	-rm -Rf $(PACKAGE_TMP)
-	-rm -Rf $(PACKAGE_BASE)/*.tgz
-	-mkdir -p $(PACKAGE_BASE)
-	cp -R $(INSTALL_LOCAL) $(PACKAGE_TMP)
-	cd $(PACKAGE_TMP)
-	git clean -fd   # Remove all untracked files
-	virtualenv --relocatable $(PACKAGE_VENV)  # Make venv relocatable
-	-cd $(PACKAGE_BASE); tar czf $(PACKAGE_TGZ) ddr-local
-
-rsync-packaged:
-	@echo ""
-	@echo "rsync-packaged ---------------------------------------------------------"
-	rsync -avz --delete $(PACKAGE_BASE)/ddr-local $(PACKAGE_RSYNC_DEST)
-
-install-packaged: install-prep install-dependencies install-static install-configs mkdirs syncdb install-daemon-configs
-	@echo ""
-	@echo "install packaged -------------------------------------------------------"
 
 
 # http://fpm.readthedocs.io/en/latest/
