@@ -170,3 +170,27 @@ open ports in the firewall.
 ::
     $ sudo ufw allow 9001/tcp  # supervisor
     $ sudo ufw allow 9200/tcp  # elasticsearch
+
+
+VirtualBox Guest Additions
+--------------------------
+
+The Makefile can install VirtualBox Guest Additions, which is required
+for accessing shared directories on the host system.
+::
+    # make vbox-guest
+
+This step requires you to click "Devices > Insert Guest Additions CD
+Image" in the device window.
+
+
+Network Config
+--------------
+
+The Makefile can install a networking config file which sets the VM
+to use a standard IP address (192.168.56.101).
+::
+    # make network-config
+    # reboot
+
+Network config will take effect after the next reboot.

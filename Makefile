@@ -167,14 +167,16 @@ install-misc-tools:
 # CHANGES IP ADDRESS TO 192.168.56.101!
 network-config:
 	@echo ""
-	@echo "configuring network ---------------------------------------------"
+	@echo "Configuring network ---------------------------------------------"
 	-cp $(INSTALL_LOCAL)/conf/network-interfaces /etc/network/interfaces
+	@echo "/etc/network/interfaces updated."
+	@echo "New config will take effect on next reboot."
 
 
 # Installs VirtualBox Guest Additions and prerequisites
 vbox-guest:
 	@echo ""
-	@echo "installing VirtualBox Guest Additions ---------------------------"
+	@echo "Installing VirtualBox Guest Additions ---------------------------"
 	@echo "In the VM window, click on \"Devices > Install Guest Additions\"."
 	apt-get --quiet install build-essential module-assistant
 	m-a prepare
