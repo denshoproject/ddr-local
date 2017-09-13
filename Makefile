@@ -709,7 +709,7 @@ deb:
 	ddrlocal=$(FPM_BASE)   \
 	.git=$(FPM_BASE)   \
 	.gitignore=$(FPM_BASE)   \
-	INSTALL=$(FPM_BASE)   \
+	INSTALL.rst=$(FPM_BASE)   \
 	LICENSE=$(FPM_BASE)   \
 	Makefile=$(FPM_BASE)   \
 	README.rst=$(FPM_BASE)   \
