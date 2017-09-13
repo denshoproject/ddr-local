@@ -8,30 +8,47 @@ The `ddr-local` install and update scripts below have been tested on
 Debian 8.0 running as a VM in VirtualBox.
 
 
-Package File
-------------
+Three Ways To Install
+---------------------
 
-You can install directly from a `ddrlocal-BRANCH_VERSION_ARCH.deb`
-file.  Debian packaged dependencies (Nginx, Redis, etc) are
-automatically installed as required.
+There are three ways to install `ddr-local`:
+
+- package file (.deb)
+- package repository (apt-get)
+- manual (git clone)
+
+
+Package File Install (.deb)
+---------------------------
+
+If you have a `ddrlocal-BRANCH_VERSION_ARCH.deb` file you can install
+using the `gdebi` command.  The `virtualenv` is installed ready to go
+and Debian packaged dependencies (Nginx, Redis, etc) are automatically
+installed as required.
 ::
     # gdebi ddrlocal-BRANCH_VERSION_ARCH.deb
     ...
 
-This method is similar in effect to installing from source (i.e. the
-Git repository) but is faster (you don't have to build the software)
-and lets you completely remove the install if you so choose.  Note
-that you will not receive automatic updates from the repository.
+The result is the same as a manual install but is faster since you
+don't have to build the virtualenv and lets you completely remove the
+install if you so choose.
 
 After the install completes you can use `make` commands to manage the
 installation.
 
+NOTE: you will **not** receive automatic updates from the repository!
 
-Debian Repository
------------------
+**Uninstalling**
 
-Using one of our Debian repositories is the recommended way to install
-`ddr-local`, since it makes updates and upgrades quick and easy.
+See the "Uninstalling" heading under the next section.
+
+
+Package Repository Install (apt-get)
+------------------------------------
+
+It is recommended to install `ddr-local` from a package repository,
+since your install will receive upgrades automatically along with
+other packages.
 
 **Adding the Repository**
 
@@ -45,7 +62,7 @@ tools - you may already have these installed).
     ...
     # curl -s http://packages.densho.org/debian/keys/archive.asc |apt-key add -
     ...
-    # echo "deb http://packages.densho.org/debian/ jessie main" |tee /etc/apt/sources.list.d/packages_densho_org_debian.list
+    # echo "deb http://packages.densho.org/debian/ master main" |tee /etc/apt/sources.list.d/packages_densho_org_debian.list
     ...
 
 **Installing the Package**
@@ -65,9 +82,7 @@ Now you should be able to run mailpile on the command line and join
 the fun! If you have installed the Apache integration, you can access
 https://your.example.com/mailpile/ and log on that way.
 
-
-Uninstalling
-------------
+**Uninstalling**
 
 A normal `apt-get remove` uninstalls the software from your system,
 leaving config and data files in place.
@@ -86,13 +101,17 @@ data!
     ...
 
 
-Installing From Source
-----------------------
+Manual Install (git clone)
+--------------------------
 
-Technically you can clone `ddr-local` anywhere you want.  You can also
-build the project manually but it's much easier to use `make install`.
-When you run `make install` it will attempt to install the app in
-`/opt/ddr-local`, so you might as well just clone it to that location.
+You can also install manually by cloning the `ddr-local` Git
+repository.  This method requires you to build the `virtualenv` and
+install prerequisites but is the best method if you are going to work
+on the `ddr-local` project.
+
+Technically you can clone `ddr-local` anywhere you want but `make
+install` will attempt to install the app in `/opt/ddr-local` so you
+might as well just clone it to that location.
 ::
     # apt-get update && apt-get upgrade
     # apt-get install git
@@ -137,13 +156,8 @@ Default settings are in `/etc/ddr/ddrlocal.cfg`.  Please do not edit
 this file.  Settings in `/etc/ddr/ddrlocal-local.cfg` will override
 the defaults.
 
-
-Gitolite keys
--------------
-
-The `ddr` user requires SSL keys in order to synchronize local
-collection repositories with those on the main Gitolite server.  Setup
-is beyond this INSTALL so please see `ddr-manual`.
+Rather than listing settings files here, examine the `deb` task in
+`Makefile`, as all the config files are listed there.
 
 
 Models Definitions
@@ -160,6 +174,18 @@ If you want to install the model definitions in some non-standard
 location, you can clone them:
 ::
     $ sudo git clone https://github.com/densho/ddr-defs.git /PATH/TO/ddr-defs/
+
+
+Network Config
+--------------
+
+The Makefile can install a networking config file which sets the VM
+to use a standard IP address (192.168.56.101).
+::
+    # make network-config
+    # reboot
+
+Network config will take effect after the next reboot.
 
 
 Firewall Rules
@@ -184,13 +210,9 @@ This step requires you to click "Devices > Insert Guest Additions CD
 Image" in the device window.
 
 
-Network Config
---------------
+Gitolite keys
+-------------
 
-The Makefile can install a networking config file which sets the VM
-to use a standard IP address (192.168.56.101).
-::
-    # make network-config
-    # reboot
-
-Network config will take effect after the next reboot.
+The `ddr` user requires SSL keys in order to synchronize local
+collection repositories with those on the main Gitolite server.  Setup
+is beyond this INSTALL so please see `ddr-manual`.
