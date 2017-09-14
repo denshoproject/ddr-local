@@ -26,7 +26,8 @@ using the `gdebi` command.  The `virtualenv` is installed ready to go
 and Debian packaged dependencies (Nginx, Redis, etc) are automatically
 installed as required.
 ::
-    # gdebi ddrlocal-BRANCH_VERSION_ARCH.deb
+    $ sudo apt-get install gdebi
+    $ sudo gdebi ddrlocal-BRANCH_VERSION_ARCH.deb
     ...
 
 The result is the same as a manual install but is faster since you
@@ -58,18 +59,18 @@ list of APT sources. Commands for accomplishing this are listed below
 (for completeness we include commands to install curl and the apt
 tools - you may already have these installed).
 ::
-    # apt-get update && apt-get install curl apt-transport-https gnupg
+    $ sudo apt-get update && sudo apt-get install curl apt-transport-https gnupg
     ...
-    # curl -s http://packages.densho.org/debian/keys/archive.asc |apt-key add -
+    $ sudo curl -s http://packages.densho.org/debian/keys/archive.asc | sudo apt-key add -
     ...
-    # echo "deb http://packages.densho.org/debian/ jessie main" |tee /etc/apt/sources.list.d/packages_densho_org_debian.list
+    $ echo "deb http://packages.densho.org/debian/ jessie main" | sudo tee /etc/apt/sources.list.d/packages_densho_org_debian.list
     ...
 
 **Installing the Package**
 
 You can now install the DDR Editor with a single command:
 ::
-    # apt-get update && apt-get install ddrlocal-master
+    $ sudo apt-get update && sudo apt-get install ddrlocal-master
     ...
 
 If you wish to use the develop branch instead of the master branch,
@@ -87,7 +88,7 @@ https://your.example.com/mailpile/ and log on that way.
 A normal `apt-get remove` uninstalls the software from your system,
 leaving config and data files in place.
 ::
-    # apt-get remove ddrlocal-master
+    $ sudo apt-get remove ddrlocal-master
     ...
 
 To completely remove all files installed as part of `ddr-local`
@@ -95,9 +96,9 @@ To completely remove all files installed as part of `ddr-local`
 IMPORTANT: this removes the `/media/` directory which contains your
 data!
 ::
-    # apt-get purge ddrlocal-master
+    $ sudo apt-get purge ddrlocal-master
     ...
-    # rm /etc/apt/sources.list.d/packages_densho_org_debian.list && apt-get update
+    $ sudo rm /etc/apt/sources.list.d/packages_densho_org_debian.list && apt-get update
     ...
 
 
@@ -113,21 +114,23 @@ Technically you can clone `ddr-local` anywhere you want but `make
 install` will attempt to install the app in `/opt/ddr-local` so you
 might as well just clone it to that location.
 ::
-    # apt-get update && apt-get upgrade
-    # apt-get install git
-    # git clone https://github.com/densho/ddr-local.git /opt/ddr-local
+    $ sudo apt-get update && apt-get upgrade
+    $ sudo apt-get install git make
+    $ sudo git clone https://github.com/densho/ddr-local.git /opt/ddr-local
     $ cd /opt/ddr-local/
 
 Git-cloning and downloading static files are a separate step from the
 actual installation.  GitHub may ask you for passwords.
 ::
-    # make get
+    $ cd /opt/ddr-local/
+    $ sudo make get
 
 This step installs dependencies from Debian packages, installs Python
 dependencies in a virtualenv, and places static assets and config
 files in their places.
 ::
-    # make install
+    $ cd /opt/ddr-local/
+    $ sudo make install
 
 Problems installing `lxml` may be due to memory constraints,
 especially if Elasticsearch is running, which it will be if you've
@@ -182,8 +185,8 @@ Network Config
 The Makefile can install a networking config file which sets the VM
 to use a standard IP address (192.168.56.101).
 ::
-    # make network-config
-    # reboot
+    $ sudo make network-config
+    $ sudo reboot
 
 Network config will take effect after the next reboot.
 
@@ -204,7 +207,7 @@ VirtualBox Guest Additions
 The Makefile can install VirtualBox Guest Additions, which is required
 for accessing shared directories on the host system.
 ::
-    # make vbox-guest
+    $ sudo make vbox-guest
 
 This step requires you to click "Devices > Insert Guest Additions CD
 Image" in the device window.
