@@ -1,9 +1,13 @@
 # Add symlinks after installing (FPM) .deb package
 
-# nginx conf
+# nginx: install ddrlocal.conf, rm nginx default
 if [ ! -f /etc/nginx/sites-enabled/ddrlocal.conf ]
 then
     ln -s /etc/nginx/sites-available/ddrlocal.conf /etc/nginx/sites-enabled/ddrlocal.conf
+fi
+if [ -f /etc/nginx/sites-enabled/default ]
+then
+    rm /etc/nginx/sites-enabled/default
 fi
 
 # logs dir perms
