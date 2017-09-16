@@ -149,6 +149,7 @@ installing, removing, stopping, restarting, and otherwise interacting
 with parts of the editor.  Run `make` with no arguments for a list or
 (better) look through the Makefile itself.
 ::
+    $ cd /opt/ddr-local/
     $ make
 
 
@@ -171,6 +172,7 @@ installed in the `ddr-local` directory.  If you installed from source
 the definitions should have been downloaded as part of `make get`.  If
 for some reason they are absent you can clone a copy thusly:
 ::
+    $ cd /opt/ddr-local/
     $ sudo make get-ddr-defs
 
 If you want to install the model definitions in some non-standard
@@ -185,6 +187,7 @@ Network Config
 The Makefile can install a networking config file which sets the VM
 to use a standard IP address (192.168.56.101).
 ::
+    $ cd /opt/ddr-local/
     $ sudo make network-config
     $ sudo reboot
 
@@ -207,6 +210,7 @@ VirtualBox Guest Additions
 The Makefile can install VirtualBox Guest Additions, which is required
 for accessing shared directories on the host system.
 ::
+    $ cd /opt/ddr-local/
     $ sudo make vbox-guest
 
 This step requires you to click "Devices > Insert Guest Additions CD
