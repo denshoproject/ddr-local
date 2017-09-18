@@ -39,7 +39,6 @@ def sitewide(request):
         'celery_status_update': request.session.get('celery_status_update', False),
         'supervisord_url': settings.SUPERVISORD_URL,
         'elasticsearch_url': elasticsearch_url,
-        'munin_url': settings.MUNIN_URL,
         'logout_next': logout_next,
         'cgit_url': settings.CGIT_URL,
         'idservice_url': settings.IDSERVICE_API_BASE,

@@ -64,7 +64,6 @@ SUPERVISOR_GUNICORN_CONF=/etc/supervisor/conf.d/ddrlocal.conf
 SUPERVISOR_CONF=/etc/supervisor/supervisord.conf
 NGINX_CONF=/etc/nginx/sites-available/ddrlocal.conf
 NGINX_CONF_LINK=/etc/nginx/sites-enabled/ddrlocal.conf
-MUNIN_CONF=/etc/munin/munin.conf
 CGIT_CONF=/etc/cgitrc
 
 FPM_BRANCH := $(shell git rev-parse --abbrev-ref HEAD | tr -d _ | tr -d -)
@@ -129,7 +128,6 @@ howto-install:
 	@echo "#make enable-bkgnd"
 	@echo "#make syncdb"
 	@echo "make restart"
-	@echo "#make clear-munin-logs"
 
 
 get: get-app get-ddr-defs get-elasticsearch get-static
@@ -184,9 +182,9 @@ vbox-guest:
 	sh /media/cdrom/VBoxLinuxAdditions.run
 
 
-install-daemons: install-elasticsearch install-redis install-cgit install-munin install-nginx
+install-daemons: install-elasticsearch install-redis install-cgit install-nginx
 
-remove-daemons: remove-elasticsearch remove-redis remove-cgit remove-munin remove-nginx
+remove-daemons: remove-elasticsearch remove-redis remove-cgit remove-nginx
 
 
 install-cgit:
@@ -201,38 +199,6 @@ install-cgit:
 
 remove-cgit:
 	apt-get --assume-yes remove cgit fcgiwrap
-
-
-install-munin:
-	@echo ""
-	@echo "Munin ------------------------------------------------------------------"
-	apt-get --assume-yes install munin munin-node libwww-perl
-	if test -d $(INSTALL_BASE)/munin-monitoring; \
-	then cd $(INSTALL_BASE)/munin-monitoring && git pull; \
-	else cd $(INSTALL_BASE) && git clone https://github.com/munin-monitoring/contrib.git $(INSTALL_BASE)/munin-monitoring; \
-	fi
-	-rm /etc/munin/plugins/exim_*
-	-rm /etc/munin/plugins/entropy
-	-rm /etc/munin/plugins/fail2ban
-	-rm /etc/munin/plugins/if_err_*
-	-rm /etc/munin/plugins/munin_stats
-	-rm /etc/munin/plugins/nfsd
-	-rm /etc/munin/plugins/nfsd4
-	-rm /etc/munin/plugins/ntp_*
-	cd /etc/munin/plugins/
-	-ln -s /usr/share/munin/plugins/nginx_request /etc/munin/plugins/nginx_request
-	-ln -s /usr/share/munin/plugins/nginx_status /etc/munin/plugins/nginx_status
-	-ln -s $(INSTALL_BASE)/munin-monitoring/plugins/redis/redis_ /etc/munin/plugins/redis_
-#- celery
-#- Elasticsearch
-#- ping gitolite
-
-clear-munin-logs:
-# NOTE: This erases Munin history!
-	rm -Rf /var/cache/munin/www/*
-
-remove-munin:
-	apt-get --assume-yes remove munin munin-node libwww-perl
 
 
 install-nginx:
@@ -513,15 +479,10 @@ install-daemon-configs:
 	chmod 644 $(SUPERVISOR_CONF)
 # cgitrc
 	cp $(INSTALL_LOCAL)/conf/cgitrc $(CGIT_CONF)
-# munin settings
-	cp $(INSTALL_LOCAL)/conf/munin.conf $(MUNIN_CONF)
-	chown root.root $(MUNIN_CONF)
-	chmod 644 $(MUNIN_CONF)
 
 uninstall-daemon-configs:
 	-rm $(NGINX_CONF)
 	-rm $(NGINX_CONF_LINK)
-	-rm $(MUNIN_CONF)
 	-rm $(SUPERVISOR_CELERY_CONF)
 	-rm $(SUPERVISOR_CONF)
 
@@ -546,7 +507,7 @@ reload-supervisor:
 reload-app: reload-supervisor
 
 
-stop: stop-elasticsearch stop-redis stop-cgit stop-nginx stop-munin stop-supervisor
+stop: stop-elasticsearch stop-redis stop-cgit stop-nginx stop-supervisor
 
 stop-elasticsearch:
 	-service elasticsearch stop
@@ -560,17 +521,13 @@ stop-cgit:
 stop-nginx:
 	-service nginx stop
 
-stop-munin:
-	-service munin-node stop
-	-service munin stop
-
 stop-supervisor:
 	-service supervisor stop
 
 stop-app: stop-supervisor
 
 
-restart: restart-supervisor restart-redis restart-cgit restart-nginx restart-munin
+restart: restart-supervisor restart-redis restart-cgit restart-nginx
 
 restart-elasticsearch:
 	-service elasticsearch restart
@@ -584,10 +541,6 @@ restart-cgit:
 restart-nginx:
 	-service nginx restart
 
-restart-munin:
-	-service munin-node restart
-	-service munin restart
-
 restart-supervisor:
 	-service supervisor stop
 	-service supervisor start
@@ -596,7 +549,7 @@ restart-app: restart-supervisor
 
 
 # just Redis and Supervisor
-restart-minimal: stop-elasticsearch restart-redis stop-nginx stop-munin restart-supervisor
+restart-minimal: stop-elasticsearch restart-redis stop-nginx restart-supervisor
 
 
 status:
@@ -678,8 +631,6 @@ deb:
 	--depends "libxml2-dev"   \
 	--depends "libxslt1-dev"   \
 	--depends "libz-dev"   \
-	--depends "munin"   \
-	--depends "munin-node"   \
 	--depends "nginx"   \
 	--depends "openjdk-7-jre"   \
 	--depends "pmount"   \

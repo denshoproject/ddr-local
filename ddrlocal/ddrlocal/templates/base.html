@@ -227,8 +227,6 @@ Rendered at {{ time }} by PID {{ pid }} on {{ host }}<br/>
 &bull;
 <a href="{{ elasticsearch_url }}" target="elasticsearch">elasticsearch</a>
 &bull;
-<a href="{{ munin_url }}" target="munin">munin</a>
-&bull;
 <a href="{% url "webui-gitstatus-toggle" %}">gitstatus updates ({% if celery_status_update %}ON{% else %}OFF{% endif %})</a>
 </span>
 </p>
