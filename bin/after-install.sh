@@ -1,4 +1,11 @@
-# Add symlinks after installing (FPM) .deb package
+# Do things after installing (FPM) .deb package
+
+# settings files
+chown root.root /etc/ddr/ddrlocal.cfg
+chmod 644       /etc/ddr/ddrlocal.cfg
+touch           /etc/ddr/ddrlocal-local.cfg
+chown ddr.root  /etc/ddr/ddrlocal-local.cfg
+chmod 640       /etc/ddr/ddrlocal-local.cfg
 
 # nginx: install ddrlocal.conf, rm nginx default
 if [ ! -f /etc/nginx/sites-enabled/ddrlocal.conf ]
