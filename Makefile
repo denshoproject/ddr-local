@@ -166,7 +166,7 @@ install-misc-tools:
 network-config:
 	@echo ""
 	@echo "Configuring network ---------------------------------------------"
-	-cp $(INSTALL_LOCAL)/conf/network-interfaces /etc/network/interfaces
+	-cp $(INSTALL_LOCAL)/conf/network-interfaces.$(DEBIAN_CODENAME) /etc/network/interfaces
 	@echo "/etc/network/interfaces updated."
 	@echo "New config will take effect on next reboot."
 
@@ -226,7 +226,12 @@ install-elasticsearch:
 	@echo ""
 	@echo "Elasticsearch ----------------------------------------------------------"
 # Elasticsearch is configured/restarted here so it's online by the time script is done.
+ifeq ($(DEBIAN_CODENAME), jessie)
 	apt-get --assume-yes install openjdk-7-jre
+endif
+ifeq ($(DEBIAN_CODENAME), stretch)
+	apt-get --assume-yes install openjdk-8-jre
+endif
 	-gdebi --non-interactive /tmp/downloads/$(ELASTICSEARCH)
 #cp $(INSTALL_BASE)/ddr-public/conf/elasticsearch.yml /etc/elasticsearch/
 #chown root.root /etc/elasticsearch/elasticsearch.yml
@@ -260,7 +265,7 @@ install-dependencies: install-core install-misc-tools install-daemons install-gi
 	@echo "install-dependencies ---------------------------------------------------"
 	apt-get --assume-yes install python-pip python-virtualenv
 	apt-get --assume-yes install python-dev
-	apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev libz-dev pmount udisks
+	apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev libz-dev pmount udisks2
 	apt-get --assume-yes install imagemagick libexempi3 libssl-dev python-dev libxml2 libxml2-dev libxslt1-dev supervisor
 
 mkdirs: mkdir-ddr-cmdln mkdir-ddr-local
@@ -293,7 +298,7 @@ setup-ddr-cmdln:
 install-ddr-cmdln: install-virtualenv mkdir-ddr-cmdln
 	@echo ""
 	@echo "install-ddr-cmdln ------------------------------------------------------"
-	apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev libz-dev pmount udisks
+	apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev libz-dev pmount udisks2
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_CMDLN)/ddr && python setup.py install
 	source $(VIRTUALENV)/bin/activate; \
@@ -640,7 +645,7 @@ deb:
 	--depends "python-virtualenv"   \
 	--depends "redis-server"   \
 	--depends "supervisor"   \
-	--depends "udisks"   \
+	--depends "udisks2"   \
 	--after-install "bin/after-install.sh"   \
 	--chdir $(INSTALL_LOCAL)   \
 	conf/ddrlocal.cfg=etc/ddr/ddrlocal.cfg   \
