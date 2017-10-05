@@ -6,6 +6,7 @@ ddrlocal/ddrlocal/settings.py
 ddr-cmdln/
 ddr-defs/
 ddr-manual/
+pypy-*
 static/
 tmp/
 venv/

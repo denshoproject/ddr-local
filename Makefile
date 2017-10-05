@@ -30,6 +30,9 @@ INSTALL_CMDLN=$(INSTALL_LOCAL)/ddr-cmdln
 INSTALL_DEFS=$(INSTALL_LOCAL)/ddr-defs
 INSTALL_MANUAL=$(INSTALL_LOCAL)/ddr-manual
 
+PYPY=pypy-5.9-linux_x86_64-portable
+PYPY_TAR=$(PYPY).tar.bz2
+PYPY_URL=https://bitbucket.org/squeaky/portable-pypy/downloads/$(PYPY_TAR)
 VIRTUALENV=$(INSTALL_LOCAL)/venv/ddrlocal
 SETTINGS=$(INSTALL_LOCAL)/ddrlocal/ddrlocal/settings.py
 
@@ -252,11 +255,24 @@ remove-elasticsearch:
 	apt-get --assume-yes remove openjdk-7-jre elasticsearch
 
 
+get-pypy:
+	@echo ""
+	@echo "get-pypy ---------------------------------------------------------------"
+	if test -d $(INSTALL_LOCAL)/$(PYPY); \
+	then \
+	echo "$(INSTALL_LOCAL)/$(PYPY) EXISTS"; \
+	else \
+	echo "$(INSTALL_LOCAL)/$(PYPY) MISSING!"; \
+	wget -nc -P /tmp/downloads $(PYPY_URL); \
+	cd $(INSTALL_LOCAL) && tar xf /tmp/downloads/$(PYPY_TAR); \
+	fi
+
+
 install-virtualenv:
 	@echo ""
 	@echo "install-virtualenv -----------------------------------------------------"
 	apt-get --assume-yes install python-six python-pip python-virtualenv python-dev
-	test -d $(VIRTUALENV) || virtualenv --distribute --setuptools $(VIRTUALENV)
+	test -d $(VIRTUALENV) || virtualenv --python $(INSTALL_LOCAL)/$(PYPY)/bin/pypy --distribute --setuptools $(VIRTUALENV)
 	source $(VIRTUALENV)/bin/activate; \
 	pip install -U bpython appdirs blessings curtsies greenlet packaging pygments pyparsing setuptools wcwidth
 #	virtualenv --relocatable $(VIRTUALENV)  # Make venv relocatable
@@ -273,7 +289,7 @@ install-dependencies: install-core install-misc-tools install-daemons install-gi
 mkdirs: mkdir-ddr-cmdln mkdir-ddr-local
 
 
-get-app: get-ddr-cmdln get-ddr-local get-ddr-manual
+get-app: get-pypy get-ddr-cmdln get-ddr-local get-ddr-manual
 
 install-app: install-git-annex install-virtualenv install-ddr-cmdln install-ddr-local install-configs install-daemon-configs
 
@@ -670,6 +686,7 @@ deb:
 	INSTALL.rst=$(FPM_BASE)   \
 	LICENSE=$(FPM_BASE)   \
 	Makefile=$(FPM_BASE)   \
+	$(PYPY)=$(FPM_BASE)   \
 	README.rst=$(FPM_BASE)   \
 	static=$(FPM_BASE)   \
 	venv=$(FPM_BASE)   \
