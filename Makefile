@@ -288,18 +288,21 @@ install-git-annex:
 get-ddr-cmdln:
 	@echo ""
 	@echo "get-ddr-cmdln ----------------------------------------------------------"
+	git status | grep "On branch"
 	if test -d $(INSTALL_CMDLN); \
 	then cd $(INSTALL_CMDLN) && git pull; \
 	else cd $(INSTALL_LOCAL) && git clone $(SRC_REPO_CMDLN); \
 	fi
 
 setup-ddr-cmdln:
+	git status | grep "On branch"
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_CMDLN)/ddr && python setup.py install
 
 install-ddr-cmdln: install-virtualenv mkdir-ddr-cmdln
 	@echo ""
 	@echo "install-ddr-cmdln ------------------------------------------------------"
+	git status | grep "On branch"
 	apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev libz-dev pmount udisks2
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_CMDLN)/ddr && python setup.py install
@@ -329,11 +332,13 @@ clean-ddr-cmdln:
 get-ddr-local:
 	@echo ""
 	@echo "get-ddr-local ----------------------------------------------------------"
+	git status | grep "On branch"
 	git pull
 
 install-ddr-local: install-virtualenv mkdir-ddr-local
 	@echo ""
 	@echo "install-ddr-local ------------------------------------------------------"
+	git status | grep "On branch"
 	apt-get --assume-yes install imagemagick libexempi3 libssl-dev python-dev libxml2 libxml2-dev libxslt1-dev supervisor
 	source $(VIRTUALENV)/bin/activate; \
 	pip install -U -r $(INSTALL_LOCAL)/ddrlocal/requirements/production.txt
@@ -371,6 +376,7 @@ clean-ddr-local:
 get-ddr-defs:
 	@echo ""
 	@echo "get-ddr-defs -----------------------------------------------------------"
+	git status | grep "On branch"
 	if test -d $(INSTALL_DEFS); \
 	then cd $(INSTALL_DEFS) && git pull; \
 	else cd $(INSTALL_LOCAL) && git clone $(SRC_REPO_DEFS) $(INSTALL_DEFS); \
@@ -585,6 +591,7 @@ git-status:
 get-ddr-manual:
 	@echo ""
 	@echo "get-ddr-manual ---------------------------------------------------------"
+	git status | grep "On branch"
 	if test -d $(INSTALL_MANUAL); \
 	then cd $(INSTALL_MANUAL) && git pull; \
 	else cd $(INSTALL_LOCAL) && git clone $(SRC_REPO_MANUAL); \
