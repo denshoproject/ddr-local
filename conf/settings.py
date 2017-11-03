@@ -119,6 +119,7 @@ DEFAULT_PERMISSION_FILE       = config.get('local','default_permission_file')
 LOG_DIR              = config.get('local', 'log_dir')
 LOG_FILE             = config.get('local', 'log_file')
 LOG_LEVEL            = config.get('local', 'log_level')
+VOCABS_PATH          = config.get('cmdln', 'vocabs_path')
 VOCAB_TERMS_URL      = config.get('local', 'vocab_terms_url')
 CSV_EXPORT_PATH = {
     'entity': '/tmp/ddr/csv/%s-objects.csv',
