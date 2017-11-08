@@ -21,13 +21,13 @@ from django.template import RequestContext
 
 from DDR import commands
 from DDR import converters
-from DDR import docstore
 from DDR import fileio
 from DDR import idservice
 from DDR import vocab
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
+from webui import docstore
 from webui.decorators import ddrview
 from webui.forms import DDRForm
 from webui.forms import ObjectIDForm

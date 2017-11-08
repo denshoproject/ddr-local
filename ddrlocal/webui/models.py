@@ -13,7 +13,6 @@ from django.core.urlresolvers import reverse
 from django.db import models
 
 from DDR import commands
-from DDR import docstore
 from DDR import dvcs
 from DDR import fileio
 from DDR import modules
@@ -24,6 +23,7 @@ from DDR.models import ListEntity, Entity as DDREntity
 from DDR.models import File
 from DDR.models import COLLECTION_FILES_PREFIX, ENTITY_FILES_PREFIX
 
+from webui import docstore
 from webui import gitstatus
 from webui import WEBUI_MESSAGES
 from webui import COLLECTION_CHILDREN_CACHE_KEY

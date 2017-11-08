@@ -19,6 +19,7 @@ from django.contrib import messages
 from django.core.cache import cache
 from django.core.urlresolvers import reverse
 
+from webui import docstore
 from webui import GITOLITE_INFO_CACHE_KEY
 from webui import gitolite
 from webui import gitstatus
@@ -28,7 +29,6 @@ from webui.identifier import Identifier
 from DDR import batch
 from DDR import commands
 from DDR import converters
-from DDR import docstore
 from DDR import dvcs
 from DDR import models
 from DDR import signatures

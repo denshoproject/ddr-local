@@ -16,8 +16,8 @@ from django.utils.http import urlquote  as django_urlquote
 from elasticsearch import Elasticsearch
 
 from DDR import converters
-from DDR import docstore
 from DDR import models
+from webui import docstore
 from webui import tasks
 from webui.decorators import search_index
 from webui.forms.search import SearchForm, IndexConfirmForm, DropConfirmForm

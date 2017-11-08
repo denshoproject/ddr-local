@@ -5,7 +5,7 @@ import os
 from django import forms
 from django.conf import settings
 
-from DDR import docstore
+from webui import docstore
 from webui import set_docstore_index
 
 
