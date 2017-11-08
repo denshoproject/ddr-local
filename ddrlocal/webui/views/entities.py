@@ -53,7 +53,7 @@ def vocab_terms( fieldname ):
     timeout = 60*60*1  # 1 hour
     data = cache.get(key)
     if not data:
-        data = vocab.http_get_terms(fieldname)
+        data = vocab.get_vocab(settings.VOCAB_TERMS_URL, fieldname)
         cache.set(key, data, timeout)
     return data
 
