@@ -219,6 +219,19 @@ class Collection( DDRCollection ):
         """
         return '/cgit/cgit.cgi/{}/'.format(self.id)
     
+    def docstore_url( self ):
+        """Returns local Elasticsearch URL for collection.
+        
+        >>> c = DDRLocalCollection('/tmp/ddr-testing-123')
+        >>> c.docstore_url()
+        'http://DOCSTORE_HOSTS/DOCSTORE_INDEX/collection/ddr-testing-123/'
+        """
+        return 'http://{}:{}/{}/{}/{}'.format(
+            settings.DOCSTORE_HOSTS[0]['host'], settings.DOCSTORE_HOSTS[0]['port'],
+            settings.DOCSTORE_INDEX,
+            self.identifier.model, self.identifier.id
+        )
+    
     def fs_url( self ):
         """URL of the collection directory browsable via Nginx.
         """
@@ -492,6 +505,19 @@ class Entity( DDREntity ):
             self.id
         )
     
+    def docstore_url( self ):
+        """Returns local Elasticsearch URL for entity.
+        
+        >>> e = DDRLocalEntity('/tmp/ddr-testing-123-456')
+        >>> e.docstore_url()
+        'http://DOCSTORE_HOSTS/DOCSTORE_INDEX/entity/ddr-testing-123-456/'
+        """
+        return 'http://{}:{}/{}/{}/{}'.format(
+            settings.DOCSTORE_HOSTS[0]['host'], settings.DOCSTORE_HOSTS[0]['port'],
+            settings.DOCSTORE_INDEX,
+            self.identifier.model, self.identifier.id
+        )
+    
     def gitweb_url( self ):
         """Returns local gitweb URL for entity directory.
         """
@@ -664,6 +690,19 @@ class DDRFile( File ):
             path_rel = os.path.normpath(self.path_abs.replace(mediaroot, ''))
             return os.path.join(settings.MEDIA_URL, path_rel)
         return None
+    
+    def docstore_url( self ):
+        """Returns local Elasticsearch URL for file.
+        
+        >>> f = DDRLocalEntity('/tmp/ddr-testing-123-456-master-abc123')
+        >>> f.docstore_url()
+        'http://DOCSTORE_HOSTS/DOCSTORE_INDEX/file/ddr-testing-123-456-master-abc123/'
+        """
+        return 'http://{}:{}/{}/{}/{}'.format(
+            settings.DOCSTORE_HOSTS[0]['host'], settings.DOCSTORE_HOSTS[0]['port'],
+            settings.DOCSTORE_INDEX,
+            self.identifier.model, self.identifier.id
+        )
     
     def fs_url( self ):
         """URL of the files directory browsable via Nginx.
