@@ -324,10 +324,8 @@ class Collection( DDRCollection ):
         
         # [delete cache], update search index
         #collection.cache_delete()
-        with open(collection.json_path, 'r') as f:
-            document = json.loads(f.read())
         try:
-            docstore.Docstore().post(document)
+            docstore.Docstore().post(self)
         except ConnectionError:
             logger.error('Could not post to Elasticsearch.')
         
@@ -351,10 +349,8 @@ class Collection( DDRCollection ):
         )
         
         self.cache_delete()
-        with open(self.json_path, 'r') as f:
-            document = json.loads(f.read())
         try:
-            docstore.Docstore().post(document)
+            docstore.Docstore().post(self)
         except ConnectionError:
             logger.error('Could not post to Elasticsearch.')
         return exit,status,updated_files
@@ -574,10 +570,8 @@ class Entity( DDREntity ):
 
         # delete cache, update search index
         collection.cache_delete()
-        with open(entity.json_path, 'r') as f:
-            document = json.loads(f.read())
         try:
-            docstore.Docstore().post(document)
+            docstore.Docstore().post(self)
         except ConnectionError:
             logger.error('Could not post to Elasticsearch.')
         
@@ -605,10 +599,8 @@ class Entity( DDREntity ):
         )
         
         collection.cache_delete()
-        with open(self.json_path, 'r') as f:
-            document = json.loads(f.read())
         try:
-            docstore.Docstore().post(document)
+            docstore.Docstore().post(self)
         except ConnectionError:
             logger.error('Could not post to Elasticsearch.')
         return exit,status,updated_files
@@ -728,10 +720,8 @@ class DDRFile( File ):
         )
         
         collection.cache_delete()
-        with open(self.json_path, 'r') as f:
-            document = json.loads(f.read())
         try:
-            docstore.Docstore().post(document)
+            docstore.Docstore().post(self)
         except ConnectionError:
             logger.error('Could not post to Elasticsearch.')
         return exit,status,updated_files
