@@ -9,6 +9,8 @@
 django==1.7.11                # MIT      y
 gunicorn==19.7.1              # MIT      y
 
+djangorestframework>=2.0.0,<3.0.0 # BSD      y
+
 # cache, sessions, celery broker
 redis==2.10.5                 # MIT      y
 django-redis==3.7.1           # BSD      y

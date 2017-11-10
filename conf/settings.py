@@ -132,7 +132,8 @@ ds_host,ds_port      = config.get('local', 'docstore_host').split(':')
 DOCSTORE_HOSTS = [
     {'host':ds_host, 'port':ds_port}
 ]
-RESULTS_PER_PAGE = 20
+ELASTICSEARCH_MAX_SIZE = 10000
+ELASTICSEARCH_DEFAULT_LIMIT = 25
 
 GITOLITE_INFO_CACHE_TIMEOUT = int(config.get('local', 'gitolite_info_cache_timeout'))
 GITOLITE_INFO_CACHE_CUTOFF  = int(config.get('local', 'gitolite_info_cache_cutoff'))
@@ -225,12 +226,20 @@ INSTALLED_APPS = (
     'bootstrap_pagination',
     'djcelery',
     'gunicorn',
+    'rest_framework',
     'sorl.thumbnail',
     #
     'ddrlocal',
     'storage',
     'webui',
 )
+
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ],
+    'PAGE_SIZE': 20
+}
 
 DATABASES = {
     'default': {

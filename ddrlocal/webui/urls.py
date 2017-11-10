@@ -20,6 +20,12 @@ urlpatterns = patterns(
     url(r'^supervisord/procinfo.json$', 'webui.views.supervisord.procinfo_json', name='webui-supervisord-procinfo-json'),
     url(r'^supervisord/restart/$', 'webui.views.supervisord.restart', name='webui-supervisord-restart'),
 
+    # REST API
+    url(r"^api/1.0/search/$", 'webui.api.search', name='api-search'),
+    url(r'^api/1.0/(?P<oid>[\w\d-]+)/children/$', 'webui.api.children', name='api-children'),
+    url(r'^api/1.0/(?P<oid>[\w\d-]+)/$', 'webui.api.detail', name='api-detail'),
+    url(r'^api/1.0/$', 'webui.api.index', name='api-index'),
+    
     # search
 
     url(r'^search/admin/$', 'webui.views.search.admin', name='webui-search-admin'),
