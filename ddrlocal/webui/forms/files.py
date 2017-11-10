@@ -40,6 +40,10 @@ class NewExternalFileForm(forms.Form):
     md5 = forms.CharField(required=True, max_length=255)
     sha256 = forms.CharField(required=True, max_length=255)
 
+class NewMetaFileForm(forms.Form):
+    sha1 = forms.CharField(max_length=255)
+    filename = forms.CharField(max_length=255)
+
 class NewAccessFileForm(forms.Form):
     path = forms.CharField(max_length=255, widget=forms.HiddenInput)
 
