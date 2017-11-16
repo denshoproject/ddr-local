@@ -95,7 +95,7 @@ def _access_url(fi):
         settings.ACCESS_FILE_SUFFIX,
     )
 
-def _prep_detail(d, request, oi=None):
+def _prep_detail(d, request, oi=None, is_list=False):
     """Format detail or list objects for API
     
     Certain fields are always included (id, title, etc and links).
@@ -134,21 +134,22 @@ def _prep_detail(d, request, oi=None):
     except NoReverseMatch:
         data['links']['html'] = ''
     data['links']['json'] = reverse('api-detail', args=[data['id']], request=request)
-    
-    # objects above the collection level are stubs and do not have collection_id
-    # collections have collection_id but have to point up to parent stub
-    # API does not include stubs inside collections (roles)
-    if collection_id and (collection_id != oi.id):
-        parent_id = oi.parent_id(stubs=0)
-    else:
-        parent_id = oi.parent_id(stubs=1)
-    if parent_id:
-        data['links']['parent'] = reverse('api-detail', args=[parent_id], request=request)
 
-    if child_models:
-        data['links']['children'] = reverse('api-children', args=[oi.id], request=request)
-    else:
-        data['links']['children'] = ''
+    if not is_list:
+        # objects above the collection level are stubs and do not have collection_id
+        # collections have collection_id but have to point up to parent stub
+        # API does not include stubs inside collections (roles)
+        if collection_id and (collection_id != oi.id):
+            parent_id = oi.parent_id(stubs=0)
+        else:
+            parent_id = oi.parent_id(stubs=1)
+        if parent_id:
+            data['links']['parent'] = reverse('api-detail', args=[parent_id], request=request)
+     
+        if child_models:
+            data['links']['children'] = reverse('api-children', args=[oi.id], request=request)
+        else:
+            data['links']['children'] = ''
 
     data['links']['img'] = img_url
     data['links']['thumb'] = ''

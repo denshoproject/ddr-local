@@ -292,7 +292,7 @@ class SearchResults(object):
         # page
         for o in self.objects:
             data['objects'].append(
-                list_function(o.to_dict(), request)
+                list_function(o.to_dict(), request, is_list=True)
             )
         
         # pad after
