@@ -65,8 +65,6 @@ def children(request, oid, limit=None, offset=None):
     s = elasticsearch_dsl.Search(
         using=DOCSTORE.es, index=DOCSTORE.indexname
     )
-    # TODO where parent_id == oid
-    #s = s.query('match_all')
     s = s.query("match", parent_id=oi.id)
     s = s.sort('sort', 'repo', 'org', 'cid', 'eid', 'role', 'sha1')
     s = s.source(include=identifier.ELASTICSEARCH_LIST_FIELDS)
@@ -82,10 +80,7 @@ def children(request, oid, limit=None, offset=None):
         fields=identifier.ELASTICSEARCH_LIST_FIELDS,
         search=s,
     )
-    query = s.to_dict()
-    #assert False
     results = searcher.execute(limit, offset)
-    #data = results.ordered_dict(request, list_fields=identifier.ELASTICSEARCH_LIST_FIELDS)
     data = results.ordered_dict(request, list_function=_prep_detail)
     return Response(data)
 
@@ -161,29 +156,4 @@ def _prep_detail(d, request, oi=None):
     for key,val in d.items():
         if key not in DETAIL_EXCLUDE:
             data[key] = val
-    return data
-
-
-def dict_list(obj, request):
-    if hasattr(obj, 'to_dict_list'):
-        return obj.to_dict_list(request=request)
-    if isinstance(obj, dict) or isinstance(obj, OrderedDict):
-        return obj
-    elif isinstance(obj, elasticsearch_dsl.result.Result):
-        assert False
-
-def _prep_children(oi, results, request):
-    data = OrderedDict()
-    data['total'] = len(results.hits)
-    data['page_size'] = 0
-    data['prev'] = None
-    data['next'] = None
-    data['hits'] = []
-    data['aggregations'] = {}
-    data['objects'] = []
-    for o in results.hits:
-        data['objects'].append(
-            _prep_detail(o.to_dict(), request)
-        )
-        
     return data

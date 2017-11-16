@@ -13,18 +13,14 @@ from elasticsearch_dsl.connections import connections
 from elasticsearch_dsl.result import Result
 
 from rest_framework.reverse import reverse
-#from rest_framework.reverse import reverse as rest_reverse
 
 from django.conf import settings
 from django.core.paginator import Paginator
-#from django.core.urlresolvers import reverse as django_reverse
 
 from webui import docstore
 from webui import identifier
 
 # set default hosts and index
-#connections.create_connection(hosts=settings.DOCSTORE_HOSTS)
-#INDEX = Index(settings.DOCSTORE_INDEX)
 DOCSTORE = docstore.Docstore()
 
 
@@ -77,40 +73,6 @@ def django_page(limit, offset):
     """
     return divmod(offset, limit)[0] + 1
 
-#def page_start_next(pagesize, thispage):
-#    """
-#    @param pagesize: int
-#    @param thispage: int
-#    @returns: page_start,page_next (int,int)
-#    """
-#    return (
-#        (thispage-1) * pagesize,
-#        (thispage) * pagesize,
-#    )
-
-#def pad_results(results, pagesize, thispage):
-#    """Returns result set objects with dummy objects before/after specified page
-#    
-#    This is necessary for displaying API results using the
-#    Django paginator.
-#    
-#    @param objects: dict Raw output of search API
-#    @param pagesize: int
-#    @param thispage: int
-#    @param total: int Total number of results
-#    @returns: list of objects
-#    """
-#    page_start = (thispage-1) * pagesize
-#    page_next = (thispage) * pagesize
-#    # pad before
-#    for n in range(0, page_start):
-#        results['objects'].insert(n, {'n':n})
-#    # pad after
-#    for n in range(page_next, results['total']):
-#        results['objects'].append({'n':n})
-#    return results['objects']
-
-
 
 class Searcher(object):
     """
@@ -139,7 +101,6 @@ class Searcher(object):
         searcher.prep(request_data)
         OR
         searcher.s = Search()
-        
         """
         query = prep_query(
             text=request_data.get('fulltext', ''),
@@ -329,23 +290,6 @@ class SearchResults(object):
             data['objects'] += [{'n':n} for n in range(0, self.page_start)]
         
         # page
-        #for n,o in enumerate(self.objects):
-        #    # these are always the same
-        #    o_dict = o.__dict__
-        #    o_meta_dict = o.meta.__dict__
-        #    d = OrderedDict()
-        #    d['id'] = o.meta.id
-        #    d['model'] = o.meta.doc_type
-        #    d['links'] = OrderedDict()
-        #    d['links']['html'] = reverse('webui-%s' % o.meta.doc_type, args=([o.meta.id]), request=request)
-        #    d['links']['json'] = reverse('api-detail', args=([o.meta.id]), request=request)
-        #    d['links']['img'] = ''
-        #    d['links']['thumb'] = ''
-        #    #d['signature_id'] = o.signature_id
-        #    # list fields
-        #    for field in list_fields:
-        #        if hasattr(o, field):
-        #            d[field] = getattr(o, field)
         for o in self.objects:
             data['objects'].append(
                 list_function(o.to_dict(), request)
@@ -358,13 +302,6 @@ class SearchResults(object):
         data['query'] = self.query
         data['aggregations'] = self.aggregations
         return data
-
-#def reverse_link(name, args, request=None):
-#    """Convenience function to 
-#    """
-#    if request:
-#        return rest_reverse(name, args=args, request=request)
-#    return django_reverse(name, args=args)
     
         
 def prep_query(text='', must=[], should=[], mustnot=[], aggs={}):
