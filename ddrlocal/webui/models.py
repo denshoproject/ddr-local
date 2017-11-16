@@ -218,7 +218,16 @@ class Collection( DDRCollection ):
         '/cgit/cgit.cgi/ddr-testing-123/'
         """
         return '/cgit/cgit.cgi/{}/'.format(self.id)
-    
+
+    def api_url(self):
+        """Returns local REST API URL for collection.
+        
+        >>> c = DDRLocalCollection('/tmp/ddr-testing-123')
+        >>> c.api_url()
+        '/ui/api/1.0/ddr-testing-123/'
+        """
+        return reverse('api-detail', args=([self.id]))
+        
     def docstore_url( self ):
         """Returns local Elasticsearch URL for collection.
         
@@ -504,6 +513,15 @@ class Entity( DDREntity ):
             self.collection_id,
             self.id
         )
+
+    def api_url(self):
+        """Returns local REST API URL for entity.
+        
+        >>> e = DDRLocalEntity('/tmp/ddr-testing-123-456')
+        >>> e.api_url()
+        '/ui/api/1.0/ddr-testing-123-456/'
+        """
+        return reverse('api-detail', args=([self.id]))
     
     def docstore_url( self ):
         """Returns local Elasticsearch URL for entity.
@@ -690,6 +708,15 @@ class DDRFile( File ):
             path_rel = os.path.normpath(self.path_abs.replace(mediaroot, ''))
             return os.path.join(settings.MEDIA_URL, path_rel)
         return None
+
+    def api_url(self):
+        """Returns local REST API URL for file.
+        
+        >>> f = DDRFile('/tmp/ddr-testing-123-456-master-abc123')
+        >>> f.api_url()
+        '/ui/api/1.0/ddr-testing-123-456-master-abc123/'
+        """
+        return reverse('api-detail', args=([self.id]))
     
     def docstore_url( self ):
         """Returns local Elasticsearch URL for file.
