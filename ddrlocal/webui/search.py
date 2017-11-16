@@ -147,7 +147,7 @@ class Searcher(object):
         response = self.s[start:stop].execute()
         return SearchResults(
             mappings=self.mappings,
-            query=self.query,
+            query=self.s.to_dict(),
             results=response,
             limit=limit,
             offset=offset,

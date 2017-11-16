@@ -39,6 +39,7 @@ def index(request, format=None):
     """
     data = OrderedDict()
     data['repository'] = reverse('api-detail', args=(['ddr']), request=request)
+    data['search'] = reverse('api-search', args=(), request=request)
     return Response(data)
 
 @api_view(['GET'])
@@ -74,6 +75,101 @@ def children(request, oid, limit=None, offset=None):
         limit = int(request.GET.get('limit', settings.ELASTICSEARCH_MAX_SIZE))
     if not offset:
         offset = int(request.GET.get('offset', 0))
+    
+    searcher = search.Searcher(
+        mappings=identifier.ELASTICSEARCH_CLASSES_BY_MODEL,
+        fields=identifier.ELASTICSEARCH_LIST_FIELDS,
+        search=s,
+    )
+    results = searcher.execute(limit, offset)
+    data = results.ordered_dict(request, list_function=_prep_detail)
+    return Response(data)
+
+
+SEARCH_QUERY_FIELDS = [
+    'fulltext',
+    'topics',
+    'facility',
+    'language',
+]
+
+VOCAB_FIELDS = [
+    'model',
+    'topics',
+    'facility',
+    'language',
+    'mimetype',
+]
+
+SEARCH_MODELS = ['repository','organization','collection','entity','file']
+
+SEARCH_FIELDS = [
+    'title',
+    'label',
+    'description',
+]
+
+@api_view(['GET'])
+def search_form(request, format=None):
+
+    # gather inputs ------------------------------
+    
+    if hasattr(request, 'query_params'):
+        # api (rest_framework)
+        params = dict(request.query_params)
+    elif hasattr(request, 'GET'):
+        # web ui (regular Django)
+        params = dict(request.GET)
+    else:
+        params = {}
+    
+    # whitelist params
+    bad_fields = [
+        key for key in params.keys()
+        if key not in SEARCH_QUERY_FIELDS + ['page']
+    ]
+    for key in bad_fields:
+        params.pop(key)
+    
+    if params.get('page'):
+        thispage = int(params.pop('page')[-1])
+    else:
+        thispage = 0
+    limit = request.GET.get('limit', int(request.GET.get('limit', settings.ELASTICSEARCH_MAX_SIZE)))
+    offset = request.GET.get('offset', int(request.GET.get('offset', 0)))
+    
+    # build search object ------------------------
+    
+    s = elasticsearch_dsl.Search(
+        using=DOCSTORE.es, index=DOCSTORE.indexname
+    )
+    for model in SEARCH_MODELS:
+        s = s.doc_type(model)
+    s = s.source(include=identifier.ELASTICSEARCH_LIST_FIELDS)
+    
+    if params.get('fulltext'):
+        # MultiMatch chokes on lists
+        fulltext = params.pop('fulltext')
+        if isinstance(fulltext, list) and (len(fulltext) == 1):
+            fulltext = fulltext[0]
+        # fulltext search
+        s = s.query(
+            search.MultiMatch(
+                query=fulltext,
+                fields=SEARCH_FIELDS
+            )
+        )
+    
+    # filters
+    for key,val in params.items():
+        if key in SEARCH_QUERY_FIELDS:
+            s = s.filter('terms', **{key: val})
+    
+    # aggregations
+    for fieldname in VOCAB_FIELDS:
+        s.aggs.bucket(fieldname, 'terms', field=fieldname)
+    
+    # run search ---------------------------------
     
     searcher = search.Searcher(
         mappings=identifier.ELASTICSEARCH_CLASSES_BY_MODEL,
