@@ -1,23 +1,26 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import unicode_literals
-from past.builtins import basestring
-from builtins import object
 from collections import OrderedDict
+from copy import deepcopy
 import json
 import logging
 logger = logging.getLogger(__name__)
-import urllib
+import urlparse
 
 from elasticsearch_dsl import Index, Search, A, Q, A
 from elasticsearch_dsl.query import MultiMatch, Match
 from elasticsearch_dsl.connections import connections
 from elasticsearch_dsl.result import Result
 
+from rest_framework.reverse import reverse
+#from rest_framework.reverse import reverse as rest_reverse
+
 from django.conf import settings
 from django.core.paginator import Paginator
+#from django.core.urlresolvers import reverse as django_reverse
 
 from webui import docstore
+from webui import identifier
 
 # set default hosts and index
 #connections.create_connection(hosts=settings.DOCSTORE_HOSTS)
@@ -208,7 +211,7 @@ class SearchResults(object):
     aggregations = None
     objects = []
     total = 0
-    limit = settings.MAX_SIZE
+    limit = settings.ELASTICSEARCH_MAX_SIZE
     offset = 0
     start = 0
     stop = 0
@@ -223,7 +226,7 @@ class SearchResults(object):
     prev_html = u''
     next_html = u''
 
-    def __init__(self, mappings, query={}, count=0, results=None, objects=[], limit=settings.DEFAULT_LIMIT, offset=0):
+    def __init__(self, mappings, query={}, count=0, results=None, objects=[], limit=settings.ELASTICSEARCH_DEFAULT_LIMIT, offset=0):
         self.mappings = mappings
         self.query = query
         self.limit = int(limit)
@@ -282,7 +285,7 @@ class SearchResults(object):
 
     def _make_prevnext_url(self, query, request=None):
         if request:
-            return urllib.parse.urlunsplit([
+            return urlparse.urlunsplit([
                 request.META['wsgi.url_scheme'],
                 request.META['HTTP_HOST'],
                 request.META['PATH_INFO'],
@@ -291,19 +294,19 @@ class SearchResults(object):
             ])
         return '?%s' % query
     
-    def to_dict(self, request=None):
+    def to_dict(self, request, list_function):
         """Express search results in API and Redis-friendly structure
         returns: dict
         """
-        return self._dict({}, request=request)
+        return self._dict({}, request, list_function)
     
-    def ordered_dict(self, request=None, pad=False):
+    def ordered_dict(self, request, list_function, pad=False):
         """Express search results in API and Redis-friendly structure
         returns: OrderedDict
         """
-        return self._dict(OrderedDict(), request=request, pad=pad)
+        return self._dict(OrderedDict(), request, list_function, pad=pad)
     
-    def _dict(self, data, request=None, pad=False):
+    def _dict(self, data, request, list_function, pad=False):
         data['total'] = self.total
         data['limit'] = self.limit
         data['offset'] = self.offset
@@ -319,21 +322,36 @@ class SearchResults(object):
             u'limit=%s&offset=%s' % (self.limit, self.next_offset),
             request
         )
-        
         data['objects'] = []
+        
+        # pad before
         if pad:
             data['objects'] += [{'n':n} for n in range(0, self.page_start)]
+        
+        # page
+        #for n,o in enumerate(self.objects):
+        #    # these are always the same
+        #    o_dict = o.__dict__
+        #    o_meta_dict = o.meta.__dict__
+        #    d = OrderedDict()
+        #    d['id'] = o.meta.id
+        #    d['model'] = o.meta.doc_type
+        #    d['links'] = OrderedDict()
+        #    d['links']['html'] = reverse('webui-%s' % o.meta.doc_type, args=([o.meta.id]), request=request)
+        #    d['links']['json'] = reverse('api-detail', args=([o.meta.id]), request=request)
+        #    d['links']['img'] = ''
+        #    d['links']['thumb'] = ''
+        #    #d['signature_id'] = o.signature_id
+        #    # list fields
+        #    for field in list_fields:
+        #        if hasattr(o, field):
+        #            d[field] = getattr(o, field)
         for o in self.objects:
-            if isinstance(o, dict) or isinstance(o, OrderedDict):
-                data['objects'].append(o)
-            elif isinstance(o, Result):
-                data['objects'].append(
-                    self.mappings[o.meta.doc_type].dict_list(o, request)
-                )
-            else:
-                data['objects'].append(
-                    o.to_dict_list(request=request)
-                )
+            data['objects'].append(
+                list_function(o.to_dict(), request)
+            )
+        
+        # pad after
         if pad:
             data['objects'] += [{'n':n} for n in range(self.page_next, self.total)]
         
@@ -341,7 +359,14 @@ class SearchResults(object):
         data['aggregations'] = self.aggregations
         return data
 
-
+#def reverse_link(name, args, request=None):
+#    """Convenience function to 
+#    """
+#    if request:
+#        return rest_reverse(name, args=args, request=request)
+#    return django_reverse(name, args=args)
+    
+        
 def prep_query(text='', must=[], should=[], mustnot=[], aggs={}):
     """Assembles a dict conforming to the Elasticsearch query DSL.
     

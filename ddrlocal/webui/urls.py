@@ -21,7 +21,6 @@ urlpatterns = patterns(
     url(r'^supervisord/restart/$', 'webui.views.supervisord.restart', name='webui-supervisord-restart'),
 
     # REST API
-    url(r"^api/1.0/search/$", 'webui.api.search', name='api-search'),
     url(r'^api/1.0/(?P<oid>[\w\d-]+)/children/$', 'webui.api.children', name='api-children'),
     url(r'^api/1.0/(?P<oid>[\w\d-]+)/$', 'webui.api.detail', name='api-detail'),
     url(r'^api/1.0/$', 'webui.api.index', name='api-index'),
@@ -41,6 +40,10 @@ urlpatterns = patterns(
     url(r'^collection/(?P<cid>[\w\d-]+)/merge/json/$', 'webui.views.merge.edit_json', name='webui-merge-json'),
     url(r'^collection/(?P<cid>[\w\d-]+)/merge/raw/$', 'webui.views.merge.edit_raw', name='webui-merge-raw'),
     url(r'^collection/(?P<cid>[\w\d-]+)/merge/$', 'webui.views.merge.merge', name='webui-merge'),
+
+    # repository, organization
+    url(r'^repository/(?P<cid>[\w\d-]+)/$', 'webui.views.repository', name='webui-repository'),
+    url(r'^organization/(?P<cid>[\w\d-]+)/$', 'webui.views.organization', name='webui-organization'),
     
     # collections
 
@@ -105,6 +108,6 @@ urlpatterns = patterns(
     url(r'^file/(?P<eid>[\w\d-]+)/new/$', 'webui.views.files.new', name='webui-file-new'),
 
     #
-
+    url(r'^(?P<oid>[\w\d-]+)/$', 'webui.views.detail', name='webui-detail'),
     url(r'^$', TemplateView.as_view(template_name="webui/index.html"), name='webui-index'),
 )
