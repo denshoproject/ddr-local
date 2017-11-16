@@ -2,6 +2,7 @@
 
 from collections import OrderedDict
 import json
+import os
 
 from rest_framework import status
 from rest_framework.decorators import api_view
@@ -93,13 +94,13 @@ SEARCH_QUERY_FIELDS = [
     'language',
 ]
 
-VOCAB_FIELDS = [
-    'model',
-    'topics',
-    'facility',
-    'language',
-    'mimetype',
-]
+VOCAB_FIELDS = {
+    'model': 'Model',
+    'topics': 'Topics',
+    'facility': 'Facility',
+    'language': 'Language',
+    'mimetype': 'Mimetype',
+}
 
 SEARCH_MODELS = ['repository','organization','collection','entity','file']
 
@@ -111,6 +112,17 @@ SEARCH_FIELDS = [
 
 @api_view(['GET'])
 def search_form(request, format=None):
+    return Response(
+        #_search(request).ordered_dict(request)
+        _search(request).ordered_dict(request, list_function=_prep_detail)
+    )
+
+def _search(request):
+    """Search Page objects
+    
+    @param request: WSGIRequest
+    @returns: search.SearchResults
+    """
 
     # gather inputs ------------------------------
     
@@ -166,7 +178,7 @@ def search_form(request, format=None):
             s = s.filter('terms', **{key: val})
     
     # aggregations
-    for fieldname in VOCAB_FIELDS:
+    for fieldname in VOCAB_FIELDS.keys():
         s.aggs.bucket(fieldname, 'terms', field=fieldname)
     
     # run search ---------------------------------
@@ -177,8 +189,9 @@ def search_form(request, format=None):
         search=s,
     )
     results = searcher.execute(limit, offset)
-    data = results.ordered_dict(request, list_function=_prep_detail)
-    return Response(data)
+    #data = results.ordered_dict(request, list_function=_prep_detail)
+    #return data
+    return results
 
 
 def _access_url(fi):
@@ -190,6 +203,10 @@ def _access_url(fi):
         fi.path_abs().replace(settings.MEDIA_ROOT, ''),
         settings.ACCESS_FILE_SUFFIX,
     )
+
+def image_present(fi):
+    path = '%s%s' % (fi.path_abs(), settings.ACCESS_FILE_SUFFIX)
+    return os.path.exists(path)
 
 def _prep_detail(d, request, oi=None, is_list=False):
     """Format detail or list objects for API
@@ -212,13 +229,16 @@ def _prep_detail(d, request, oi=None, is_list=False):
     except:
         collection_id = None
         child_models = oi.child_models(stubs=True)
-    
+
+    img_url = ''
     if d.get('signature_id'):
         img_url = _access_url(identifier.Identifier(d['signature_id']))
     elif d.get('access_rel'):
         img_url = _access_url(oi)
-    else:
-        img_url = ''
+    
+    img_present = False
+    if img_url:
+        img_present = image_present(oi)
     
     data['id'] = d.pop('id')
     data['model'] = oi.model
@@ -249,7 +269,8 @@ def _prep_detail(d, request, oi=None, is_list=False):
 
     data['links']['img'] = img_url
     data['links']['thumb'] = ''
-
+    data['img_present'] = img_present
+    
     for key,val in d.items():
         if key not in DETAIL_EXCLUDE:
             data[key] = val

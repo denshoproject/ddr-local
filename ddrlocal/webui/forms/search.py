@@ -1,3 +1,5 @@
+#from collections import OrderedDict # DOES NOT WORK BC OF webui.views.collections
+from webui import OrderedDict        # IMPORT FROM webui/__init__.py
 import logging
 logger = logging.getLogger(__name__)
 import os
@@ -5,6 +7,7 @@ import os
 from django import forms
 from django.conf import settings
 
+from webui import api
 from webui import docstore
 from webui import set_docstore_index
 
@@ -73,3 +76,57 @@ class DropConfirmForm(forms.Form):
         if request:
             self.fields['index'].choices = _index_choices(
                 request, default=('', 'Select an index'))
+
+
+class SearchForm(forms.Form):
+    field_order = api.SEARCH_QUERY_FIELDS
+    search_results = None
+    
+    def __init__( self, *args, **kwargs ):
+        if kwargs.get('search_results'):
+            self.search_results = kwargs.pop('search_results')
+        super(SearchForm, self).__init__(*args, **kwargs)
+        self.fields = self.construct_form(self.search_results)
+
+    def construct_form(self, search_results):
+        fields = [
+            (
+                'fulltext',
+                forms.CharField(
+                    max_length=255,
+                    required=False,
+                    widget=forms.TextInput(
+                        attrs={
+                            'id': 'id_query',
+                            'class': 'form-control',
+                            'placeholder': 'Search...',
+                        }
+                    ),
+                )
+            )
+        ]
+        
+        # fill in options and doc counts from aggregations
+        if search_results and search_results.aggregations:
+            for fieldname in search_results.aggregations.keys():
+                choices = [
+                    (
+                        item['key'],
+                        '%s (%s)' % (item['key'], item['doc_count'])
+                    )
+                    for item in search_results.aggregations[fieldname]
+                ]
+                if choices:
+                    fields.append((
+                        fieldname,
+                        forms.MultipleChoiceField(
+                            label=api.VOCAB_FIELDS.get(
+                                fieldname, fieldname),
+                            choices=choices,
+                            required=False,
+                        ),
+                    ))
+        
+        # Django Form object takes an OrderedDict rather than list
+        fields = OrderedDict(fields)
+        return fields
