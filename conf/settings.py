@@ -430,6 +430,8 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
 
+TEST_RUNNER = 'django.test.runner.DiscoverRunner'
+
 ROOT_URLCONF = 'ddrlocal.urls'
 
 WSGI_APPLICATION = 'ddrlocal.wsgi.application'
