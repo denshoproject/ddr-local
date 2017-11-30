@@ -226,7 +226,7 @@ class Collection( DDRCollection ):
         >>> c.api_url()
         '/ui/api/1.0/ddr-testing-123/'
         """
-        return reverse('api-detail', args=([self.id]))
+        return reverse('api-es-detail', args=([self.id]))
         
     def docstore_url( self ):
         """Returns local Elasticsearch URL for collection.
@@ -521,7 +521,7 @@ class Entity( DDREntity ):
         >>> e.api_url()
         '/ui/api/1.0/ddr-testing-123-456/'
         """
-        return reverse('api-detail', args=([self.id]))
+        return reverse('api-es-detail', args=([self.id]))
     
     def docstore_url( self ):
         """Returns local Elasticsearch URL for entity.
@@ -716,7 +716,7 @@ class DDRFile( File ):
         >>> f.api_url()
         '/ui/api/1.0/ddr-testing-123-456-master-abc123/'
         """
-        return reverse('api-detail', args=([self.id]))
+        return reverse('api-es-detail', args=([self.id]))
     
     def docstore_url( self ):
         """Returns local Elasticsearch URL for file.

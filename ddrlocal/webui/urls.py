@@ -23,8 +23,10 @@ urlpatterns = patterns(
     # REST API
     
     url(r'^api/1.0/search$', 'webui.api.search_form', name='api-search'),
-    url(r'^api/1.0/(?P<oid>[\w\d-]+)/children/$', 'webui.api.children', name='api-children'),
-    url(r'^api/1.0/(?P<oid>[\w\d-]+)/$', 'webui.api.detail', name='api-detail'),
+    url(r'^api/1.0/es/(?P<oid>[\w\d-]+)/children/$', 'webui.api.es_children', name='api-es-children'),
+    url(r'^api/1.0/es/(?P<oid>[\w\d-]+)/$', 'webui.api.es_detail', name='api-es-detail'),
+    url(r'^api/1.0/(?P<oid>[\w\d-]+)/children/$', 'webui.api.fs_children', name='api-fs-children'),
+    url(r'^api/1.0/(?P<oid>[\w\d-]+)/$', 'webui.api.fs_detail', name='api-fs-detail'),
     url(r'^api/1.0/$', 'webui.api.index', name='api-index'),
     
     # search

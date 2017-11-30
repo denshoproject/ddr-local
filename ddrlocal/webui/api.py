@@ -39,13 +39,49 @@ def index(request, format=None):
     """INDEX DOCS
     """
     data = OrderedDict()
-    data['repository'] = reverse('api-detail', args=(['ddr']), request=request)
-    data['search'] = reverse('api-search', args=(), request=request)
+    data['browse (filesystem)'] = reverse('api-fs-detail', args=(['ddr']), request=request)
+    data['browse (elasticsearch)'] = reverse('api-es-detail', args=(['ddr']), request=request)
+    data['search (elasticsearch)'] = reverse('api-search', args=(), request=request)
+    return Response(data)
+
+
+@api_view(['GET'])
+def fs_detail(request, oid, format=None):
+    """Object detail (filesystem)
+    """
+    oi = identifier.Identifier(oid)
+    if not os.path.exists(oi.path_abs('json')):
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    
+    data = OrderedDict()
+    # these fields are always at the top
+    data['id'] = oi.id
+    data['model'] = oi.model
+    try:
+        data['collection_id'] = oi.collection_id()
+    except:
+        data['collection_id'] = None
+    data['links'] = {}
+    # everything else, we're rewriting the above fields but oh well
+    with open(oi.path_abs('json'), 'r') as f:
+        d = json.loads(f.read())
+        for line in d:
+            if 'git_version' in line.keys():
+                data['meta'] = line
+            else:
+                data[line.keys()[0]] = line.values()[0]
+    # didn't have the data we need before
+    data['links'] = make_links(oi, data, request, source='fs', is_detail=True)
     return Response(data)
 
 @api_view(['GET'])
-def detail(request, oid, format=None):
-    """OBJECT DETAIL DOCS
+def fs_children(request, oid, format=None):
+    assert False
+
+
+@api_view(['GET'])
+def es_detail(request, oid, format=None):
+    """Object detail (Elasticsearch)
     """
     oi = identifier.Identifier(oid)
     d = docstore.Docstore().get(oi.model, oi.id)
@@ -55,7 +91,7 @@ def detail(request, oid, format=None):
     return Response(data)
 
 @api_view(['GET'])
-def children(request, oid, limit=None, offset=None):
+def es_children(request, oid, limit=None, offset=None):
     oi = identifier.Identifier(oid)
     try:
         collection_id = oi.collection_id()
