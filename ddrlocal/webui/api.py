@@ -87,7 +87,7 @@ def es_detail(request, oid, format=None):
     d = docstore.Docstore().get(oi.model, oi.id)
     if not d:
         return Response(status=status.HTTP_404_NOT_FOUND)
-    data = _prep_detail(d.to_dict(), request, oi=oi)
+    data = _prep_detail(oi, d.to_dict(), request, is_detail=True)
     return Response(data)
 
 @api_view(['GET'])
@@ -125,39 +125,65 @@ def es_children(request, oid, limit=None, offset=None):
 
 SEARCH_QUERY_FIELDS = [
     'fulltext',
+    'model',
     'topics',
     'facility',
     'language',
+    'persons',
+    'genre',
 ]
 
 VOCAB_FIELDS = {
     'model': 'Model',
-    'topics': 'Topics',
+    'topics.term': 'Topics',
     'facility': 'Facility',
     'language': 'Language',
     'mimetype': 'Mimetype',
+    'format': 'Format',
+    'persons': 'Persons',
+    'genre': 'Genre',
 }
 
 SEARCH_MODELS = ['repository','organization','collection','entity','file']
 
 SEARCH_FIELDS = [
+    'model',
     'title',
     'label',
     'description',
+    'topics',
+    'facility',
+    'language',
+    'format',
+    'persons',
+    'genre',
 ]
 
 @api_view(['GET'])
 def search_form(request, format=None):
+    if request.GET.get('offset'):
+        # limit and offset args take precedence over page
+        limit = request.GET.get('limit', int(request.GET.get('limit', settings.RESULTS_PER_PAGE)))
+        offset = request.GET.get('offset', int(request.GET.get('offset', 0)))
+    elif request.GET.get('page'):
+        limit = settings.RESULTS_PER_PAGE
+        thispage = int(params.pop('page')[-1])
+        offset = search.es_offset(limit, thispage)
+    else:
+        limit = settings.RESULTS_PER_PAGE
+        offset = 0
+    
+    searcher = _searcher(request)
+    results = _results(searcher, limit, offset)
     return Response(
-        #_search(request).ordered_dict(request)
-        _search(request).ordered_dict(request, list_function=_prep_detail)
+        results.ordered_dict(request, list_function=_prep_detail)
     )
 
-def _search(request):
-    """Search Page objects
+def _searcher(request):
+    """Assemble a Searcher object
     
     @param request: WSGIRequest
-    @returns: search.SearchResults
+    @returns: search.Searcher
     """
 
     # gather inputs ------------------------------
@@ -178,13 +204,6 @@ def _search(request):
     ]
     for key in bad_fields:
         params.pop(key)
-    
-    if params.get('page'):
-        thispage = int(params.pop('page')[-1])
-    else:
-        thispage = 0
-    limit = request.GET.get('limit', int(request.GET.get('limit', settings.ELASTICSEARCH_MAX_SIZE)))
-    offset = request.GET.get('offset', int(request.GET.get('offset', 0)))
     
     # build search object ------------------------
     
@@ -209,6 +228,10 @@ def _search(request):
         )
     
     # filters
+    #for key,val in params.items():
+    #    if key in SEARCH_QUERY_FIELDS:
+    #        s = s.filter('terms', **{key: val})
+    from elasticsearch_dsl import FacetedSearch, TermsFacet, DateHistogramFacet
     for key,val in params.items():
         if key in SEARCH_QUERY_FIELDS:
             s = s.filter('terms', **{key: val})
@@ -219,15 +242,19 @@ def _search(request):
     
     # run search ---------------------------------
     
-    searcher = search.Searcher(
+    return search.Searcher(
         mappings=identifier.ELASTICSEARCH_CLASSES_BY_MODEL,
         fields=identifier.ELASTICSEARCH_LIST_FIELDS,
         search=s,
     )
-    results = searcher.execute(limit, offset)
-    #data = results.ordered_dict(request, list_function=_prep_detail)
-    #return data
-    return results
+
+def _results(searcher, limit, offset):
+    """Assemble a SearchResults object
+    
+    @param request: WSGIRequest
+    @returns: search.SearchResults
+    """
+    return searcher.execute(limit, offset)
 
 
 def _access_url(fi):
@@ -241,10 +268,80 @@ def _access_url(fi):
     )
 
 def image_present(fi):
-    path = '%s%s' % (fi.path_abs(), settings.ACCESS_FILE_SUFFIX)
-    return os.path.exists(path)
+    return os.path.exists(
+        '%s%s' % (fi.path_abs(), settings.ACCESS_FILE_SUFFIX)
+    )
 
-def _prep_detail(d, request, oi=None, is_list=False):
+def make_links(oi, d, request, source='fs', is_detail=False):
+    """Make the 'links pod' at the top of detail or list objects.
+    
+    @param oi: Identifier
+    @param d: dict
+    @param request: 
+    @param source: str 'fs' (filesystem) or 'es' (elasticsearch)
+    @param is_detail: boolean
+    @returns: dict
+    """
+    assert source in ['fs', 'es']
+    try:
+        collection_id = oi.collection_id()
+        child_models = oi.child_models(stubs=False)
+    except:
+        collection_id = None
+        child_models = oi.child_models(stubs=True)
+    
+    img_url = ''
+    if d.get('signature_id'):
+        img_url = _access_url(identifier.Identifier(d['signature_id']))
+    elif d.get('access_rel'):
+        img_url = _access_url(oi)
+    elif oi.model in ['repository','organization']:
+        img_url = '%s%s/%s' % (
+            settings.MEDIA_URL,
+            oi.path_abs().replace(settings.MEDIA_ROOT, ''),
+            'logo.png'
+        )
+    
+    img_present = False
+    if img_url:
+        img_present = image_present(oi)
+    
+    links = OrderedDict()
+    
+    try:
+        links['ui'] = reverse('webui-%s' % oi.model, args=([oi.id]), request=request)
+    except NoReverseMatch:
+        links['ui'] = ''
+    
+    links['api'] = reverse('api-%s-detail' % source, args=([oi.id]), request=request)
+    
+    # links to opposite
+    if source == 'es':
+        links['file'] = reverse('api-fs-detail', args=([oi.id]), request=request)
+    elif source == 'fs':
+        links['elastic'] = reverse('api-es-detail', args=([oi.id]), request=request)
+    
+    if is_detail:
+        # objects above the collection level are stubs and do not have collection_id
+        # collections have collection_id but have to point up to parent stub
+        # API does not include stubs inside collections (roles)
+        if collection_id and (collection_id != oi.id):
+            parent_id = oi.parent_id(stubs=0)
+        else:
+            parent_id = oi.parent_id(stubs=1)
+        if parent_id:
+            links['parent'] = reverse('api-%s-detail' % source, args=[parent_id], request=request)
+     
+        if child_models:
+            links['children'] = reverse('api-%s-children' % source, args=([oi.id]), request=request)
+        else:
+            links['children'] = ''
+
+    links['img'] = img_url
+    
+    return links
+
+def _prep_detail(oi, d, request, is_detail=False):
     """Format detail or list objects for API
     
     Certain fields are always included (id, title, etc and links).
@@ -256,57 +353,16 @@ def _prep_detail(d, request, oi=None, is_list=False):
     @param request: 
     @param oi: (optional) Identifier
     """
-    if not oi:
-        oi = identifier.Identifier(d['id'])
-    data = OrderedDict()
     try:
         collection_id = oi.collection_id()
-        child_models = oi.child_models(stubs=False)
     except:
         collection_id = None
-        child_models = oi.child_models(stubs=True)
-
-    img_url = ''
-    if d.get('signature_id'):
-        img_url = _access_url(identifier.Identifier(d['signature_id']))
-    elif d.get('access_rel'):
-        img_url = _access_url(oi)
     
-    img_present = False
-    if img_url:
-        img_present = image_present(oi)
-    
+    data = OrderedDict()
     data['id'] = d.pop('id')
     data['model'] = oi.model
     data['collection_id'] = collection_id
-    
-    data['links'] = OrderedDict()
-    try:
-        data['links']['html'] = reverse('webui-%s' % oi.model, args=([oi.id]), request=request)
-    except NoReverseMatch:
-        data['links']['html'] = ''
-    data['links']['json'] = reverse('api-detail', args=[data['id']], request=request)
-
-    if not is_list:
-        # objects above the collection level are stubs and do not have collection_id
-        # collections have collection_id but have to point up to parent stub
-        # API does not include stubs inside collections (roles)
-        if collection_id and (collection_id != oi.id):
-            parent_id = oi.parent_id(stubs=0)
-        else:
-            parent_id = oi.parent_id(stubs=1)
-        if parent_id:
-            data['links']['parent'] = reverse('api-detail', args=[parent_id], request=request)
-     
-        if child_models:
-            data['links']['children'] = reverse('api-children', args=[oi.id], request=request)
-        else:
-            data['links']['children'] = ''
-
-    data['links']['img'] = img_url
-    data['links']['thumb'] = ''
-    data['img_present'] = img_present
-    
+    data['links'] = make_links(oi, d, request, source='es', is_detail=is_detail)
     for key,val in d.items():
         if key not in DETAIL_EXCLUDE:
             data[key] = val

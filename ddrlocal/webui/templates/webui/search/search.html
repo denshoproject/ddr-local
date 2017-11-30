@@ -29,35 +29,69 @@ Search
   <tr>
     <td valign="top">
 
-<div class="search-filter">
-  <strong>{{ search_form.model.label }}</strong>
-  <br/>
-  {{ search_form.model }}
-</div>
+      {% if search_form.model %}
+      <div class="search-filter">
+        <strong>{{ search_form.model.label }}</strong>
+        <br/>
+        {{ search_form.model }}
+      </div>
+      {% endif %}
 
-<div class="search-filter">
-  <strong>{{ search_form.topics.label }}</strong>
-  <br/>
-  {{ search_form.topics }}
-</div>
+      {% if search_form.format %}
+      <div class="search-filter">
+        <strong>{{ search_form.format.label }}</strong>
+        <br/>
+        {{ search_form.format }}
+      </div>
+      {% endif %}
 
-<div class="search-filter">
-  <strong>{{ search_form.facility.label }}</strong>
-  <br/>
-  {{ search_form.facility }}
-</div>
+      {% if search_form.topics %}
+      <div class="search-filter">
+        <strong>{{ search_form.topics.label }}</strong>
+        <br/>
+        {{ search_form.topics }}
+      </div>
+      {% endif %}
 
-<div class="search-filter">
-  <strong>{{ search_form.language.label }}</strong>
-  <br/>
-  {{ search_form.language }}
-</div>
+      {% if search_form.facility %}
+      <div class="search-filter">
+        <strong>{{ search_form.facility.label }}</strong>
+        <br/>
+        {{ search_form.facility }}
+      </div>
+      {% endif %}
 
-<div class="search-filter">
-  <strong>{{ search_form.mimetype.label }}</strong>
-  <br/>
-  {{ search_form.mimetype }}
-</div>
+      {% if search_form.language %}
+      <div class="search-filter">
+        <strong>{{ search_form.language.label }}</strong>
+        <br/>
+        {{ search_form.language }}
+      </div>
+      {% endif %}
+
+      {% if search_form.mimetype %}
+      <div class="search-filter">
+        <strong>{{ search_form.mimetype.label }}</strong>
+        <br/>
+        {{ search_form.mimetype }}
+      </div>
+      {% endif %}
+
+      {% if search_form.persons %}
+      <div class="search-filter">
+        <strong>{{ search_form.persons.label }}</strong>
+        <br/>
+        {{ search_form.persons }}
+      </div>
+      {% endif %}
+
+      {% if search_form.genre %}
+      <div class="search-filter">
+        <strong>{{ search_form.genre.label }}</strong>
+        <br/>
+        {{ search_form.genre }}
+      </div>
+      {% endif %}
 
     </td>
     <td valign="top">
@@ -75,7 +109,7 @@ Search
 <!-- {{ object.id }} -->
 <div class="media {{ object.model }}">
 
-  <a class="pull-left" href="{{ object.links.html }}">
+  <a class="pull-left" href="{{ object.links.ui }}">
   {% if object.img_present %}
   {% thumbnail object.links.img "100x100" crop="center" as img %}
     <img class="img-responsive img-thumbnail" src="{{ img.url }}" width="{{ img.width }}" height="{{ img.height }}" alt="{{ object.title }} ({{ object.id }})"/>
@@ -88,13 +122,13 @@ Search
   <div class="media-body">
     <b class="media-heading">
       <span class="badge badge-info">{{ object.model }}</span>
-      <a href="{{ object.links.html }}">{{ object.title }} ({{ object.id }})</a>
+      <a href="{{ object.links.ui }}">{{ object.title }} ({{ object.id }})</a>
     </b>
     <div class="source muted">
       {{ object.description }}
     </div>
     <div class="url">
-      <a href="{{ object.links.html }}">{{ object.links.html }}</a>
+      <a href="{{ object.links.ui }}">{{ object.links.ui }}</a>
     </div>
   </div><!-- .media-body -->
 </div><!-- .media -->

@@ -21,6 +21,7 @@ from DDR import models
 from webui import api
 from webui import docstore
 from webui import forms
+from webui import search
 from webui import tasks
 from webui.decorators import search_index
 from webui.forms.search import SearchForm, IndexConfirmForm, DropConfirmForm
@@ -149,13 +150,25 @@ def search_ui(request):
 
     if request.GET.get('fulltext'):
 
-        results = api._search(request)
-        form = forms.search.SearchForm(
+        if request.GET.get('offset'):
+            # limit and offset args take precedence over page
+            limit = request.GET.get('limit', int(request.GET.get('limit', settings.RESULTS_PER_PAGE)))
+            offset = request.GET.get('offset', int(request.GET.get('offset', 0)))
+        elif request.GET.get('page'):
+            limit = settings.RESULTS_PER_PAGE
+            thispage = int(request.GET['page'])
+            offset = search.es_offset(limit, thispage)
+        else:
+            limit = settings.RESULTS_PER_PAGE
+            offset = 0
+        
+        searcher = api._searcher(request)
+        results = api._results(searcher, limit, offset)
+        context['results'] = results
+        context['search_form'] = forms.search.SearchForm(
             search_results=results,
             data=request.GET
         )
-        context['results'] = results
-        context['search_form'] = form
         
         if results.objects:
             paginator = Paginator(

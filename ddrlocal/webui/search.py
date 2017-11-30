@@ -53,8 +53,8 @@ def start_stop(limit, offset):
     >>> start_stop(10, 2)
     20,29
     """
-    start = offset
-    stop = (start + limit) - 1
+    start = int(offset)
+    stop = (start + int(limit)) - 1
     return start,stop
     
 def django_page(limit, offset):
@@ -91,7 +91,7 @@ class Searcher(object):
     sort_cleaned = None
     s = None
     
-    def __init__(self, mappings, fields, search=None):
+    def __init__(self, mappings, fields, search):
         self.mappings = mappings
         self.fields = fields
         self.s = search
@@ -244,7 +244,7 @@ class SearchResults(object):
             self.query, self.total
         )
 
-    def _make_prevnext_url(self, query, request=None):
+    def _make_prevnext_url(self, query, request):
         if request:
             return urlparse.urlunsplit([
                 request.META['wsgi.url_scheme'],
@@ -275,14 +275,26 @@ class SearchResults(object):
         data['next_offset'] = self.next_offset
         data['page_size'] = self.page_size
         data['this_page'] = self.this_page
-        data['prev_api'] = self._make_prevnext_url(
-            u'limit=%s&offset=%s' % (self.limit, self.prev_offset),
-            request
-        )
-        data['next_api'] = self._make_prevnext_url(
-            u'limit=%s&offset=%s' % (self.limit, self.next_offset),
-            request
-        )
+
+        params = {key:val for key,val in request.GET.items()}
+        if params.get('page'): params.pop('page')
+        if params.get('limit'): params.pop('limit')
+        if params.get('offset'): params.pop('offset')
+        qs = [key + '=' + val for key,val in params.items()]
+        query_string = '&'.join(qs)
+
+        data['prev_api'] = ''
+        if self.prev_offset != None:
+            data['prev_api'] = self._make_prevnext_url(
+                u'%s&limit=%s&offset=%s' % (query_string, self.limit, self.prev_offset),
+                request
+            )
+        data['next_api'] = ''
+        if self.next_offset != None:
+            data['next_api'] = self._make_prevnext_url(
+                u'%s&limit=%s&offset=%s' % (query_string, self.limit, self.next_offset),
+                request
+            )
         data['objects'] = []
         
         # pad before
@@ -292,7 +304,12 @@ class SearchResults(object):
         # page
         for o in self.objects:
             data['objects'].append(
-                list_function(o.to_dict(), request, is_list=True)
+                list_function(
+                    identifier.Identifier(o['id']),
+                    o.to_dict(),
+                    request,
+                    is_detail=False,
+                )
             )
         
         # pad after
