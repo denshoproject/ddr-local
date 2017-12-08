@@ -202,13 +202,24 @@ class SearchResults(object):
             # aggregations
             self.aggregations = {}
             if hasattr(results, 'aggregations'):
+                results_aggregations = results.aggregations
                 for field in results.aggregations.to_dict().keys():
+                    
+                    # nested aggregations
+                    if field == 'topics':
+                        buckets = results.aggregations['topics']['topic_ids'].buckets
+                    elif field == 'facility':
+                        buckets = results.aggregations['facility']['facility_ids'].buckets
+                    # simple aggregations
+                    else:
+                        buckets = results.aggregations[field].buckets
+                    
                     self.aggregations[field] = [
                         {
                             'key': bucket['key'],
                             'doc_count': str(bucket['doc_count']),
                         }
-                        for bucket in results.aggregations[field].buckets
+                        for bucket in buckets
                         if bucket['key'] and bucket['doc_count']
                     ]
 

@@ -326,8 +326,24 @@ def _searcher(request):
             s = s.filter('terms', **{key: val})
     
     # aggregations
-    for fieldname in SEARCH_AGG_FIELDS.keys():
-        s.aggs.bucket(fieldname, 'terms', field=fieldname)
+    for fieldname,field in SEARCH_AGG_FIELDS.items():
+        
+        # nested aggregation (Elastic docs: https://goo.gl/xM8fPr)
+        if fieldname == 'topics':
+            s.aggs.bucket('topics', 'nested', path='topics') \
+                  .bucket('topic_ids', 'terms', field='topics.id', size=1000)
+        elif fieldname == 'facility':
+            s.aggs.bucket('facility', 'nested', path='facility') \
+                  .bucket('facility_ids', 'terms', field='facility.id', size=1000)
+            # result:
+            # results.aggregations['topics']['topic_ids']['buckets']
+            #   {u'key': u'69', u'doc_count': 9}
+            #   {u'key': u'68', u'doc_count': 2}
+            #   {u'key': u'62', u'doc_count': 1}
+        
+        # simple aggregations
+        else:
+            s.aggs.bucket(fieldname, 'terms', field=field)
     
     # run search ---------------------------------
     
