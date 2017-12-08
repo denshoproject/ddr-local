@@ -7,8 +7,8 @@ import os
 from django import forms
 from django.conf import settings
 
-from webui import api
 from webui import docstore
+from webui import search
 from webui import set_docstore_index
 
 
@@ -79,7 +79,7 @@ class DropConfirmForm(forms.Form):
 
 
 class SearchForm(forms.Form):
-    field_order = api.SEARCH_PARAM_WHITELIST
+    field_order = search.SEARCH_PARAM_WHITELIST
     search_results = None
     
     def __init__( self, *args, **kwargs ):
@@ -120,7 +120,7 @@ class SearchForm(forms.Form):
                     fields.append((
                         fieldname,
                         forms.MultipleChoiceField(
-                            label=api.SEARCH_FORM_LABELS.get(
+                            label=search.SEARCH_FORM_LABELS.get(
                                 fieldname, fieldname),
                             choices=choices,
                             required=False,

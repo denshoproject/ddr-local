@@ -24,6 +24,98 @@ from webui import identifier
 DOCSTORE = docstore.Docstore()
 
 
+# whitelist of params recognized in URL query
+# TODO move to ddr-defs/repo_models/elastic.py?
+SEARCH_PARAM_WHITELIST = [
+    'fulltext',
+    'model',
+    'status',
+    'public',
+    'topics',
+    'facility',
+    'contributor',
+    'creators',
+    'format',
+    'genre',
+    'geography',
+    'language',
+    'location',
+    'mimetype',
+    'persons',
+    'rights',
+]
+
+# fields where the relevant value is nested e.g. topics.id
+# TODO move to ddr-defs/repo_models/elastic.py?
+SEARCH_NESTED_FIELDS = [
+    'facility',
+    'topics',
+]
+
+# TODO move to ddr-defs/repo_models/elastic.py?
+SEARCH_AGG_FIELDS = {
+    'model': 'model',
+    'status': 'status',
+    'public': 'public',
+    'contributor': 'contributor',
+    'creators': 'creators.namepart',
+    'facility': 'facility.id',
+    'format': 'format',
+    'genre': 'genre',
+    'geography': 'geography.term',
+    'language': 'language',
+    'location': 'location',
+    'mimetype': 'mimetype',
+    'persons': 'persons',
+    'rights': 'rights',
+    'topics': 'topics.id',
+}
+
+# TODO move to ddr-defs/repo_models/elastic.py?
+SEARCH_MODELS = ['repository','organization','collection','entity','file']
+
+# fields searched by query e.g. query will find search terms in these fields
+# TODO move to ddr-defs/repo_models/elastic.py?
+SEARCH_INCLUDE_FIELDS = [
+    'model',
+    'status',
+    'public',
+    'title',
+    'description',
+    'contributor',
+    'creators',
+    'facility',
+    'format',
+    'genre',
+    'geography',
+    'label',
+    'language',
+    'location',
+    'persons',
+    'rights',
+    'topics',
+]
+
+# TODO move to ddr-defs/repo_models/elastic.py?
+SEARCH_FORM_LABELS = {
+    'model': 'Model',
+    'status': 'Status',
+    'public': 'Public',
+    'contributor': 'Contributor',
+    'creators.namepart': 'Creators',
+    'facility': 'Facility',
+    'format': 'Format',
+    'genre': 'Genre',
+    'geography.term': 'Geography',
+    'language': 'Language',
+    'location': 'Location',
+    'mimetype': 'Mimetype',
+    'persons': 'Persons',
+    'rights': 'Rights',
+    'topics': 'Topics',
+}
+
+
 def es_offset(pagesize, thispage):
     """Convert Django pagination to Elasticsearch limit/offset
     
@@ -91,47 +183,106 @@ class Searcher(object):
     sort_cleaned = None
     s = None
     
-    def __init__(self, mappings, fields, search):
+    def __init__(self, mappings, fields, search=None):
         self.mappings = mappings
         self.fields = fields
         self.s = search
-    
-    def prep(self, request_data):
-        """
-        searcher.prep(request_data)
-        OR
-        searcher.s = Search()
-        """
-        query = prep_query(
-            text=request_data.get('fulltext', ''),
-            must=request_data.get('must', []),
-            should=request_data.get('should', []),
-            mustnot=request_data.get('mustnot', []),
-            aggs={},
-        )
-        logger.debug(json.dumps(query))
-        if not query:
-            raise Exception("Searcher.prep: Can't do an empty search. Give me something to work with here.")
-        
-        s = Search.from_dict(query)
-        s = s.source(
-            include=self.fields,
-            exclude=[],
-        )
-        # doc_types
-        doctype_names = None
-        if isinstance(request_data.get('doctypes'), basestring):
-            doctype_names = request_data['doctypes'].split(',')
-        elif isinstance(request_data.get('doctypes'), list):
-            doctype_names = request_data['doctypes']
-        if not doctype_names:
-            doctype_names = list(self.mappings.keys())
-        doctypes = [self.mappings[d] for d in doctype_names]
-        s = s.doc_type(','.join(doctype_names))
 
-        if request_data.get('sort'):
-            sorts = ','.join(request_data['sort'])
-            s = s.sort(sorts)
+    def prepare(self, request):
+        """assemble elasticsearch_dsl.Search object
+        """
+        
+        s = Search(using=DOCSTORE.es, index=DOCSTORE.indexname)
+        for model in SEARCH_MODELS:
+            s = s.doc_type(model)
+        s = s.source(include=identifier.ELASTICSEARCH_LIST_FIELDS)
+
+        # gather inputs ------------------------------
+        
+        if hasattr(request, 'query_params'):
+            # api (rest_framework)
+            params = dict(request.query_params)
+        elif hasattr(request, 'GET'):
+            # web ui (regular Django)
+            params = dict(request.GET)
+        else:
+            params = {}
+        
+        # whitelist params
+        bad_fields = [
+            key for key in params.keys()
+            if key not in SEARCH_PARAM_WHITELIST + ['page']
+        ]
+        for key in bad_fields:
+            params.pop(key)
+
+        # fulltext query
+        if params.get('fulltext'):
+            # MultiMatch chokes on lists
+            fulltext = params.pop('fulltext')
+            if isinstance(fulltext, list) and (len(fulltext) == 1):
+                fulltext = fulltext[0]
+            # fulltext search
+            s = s.query(
+                MultiMatch(
+                    query=fulltext,
+                    fields=SEARCH_INCLUDE_FIELDS
+                )
+            )
+        
+        # filters
+        for key,val in params.items():
+            
+            if key in SEARCH_NESTED_FIELDS:
+    
+                # search for *ALL* the topics (AND)
+                for term_id in val:
+                    s = s.filter(
+                        Q('bool',
+                          must=[
+                              Q('nested',
+                                path=key,
+                                query=Q('term', **{'%s.id' % key: term_id})
+                              )
+                          ]
+                        )
+                    )
+                
+                ## search for *ANY* of the topics (OR)
+                #s = s.query(
+                #    Q('bool',
+                #      must=[
+                #          Q('nested',
+                #            path=key,
+                #            query=Q('terms', **{'%s.id' % key: val})
+                #          )
+                #      ]
+                #    )
+                #)
+    
+            elif key in SEARCH_PARAM_WHITELIST:
+                s = s.filter('terms', **{key: val})
+        
+        # aggregations
+        for fieldname,field in SEARCH_AGG_FIELDS.items():
+            
+            # nested aggregation (Elastic docs: https://goo.gl/xM8fPr)
+            if fieldname == 'topics':
+                s.aggs.bucket('topics', 'nested', path='topics') \
+                      .bucket('topic_ids', 'terms', field='topics.id', size=1000)
+            elif fieldname == 'facility':
+                s.aggs.bucket('facility', 'nested', path='facility') \
+                      .bucket('facility_ids', 'terms', field='facility.id', size=1000)
+                # result:
+                # results.aggregations['topics']['topic_ids']['buckets']
+                #   {u'key': u'69', u'doc_count': 9}
+                #   {u'key': u'68', u'doc_count': 2}
+                #   {u'key': u'62', u'doc_count': 1}
+            
+            # simple aggregations
+            else:
+                s.aggs.bucket(fieldname, 'terms', field=field)
+        
         self.s = s
     
     def execute(self, limit, offset):

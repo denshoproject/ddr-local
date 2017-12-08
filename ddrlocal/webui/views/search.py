@@ -21,6 +21,7 @@ from DDR import models
 from webui import api
 from webui import docstore
 from webui import forms
+from webui import identifier
 from webui import search
 from webui import tasks
 from webui.decorators import search_index
@@ -162,8 +163,12 @@ def search_ui(request):
             limit = settings.RESULTS_PER_PAGE
             offset = 0
         
-        searcher = api._searcher(request)
-        results = api._results(searcher, limit, offset)
+        searcher = search.Searcher(
+            mappings=identifier.ELASTICSEARCH_CLASSES_BY_MODEL,
+            fields=identifier.ELASTICSEARCH_LIST_FIELDS,
+        )
+        searcher.prepare(request)
+        results = searcher.execute(limit, offset)
         context['results'] = results
         context['search_form'] = forms.search.SearchForm(
             search_results=results,
