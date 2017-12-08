@@ -112,7 +112,7 @@ class SearchForm(forms.Form):
                 choices = [
                     (
                         item['key'],
-                        '%s (%s)' % (item['key'], item['doc_count'])
+                        '%s (%s)' % (item['label'], item['doc_count'])
                     )
                     for item in search_results.aggregations[fieldname]
                 ]

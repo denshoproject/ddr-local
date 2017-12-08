@@ -17,6 +17,7 @@ from rest_framework.reverse import reverse
 from django.conf import settings
 from django.core.paginator import Paginator
 
+from DDR import vocab
 from webui import docstore
 from webui import identifier
 
@@ -113,6 +114,18 @@ SEARCH_FORM_LABELS = {
     'persons': 'Persons',
     'rights': 'Rights',
     'topics': 'Topics',
+}
+
+# TODO should this live in models?
+VOCAB_TOPICS_IDS_TITLES = {
+    'topics': {
+        str(term['id']): term['title']
+        for term in vocab.get_vocab(settings.VOCAB_TERMS_URL, 'topics')['terms']
+    },
+    'facility': {
+        str(term['id']): term['title']
+        for term in vocab.get_vocab(settings.VOCAB_TERMS_URL, 'facility')['terms']
+    },
 }
 
 
@@ -364,15 +377,27 @@ class SearchResults(object):
                     # simple aggregations
                     else:
                         buckets = results.aggregations[field].buckets
-                    
-                    self.aggregations[field] = [
-                        {
-                            'key': bucket['key'],
-                            'doc_count': str(bucket['doc_count']),
-                        }
-                        for bucket in buckets
-                        if bucket['key'] and bucket['doc_count']
-                    ]
+
+                    if field in SEARCH_NESTED_FIELDS:
+                        self.aggregations[field] = [
+                            {
+                                'key': bucket['key'],
+                                'label': VOCAB_TOPICS_IDS_TITLES[field][str(bucket['key'])],
+                                'doc_count': str(bucket['doc_count']),
+                            }
+                            for bucket in buckets
+                            if bucket['key'] and bucket['doc_count']
+                        ]
+                    else:
+                        self.aggregations[field] = [
+                            {
+                                'key': bucket['key'],
+                                'label': bucket['key'],
+                                'doc_count': str(bucket['doc_count']),
+                            }
+                            for bucket in buckets
+                            if bucket['key'] and bucket['doc_count']
+                        ]
 
         elif objects:
             # objects
