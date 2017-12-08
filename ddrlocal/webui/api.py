@@ -123,41 +123,96 @@ def es_children(request, oid, limit=None, offset=None):
     return Response(data)
 
 
-SEARCH_QUERY_FIELDS = [
+# whitelist of params recognized in URL query
+# TODO move to ddr-defs/repo_models/elastic.py?
+SEARCH_PARAM_WHITELIST = [
     'fulltext',
     'model',
+    'status',
+    'public',
     'topics',
     'facility',
-    'language',
-    'persons',
+    'contributor',
+    'creators',
+    'format',
     'genre',
+    'geography',
+    'language',
+    'location',
+    'mimetype',
+    'persons',
+    'rights',
 ]
 
-VOCAB_FIELDS = {
-    'model': 'Model',
-    'topics.term': 'Topics',
-    'facility': 'Facility',
-    'language': 'Language',
-    'mimetype': 'Mimetype',
-    'format': 'Format',
-    'persons': 'Persons',
-    'genre': 'Genre',
+# fields where the relevant value is nested e.g. topics.id
+# TODO move to ddr-defs/repo_models/elastic.py?
+SEARCH_NESTED_FIELDS = [
+    'facility',
+    'topics',
+]
+
+# TODO move to ddr-defs/repo_models/elastic.py?
+SEARCH_AGG_FIELDS = {
+    'model': 'model',
+    'status': 'status',
+    'public': 'public',
+    'contributor': 'contributor',
+    'creators': 'creators.namepart',
+    'facility': 'facility.id',
+    'format': 'format',
+    'genre': 'genre',
+    'geography': 'geography.term',
+    'language': 'language',
+    'location': 'location',
+    'mimetype': 'mimetype',
+    'persons': 'persons',
+    'rights': 'rights',
+    'topics': 'topics.id',
 }
 
+# TODO move to ddr-defs/repo_models/elastic.py?
 SEARCH_MODELS = ['repository','organization','collection','entity','file']
 
-SEARCH_FIELDS = [
+# fields searched by query e.g. query will find search terms in these fields
+# TODO move to ddr-defs/repo_models/elastic.py?
+SEARCH_INCLUDE_FIELDS = [
     'model',
+    'status',
+    'public',
     'title',
-    'label',
     'description',
-    'topics',
+    'contributor',
+    'creators',
     'facility',
-    'language',
     'format',
-    'persons',
     'genre',
+    'geography',
+    'label',
+    'language',
+    'location',
+    'persons',
+    'rights',
+    'topics',
 ]
+
+# TODO move to ddr-defs/repo_models/elastic.py?
+SEARCH_FORM_LABELS = {
+    'model': 'Model',
+    'status': 'Status',
+    'public': 'Public',
+    'contributor': 'Contributor',
+    'creators.namepart': 'Creators',
+    'facility': 'Facility',
+    'format': 'Format',
+    'genre': 'Genre',
+    'geography.term': 'Geography',
+    'language': 'Language',
+    'location': 'Location',
+    'mimetype': 'Mimetype',
+    'persons': 'Persons',
+    'rights': 'Rights',
+    'topics': 'Topics',
+}
 
 @api_view(['GET'])
 def search_form(request, format=None):
@@ -200,7 +255,7 @@ def _searcher(request):
     # whitelist params
     bad_fields = [
         key for key in params.keys()
-        if key not in SEARCH_QUERY_FIELDS + ['page']
+        if key not in SEARCH_PARAM_WHITELIST + ['page']
     ]
     for key in bad_fields:
         params.pop(key)
@@ -223,7 +278,7 @@ def _searcher(request):
         s = s.query(
             search.MultiMatch(
                 query=fulltext,
-                fields=SEARCH_FIELDS
+                fields=SEARCH_INCLUDE_FIELDS
             )
         )
     
@@ -233,11 +288,11 @@ def _searcher(request):
     #        s = s.filter('terms', **{key: val})
     from elasticsearch_dsl import FacetedSearch, TermsFacet, DateHistogramFacet
     for key,val in params.items():
-        if key in SEARCH_QUERY_FIELDS:
+        if key in SEARCH_NESTED_FIELDS:
             s = s.filter('terms', **{key: val})
     
     # aggregations
-    for fieldname in VOCAB_FIELDS.keys():
+    for fieldname in SEARCH_AGG_FIELDS.keys():
         s.aggs.bucket(fieldname, 'terms', field=fieldname)
     
     # run search ---------------------------------

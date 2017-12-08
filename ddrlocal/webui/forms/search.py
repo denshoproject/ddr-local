@@ -79,7 +79,7 @@ class DropConfirmForm(forms.Form):
 
 
 class SearchForm(forms.Form):
-    field_order = api.SEARCH_QUERY_FIELDS
+    field_order = api.SEARCH_PARAM_WHITELIST
     search_results = None
     
     def __init__( self, *args, **kwargs ):
@@ -120,7 +120,7 @@ class SearchForm(forms.Form):
                     fields.append((
                         fieldname,
                         forms.MultipleChoiceField(
-                            label=api.VOCAB_FIELDS.get(
+                            label=api.SEARCH_FORM_LABELS.get(
                                 fieldname, fieldname),
                             choices=choices,
                             required=False,
