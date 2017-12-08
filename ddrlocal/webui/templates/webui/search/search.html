@@ -31,65 +31,99 @@ Search
 
       {% if search_form.model %}
       <div class="search-filter">
-        <strong>{{ search_form.model.label }}</strong>
-        <br/>
+        <strong>{{ search_form.model.label }}</strong><br/>
         {{ search_form.model }}
       </div>
       {% endif %}
 
-      {% if search_form.format %}
+      {% if search_form.status %}
       <div class="search-filter">
-        <strong>{{ search_form.format.label }}</strong>
-        <br/>
-        {{ search_form.format }}
+        <strong>{{ search_form.status.label }}</strong><br/>
+        {{ search_form.status }}
       </div>
       {% endif %}
 
-      {% if search_form.topics %}
+      {% if search_form.public %}
       <div class="search-filter">
-        <strong>{{ search_form.topics.label }}</strong>
-        <br/>
-        {{ search_form.topics }}
+        <strong>{{ search_form.public.label }}</strong><br/>
+        {{ search_form.public }}
+      </div>
+      {% endif %}
+      
+      {% if search_form.contributor %}
+      <div class="search-filter">
+        <strong>{{ search_form.contributor.label }}</strong><br/>
+        {{ search_form.contributor }}
+      </div>
+      {% endif %}
+
+      {% if search_form.creators %}
+      <div class="search-filter">
+        <strong>{{ search_form.creators.label }}</strong><br/>
+        {{ search_form.creators }}
       </div>
       {% endif %}
 
       {% if search_form.facility %}
       <div class="search-filter">
-        <strong>{{ search_form.facility.label }}</strong>
-        <br/>
+        <strong>{{ search_form.facility.label }}</strong><br/>
         {{ search_form.facility }}
+      </div>
+      {% endif %}
+
+      {% if search_form.format %}
+      <div class="search-filter">
+        <strong>{{ search_form.format.label }}</strong><br/>
+        {{ search_form.format }}
+      </div>
+      {% endif %}
+
+      {% if search_form.genre %}
+      <div class="search-filter">
+        <strong>{{ search_form.genre.label }}</strong><br/>
+        {{ search_form.genre }}
       </div>
       {% endif %}
 
       {% if search_form.language %}
       <div class="search-filter">
-        <strong>{{ search_form.language.label }}</strong>
-        <br/>
+        <strong>{{ search_form.language.label }}</strong><br/>
         {{ search_form.language }}
+      </div>
+      {% endif %}
+
+      {% if search_form.location %}
+      <div class="search-filter">
+        <strong>{{ search_form.location.label }}</strong><br/>
+        {{ search_form.location }}
       </div>
       {% endif %}
 
       {% if search_form.mimetype %}
       <div class="search-filter">
-        <strong>{{ search_form.mimetype.label }}</strong>
-        <br/>
+        <strong>{{ search_form.mimetype.label }}</strong><br/>
         {{ search_form.mimetype }}
       </div>
       {% endif %}
 
       {% if search_form.persons %}
       <div class="search-filter">
-        <strong>{{ search_form.persons.label }}</strong>
-        <br/>
+        <strong>{{ search_form.persons.label }}</strong><br/>
         {{ search_form.persons }}
       </div>
       {% endif %}
 
-      {% if search_form.genre %}
+      {% if search_form.rights %}
       <div class="search-filter">
-        <strong>{{ search_form.genre.label }}</strong>
-        <br/>
-        {{ search_form.genre }}
+        <strong>{{ search_form.rights.label }}</strong><br/>
+        {{ search_form.rights }}
+      </div>
+      {% endif %}
+
+      {% if search_form.topics %}
+      <div class="search-filter">
+        <strong>{{ search_form.topics.label }}</strong><br/>
+        {{ search_form.topics }}
       </div>
       {% endif %}
 
