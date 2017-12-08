@@ -283,12 +283,46 @@ def _searcher(request):
         )
     
     # filters
-    #for key,val in params.items():
-    #    if key in SEARCH_QUERY_FIELDS:
-    #        s = s.filter('terms', **{key: val})
-    from elasticsearch_dsl import FacetedSearch, TermsFacet, DateHistogramFacet
     for key,val in params.items():
+        
         if key in SEARCH_NESTED_FIELDS:
+
+            # search for *all* the topics (AND)
+            for term_id in val:
+                s = s.filter(
+                    elasticsearch_dsl.query.Q(
+                        'bool',
+                        must=[
+                            elasticsearch_dsl.query.Q(
+                                'nested',
+                                path=key,
+                                query=elasticsearch_dsl.query.Q(
+                                    'term',
+                                    **{'%s.id' % key: term_id}
+                                )
+                            )
+                        ]
+                    )
+                )
+            
+            ## search for *any* of the topics (OR)
+            #s = s.query(
+            #    elasticsearch_dsl.query.Q(
+            #        'bool',
+            #        must=[
+            #            elasticsearch_dsl.query.Q(
+            #                'nested',
+            #                path=key,
+            #                query=elasticsearch_dsl.query.Q(
+            #                    'terms',
+            #                    **{'%s.id' % key: val}
+            #                )
+            #            )
+            #        ]
+            #    )
+            #)
+
+        elif key in SEARCH_PARAM_WHITELIST:
             s = s.filter('terms', **{key: val})
     
     # aggregations
