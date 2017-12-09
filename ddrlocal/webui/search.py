@@ -117,15 +117,20 @@ SEARCH_FORM_LABELS = {
 }
 
 # TODO should this live in models?
+def _vocab_choice_labels(field):
+    return {
+        str(term['id']): term['title']
+        for term in vocab.get_vocab(settings.VOCAB_TERMS_URL, field)['terms']
+    }
 VOCAB_TOPICS_IDS_TITLES = {
-    'topics': {
-        str(term['id']): term['title']
-        for term in vocab.get_vocab(settings.VOCAB_TERMS_URL, 'topics')['terms']
-    },
-    'facility': {
-        str(term['id']): term['title']
-        for term in vocab.get_vocab(settings.VOCAB_TERMS_URL, 'facility')['terms']
-    },
+    'facility': _vocab_choice_labels('facility'),
+    'format': _vocab_choice_labels('format'),
+    'genre': _vocab_choice_labels('genre'),
+    'language': _vocab_choice_labels('language'),
+    'public': _vocab_choice_labels('public'),
+    'rights': _vocab_choice_labels('rights'),
+    'status': _vocab_choice_labels('status'),
+    'topics': _vocab_choice_labels('topics'),
 }
 
 
@@ -378,7 +383,7 @@ class SearchResults(object):
                     else:
                         buckets = results.aggregations[field].buckets
 
-                    if field in SEARCH_NESTED_FIELDS:
+                    if VOCAB_TOPICS_IDS_TITLES.get(field):
                         self.aggregations[field] = [
                             {
                                 'key': bucket['key'],
