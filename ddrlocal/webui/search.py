@@ -5,6 +5,7 @@ from copy import deepcopy
 import json
 import logging
 logger = logging.getLogger(__name__)
+import os
 import urlparse
 
 from elasticsearch_dsl import Index, Search, A, Q, A
@@ -120,7 +121,9 @@ SEARCH_FORM_LABELS = {
 def _vocab_choice_labels(field):
     return {
         str(term['id']): term['title']
-        for term in vocab.get_vocab(settings.VOCAB_TERMS_URL, field)['terms']
+        for term in vocab.get_vocab(
+                os.path.join(settings.VOCAB_TERMS_URL, '%s.json' % field)
+        )['terms']
     }
 VOCAB_TOPICS_IDS_TITLES = {
     'facility': _vocab_choice_labels('facility'),
