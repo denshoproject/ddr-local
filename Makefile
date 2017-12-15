@@ -666,6 +666,7 @@ deb:
 	--vendor "$(FPM_VENDOR)"   \
 	--maintainer "$(FPM_MAINTAINER)"   \
 	--description "$(FPM_DESCRIPTION)"   \
+	--depends "nginx-light"   \
 	--depends "cgit"   \
 	--depends "fcgiwrap"   \
 	--depends "git-annex"   \
@@ -680,7 +681,6 @@ deb:
 	--depends "libz-dev"   \
 	--depends "munin"   \
 	--depends "munin-node"   \
-	--depends "nginx"   \
 	--depends "openjdk-7-jre"   \
 	--depends "pmount"   \
 	--depends "python-dev"   \
