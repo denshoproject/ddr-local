@@ -1,5 +1,10 @@
 # Do things after installing (FPM) .deb package
 
+# add ddr user
+groupadd --gid 1001 ddr
+useradd --gid 1001 --uid 1001 --shell /bin/bash --no-create-home --home-dir /opt/ddr-local ddr
+adduser ddr plugdev
+
 # settings files
 chown root.root /etc/ddr/ddrlocal.cfg
 chmod 644       /etc/ddr/ddrlocal.cfg
