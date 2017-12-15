@@ -182,6 +182,7 @@ vbox-guest:
 	m-a prepare
 	mount /media/cdrom
 	sh /media/cdrom/VBoxLinuxAdditions.run
+	-addgroup ddr vboxsf
 
 
 install-daemons: install-elasticsearch install-redis install-cgit install-munin install-nginx
