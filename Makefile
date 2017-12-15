@@ -182,6 +182,7 @@ vbox-guest:
 	m-a prepare
 	mount /media/cdrom
 	sh /media/cdrom/VBoxLinuxAdditions.run
+	-addgroup ddr vboxsf
 
 
 install-daemons: install-elasticsearch install-redis install-cgit install-nginx
@@ -633,6 +634,7 @@ deb:
 	--vendor "$(FPM_VENDOR)"   \
 	--maintainer "$(FPM_MAINTAINER)"   \
 	--description "$(FPM_DESCRIPTION)"   \
+	--depends "nginx-light"   \
 	--depends "cgit"   \
 	--depends "fcgiwrap"   \
 	--depends "git-annex"   \
@@ -645,7 +647,8 @@ deb:
 	--depends "libxml2-dev"   \
 	--depends "libxslt1-dev"   \
 	--depends "libz-dev"   \
-	--depends "nginx"   \
+	--depends "munin"   \
+	--depends "munin-node"   \
 	--depends "openjdk-7-jre"   \
 	--depends "pmount"   \
 	--depends "python-dev"   \
