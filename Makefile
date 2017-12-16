@@ -405,7 +405,7 @@ get-ddr-defs:
 	fi
 
 
-syncdb: install-virtualenv
+syncdb:
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_LOCAL)/ddrlocal && ./manage.py syncdb --noinput
 	chown -R ddr.root $(SQLITE_BASE)
