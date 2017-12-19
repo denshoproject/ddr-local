@@ -2,7 +2,7 @@
 
 # add ddr user
 groupadd --gid 1001 ddr
-useradd --gid 1001 --uid 1001 --shell /bin/bash ddr
+useradd --gid 1001 --uid 1001 --shell /bin/bash --create-home --home-dir /home/ddr ddr
 adduser ddr plugdev
 
 # settings files
