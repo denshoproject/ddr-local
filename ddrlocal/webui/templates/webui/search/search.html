@@ -181,6 +181,16 @@ Search
 </form>
 </table>
 
+{% if results.errors %}
+<!-- aggregations bucket keyword errors -->
+<div style="color:red;">
+  <strong>Search Results Errors</strong><br/>
+  {% for error in results.errors %}
+  {{ error }}<br/>
+  {% endfor %}
+</div>
+{% endif %}
+
 <!-- --------------------------------------------------------------- -->
 
 <div id="querymeta">

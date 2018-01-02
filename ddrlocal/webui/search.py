@@ -358,6 +358,7 @@ class SearchResults(object):
     next_page = 0
     prev_html = u''
     next_html = u''
+    errors = []
 
     def __init__(self, mappings, query={}, count=0, results=None, objects=[], limit=settings.ELASTICSEARCH_DEFAULT_LIMIT, offset=0):
         self.mappings = mappings
@@ -387,15 +388,19 @@ class SearchResults(object):
                         buckets = results.aggregations[field].buckets
 
                     if VOCAB_TOPICS_IDS_TITLES.get(field):
-                        self.aggregations[field] = [
-                            {
-                                'key': bucket['key'],
-                                'label': VOCAB_TOPICS_IDS_TITLES[field][str(bucket['key'])],
-                                'doc_count': str(bucket['doc_count']),
-                            }
-                            for bucket in buckets
-                            if bucket['key'] and bucket['doc_count']
-                        ]
+                        self.aggregations[field] = []
+                        for bucket in buckets:
+                            if bucket['key'] and bucket['doc_count']:
+                                self.aggregations[field].append({
+                                    'key': bucket['key'],
+                                    'label': VOCAB_TOPICS_IDS_TITLES[field].get(str(bucket['key'])),
+                                    'doc_count': str(bucket['doc_count']),
+                                })
+                                # print topics/facility errors in search results
+                                # TODO hard-coded
+                                if (field in ['topics', 'facility']) and not (isinstance(bucket['key'], int) or bucket['key'].isdigit()):
+                                    self.errors.append(bucket)
+
                     else:
                         self.aggregations[field] = [
                             {
