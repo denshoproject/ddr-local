@@ -145,12 +145,12 @@ def reindex( index ):
     facets_status = ds.put_facets()
     logger.debug(facets_status)
     logger.debug('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ')
-    logger.debug('indexing')
-    index_status = ds.index(
+    logger.debug('indexing/publishing')
+    publish_status = ds.publish(
         path=settings.MEDIA_BASE,
         recursive=True, public=False
     )
-    logger.debug(index_status)
+    logger.debug(publish_status)
     return statuses
 
 def reindex_and_notify( index ):
