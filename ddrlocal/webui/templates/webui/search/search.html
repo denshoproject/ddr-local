@@ -29,6 +29,13 @@ Search
   <tr>
     <td valign="top">
 
+      {% if search_form.parent %}
+      <div class="search-filter">
+        <strong>{{ search_form.parent.label }}</strong><br/>
+        {{ search_form.parent }}
+      </div>
+      {% endif %}
+
       {% if search_form.model %}
       <div class="search-filter">
         <strong>{{ search_form.model.label }}</strong><br/>

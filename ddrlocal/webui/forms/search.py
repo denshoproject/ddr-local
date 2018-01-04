@@ -103,7 +103,19 @@ class SearchForm(forms.Form):
                         }
                     ),
                 )
-            )
+            ),
+            (
+                'parent',
+                forms.CharField(
+                    max_length=255,
+                    required=False,
+                    widget=forms.TextInput(
+                        attrs={
+                            'id': 'id_parent',
+                        }
+                    ),
+                )
+            ),
         ]
         
         # fill in options and doc counts from aggregations

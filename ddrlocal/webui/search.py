@@ -31,6 +31,7 @@ DOCSTORE = docstore.Docstore()
 SEARCH_PARAM_WHITELIST = [
     'fulltext',
     'model',
+    'parent',
     'status',
     'public',
     'topics',
@@ -250,6 +251,12 @@ class Searcher(object):
                     fields=SEARCH_INCLUDE_FIELDS
                 )
             )
+
+        # parent
+        if params.get('parent'):
+            param = params.pop('parent')
+            parent = '%s*' % param[0]
+            s = s.query("wildcard", id=parent)
         
         # filters
         for key,val in params.items():
