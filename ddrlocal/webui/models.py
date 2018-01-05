@@ -13,7 +13,6 @@ from django.core.urlresolvers import reverse
 from django.db import models
 
 from DDR import commands
-from DDR import docstore
 from DDR import dvcs
 from DDR import fileio
 from DDR import modules
@@ -24,6 +23,7 @@ from DDR.models import ListEntity, Entity as DDREntity
 from DDR.models import File
 from DDR.models import COLLECTION_FILES_PREFIX, ENTITY_FILES_PREFIX
 
+from webui import docstore
 from webui import gitstatus
 from webui import WEBUI_MESSAGES
 from webui import COLLECTION_CHILDREN_CACHE_KEY
@@ -218,6 +218,28 @@ class Collection( DDRCollection ):
         '/cgit/cgit.cgi/ddr-testing-123/'
         """
         return '/cgit/cgit.cgi/{}/'.format(self.id)
+
+    def api_url(self):
+        """Returns local REST API URL for collection.
+        
+        >>> c = DDRLocalCollection('/tmp/ddr-testing-123')
+        >>> c.api_url()
+        '/ui/api/1.0/ddr-testing-123/'
+        """
+        return reverse('api-es-detail', args=([self.id]))
+        
+    def docstore_url( self ):
+        """Returns local Elasticsearch URL for collection.
+        
+        >>> c = DDRLocalCollection('/tmp/ddr-testing-123')
+        >>> c.docstore_url()
+        'http://DOCSTORE_HOSTS/DOCSTORE_INDEX/collection/ddr-testing-123/'
+        """
+        return 'http://{}:{}/{}/{}/{}'.format(
+            settings.DOCSTORE_HOSTS[0]['host'], settings.DOCSTORE_HOSTS[0]['port'],
+            settings.DOCSTORE_INDEX,
+            self.identifier.model, self.identifier.id
+        )
     
     def fs_url( self ):
         """URL of the collection directory browsable via Nginx.
@@ -324,10 +346,8 @@ class Collection( DDRCollection ):
         
         # [delete cache], update search index
         #collection.cache_delete()
-        with open(collection.json_path, 'r') as f:
-            document = json.loads(f.read())
         try:
-            docstore.Docstore().post(document)
+            docstore.Docstore().post(self)
         except ConnectionError:
             logger.error('Could not post to Elasticsearch.')
         
@@ -351,10 +371,8 @@ class Collection( DDRCollection ):
         )
         
         self.cache_delete()
-        with open(self.json_path, 'r') as f:
-            document = json.loads(f.read())
         try:
-            docstore.Docstore().post(document)
+            docstore.Docstore().post(self)
         except ConnectionError:
             logger.error('Could not post to Elasticsearch.')
         return exit,status,updated_files
@@ -495,6 +513,28 @@ class Entity( DDREntity ):
             self.collection_id,
             self.id
         )
+
+    def api_url(self):
+        """Returns local REST API URL for entity.
+        
+        >>> e = DDRLocalEntity('/tmp/ddr-testing-123-456')
+        >>> e.api_url()
+        '/ui/api/1.0/ddr-testing-123-456/'
+        """
+        return reverse('api-es-detail', args=([self.id]))
+    
+    def docstore_url( self ):
+        """Returns local Elasticsearch URL for entity.
+        
+        >>> e = DDRLocalEntity('/tmp/ddr-testing-123-456')
+        >>> e.docstore_url()
+        'http://DOCSTORE_HOSTS/DOCSTORE_INDEX/entity/ddr-testing-123-456/'
+        """
+        return 'http://{}:{}/{}/{}/{}'.format(
+            settings.DOCSTORE_HOSTS[0]['host'], settings.DOCSTORE_HOSTS[0]['port'],
+            settings.DOCSTORE_INDEX,
+            self.identifier.model, self.identifier.id
+        )
     
     def gitweb_url( self ):
         """Returns local gitweb URL for entity directory.
@@ -574,10 +614,8 @@ class Entity( DDREntity ):
 
         # delete cache, update search index
         collection.cache_delete()
-        with open(entity.json_path, 'r') as f:
-            document = json.loads(f.read())
         try:
-            docstore.Docstore().post(document)
+            docstore.Docstore().post(self)
         except ConnectionError:
             logger.error('Could not post to Elasticsearch.')
         
@@ -605,10 +643,8 @@ class Entity( DDREntity ):
         )
         
         collection.cache_delete()
-        with open(self.json_path, 'r') as f:
-            document = json.loads(f.read())
         try:
-            docstore.Docstore().post(document)
+            docstore.Docstore().post(self)
         except ConnectionError:
             logger.error('Could not post to Elasticsearch.')
         return exit,status,updated_files
@@ -672,6 +708,28 @@ class DDRFile( File ):
             path_rel = os.path.normpath(self.path_abs.replace(mediaroot, ''))
             return os.path.join(settings.MEDIA_URL, path_rel)
         return None
+
+    def api_url(self):
+        """Returns local REST API URL for file.
+        
+        >>> f = DDRFile('/tmp/ddr-testing-123-456-master-abc123')
+        >>> f.api_url()
+        '/ui/api/1.0/ddr-testing-123-456-master-abc123/'
+        """
+        return reverse('api-es-detail', args=([self.id]))
+    
+    def docstore_url( self ):
+        """Returns local Elasticsearch URL for file.
+        
+        >>> f = DDRLocalEntity('/tmp/ddr-testing-123-456-master-abc123')
+        >>> f.docstore_url()
+        'http://DOCSTORE_HOSTS/DOCSTORE_INDEX/file/ddr-testing-123-456-master-abc123/'
+        """
+        return 'http://{}:{}/{}/{}/{}'.format(
+            settings.DOCSTORE_HOSTS[0]['host'], settings.DOCSTORE_HOSTS[0]['port'],
+            settings.DOCSTORE_INDEX,
+            self.identifier.model, self.identifier.id
+        )
     
     def fs_url( self ):
         """URL of the files directory browsable via Nginx.
@@ -728,10 +786,8 @@ class DDRFile( File ):
         )
         
         collection.cache_delete()
-        with open(self.json_path, 'r') as f:
-            document = json.loads(f.read())
         try:
-            docstore.Docstore().post(document)
+            docstore.Docstore().post(self)
         except ConnectionError:
             logger.error('Could not post to Elasticsearch.')
         return exit,status,updated_files

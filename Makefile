@@ -143,7 +143,7 @@ install-prep: ddr-user install-core git-config install-misc-tools
 
 ddr-user:
 	-addgroup --gid=1001 ddr
-	-adduser --uid=1001 --gid=1001 ddr
+	-adduser --uid=1001 --gid=1001 --home=/home/ddr --shell=/bin/bash ddr
 	-addgroup ddr plugdev
 	-addgroup ddr vboxsf
 	printf "\n\n# ddrlocal: Activate virtualnv on login\nsource $(VIRTUALENV)/bin/activate\n" >> /home/ddr/.bashrc; \
@@ -328,6 +328,8 @@ uninstall-ddr-cmdln: install-virtualenv
 
 clean-ddr-cmdln:
 	-rm -Rf $(INSTALL_CMDLN)/ddr/build
+	-rm -Rf $(INSTALL_CMDLN)/ddr/ddr_cmdln.egg-info
+	-rm -Rf $(INSTALL_CMDLN)/ddr/dist
 
 
 get-ddr-local:
@@ -371,7 +373,8 @@ uninstall-ddr-local: install-virtualenv
 	cd $(INSTALL_LOCAL)/ddrlocal && pip uninstall -y -r $(INSTALL_LOCAL)/ddrlocal/requirements/production.txt
 
 clean-ddr-local:
-	-rm -Rf $(INSTALL_LOCAL)/ddrlocal/src
+	-rm -Rf $(VIRTUALENV)
+	-rm -Rf $(INSTALL_LOCAL)/*.deb
 
 
 get-ddr-defs:
@@ -384,7 +387,7 @@ get-ddr-defs:
 	fi
 
 
-syncdb: install-virtualenv
+syncdb:
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_LOCAL)/ddrlocal && ./manage.py syncdb --noinput
 	chown -R ddr.root $(SQLITE_BASE)

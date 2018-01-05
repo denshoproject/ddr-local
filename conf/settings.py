@@ -92,6 +92,7 @@ TEMPLATE_EAD         = os.path.join(REPO_MODELS_PATH, 'templates', 'ead.xml')
 TEMPLATE_METS        = os.path.join(REPO_MODELS_PATH, 'templates', 'mets.xml')
 ACCESS_FILE_APPEND   = config.get('cmdln','access_file_append')
 ACCESS_FILE_EXTENSION = config.get('cmdln','access_file_extension')
+ACCESS_FILE_SUFFIX = ACCESS_FILE_APPEND + ACCESS_FILE_EXTENSION
 ACCESS_FILE_GEOMETRY = config.get('cmdln','access_file_geometry')
 ACCESS_FILE_OPTIONS  = config.get('cmdln','access_file_options')
 THUMBNAIL_GEOMETRY   = config.get('cmdln','thumbnail_geometry')
@@ -119,6 +120,7 @@ DEFAULT_PERMISSION_FILE       = config.get('local','default_permission_file')
 LOG_DIR              = config.get('local', 'log_dir')
 LOG_FILE             = config.get('local', 'log_file')
 LOG_LEVEL            = config.get('local', 'log_level')
+VOCABS_PATH          = config.get('cmdln', 'vocabs_path')
 VOCAB_TERMS_URL      = config.get('local', 'vocab_terms_url')
 CSV_EXPORT_PATH = {
     'entity': '/tmp/ddr/csv/%s-objects.csv',
@@ -131,7 +133,9 @@ ds_host,ds_port      = config.get('local', 'docstore_host').split(':')
 DOCSTORE_HOSTS = [
     {'host':ds_host, 'port':ds_port}
 ]
-RESULTS_PER_PAGE = 20
+RESULTS_PER_PAGE = 25
+ELASTICSEARCH_MAX_SIZE = 10000
+ELASTICSEARCH_DEFAULT_LIMIT = RESULTS_PER_PAGE
 
 GITOLITE_INFO_CACHE_TIMEOUT = int(config.get('local', 'gitolite_info_cache_timeout'))
 GITOLITE_INFO_CACHE_CUTOFF  = int(config.get('local', 'gitolite_info_cache_cutoff'))
@@ -224,12 +228,20 @@ INSTALLED_APPS = (
     'bootstrap_pagination',
     'djcelery',
     'gunicorn',
+    'rest_framework',
     'sorl.thumbnail',
     #
     'ddrlocal',
     'storage',
     'webui',
 )
+
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ],
+    'PAGE_SIZE': 20
+}
 
 DATABASES = {
     'default': {
@@ -417,6 +429,8 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
+
+TEST_RUNNER = 'django.test.runner.DiscoverRunner'
 
 ROOT_URLCONF = 'ddrlocal.urls'
 

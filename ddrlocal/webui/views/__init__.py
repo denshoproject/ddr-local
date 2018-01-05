@@ -18,6 +18,7 @@ from webui import WEBUI_MESSAGES
 from webui import gitstatus
 from webui.decorators import ddrview
 from webui.forms import LoginForm, TaskDismissForm
+from webui import identifier
 from webui import tasks
 from webui.views.decorators import login_required
 
@@ -25,6 +26,25 @@ from webui.views.decorators import login_required
 
 
 # views ----------------------------------------------------------------
+
+def detail(request, oid):
+    """Generic function for handling IDs without models
+    """
+    oi = identifier.Identifier(oid)
+    if not oi:
+        raise Exception('"%s" is not a valid object ID' % oid)
+    return HttpResponseRedirect(
+        reverse(
+            'webui-%s' % oi.model,
+            args=([oid]),
+        )
+    )
+
+def repository(request, oid):
+    assert False
+
+def organization(request, oid):
+    assert False
 
 @ddrview
 def login( request ):

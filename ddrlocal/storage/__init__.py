@@ -6,7 +6,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.core.cache import cache
 
-from DDR import docstore
+from webui import docstore
 from DDR import storage as ddrstorage
 
 

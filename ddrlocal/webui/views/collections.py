@@ -23,13 +23,13 @@ from django.template.loader import get_template
 
 from DDR import commands
 from DDR import converters
-from DDR import docstore
 from DDR import dvcs
 from DDR import fileio
 from DDR import idservice
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
+from webui import docstore
 from webui.decorators import ddrview, search_index
 from webui.forms import DDRForm
 from webui.forms.collections import NewCollectionForm, UpdateForm

@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% load bootstrap_pagination thumbnail webui_tags %}
+
+
+{% block title %}
+Search
+{% endblock %}
+
+{% block headline %}
+Search
+{% endblock %}
+
+
+{% block content %}
+
+<table width="100%">
+<form action="{{ this_url }}" method="get">
+
+  <tr>
+    <td colspan="2">
+
+      {{ search_form.fulltext }}
+      <button class="btn btn-sm btn-primary"><i class="fa fa-filter"></i> Search</button>
+      <br/>
+      <span class="muted small">Use &lt;Ctrl&gt; or (⌘) keys to select multiple terms</span>
+    </td>
+  </tr>
+
+  <tr>
+    <td valign="top">
+
+      {% if search_form.parent %}
+      <div class="search-filter">
+        <strong>{{ search_form.parent.label }}</strong><br/>
+        {{ search_form.parent }}
+      </div>
+      {% endif %}
+
+      {% if search_form.models %}
+      <div class="search-filter">
+        <strong>{{ search_form.models.label }}</strong><br/>
+        {{ search_form.models }}
+      </div>
+      {% endif %}
+
+      {% if search_form.status %}
+      <div class="search-filter">
+        <strong>{{ search_form.status.label }}</strong><br/>
+        {{ search_form.status }}
+      </div>
+      {% endif %}
+
+      {% if search_form.public %}
+      <div class="search-filter">
+        <strong>{{ search_form.public.label }}</strong><br/>
+        {{ search_form.public }}
+      </div>
+      {% endif %}
+      
+      {% if search_form.contributor %}
+      <div class="search-filter">
+        <strong>{{ search_form.contributor.label }}</strong><br/>
+        {{ search_form.contributor }}
+      </div>
+      {% endif %}
+
+      {% if search_form.creators %}
+      <div class="search-filter">
+        <strong>{{ search_form.creators.label }}</strong><br/>
+        {{ search_form.creators }}
+      </div>
+      {% endif %}
+
+      {% if search_form.facility %}
+      <div class="search-filter">
+        <strong>{{ search_form.facility.label }}</strong><br/>
+        {{ search_form.facility }}
+      </div>
+      {% endif %}
+
+      {% if search_form.format %}
+      <div class="search-filter">
+        <strong>{{ search_form.format.label }}</strong><br/>
+        {{ search_form.format }}
+      </div>
+      {% endif %}
+
+      {% if search_form.genre %}
+      <div class="search-filter">
+        <strong>{{ search_form.genre.label }}</strong><br/>
+        {{ search_form.genre }}
+      </div>
+      {% endif %}
+
+      {% if search_form.language %}
+      <div class="search-filter">
+        <strong>{{ search_form.language.label }}</strong><br/>
+        {{ search_form.language }}
+      </div>
+      {% endif %}
+
+      {% if search_form.location %}
+      <div class="search-filter">
+        <strong>{{ search_form.location.label }}</strong><br/>
+        {{ search_form.location }}
+      </div>
+      {% endif %}
+
+      {% if search_form.mimetype %}
+      <div class="search-filter">
+        <strong>{{ search_form.mimetype.label }}</strong><br/>
+        {{ search_form.mimetype }}
+      </div>
+      {% endif %}
+
+      {% if search_form.persons %}
+      <div class="search-filter">
+        <strong>{{ search_form.persons.label }}</strong><br/>
+        {{ search_form.persons }}
+      </div>
+      {% endif %}
+
+      {% if search_form.rights %}
+      <div class="search-filter">
+        <strong>{{ search_form.rights.label }}</strong><br/>
+        {{ search_form.rights }}
+      </div>
+      {% endif %}
+
+      {% if search_form.topics %}
+      <div class="search-filter">
+        <strong>{{ search_form.topics.label }}</strong><br/>
+        {{ search_form.topics }}
+      </div>
+      {% endif %}
+
+    </td>
+    <td valign="top">
+
+{% if page.object_list %}
+<div id="item-count">
+  {{ paginator.count }} items<br/>
+</div>
+
+{% if paginator.num_pages > 1 %}
+{% bootstrap_paginate page range=10 show_first_last="true" %}
+{% endif %}
+
+{% for object in page.object_list %}
+<!-- {{ object.id }} -->
+<div class="media {{ object.model }}">
+
+  <a class="pull-left" href="{{ object.links.ui }}">
+  {% if object.img_present %}
+  {% thumbnail object.links.img "100x100" crop="center" as img %}
+    <img class="img-responsive img-thumbnail" src="{{ img.url }}" width="{{ img.width }}" height="{{ img.height }}" alt="{{ object.title }} ({{ object.id }})"/>
+  {% endthumbnail %}
+  {% else %}
+    <img class="img-responsive img-thumbnail" src="" width="100" height="100" alt=""/>
+  {% endif %}
+  </a>
+
+  <div class="media-body">
+    <b class="media-heading">
+      <span class="badge badge-info">{{ object.model }}</span>
+      <span class="badge badge-info">{{ object.status }}</span>
+      <span class="badge badge-info">{{ object.public }}</span>
+      <a href="{{ object.links.ui }}">{{ object.title }} ({{ object.id }})</a>
+    </b>
+    <div class="source muted">
+      {{ object.description }}
+    </div>
+    <div class="url">
+      <a href="{{ object.links.ui }}">{{ object.links.ui }}</a>
+    </div>
+  </div><!-- .media-body -->
+
+</div><!-- .media -->
+{% endfor %}
+
+{% if paginator.num_pages > 1 %}
+{% bootstrap_paginate page range=10 show_first_last="true" %}
+{% endif %}
+
+    </td>
+  </tr>
+
+</form>
+</table>
+
+{% if results.errors %}
+<!-- aggregations bucket keyword errors -->
+<div style="color:red;">
+  <strong>Search Results Errors</strong><br/>
+  {% for error in results.errors %}
+  {{ error }}<br/>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- --------------------------------------------------------------- -->
+
+<div id="querymeta">
+
+{% if terms %}
+  <div class="terms">
+    <b>Terms</b>
+
+    <strong><a href="{# url "ui-browse-facet" terms.field #}">{{ terms.field }}</a>:</strong>
+    {{ terms.term }}
+
+  </div>
+{% endif %}
+
+</div><!-- .querymeta -->
+
+</div> <!-- .row results content -->
+{% endif %}
+
+{{ query_json|safe }}
+
+{% endblock content %}
+
+
+{% block footer %}
+API: <a href="{{ api_url }}" target="api">{{ api_url }}</a>
+{% endblock footer %}
