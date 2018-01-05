@@ -112,7 +112,6 @@ def results( request ):
         if results.get('hits',None) and not results.get('status',None):
             # OK -- prep results for display
             thispage = request.GET.get('page', 1)
-            #assert False
             objects = massage_query_results(results, thispage, settings.RESULTS_PER_PAGE)
             paginator = Paginator(objects, settings.RESULTS_PER_PAGE)
             page = paginator.page(thispage)

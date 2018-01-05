@@ -31,6 +31,7 @@ DOCSTORE = docstore.Docstore()
 SEARCH_PARAM_WHITELIST = [
     'fulltext',
     'model',
+    'models',
     'parent',
     'status',
     'public',
@@ -213,11 +214,6 @@ class Searcher(object):
     def prepare(self, request):
         """assemble elasticsearch_dsl.Search object
         """
-        
-        s = Search(using=DOCSTORE.es, index=DOCSTORE.indexname)
-        for model in SEARCH_MODELS:
-            s = s.doc_type(model)
-        s = s.source(include=identifier.ELASTICSEARCH_LIST_FIELDS)
 
         # gather inputs ------------------------------
         
@@ -237,7 +233,20 @@ class Searcher(object):
         ]
         for key in bad_fields:
             params.pop(key)
-
+        
+        # doctypes
+        if params.get('models'):
+            models = params.pop('models')
+        else:
+            models = SEARCH_MODELS
+        
+        s = Search(
+            using=DOCSTORE.es,
+            index=DOCSTORE.indexname,
+            doc_type=models,
+        )
+        s = s.source(include=identifier.ELASTICSEARCH_LIST_FIELDS)
+        
         # fulltext query
         if params.get('fulltext'):
             # MultiMatch chokes on lists

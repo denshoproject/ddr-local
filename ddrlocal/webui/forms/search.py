@@ -116,6 +116,14 @@ class SearchForm(forms.Form):
                     ),
                 )
             ),
+            (
+                'models',
+                forms.MultipleChoiceField(
+                    label='Models',
+                    choices=[(model,model) for model in search.SEARCH_MODELS],
+                    required=False,
+                )
+            ),
         ]
         
         # fill in options and doc counts from aggregations
