@@ -76,8 +76,12 @@ CGIT_CONF=/etc/cgitrc
 
 FPM_BRANCH := $(shell git rev-parse --abbrev-ref HEAD | tr -d _ | tr -d -)
 FPM_ARCH=amd64
-FPM_NAME=$(APP)-$(FPM_BRANCH)
-FPM_FILE=$(FPM_NAME)_$(VERSION)_$(FPM_ARCH).deb
+FPM_NAME_JESSIE=$(APP)-$(FPM_BRANCH)
+FPM_NAME_STRETCH=$(APP)-$(FPM_BRANCH)
+FPM_VERSION_JESSIE=$(VERSION)~jessie
+FPM_VERSION_STRETCH=$(VERSION)~stretch
+FPM_FILE_JESSIE=$(FPM_NAME_JESSIE)_$(FPM_VERSION_JESSIE)_$(FPM_ARCH).deb
+FPM_FILE_STRETCH=$(FPM_NAME_STRETCH)_$(FPM_VERSION_STRETCH)_$(FPM_ARCH).deb
 FPM_VENDOR=Densho.org
 FPM_MAINTAINER=<geoffrey.jost@densho.org>
 FPM_DESCRIPTION=Densho Digital Repository editor
@@ -624,18 +628,23 @@ clean-ddr-manual:
 # http://fpm.readthedocs.io/en/latest/
 # https://stackoverflow.com/questions/32094205/set-a-custom-install-directory-when-making-a-deb-package-with-fpm
 # https://brejoc.com/tag/fpm/
-deb:
+deb: deb-jessie deb-stretch
+
+# deb-jessie and deb-stretch are identical EXCEPT:
+# jessie: --depends openjdk-7-jre
+# stretch: --depends openjdk-7-jre
+deb-jessie:
 	@echo ""
-	@echo "FPM packaging ----------------------------------------------------------"
-	-rm -Rf $(FPM_FILE)
+	@echo "FPM packaging (jessie) -------------------------------------------------"
+	-rm -Rf $(FPM_FILE_JESSIE)
 	virtualenv --relocatable $(VIRTUALENV)  # Make venv relocatable
 	fpm   \
 	--verbose   \
 	--input-type dir   \
 	--output-type deb   \
-	--name $(FPM_NAME)   \
-	--version $(VERSION)   \
-	--package $(FPM_FILE)   \
+	--name $(FPM_NAME_JESSIE)   \
+	--version $(FPM_VERSION_JESSIE)   \
+	--package $(FPM_FILE_JESSIE)  \
 	--url "$(GIT_SOURCE_URL)"   \
 	--vendor "$(FPM_VENDOR)"   \
 	--maintainer "$(FPM_MAINTAINER)"   \
@@ -656,6 +665,76 @@ deb:
 	--depends "munin"   \
 	--depends "munin-node"   \
 	--depends "openjdk-7-jre"   \
+	--depends "pmount"   \
+	--depends "python-dev"   \
+	--depends "python-pip"   \
+	--depends "python-six"   \
+	--depends "python-virtualenv"   \
+	--depends "redis-server"   \
+	--depends "supervisor"   \
+	--depends "udisks2"   \
+	--after-install "bin/after-install.sh"   \
+	--chdir $(INSTALL_LOCAL)   \
+	conf/ddrlocal.cfg=etc/ddr/ddrlocal.cfg   \
+	conf/celeryd.conf=etc/supervisor/conf.d/celeryd.conf   \
+	conf/supervisor.conf=etc/supervisor/conf.d/ddrlocal.conf   \
+	conf/nginx.conf=etc/nginx/sites-available/ddrlocal.conf   \
+	conf/README-logs=$(LOG_BASE)/README  \
+	conf/README-sqlite=$(SQLITE_BASE)/README  \
+	conf/README-media=$(MEDIA_ROOT)/README  \
+	conf/README-static=$(STATIC_ROOT)/README  \
+	static=var/www   \
+	bin=$(FPM_BASE)   \
+	conf=$(FPM_BASE)   \
+	COPYRIGHT=$(FPM_BASE)   \
+	ddr-cmdln=$(FPM_BASE)   \
+	ddr-defs=$(FPM_BASE)   \
+	ddrlocal=$(FPM_BASE)   \
+	.git=$(FPM_BASE)   \
+	.gitignore=$(FPM_BASE)   \
+	INSTALL.rst=$(FPM_BASE)   \
+	LICENSE=$(FPM_BASE)   \
+	Makefile=$(FPM_BASE)   \
+	README.rst=$(FPM_BASE)   \
+	static=$(FPM_BASE)   \
+	venv=$(FPM_BASE)   \
+	VERSION=$(FPM_BASE)
+
+# deb-jessie and deb-stretch are identical EXCEPT:
+# jessie: --depends openjdk-7-jre
+# stretch: --depends openjdk-7-jre
+deb-stretch:
+	@echo ""
+	@echo "FPM packaging (stretch) ------------------------------------------------"
+	-rm -Rf $(FPM_FILE_STRETCH)
+	virtualenv --relocatable $(VIRTUALENV)  # Make venv relocatable
+	fpm   \
+	--verbose   \
+	--input-type dir   \
+	--output-type deb   \
+	--name $(FPM_NAME_STRETCH)   \
+	--version $(FPM_VERSION_STRETCH)   \
+	--package $(FPM_FILE_STRETCH)   \
+	--url "$(GIT_SOURCE_URL)"   \
+	--vendor "$(FPM_VENDOR)"   \
+	--maintainer "$(FPM_MAINTAINER)"   \
+	--description "$(FPM_DESCRIPTION)"   \
+	--depends "nginx-light"   \
+	--depends "cgit"   \
+	--depends "fcgiwrap"   \
+	--depends "git-annex"   \
+	--depends "git-core"   \
+	--depends "imagemagick"   \
+	--depends "libexempi3"   \
+	--depends "libssl-dev"   \
+	--depends "libwww-perl"   \
+	--depends "libxml2"   \
+	--depends "libxml2-dev"   \
+	--depends "libxslt1-dev"   \
+	--depends "libz-dev"   \
+	--depends "munin"   \
+	--depends "munin-node"   \
+	--depends "openjdk-8-jre"   \
 	--depends "pmount"   \
 	--depends "python-dev"   \
 	--depends "python-pip"   \
