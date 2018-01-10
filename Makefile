@@ -46,6 +46,14 @@ MEDIA_BASE=/var/www
 MEDIA_ROOT=$(MEDIA_BASE)/media
 STATIC_ROOT=$(MEDIA_BASE)/static
 
+OPENJDK_PKG=
+ifeq ($(DEBIAN_RELEASE), jessie)
+	OPENJDK_PKG=openjdk-7-jre
+endif
+ifeq ($(DEBIAN_CODENAME), stretch)
+	OPENJDK_PKG=openjdk-8-jre
+endif
+
 ELASTICSEARCH=elasticsearch-2.4.4.deb
 MODERNIZR=modernizr-2.6.2.js
 JQUERY=jquery-1.11.0.min.js
@@ -229,12 +237,7 @@ install-elasticsearch:
 	@echo ""
 	@echo "Elasticsearch ----------------------------------------------------------"
 # Elasticsearch is configured/restarted here so it's online by the time script is done.
-ifeq ($(DEBIAN_CODENAME), jessie)
-	apt-get --assume-yes install openjdk-7-jre
-endif
-ifeq ($(DEBIAN_CODENAME), stretch)
-	apt-get --assume-yes install openjdk-8-jre
-endif
+	apt-get --assume-yes install $(OPENJDK_PKG)
 	-gdebi --non-interactive /tmp/downloads/$(ELASTICSEARCH)
 #cp $(INSTALL_BASE)/ddr-public/conf/elasticsearch.yml /etc/elasticsearch/
 #chown root.root /etc/elasticsearch/elasticsearch.yml
@@ -250,7 +253,7 @@ disable-elasticsearch:
 	systemctl disable elasticsearch.service
 
 remove-elasticsearch:
-	apt-get --assume-yes remove openjdk-7-jre elasticsearch
+	apt-get --assume-yes remove $(OPENJDK_PKG) elasticsearch
 
 
 install-virtualenv:
