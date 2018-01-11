@@ -237,7 +237,7 @@ remove-redis:
 get-elasticsearch:
 	wget -nc -P /tmp/downloads http://$(PACKAGE_SERVER)/$(ELASTICSEARCH)
 
-install-elasticsearch:
+install-elasticsearch: install-core
 	@echo ""
 	@echo "Elasticsearch ----------------------------------------------------------"
 # Elasticsearch is configured/restarted here so it's online by the time script is done.
@@ -652,6 +652,7 @@ deb-jessie:
 	--depends "nginx-light"   \
 	--depends "cgit"   \
 	--depends "fcgiwrap"   \
+	--depends "gdebi-core"   \
 	--depends "git-annex"   \
 	--depends "git-core"   \
 	--depends "imagemagick"   \
@@ -722,6 +723,7 @@ deb-stretch:
 	--depends "nginx-light"   \
 	--depends "cgit"   \
 	--depends "fcgiwrap"   \
+	--depends "gdebi-core"   \
 	--depends "git-annex"   \
 	--depends "git-core"   \
 	--depends "imagemagick"   \
