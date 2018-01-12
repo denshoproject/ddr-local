@@ -78,20 +78,20 @@ NGINX_CONF=/etc/nginx/sites-available/ddrlocal.conf
 NGINX_CONF_LINK=/etc/nginx/sites-enabled/ddrlocal.conf
 CGIT_CONF=/etc/cgitrc
 
-FPM_BRANCH := $(shell git rev-parse --abbrev-ref HEAD | tr -d _ | tr -d -)
-FPM_ARCH=amd64
-FPM_NAME_JESSIE=$(APP)-$(FPM_BRANCH)
-FPM_NAME_STRETCH=$(APP)-$(FPM_BRANCH)
+DEB_BRANCH := $(shell git rev-parse --abbrev-ref HEAD | tr -d _ | tr -d -)
+DEB_ARCH=amd64
+DEB_NAME_JESSIE=$(APP)-$(DEB_BRANCH)
+DEB_NAME_STRETCH=$(APP)-$(DEB_BRANCH)
 # Application version, separator (~), Debian release tag e.g. deb8
 # Release tag used because sortable and follows Debian project usage.
-FPM_VERSION_JESSIE=$(APP_VERSION)~deb8
-FPM_VERSION_STRETCH=$(APP_VERSION)~deb9
-FPM_FILE_JESSIE=$(FPM_NAME_JESSIE)_$(FPM_VERSION_JESSIE)_$(FPM_ARCH).deb
-FPM_FILE_STRETCH=$(FPM_NAME_STRETCH)_$(FPM_VERSION_STRETCH)_$(FPM_ARCH).deb
-FPM_VENDOR=Densho.org
-FPM_MAINTAINER=<geoffrey.jost@densho.org>
-FPM_DESCRIPTION=Densho Digital Repository editor
-FPM_BASE=opt/ddr-local
+DEB_VERSION_JESSIE=$(APP_VERSION)~deb8
+DEB_VERSION_STRETCH=$(APP_VERSION)~deb9
+DEB_FILE_JESSIE=$(DEB_NAME_JESSIE)_$(DEB_VERSION_JESSIE)_$(DEB_ARCH).deb
+DEB_FILE_STRETCH=$(DEB_NAME_STRETCH)_$(DEB_VERSION_STRETCH)_$(DEB_ARCH).deb
+DEB_VENDOR=Densho.org
+DEB_MAINTAINER=<geoffrey.jost@densho.org>
+DEB_DESCRIPTION=Densho Digital Repository editor
+DEB_BASE=opt/ddr-local
 
 
 .PHONY: help
@@ -642,19 +642,19 @@ deb: deb-jessie deb-stretch
 deb-jessie:
 	@echo ""
 	@echo "FPM packaging (jessie) -------------------------------------------------"
-	-rm -Rf $(FPM_FILE_JESSIE)
+	-rm -Rf $(DEB_FILE_JESSIE)
 	virtualenv --relocatable $(VIRTUALENV)  # Make venv relocatable
 	fpm   \
 	--verbose   \
 	--input-type dir   \
 	--output-type deb   \
-	--name $(FPM_NAME_JESSIE)   \
-	--version $(FPM_VERSION_JESSIE)   \
-	--package $(FPM_FILE_JESSIE)  \
+	--name $(DEB_NAME_JESSIE)   \
+	--version $(DEB_VERSION_JESSIE)   \
+	--package $(DEB_FILE_JESSIE)  \
 	--url "$(GIT_SOURCE_URL)"   \
-	--vendor "$(FPM_VENDOR)"   \
-	--maintainer "$(FPM_MAINTAINER)"   \
-	--description "$(FPM_DESCRIPTION)"   \
+	--vendor "$(DEB_VENDOR)"   \
+	--maintainer "$(DEB_MAINTAINER)"   \
+	--description "$(DEB_DESCRIPTION)"   \
 	--depends "nginx-light"   \
 	--depends "cgit"   \
 	--depends "fcgiwrap"   \
@@ -691,21 +691,21 @@ deb-jessie:
 	conf/README-media=$(MEDIA_ROOT)/README  \
 	conf/README-static=$(STATIC_ROOT)/README  \
 	static=var/www   \
-	bin=$(FPM_BASE)   \
-	conf=$(FPM_BASE)   \
-	COPYRIGHT=$(FPM_BASE)   \
-	ddr-cmdln=$(FPM_BASE)   \
-	ddr-defs=$(FPM_BASE)   \
-	ddrlocal=$(FPM_BASE)   \
-	.git=$(FPM_BASE)   \
-	.gitignore=$(FPM_BASE)   \
-	INSTALL.rst=$(FPM_BASE)   \
-	LICENSE=$(FPM_BASE)   \
-	Makefile=$(FPM_BASE)   \
-	README.rst=$(FPM_BASE)   \
-	static=$(FPM_BASE)   \
-	venv=$(FPM_BASE)   \
-	VERSION=$(FPM_BASE)
+	bin=$(DEB_BASE)   \
+	conf=$(DEB_BASE)   \
+	COPYRIGHT=$(DEB_BASE)   \
+	ddr-cmdln=$(DEB_BASE)   \
+	ddr-defs=$(DEB_BASE)   \
+	ddrlocal=$(DEB_BASE)   \
+	.git=$(DEB_BASE)   \
+	.gitignore=$(DEB_BASE)   \
+	INSTALL.rst=$(DEB_BASE)   \
+	LICENSE=$(DEB_BASE)   \
+	Makefile=$(DEB_BASE)   \
+	README.rst=$(DEB_BASE)   \
+	static=$(DEB_BASE)   \
+	venv=$(DEB_BASE)   \
+	VERSION=$(DEB_BASE)
 
 # deb-jessie and deb-stretch are identical EXCEPT:
 # jessie: --depends openjdk-7-jre
@@ -713,19 +713,19 @@ deb-jessie:
 deb-stretch:
 	@echo ""
 	@echo "FPM packaging (stretch) ------------------------------------------------"
-	-rm -Rf $(FPM_FILE_STRETCH)
+	-rm -Rf $(DEB_FILE_STRETCH)
 	virtualenv --relocatable $(VIRTUALENV)  # Make venv relocatable
 	fpm   \
 	--verbose   \
 	--input-type dir   \
 	--output-type deb   \
-	--name $(FPM_NAME_STRETCH)   \
-	--version $(FPM_VERSION_STRETCH)   \
-	--package $(FPM_FILE_STRETCH)   \
+	--name $(DEB_NAME_STRETCH)   \
+	--version $(DEB_VERSION_STRETCH)   \
+	--package $(DEB_FILE_STRETCH)   \
 	--url "$(GIT_SOURCE_URL)"   \
-	--vendor "$(FPM_VENDOR)"   \
-	--maintainer "$(FPM_MAINTAINER)"   \
-	--description "$(FPM_DESCRIPTION)"   \
+	--vendor "$(DEB_VENDOR)"   \
+	--maintainer "$(DEB_MAINTAINER)"   \
+	--description "$(DEB_DESCRIPTION)"   \
 	--depends "nginx-light"   \
 	--depends "cgit"   \
 	--depends "fcgiwrap"   \
@@ -762,18 +762,18 @@ deb-stretch:
 	conf/README-media=$(MEDIA_ROOT)/README  \
 	conf/README-static=$(STATIC_ROOT)/README  \
 	static=var/www   \
-	bin=$(FPM_BASE)   \
-	conf=$(FPM_BASE)   \
-	COPYRIGHT=$(FPM_BASE)   \
-	ddr-cmdln=$(FPM_BASE)   \
-	ddr-defs=$(FPM_BASE)   \
-	ddrlocal=$(FPM_BASE)   \
-	.git=$(FPM_BASE)   \
-	.gitignore=$(FPM_BASE)   \
-	INSTALL.rst=$(FPM_BASE)   \
-	LICENSE=$(FPM_BASE)   \
-	Makefile=$(FPM_BASE)   \
-	README.rst=$(FPM_BASE)   \
-	static=$(FPM_BASE)   \
-	venv=$(FPM_BASE)   \
-	VERSION=$(FPM_BASE)
+	bin=$(DEB_BASE)   \
+	conf=$(DEB_BASE)   \
+	COPYRIGHT=$(DEB_BASE)   \
+	ddr-cmdln=$(DEB_BASE)   \
+	ddr-defs=$(DEB_BASE)   \
+	ddrlocal=$(DEB_BASE)   \
+	.git=$(DEB_BASE)   \
+	.gitignore=$(DEB_BASE)   \
+	INSTALL.rst=$(DEB_BASE)   \
+	LICENSE=$(DEB_BASE)   \
+	Makefile=$(DEB_BASE)   \
+	README.rst=$(DEB_BASE)   \
+	static=$(DEB_BASE)   \
+	venv=$(DEB_BASE)   \
+	VERSION=$(DEB_BASE)
