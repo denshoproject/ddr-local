@@ -3,8 +3,12 @@ APP=ddrlocal
 USER=ddr
 
 SHELL = /bin/bash
+# Release name e.g. jessie
 DEBIAN_CODENAME := $(shell lsb_release -sc)
+# Release numbers e.g. 8.10
 DEBIAN_RELEASE := $(shell lsb_release -sr)
+# Sortable major version tag e.g. deb8
+DEBIAN_RELEASE_TAG = deb$(shell lsb_release -sr | cut -c1)
 VERSION := $(shell cat VERSION)
 
 GIT_SOURCE_URL=https://github.com/densho/ddr-local
@@ -78,8 +82,10 @@ FPM_BRANCH := $(shell git rev-parse --abbrev-ref HEAD | tr -d _ | tr -d -)
 FPM_ARCH=amd64
 FPM_NAME_JESSIE=$(APP)-$(FPM_BRANCH)
 FPM_NAME_STRETCH=$(APP)-$(FPM_BRANCH)
-FPM_VERSION_JESSIE=$(VERSION)~jessie
-FPM_VERSION_STRETCH=$(VERSION)~stretch
+# Application version, separator (~), Debian release tag e.g. deb8
+# Release tag used because sortable and follows Debian project usage.
+FPM_VERSION_JESSIE=$(VERSION)~deb8
+FPM_VERSION_STRETCH=$(VERSION)~deb9
 FPM_FILE_JESSIE=$(FPM_NAME_JESSIE)_$(FPM_VERSION_JESSIE)_$(FPM_ARCH).deb
 FPM_FILE_STRETCH=$(FPM_NAME_STRETCH)_$(FPM_VERSION_STRETCH)_$(FPM_ARCH).deb
 FPM_VENDOR=Densho.org
