@@ -106,11 +106,13 @@ form td { padding-bottom:20px; }
         <li><a href="{% url "storage-index" %}">Storage</a></li>
       </ul>
       <!-- search -->
+      {% if docstore_enabled %}
       <form class="navbar-form navbar-right" role="search" action="{% url "webui-search" %}" method="get">
         <div class="form-group">
           <input name="fulltext" id="navbar-search-query" type="text" class="form-control" placeholder="Search">
         </div>
       </form>
+      {% endif %}{# docstore_enabled #}
     </div><!-- /.navbar-collapse -->
   </div><!-- /.container-fluid -->
 </nav>

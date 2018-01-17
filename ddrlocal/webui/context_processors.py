@@ -38,6 +38,7 @@ def sitewide(request):
         'celery_status_url': reverse("webui-task-status"),
         'celery_status_update': request.session.get('celery_status_update', False),
         'supervisord_url': settings.SUPERVISORD_URL,
+        'docstore_enabled': settings.DOCSTORE_ENABLED,
         'elasticsearch_url': elasticsearch_url,
         'logout_next': logout_next,
         'cgit_url': settings.CGIT_URL,
