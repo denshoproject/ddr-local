@@ -157,25 +157,26 @@ class DDRForm(forms.Form):
                 "Form data does not contain a valid object ID."
             )
         
-        # per-field errors if can't convert to UTF-8
-        for fieldname,value in cleaned_data_copy.iteritems():
-            if isinstance(value, basestring):
-                try:
-                    data = value.decode('utf-8', 'strict')
-                except UnicodeError as err:
-                    # attach error to field
-                    unicode_hint = ''
-                    start = getattr(err, 'start', None)
-                    end = getattr(err, 'end', None)
-                    if start is not None and end is not None:
-                        unicode_hint = force_text(
-                            err.object[max(start - 5, 0):min(end + 5, len(err.object))],
-                            'ascii', errors='replace'
+        if settings.UTF8_STRICT:
+            # per-field errors if can't convert to UTF-8
+            for fieldname,value in cleaned_data_copy.iteritems():
+                if isinstance(value, basestring):
+                    try:
+                        data = value.decode('utf-8', 'strict')
+                    except UnicodeError as err:
+                        # attach error to field
+                        unicode_hint = ''
+                        start = getattr(err, 'start', None)
+                        end = getattr(err, 'end', None)
+                        if start is not None and end is not None:
+                            unicode_hint = force_text(
+                                err.object[max(start - 5, 0):min(end + 5, len(err.object))],
+                                'ascii', errors='replace'
+                            )
+                        self.add_error(
+                            fieldname,
+                            'Text contains chars that cannot be converted to Unicode. "...%s..."' % unicode_hint
                         )
-                    self.add_error(
-                        fieldname,
-                        'Text contains chars that cannot be converted to Unicode. "...%s..."' % unicode_hint
-                    )
         
         # run form_post on field
         module = obj.identifier.fields_module()
