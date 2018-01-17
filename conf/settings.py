@@ -70,6 +70,8 @@ MEDIA_BASE           = config.get('cmdln','media_base')
 # Location of Repository 'ddr' repo, which should contain repo_models
 # for the Repository.
 
+UTF8_STRICT = config.getboolean('cmdln','utf8_strict')
+
 # see notes in ddrlocal.cfg
 try:
     DEFAULT_TIMEZONE = config.get('cmdln','default_timezone')
