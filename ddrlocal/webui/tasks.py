@@ -121,6 +121,8 @@ def reindex( index ):
     logger.debug('------------------------------------------------------------------------')
     logger.debug('webui.tasks.reindex(%s)' % index)
     statuses = []
+    if not settings.DOCSTORE_ENABLED:
+        raise Exception('Elasticsearch is not enabled. Please see your settings.')
     if not os.path.exists(settings.MEDIA_BASE):
         raise NameError('MEDIA_BASE does not exist - you need to remount!')
     logger.debug('webui.tasks.reindex(%s)' % index)
@@ -288,11 +290,13 @@ def entity_add_file( git_name, git_mail, entity, src_path, role, data, agent='' 
     )
     
     log.ok('Updating Elasticsearch')
-    try:
-        result = file_.post_json()
-        log.ok('| %s' % result)
-    except ConnectionError:
-        log.not_ok('Could not post to Elasticsearch.')
+    if settings.DOCSTORE_ENABLED:
+        try:
+            result = file_.post_json()
+            log.ok('| %s' % result)
+        except ConnectionError:
+            log.not_ok('Could not post to Elasticsearch.')
+    
     return {
         'id': file_.id,
         'status': 'ok'
@@ -319,11 +323,13 @@ def entity_add_external( git_name, git_mail, entity, data, agent='' ):
     )
     
     log.ok('Updating Elasticsearch')
-    try:
-        result = file_.post_json()
-        log.ok('| %s' % result)
-    except ConnectionError:
-        log.not_ok('Could not post to Elasticsearch.')
+    if settings.DOCSTORE_ENABLED:
+        try:
+            result = file_.post_json()
+            log.ok('| %s' % result)
+        except ConnectionError:
+            log.not_ok('Could not post to Elasticsearch.')
+    
     return {
         'id': file_.id,
         'status': 'ok'
@@ -353,10 +359,13 @@ def entity_add_access( git_name, git_mail, entity, ddrfile, agent='' ):
         git_name, git_mail, agent
     )
     
-    try:
-        file_.post_json()
-    except ConnectionError:
-        log.not_ok('Could not post to Elasticsearch.')
+    log.ok('Updating Elasticsearch')
+    if settings.DOCSTORE_ENABLED:
+        try:
+            file_.post_json()
+        except ConnectionError:
+            log.not_ok('Could not post to Elasticsearch.')
+    
     return {
         'id': file_.id,
         'status': 'ok'
@@ -656,13 +665,14 @@ def delete_entity( git_name, git_mail, collection_path, entity_id, agent='' ):
         collection, entity,
         agent
     )
+    log.ok('Updating Elasticsearch')
+    if settings.DOCSTORE_ENABLED:
+        ds = docstore.Docstore()
+        try:
+            ds.delete(entity_id)
+        except ConnectionError:
+            logger.error('Could not delete document from Elasticsearch.')
     
-    # update search index
-    ds = docstore.Docstore()
-    try:
-        ds.delete(entity_id)
-    except ConnectionError:
-        logger.error('Could not delete document from Elasticsearch.')
     return status,message,collection_path,entity_id
 
 # ----------------------------------------------------------------------
@@ -728,13 +738,7 @@ def reload_files(collection_path, entity_id, git_name, git_mail, agent=''):
         collection,
         {}
     )
-    
-    logger.debug('delete from search index')
-    ds = docstore.Docstore()
-    try:
-        ds.delete(entity.id)
-    except ConnectionError:
-        logger.error('Could not delete document from Elasticsearch.')
+
     return status,collection_path,entity_id
 
 # ----------------------------------------------------------------------
@@ -807,13 +811,14 @@ def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, 
     exit,status,rm_files,updated_files = file_.delete(
         git_name, git_mail, agent
     )
-    
     logger.debug('delete from search index')
-    ds = docstore.Docstore()
-    try:
-        ds.delete(file_.id)
-    except ConnectionError:
-        logger.error('Could not delete document from Elasticsearch.')
+    if settings.DOCSTORE_ENABLED:
+        ds = docstore.Docstore()
+        try:
+            ds.delete(file_.id)
+        except ConnectionError:
+            logger.error('Could not delete document from Elasticsearch.')
+    
     return exit,status,collection_path,file_basename
 
 # ----------------------------------------------------------------------
@@ -853,13 +858,14 @@ def collection_sync( git_name, git_mail, collection_path ):
         git_name, git_mail,
         collection
     )
+    log.ok('Updating Elasticsearch')
+    if settings.DOCSTORE_ENABLED:
+        collection = Collection.from_identifier(Identifier(path=collection_path))
+        try:
+            collection.post_json()
+        except ConnectionError:
+            logger.error('Could not update search index')
     
-    # update search index
-    collection = Collection.from_identifier(Identifier(path=collection_path))
-    try:
-        collection.post_json()
-    except ConnectionError:
-        logger.error('Could not update search index')
     return collection_path
 
 
@@ -904,13 +910,14 @@ def collection_signatures(collection_path, git_name, git_mail):
         git_name, git_mail, agent='ddr-local'
     )
     logger.debug('DONE')
+    log.ok('Updating Elasticsearch')
+    if settings.DOCSTORE_ENABLED:
+        collection = Collection.from_identifier(Identifier(path=collection_path))
+        try:
+            collection.post_json()
+        except ConnectionError:
+            logger.error('Could not update search index')
     
-    # update search index
-    collection = Collection.from_identifier(Identifier(path=collection_path))
-    try:
-        collection.post_json()
-    except ConnectionError:
-        logger.error('Could not update search index')
     return collection_path
 
 

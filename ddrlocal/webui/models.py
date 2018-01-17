@@ -346,10 +346,11 @@ class Collection( DDRCollection ):
         
         # [delete cache], update search index
         #collection.cache_delete()
-        try:
-            docstore.Docstore().post(self)
-        except ConnectionError:
-            logger.error('Could not post to Elasticsearch.')
+        if settings.DOCSTORE_ENABLED:
+            try:
+                docstore.Docstore().post(self)
+            except ConnectionError:
+                logger.error('Could not post to Elasticsearch.')
         
         return collection
     
@@ -371,10 +372,12 @@ class Collection( DDRCollection ):
         )
         
         self.cache_delete()
-        try:
-            docstore.Docstore().post(self)
-        except ConnectionError:
-            logger.error('Could not post to Elasticsearch.')
+        if settings.DOCSTORE_ENABLED:
+            try:
+                docstore.Docstore().post(self)
+            except ConnectionError:
+                logger.error('Could not post to Elasticsearch.')
+        
         return exit,status,updated_files
 
 
@@ -614,10 +617,11 @@ class Entity( DDREntity ):
 
         # delete cache, update search index
         collection.cache_delete()
-        try:
-            docstore.Docstore().post(self)
-        except ConnectionError:
-            logger.error('Could not post to Elasticsearch.')
+        if settings.DOCSTORE_ENABLED:
+            try:
+                docstore.Docstore().post(self)
+            except ConnectionError:
+                logger.error('Could not post to Elasticsearch.')
         
         return entity
     
@@ -643,10 +647,12 @@ class Entity( DDREntity ):
         )
         
         collection.cache_delete()
-        try:
-            docstore.Docstore().post(self)
-        except ConnectionError:
-            logger.error('Could not post to Elasticsearch.')
+        if settings.DOCSTORE_ENABLED:
+            try:
+                docstore.Docstore().post(self)
+            except ConnectionError:
+                logger.error('Could not post to Elasticsearch.')
+        
         return exit,status,updated_files
 
 
@@ -786,8 +792,10 @@ class DDRFile( File ):
         )
         
         collection.cache_delete()
-        try:
-            docstore.Docstore().post(self)
-        except ConnectionError:
-            logger.error('Could not post to Elasticsearch.')
+        if settings.DOCSTORE_ENABLED:
+            try:
+                docstore.Docstore().post(self)
+            except ConnectionError:
+                logger.error('Could not post to Elasticsearch.')
+        
         return exit,status,updated_files
