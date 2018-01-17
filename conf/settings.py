@@ -128,11 +128,12 @@ CSV_EXPORT_PATH = {
 }
 
 # ElasticSearch
-DOCSTORE_INDEX       = config.get('local', 'docstore_index')
+DOCSTORE_ENABLED     = config.getboolean('local','docstore_enabled')
 ds_host,ds_port      = config.get('local', 'docstore_host').split(':')
 DOCSTORE_HOSTS = [
     {'host':ds_host, 'port':ds_port}
 ]
+DOCSTORE_INDEX       = config.get('local', 'docstore_index')
 RESULTS_PER_PAGE = 25
 ELASTICSEARCH_MAX_SIZE = 10000
 ELASTICSEARCH_DEFAULT_LIMIT = RESULTS_PER_PAGE
