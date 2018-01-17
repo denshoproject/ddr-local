@@ -279,7 +279,8 @@ def entity_add_file( git_name, git_mail, entity, src_path, role, data, agent='' 
     @param agent: (optional) Name of software making the change.
     """
     gitstatus.lock(settings.MEDIA_BASE, 'entity_add_file')
-    
+
+    # TODO move this code to webui.models.Entity or .File
     file_,repo,log = entity.add_local_file(
         src_path, role, data,
         git_name, git_mail, agent
@@ -659,7 +660,8 @@ def delete_entity( git_name, git_mail, collection_path, entity_id, agent='' ):
     # remove the entity
     collection = Collection.from_identifier(Identifier(collection_path))
     entity = Entity.from_identifier(Identifier(entity_id))
-    
+
+    # TODO move this code to webui.models.Entity.delete
     status,message = commands.entity_destroy(
         git_name, git_mail,
         collection, entity,
@@ -808,6 +810,7 @@ def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, 
     file_id = os.path.splitext(file_basename)[0]
     file_ = DDRFile.from_identifier(Identifier(file_id))
 
+    # TODO move this code to webui.models.File.delete
     exit,status,rm_files,updated_files = file_.delete(
         git_name, git_mail, agent
     )
@@ -854,6 +857,7 @@ def collection_sync( git_name, git_mail, collection_path ):
     gitstatus.lock(settings.MEDIA_BASE, 'collection_sync')
     collection = Collection.from_identifier(Identifier(path=collection_path))
     
+    # TODO move this code to webui.models.Collection.sync
     exit,status = commands.sync(
         git_name, git_mail,
         collection
@@ -903,7 +907,8 @@ def collection_signatures(collection_path, git_name, git_mail):
     collection = Collection.from_identifier(Identifier(path=collection_path))
     updates = signatures.find_updates(collection)
     files_written = signatures.write_updates(updates)
-    
+
+    # TODO move this code to webui.models.Collection
     status,msg = signatures.commit_updates(
         collection,
         files_written,
