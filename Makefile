@@ -757,6 +757,7 @@ deb-stretch:
 	conf/celeryd.conf=etc/supervisor/conf.d/celeryd.conf   \
 	conf/supervisor.conf=etc/supervisor/conf.d/ddrlocal.conf   \
 	conf/nginx.conf=etc/nginx/sites-available/ddrlocal.conf   \
+	conf/logrotate=etc/logrotate.d/ddr   \
 	conf/README-logs=$(LOG_BASE)/README  \
 	conf/README-sqlite=$(SQLITE_BASE)/README  \
 	conf/README-media=$(MEDIA_ROOT)/README  \
