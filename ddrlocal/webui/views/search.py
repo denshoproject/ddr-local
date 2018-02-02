@@ -10,14 +10,19 @@ from django.core.paginator import Paginator
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import Http404, get_object_or_404, render_to_response
+from django.shortcuts import render
 from django.template import RequestContext
 from django.utils.http import urlquote  as django_urlquote
 
 from elasticsearch import Elasticsearch
 
 from DDR import converters
-from DDR import docstore
 from DDR import models
+from webui import api
+from webui import docstore
+from webui import forms
+from webui import identifier
+from webui import search
 from webui import tasks
 from webui.decorators import search_index
 from webui.forms.search import SearchForm, IndexConfirmForm, DropConfirmForm
@@ -107,7 +112,6 @@ def results( request ):
         if results.get('hits',None) and not results.get('status',None):
             # OK -- prep results for display
             thispage = request.GET.get('page', 1)
-            #assert False
             objects = massage_query_results(results, thispage, settings.RESULTS_PER_PAGE)
             paginator = Paginator(objects, settings.RESULTS_PER_PAGE)
             page = paginator.page(thispage)
@@ -124,6 +128,67 @@ def results( request ):
         template, context, context_instance=RequestContext(request, processors=[])
     )
 
+
+import urlparse
+
+def _mkurl(request, path, query=None):
+    return urlparse.urlunparse((
+        request.META['wsgi.url_scheme'],
+        request.META['HTTP_HOST'],
+        path, None, query, None
+    ))
+
+@search_index
+def search_ui(request):
+    api_url = '%s?%s' % (
+        _mkurl(request, reverse('api-search')),
+        request.META['QUERY_STRING']
+    )
+    context = {
+        'api_url': api_url,
+    }
+
+    if request.GET.get('fulltext'):
+
+        if request.GET.get('offset'):
+            # limit and offset args take precedence over page
+            limit = request.GET.get('limit', int(request.GET.get('limit', settings.RESULTS_PER_PAGE)))
+            offset = request.GET.get('offset', int(request.GET.get('offset', 0)))
+        elif request.GET.get('page'):
+            limit = settings.RESULTS_PER_PAGE
+            thispage = int(request.GET['page'])
+            offset = search.es_offset(limit, thispage)
+        else:
+            limit = settings.RESULTS_PER_PAGE
+            offset = 0
+        
+        searcher = search.Searcher(
+            mappings=identifier.ELASTICSEARCH_CLASSES_BY_MODEL,
+            fields=identifier.ELASTICSEARCH_LIST_FIELDS,
+        )
+        searcher.prepare(request)
+        results = searcher.execute(limit, offset)
+        context['results'] = results
+        context['search_form'] = forms.search.SearchForm(
+            search_results=results,
+            data=request.GET
+        )
+        
+        if results.objects:
+            paginator = Paginator(
+                results.ordered_dict(
+                    request=request, list_function=api._prep_detail, pad=True
+                )['objects'],
+                results.page_size,
+            )
+            context['paginator'] = paginator
+            context['page'] = paginator.page(results.this_page)
+
+    else:
+        context['search_form'] = forms.search.SearchForm()
+    
+    return render(request, 'webui/search/search.html', context)
+    
 @search_index
 def admin( request ):
     """Administrative stuff like re-indexing.

@@ -79,10 +79,6 @@ branches in a package install is not recommended, as updates will
 probably damage your install.  If you want to switch branches you
 should consider a source install.
 
-Now you should be able to run mailpile on the command line and join
-the fun! If you have installed the Apache integration, you can access
-https://your.example.com/mailpile/ and log on that way.
-
 **Uninstalling**
 
 A normal `apt-get remove` uninstalls the software from your system,
@@ -153,6 +149,41 @@ with parts of the editor.  Run `make` with no arguments for a list or
     $ make
 
 
+The DDR user
+------------
+
+IMPORTANT: The editor run as the `ddr` user, which is installed as part of the package install.  In the Densho HQ environment, it is *critical* that the `ddr` user has the uid and gid set to `1001`.
+::
+    $ cd /opt/ddr-local/
+    $ sudo make ddr-user
+
+
+Network Config
+--------------
+
+The Makefile can install a networking config file which sets the VM
+to use a standard IP address (192.168.56.101).
+::
+    $ cd /opt/ddr-local/
+    $ sudo make network-config
+    $ sudo reboot
+
+Network config will take effect after the next reboot.
+
+
+VirtualBox Guest Additions
+--------------------------
+
+The Makefile can install VirtualBox Guest Additions, which is required
+for accessing shared directories on the host system.
+::
+    $ cd /opt/ddr-local/
+    $ sudo make vbox-guest
+
+This step requires you to click "Devices > Insert Guest Additions CD
+Image" in the device window.
+
+
 Settings Files
 --------------
 
@@ -181,19 +212,6 @@ location, you can clone them:
     $ sudo git clone https://github.com/densho/ddr-defs.git /PATH/TO/ddr-defs/
 
 
-Network Config
---------------
-
-The Makefile can install a networking config file which sets the VM
-to use a standard IP address (192.168.56.101).
-::
-    $ cd /opt/ddr-local/
-    $ sudo make network-config
-    $ sudo reboot
-
-Network config will take effect after the next reboot.
-
-
 Firewall Rules
 --------------
 
@@ -204,22 +222,57 @@ open ports in the firewall.
     $ sudo ufw allow 9200/tcp  # elasticsearch
 
 
-VirtualBox Guest Additions
---------------------------
-
-The Makefile can install VirtualBox Guest Additions, which is required
-for accessing shared directories on the host system.
-::
-    $ cd /opt/ddr-local/
-    $ sudo make vbox-guest
-
-This step requires you to click "Devices > Insert Guest Additions CD
-Image" in the device window.
-
-
 Gitolite keys
 -------------
 
 The `ddr` user requires SSL keys in order to synchronize local
 collection repositories with those on the main Gitolite server.  Setup
 is beyond this INSTALL so please see `ddr-manual`.
+
+
+Switching Branches
+------------------
+
+*Package Install*
+
+The DDR editor is available in two branches: master and develop.
+The master branch is more stable and is intended for production use.
+The develop branch is for more cutting edge features that may not be quite ready for the master branch.
+
+It is not recommended that you switch branches manually, as updates will probably damage your install.
+If you wish to use the develop branch instead of the master branch, remove `ddrlocal-master` and install `ddrlocal-develop`.
+::
+    $ sudo apt-get remove ddrlocal-master
+    $ sudo apt-get install ddrlocal-develop
+
+*Source Install*
+
+Once you have everything installed, if you need to work on a different branch of the code you may need to make sure that the entire codebase (`ddr-local`, `ddr-cmdln`, and `ddr-defs`) is on the same branch.
+
+These lines check out the specified branch, download and install Python dependencies for each project, and compile/install `ddr-cmdln`.  These steps are all necessary, or new code may not have the proper dependencies.::
+
+    # cd /opt/ddr-local
+    # git checkout -b $BRANCH origin/$BRANCH # <<< If branch does not yet exist.
+    # git checkout $BRANCH                   # <<< If updating existing branch.
+    # pip install -U -r requirements/production.txt
+    # python setup.py install
+    # cd /usr/local/src/ddr-local/ddrlocal
+    # git checkout -b $BRANCH origin/$BRANCH # <<< If branch does not yet exist.
+    # git checkout $BRANCH                   # <<< If updating existing branch.
+    # pip install -U -r requirements/production.txt
+
+Newer branches have a `make branch` task designed to automate as much of this as possible.  For example, switching to the `batch-edit` branch::
+
+    # make branch BRANCH=batch-edit
+
+Some branches may use a branch of the 'ddr' repo.  If so then you must switch branches on the 'ddr' repo and restart.::
+
+    # cd /var/www/media/base/ddr/
+    # git checkout -b $BRANCH origin/$BRANCH # <<< If branch does not yet exist.
+    # git checkout $BRANCH                   # <<< If updating existing branch.
+    # cd /usr/local/src/ddr-local/ddrlocal
+
+After switching branches, you must copy new versions of the config files and restart before changes will take effect.::
+
+    # make reload
+    # make restart

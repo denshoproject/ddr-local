@@ -1,0 +1,30 @@
+{% extends "rest_framework/base.html" %}
+
+{% block bootstrap_theme %}
+<link rel="stylesheet" type="text/css" href="/static/rest_framework/css/bootstrap.min.css"/>
+<link rel="stylesheet" type="text/css" href="/static/rest_framework/css/bootstrap-tweaks.css"/>
+<style>
+  .navbar {
+    border-top: 0px;
+  }
+  body {
+    background: none;
+  }
+  .prettyprint {
+    font-family: Menlo,Monaco,Consolas,monospace;
+  }
+  .prettyprint .str {
+    color: #333;
+  }
+</style>
+{% endblock %}
+
+{% block title %}
+Densho Digital Repository API 1.0
+{% endblock title %}
+
+{% block branding %}
+<a class='navbar-brand' rel="nofollow" href="/">
+Densho Digital Repository
+</a>
+{% endblock branding %}

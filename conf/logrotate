@@ -1,0 +1,9 @@
+/var/log/ddr/*.log /var/log/ddr/addfile/**/*.log {
+  size 256k
+  notifempty
+  missingok
+  rotate 10
+  compress
+  delaycompress
+  create 0644 ddr root
+}

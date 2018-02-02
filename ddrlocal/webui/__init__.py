@@ -1,9 +1,10 @@
+from collections import OrderedDict
 import logging
 logger = logging.getLogger(__name__)
 
 from django.conf import settings
 
-from DDR import docstore
+from webui import docstore
 
 
 COLLECTION_CHILDREN_CACHE_KEY = 'webui:collection:%s:children'

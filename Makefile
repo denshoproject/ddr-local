@@ -1,13 +1,17 @@
 PROJECT=ddr
 APP=ddrlocal
 USER=ddr
-
 SHELL = /bin/bash
-DEBIAN_CODENAME := $(shell lsb_release -sc)
-DEBIAN_RELEASE := $(shell lsb_release -sr)
-VERSION := $(shell cat VERSION)
 
+APP_VERSION := $(shell cat VERSION)
 GIT_SOURCE_URL=https://github.com/densho/ddr-local
+
+# Release name e.g. jessie
+DEBIAN_CODENAME := $(shell lsb_release -sc)
+# Release numbers e.g. 8.10
+DEBIAN_RELEASE := $(shell lsb_release -sr)
+# Sortable major version tag e.g. deb8
+DEBIAN_RELEASE_TAG = deb$(shell lsb_release -sr | cut -c1)
 
 # current branch name minus dashes or underscores
 PACKAGE_BRANCH := $(shell git rev-parse --abbrev-ref HEAD | tr -d _ | tr -d -)
@@ -46,6 +50,14 @@ MEDIA_BASE=/var/www
 MEDIA_ROOT=$(MEDIA_BASE)/media
 STATIC_ROOT=$(MEDIA_BASE)/static
 
+OPENJDK_PKG=
+ifeq ($(DEBIAN_RELEASE), jessie)
+	OPENJDK_PKG=openjdk-7-jre
+endif
+ifeq ($(DEBIAN_CODENAME), stretch)
+	OPENJDK_PKG=openjdk-8-jre
+endif
+
 ELASTICSEARCH=elasticsearch-2.4.4.deb
 MODERNIZR=modernizr-2.6.2.js
 JQUERY=jquery-1.11.0.min.js
@@ -64,17 +76,22 @@ SUPERVISOR_GUNICORN_CONF=/etc/supervisor/conf.d/ddrlocal.conf
 SUPERVISOR_CONF=/etc/supervisor/supervisord.conf
 NGINX_CONF=/etc/nginx/sites-available/ddrlocal.conf
 NGINX_CONF_LINK=/etc/nginx/sites-enabled/ddrlocal.conf
-MUNIN_CONF=/etc/munin/munin.conf
 CGIT_CONF=/etc/cgitrc
 
-FPM_BRANCH := $(shell git rev-parse --abbrev-ref HEAD | tr -d _ | tr -d -)
-FPM_ARCH=amd64
-FPM_NAME=$(APP)-$(FPM_BRANCH)
-FPM_FILE=$(FPM_NAME)_$(VERSION)_$(FPM_ARCH).deb
-FPM_VENDOR=Densho.org
-FPM_MAINTAINER=<geoffrey.jost@densho.org>
-FPM_DESCRIPTION=Densho Digital Repository editor
-FPM_BASE=opt/ddr-local
+DEB_BRANCH := $(shell git rev-parse --abbrev-ref HEAD | tr -d _ | tr -d -)
+DEB_ARCH=amd64
+DEB_NAME_JESSIE=$(APP)-$(DEB_BRANCH)
+DEB_NAME_STRETCH=$(APP)-$(DEB_BRANCH)
+# Application version, separator (~), Debian release tag e.g. deb8
+# Release tag used because sortable and follows Debian project usage.
+DEB_VERSION_JESSIE=$(APP_VERSION)~deb8
+DEB_VERSION_STRETCH=$(APP_VERSION)~deb9
+DEB_FILE_JESSIE=$(DEB_NAME_JESSIE)_$(DEB_VERSION_JESSIE)_$(DEB_ARCH).deb
+DEB_FILE_STRETCH=$(DEB_NAME_STRETCH)_$(DEB_VERSION_STRETCH)_$(DEB_ARCH).deb
+DEB_VENDOR=Densho.org
+DEB_MAINTAINER=<geoffrey.jost@densho.org>
+DEB_DESCRIPTION=Densho Digital Repository editor
+DEB_BASE=opt/ddr-local
 
 
 .PHONY: help
@@ -129,7 +146,6 @@ howto-install:
 	@echo "#make enable-bkgnd"
 	@echo "#make syncdb"
 	@echo "make restart"
-	@echo "#make clear-munin-logs"
 
 
 get: get-app get-ddr-defs get-elasticsearch get-static
@@ -144,6 +160,8 @@ clean: clean-app
 install-prep: ddr-user install-core git-config install-misc-tools
 
 ddr-user:
+	-addgroup --gid=1001 ddr
+	-adduser --uid=1001 --gid=1001 --home=/home/ddr --shell=/bin/bash ddr
 	-addgroup ddr plugdev
 	-addgroup ddr vboxsf
 	printf "\n\n# ddrlocal: Activate virtualnv on login\nsource $(VIRTUALENV)/bin/activate\n" >> /home/ddr/.bashrc; \
@@ -168,7 +186,7 @@ install-misc-tools:
 network-config:
 	@echo ""
 	@echo "Configuring network ---------------------------------------------"
-	-cp $(INSTALL_LOCAL)/conf/network-interfaces /etc/network/interfaces
+	-cp $(INSTALL_LOCAL)/conf/network-interfaces.$(DEBIAN_CODENAME) /etc/network/interfaces
 	@echo "/etc/network/interfaces updated."
 	@echo "New config will take effect on next reboot."
 
@@ -185,9 +203,9 @@ vbox-guest:
 	-addgroup ddr vboxsf
 
 
-install-daemons: install-elasticsearch install-redis install-cgit install-munin install-nginx
+install-daemons: install-elasticsearch install-redis install-cgit install-nginx
 
-remove-daemons: remove-elasticsearch remove-redis remove-cgit remove-munin remove-nginx
+remove-daemons: remove-elasticsearch remove-redis remove-cgit remove-nginx
 
 
 install-cgit:
@@ -202,38 +220,6 @@ install-cgit:
 
 remove-cgit:
 	apt-get --assume-yes remove cgit fcgiwrap
-
-
-install-munin:
-	@echo ""
-	@echo "Munin ------------------------------------------------------------------"
-	apt-get --assume-yes install munin munin-node libwww-perl
-	if test -d $(INSTALL_BASE)/munin-monitoring; \
-	then cd $(INSTALL_BASE)/munin-monitoring && git pull; \
-	else cd $(INSTALL_BASE) && git clone https://github.com/munin-monitoring/contrib.git $(INSTALL_BASE)/munin-monitoring; \
-	fi
-	-rm /etc/munin/plugins/exim_*
-	-rm /etc/munin/plugins/entropy
-	-rm /etc/munin/plugins/fail2ban
-	-rm /etc/munin/plugins/if_err_*
-	-rm /etc/munin/plugins/munin_stats
-	-rm /etc/munin/plugins/nfsd
-	-rm /etc/munin/plugins/nfsd4
-	-rm /etc/munin/plugins/ntp_*
-	cd /etc/munin/plugins/
-	-ln -s /usr/share/munin/plugins/nginx_request /etc/munin/plugins/nginx_request
-	-ln -s /usr/share/munin/plugins/nginx_status /etc/munin/plugins/nginx_status
-	-ln -s $(INSTALL_BASE)/munin-monitoring/plugins/redis/redis_ /etc/munin/plugins/redis_
-#- celery
-#- Elasticsearch
-#- ping gitolite
-
-clear-munin-logs:
-# NOTE: This erases Munin history!
-	rm -Rf /var/cache/munin/www/*
-
-remove-munin:
-	apt-get --assume-yes remove munin munin-node libwww-perl
 
 
 install-nginx:
@@ -257,11 +243,11 @@ remove-redis:
 get-elasticsearch:
 	wget -nc -P /tmp/downloads http://$(PACKAGE_SERVER)/$(ELASTICSEARCH)
 
-install-elasticsearch:
+install-elasticsearch: install-core
 	@echo ""
 	@echo "Elasticsearch ----------------------------------------------------------"
 # Elasticsearch is configured/restarted here so it's online by the time script is done.
-	apt-get --assume-yes install openjdk-7-jre
+	apt-get --assume-yes install $(OPENJDK_PKG)
 	-gdebi --non-interactive /tmp/downloads/$(ELASTICSEARCH)
 #cp $(INSTALL_BASE)/ddr-public/conf/elasticsearch.yml /etc/elasticsearch/
 #chown root.root /etc/elasticsearch/elasticsearch.yml
@@ -277,7 +263,7 @@ disable-elasticsearch:
 	systemctl disable elasticsearch.service
 
 remove-elasticsearch:
-	apt-get --assume-yes remove openjdk-7-jre elasticsearch
+	apt-get --assume-yes remove $(OPENJDK_PKG) elasticsearch
 
 
 install-virtualenv:
@@ -295,7 +281,7 @@ install-dependencies: install-core install-misc-tools install-daemons install-gi
 	@echo "install-dependencies ---------------------------------------------------"
 	apt-get --assume-yes install python-pip python-virtualenv
 	apt-get --assume-yes install python-dev
-	apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev libz-dev pmount udisks
+	apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev libz-dev pmount udisks2
 	apt-get --assume-yes install imagemagick libexempi3 libssl-dev python-dev libxml2 libxml2-dev libxslt1-dev supervisor
 
 mkdirs: mkdir-ddr-cmdln mkdir-ddr-local
@@ -316,19 +302,22 @@ install-git-annex:
 get-ddr-cmdln:
 	@echo ""
 	@echo "get-ddr-cmdln ----------------------------------------------------------"
+	git status | grep "On branch"
 	if test -d $(INSTALL_CMDLN); \
 	then cd $(INSTALL_CMDLN) && git pull; \
 	else cd $(INSTALL_LOCAL) && git clone $(SRC_REPO_CMDLN); \
 	fi
 
 setup-ddr-cmdln:
+	git status | grep "On branch"
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_CMDLN)/ddr && python setup.py install
 
 install-ddr-cmdln: install-virtualenv mkdir-ddr-cmdln
 	@echo ""
 	@echo "install-ddr-cmdln ------------------------------------------------------"
-	apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev libz-dev pmount udisks
+	git status | grep "On branch"
+	apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev libz-dev pmount udisks2
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_CMDLN)/ddr && python setup.py install
 	source $(VIRTUALENV)/bin/activate; \
@@ -359,11 +348,13 @@ clean-ddr-cmdln:
 get-ddr-local:
 	@echo ""
 	@echo "get-ddr-local ----------------------------------------------------------"
+	git status | grep "On branch"
 	git pull
 
 install-ddr-local: install-virtualenv mkdir-ddr-local
 	@echo ""
 	@echo "install-ddr-local ------------------------------------------------------"
+	git status | grep "On branch"
 	apt-get --assume-yes install imagemagick libexempi3 libssl-dev python-dev libxml2 libxml2-dev libxslt1-dev supervisor
 	source $(VIRTUALENV)/bin/activate; \
 	pip install -U -r $(INSTALL_LOCAL)/ddrlocal/requirements/production.txt
@@ -402,6 +393,7 @@ clean-ddr-local:
 get-ddr-defs:
 	@echo ""
 	@echo "get-ddr-defs -----------------------------------------------------------"
+	git status | grep "On branch"
 	if test -d $(INSTALL_DEFS); \
 	then cd $(INSTALL_DEFS) && git pull; \
 	else cd $(INSTALL_LOCAL) && git clone $(SRC_REPO_DEFS) $(INSTALL_DEFS); \
@@ -517,15 +509,10 @@ install-daemon-configs:
 	chmod 644 $(SUPERVISOR_CONF)
 # cgitrc
 	cp $(INSTALL_LOCAL)/conf/cgitrc $(CGIT_CONF)
-# munin settings
-	cp $(INSTALL_LOCAL)/conf/munin.conf $(MUNIN_CONF)
-	chown root.root $(MUNIN_CONF)
-	chmod 644 $(MUNIN_CONF)
 
 uninstall-daemon-configs:
 	-rm $(NGINX_CONF)
 	-rm $(NGINX_CONF_LINK)
-	-rm $(MUNIN_CONF)
 	-rm $(SUPERVISOR_CELERY_CONF)
 	-rm $(SUPERVISOR_CONF)
 
@@ -550,7 +537,7 @@ reload-supervisor:
 reload-app: reload-supervisor
 
 
-stop: stop-elasticsearch stop-redis stop-cgit stop-nginx stop-munin stop-supervisor
+stop: stop-elasticsearch stop-redis stop-cgit stop-nginx stop-supervisor
 
 stop-elasticsearch:
 	-service elasticsearch stop
@@ -564,17 +551,13 @@ stop-cgit:
 stop-nginx:
 	-service nginx stop
 
-stop-munin:
-	-service munin-node stop
-	-service munin stop
-
 stop-supervisor:
 	-service supervisor stop
 
 stop-app: stop-supervisor
 
 
-restart: restart-supervisor restart-redis restart-cgit restart-nginx restart-munin
+restart: restart-supervisor restart-redis restart-cgit restart-nginx
 
 restart-elasticsearch:
 	-service elasticsearch restart
@@ -588,10 +571,6 @@ restart-cgit:
 restart-nginx:
 	-service nginx restart
 
-restart-munin:
-	-service munin-node restart
-	-service munin restart
-
 restart-supervisor:
 	-service supervisor stop
 	-service supervisor start
@@ -600,7 +579,7 @@ restart-app: restart-supervisor
 
 
 # just Redis and Supervisor
-restart-minimal: stop-elasticsearch restart-redis stop-nginx stop-munin restart-supervisor
+restart-minimal: stop-elasticsearch restart-redis stop-nginx restart-supervisor
 
 
 status:
@@ -629,6 +608,7 @@ git-status:
 get-ddr-manual:
 	@echo ""
 	@echo "get-ddr-manual ---------------------------------------------------------"
+	git status | grep "On branch"
 	if test -d $(INSTALL_MANUAL); \
 	then cd $(INSTALL_MANUAL) && git pull; \
 	else cd $(INSTALL_LOCAL) && git clone $(SRC_REPO_MANUAL); \
@@ -654,25 +634,31 @@ clean-ddr-manual:
 # http://fpm.readthedocs.io/en/latest/
 # https://stackoverflow.com/questions/32094205/set-a-custom-install-directory-when-making-a-deb-package-with-fpm
 # https://brejoc.com/tag/fpm/
-deb:
+deb: deb-jessie deb-stretch
+
+# deb-jessie and deb-stretch are identical EXCEPT:
+# jessie: --depends openjdk-7-jre
+# stretch: --depends openjdk-7-jre
+deb-jessie:
 	@echo ""
-	@echo "FPM packaging ----------------------------------------------------------"
-	-rm -Rf $(FPM_FILE)
+	@echo "FPM packaging (jessie) -------------------------------------------------"
+	-rm -Rf $(DEB_FILE_JESSIE)
 	virtualenv --relocatable $(VIRTUALENV)  # Make venv relocatable
 	fpm   \
 	--verbose   \
 	--input-type dir   \
 	--output-type deb   \
-	--name $(FPM_NAME)   \
-	--version $(VERSION)   \
-	--package $(FPM_FILE)   \
+	--name $(DEB_NAME_JESSIE)   \
+	--version $(DEB_VERSION_JESSIE)   \
+	--package $(DEB_FILE_JESSIE)  \
 	--url "$(GIT_SOURCE_URL)"   \
-	--vendor "$(FPM_VENDOR)"   \
-	--maintainer "$(FPM_MAINTAINER)"   \
-	--description "$(FPM_DESCRIPTION)"   \
+	--vendor "$(DEB_VENDOR)"   \
+	--maintainer "$(DEB_MAINTAINER)"   \
+	--description "$(DEB_DESCRIPTION)"   \
 	--depends "nginx-light"   \
 	--depends "cgit"   \
 	--depends "fcgiwrap"   \
+	--depends "gdebi-core"   \
 	--depends "git-annex"   \
 	--depends "git-core"   \
 	--depends "imagemagick"   \
@@ -693,7 +679,7 @@ deb:
 	--depends "python-virtualenv"   \
 	--depends "redis-server"   \
 	--depends "supervisor"   \
-	--depends "udisks"   \
+	--depends "udisks2"   \
 	--after-install "bin/after-install.sh"   \
 	--chdir $(INSTALL_LOCAL)   \
 	conf/ddrlocal.cfg=etc/ddr/ddrlocal.cfg   \
@@ -705,18 +691,90 @@ deb:
 	conf/README-media=$(MEDIA_ROOT)/README  \
 	conf/README-static=$(STATIC_ROOT)/README  \
 	static=var/www   \
-	bin=$(FPM_BASE)   \
-	conf=$(FPM_BASE)   \
-	COPYRIGHT=$(FPM_BASE)   \
-	ddr-cmdln=$(FPM_BASE)   \
-	ddr-defs=$(FPM_BASE)   \
-	ddrlocal=$(FPM_BASE)   \
-	.git=$(FPM_BASE)   \
-	.gitignore=$(FPM_BASE)   \
-	INSTALL.rst=$(FPM_BASE)   \
-	LICENSE=$(FPM_BASE)   \
-	Makefile=$(FPM_BASE)   \
-	README.rst=$(FPM_BASE)   \
-	static=$(FPM_BASE)   \
-	venv=$(FPM_BASE)   \
-	VERSION=$(FPM_BASE)
+	bin=$(DEB_BASE)   \
+	conf=$(DEB_BASE)   \
+	COPYRIGHT=$(DEB_BASE)   \
+	ddr-cmdln=$(DEB_BASE)   \
+	ddr-defs=$(DEB_BASE)   \
+	ddrlocal=$(DEB_BASE)   \
+	.git=$(DEB_BASE)   \
+	.gitignore=$(DEB_BASE)   \
+	INSTALL.rst=$(DEB_BASE)   \
+	LICENSE=$(DEB_BASE)   \
+	Makefile=$(DEB_BASE)   \
+	README.rst=$(DEB_BASE)   \
+	static=$(DEB_BASE)   \
+	venv=$(DEB_BASE)   \
+	VERSION=$(DEB_BASE)
+
+# deb-jessie and deb-stretch are identical EXCEPT:
+# jessie: --depends openjdk-7-jre
+# stretch: --depends openjdk-7-jre
+deb-stretch:
+	@echo ""
+	@echo "FPM packaging (stretch) ------------------------------------------------"
+	-rm -Rf $(DEB_FILE_STRETCH)
+	virtualenv --relocatable $(VIRTUALENV)  # Make venv relocatable
+	fpm   \
+	--verbose   \
+	--input-type dir   \
+	--output-type deb   \
+	--name $(DEB_NAME_STRETCH)   \
+	--version $(DEB_VERSION_STRETCH)   \
+	--package $(DEB_FILE_STRETCH)   \
+	--url "$(GIT_SOURCE_URL)"   \
+	--vendor "$(DEB_VENDOR)"   \
+	--maintainer "$(DEB_MAINTAINER)"   \
+	--description "$(DEB_DESCRIPTION)"   \
+	--depends "nginx-light"   \
+	--depends "cgit"   \
+	--depends "fcgiwrap"   \
+	--depends "gdebi-core"   \
+	--depends "git-annex"   \
+	--depends "git-core"   \
+	--depends "imagemagick"   \
+	--depends "libexempi3"   \
+	--depends "libssl-dev"   \
+	--depends "libwww-perl"   \
+	--depends "libxml2"   \
+	--depends "libxml2-dev"   \
+	--depends "libxslt1-dev"   \
+	--depends "libz-dev"   \
+	--depends "munin"   \
+	--depends "munin-node"   \
+	--depends "openjdk-8-jre"   \
+	--depends "pmount"   \
+	--depends "python-dev"   \
+	--depends "python-pip"   \
+	--depends "python-six"   \
+	--depends "python-virtualenv"   \
+	--depends "redis-server"   \
+	--depends "supervisor"   \
+	--depends "udisks2"   \
+	--after-install "bin/after-install.sh"   \
+	--chdir $(INSTALL_LOCAL)   \
+	conf/ddrlocal.cfg=etc/ddr/ddrlocal.cfg   \
+	conf/celeryd.conf=etc/supervisor/conf.d/celeryd.conf   \
+	conf/supervisor.conf=etc/supervisor/conf.d/ddrlocal.conf   \
+	conf/nginx.conf=etc/nginx/sites-available/ddrlocal.conf   \
+	conf/logrotate=etc/logrotate.d/ddr   \
+	conf/README-logs=$(LOG_BASE)/README  \
+	conf/README-sqlite=$(SQLITE_BASE)/README  \
+	conf/README-media=$(MEDIA_ROOT)/README  \
+	conf/README-static=$(STATIC_ROOT)/README  \
+	static=var/www   \
+	bin=$(DEB_BASE)   \
+	conf=$(DEB_BASE)   \
+	COPYRIGHT=$(DEB_BASE)   \
+	ddr-cmdln=$(DEB_BASE)   \
+	ddr-defs=$(DEB_BASE)   \
+	ddrlocal=$(DEB_BASE)   \
+	.git=$(DEB_BASE)   \
+	.gitignore=$(DEB_BASE)   \
+	INSTALL.rst=$(DEB_BASE)   \
+	LICENSE=$(DEB_BASE)   \
+	Makefile=$(DEB_BASE)   \
+	README.rst=$(DEB_BASE)   \
+	static=$(DEB_BASE)   \
+	venv=$(DEB_BASE)   \
+	VERSION=$(DEB_BASE)

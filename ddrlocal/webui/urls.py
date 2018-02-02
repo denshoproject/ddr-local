@@ -20,14 +20,22 @@ urlpatterns = patterns(
     url(r'^supervisord/procinfo.json$', 'webui.views.supervisord.procinfo_json', name='webui-supervisord-procinfo-json'),
     url(r'^supervisord/restart/$', 'webui.views.supervisord.restart', name='webui-supervisord-restart'),
 
+    # REST API
+    
+    url(r'^api/1.0/search$', 'webui.api.search_form', name='api-search'),
+    url(r'^api/1.0/es/(?P<oid>[\w\d-]+)/children/$', 'webui.api.es_children', name='api-es-children'),
+    url(r'^api/1.0/es/(?P<oid>[\w\d-]+)/$', 'webui.api.es_detail', name='api-es-detail'),
+    url(r'^api/1.0/(?P<oid>[\w\d-]+)/children/$', 'webui.api.fs_children', name='api-fs-children'),
+    url(r'^api/1.0/(?P<oid>[\w\d-]+)/$', 'webui.api.fs_detail', name='api-fs-detail'),
+    url(r'^api/1.0/$', 'webui.api.index', name='api-index'),
+    
     # search
 
     url(r'^search/admin/$', 'webui.views.search.admin', name='webui-search-admin'),
     url(r'^search/reindex/$', 'webui.views.search.reindex', name='webui-search-reindex'),
     url(r'^search/drop/$', 'webui.views.search.drop_index', name='webui-search-drop'),
     #url(r'^search/(?P<field>[\w]+):(?P<term>[\w ,]+)/$', 'webui.views.search.term_query', name='webui-search-term-query'),
-    url(r'^search/results/$', 'webui.views.search.results', name='webui-search-results'),
-    url(r'^search/$', 'webui.views.search.index', name='webui-search-index'),
+    url(r'^search/$', 'webui.views.search.search_ui', name='webui-search'),
 
     # merge
 
@@ -35,6 +43,10 @@ urlpatterns = patterns(
     url(r'^collection/(?P<cid>[\w\d-]+)/merge/json/$', 'webui.views.merge.edit_json', name='webui-merge-json'),
     url(r'^collection/(?P<cid>[\w\d-]+)/merge/raw/$', 'webui.views.merge.edit_raw', name='webui-merge-raw'),
     url(r'^collection/(?P<cid>[\w\d-]+)/merge/$', 'webui.views.merge.merge', name='webui-merge'),
+
+    # repository, organization
+    url(r'^repository/(?P<cid>[\w\d-]+)/$', 'webui.views.repository', name='webui-repository'),
+    url(r'^organization/(?P<cid>[\w\d-]+)/$', 'webui.views.organization', name='webui-organization'),
     
     # collections
 
@@ -91,6 +103,7 @@ urlpatterns = patterns(
     url(r'^file/(?P<rid>[\w\d-]+)/batch/$', 'webui.views.files.batch', name='webui-file-batch'),
     url(r'^file/(?P<rid>[\w\d-]+)/browse/$', 'webui.views.files.browse', name='webui-file-browse'),
     url(r'^file/(?P<rid>[\w\d-]+)/new-external/$', 'webui.views.files.new_external', name='webui-file-new-external'),
+    #url(r'^file/(?P<rid>[\w\d-]+)/new-meta/$', 'webui.views.files.new_meta', name='webui-file-new-meta'),
     url(r'^file/(?P<rid>[\w\d-]+)/new/$', 'webui.views.files.new', name='webui-file-new'),
     url(r'^file-role/(?P<rid>[\w\d-]+)/$', 'webui.views.entities.file_role', name='webui-file-role'),
     url(r'^file/(?P<eid>[\w\d-]+)-master/new/$', 'webui.views.files.new', kwargs={'role':'master'}, name='webui-file-new-master'),
@@ -98,6 +111,6 @@ urlpatterns = patterns(
     url(r'^file/(?P<eid>[\w\d-]+)/new/$', 'webui.views.files.new', name='webui-file-new'),
 
     #
-
+    url(r'^(?P<oid>[\w\d-]+)/$', 'webui.views.detail', name='webui-detail'),
     url(r'^$', TemplateView.as_view(template_name="webui/index.html"), name='webui-index'),
 )

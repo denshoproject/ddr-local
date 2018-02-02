@@ -19,6 +19,7 @@ from django.contrib import messages
 from django.core.cache import cache
 from django.core.urlresolvers import reverse
 
+from webui import docstore
 from webui import GITOLITE_INFO_CACHE_KEY
 from webui import gitolite
 from webui import gitstatus
@@ -28,7 +29,6 @@ from webui.identifier import Identifier
 from DDR import batch
 from DDR import commands
 from DDR import converters
-from DDR import docstore
 from DDR import dvcs
 from DDR import models
 from DDR import signatures
@@ -121,6 +121,8 @@ def reindex( index ):
     logger.debug('------------------------------------------------------------------------')
     logger.debug('webui.tasks.reindex(%s)' % index)
     statuses = []
+    if not settings.DOCSTORE_ENABLED:
+        raise Exception('Elasticsearch is not enabled. Please see your settings.')
     if not os.path.exists(settings.MEDIA_BASE):
         raise NameError('MEDIA_BASE does not exist - you need to remount!')
     logger.debug('webui.tasks.reindex(%s)' % index)
@@ -145,12 +147,12 @@ def reindex( index ):
     facets_status = ds.put_facets()
     logger.debug(facets_status)
     logger.debug('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ')
-    logger.debug('indexing')
-    index_status = ds.index(
+    logger.debug('indexing/publishing')
+    publish_status = ds.publish(
         path=settings.MEDIA_BASE,
         recursive=True, public=False
     )
-    logger.debug(index_status)
+    logger.debug(publish_status)
     return statuses
 
 def reindex_and_notify( index ):
@@ -277,7 +279,8 @@ def entity_add_file( git_name, git_mail, entity, src_path, role, data, agent='' 
     @param agent: (optional) Name of software making the change.
     """
     gitstatus.lock(settings.MEDIA_BASE, 'entity_add_file')
-    
+
+    # TODO move this code to webui.models.Entity or .File
     file_,repo,log = entity.add_local_file(
         src_path, role, data,
         git_name, git_mail, agent
@@ -288,11 +291,13 @@ def entity_add_file( git_name, git_mail, entity, src_path, role, data, agent='' 
     )
     
     log.ok('Updating Elasticsearch')
-    try:
-        result = file_.post_json()
-        log.ok('| %s' % result)
-    except ConnectionError:
-        log.not_ok('Could not post to Elasticsearch.')
+    if settings.DOCSTORE_ENABLED:
+        try:
+            result = file_.post_json()
+            log.ok('| %s' % result)
+        except ConnectionError:
+            log.not_ok('Could not post to Elasticsearch.')
+    
     return {
         'id': file_.id,
         'status': 'ok'
@@ -319,11 +324,13 @@ def entity_add_external( git_name, git_mail, entity, data, agent='' ):
     )
     
     log.ok('Updating Elasticsearch')
-    try:
-        result = file_.post_json()
-        log.ok('| %s' % result)
-    except ConnectionError:
-        log.not_ok('Could not post to Elasticsearch.')
+    if settings.DOCSTORE_ENABLED:
+        try:
+            result = file_.post_json()
+            log.ok('| %s' % result)
+        except ConnectionError:
+            log.not_ok('Could not post to Elasticsearch.')
+    
     return {
         'id': file_.id,
         'status': 'ok'
@@ -353,10 +360,13 @@ def entity_add_access( git_name, git_mail, entity, ddrfile, agent='' ):
         git_name, git_mail, agent
     )
     
-    try:
-        file_.post_json()
-    except ConnectionError:
-        log.not_ok('Could not post to Elasticsearch.')
+    log.ok('Updating Elasticsearch')
+    if settings.DOCSTORE_ENABLED:
+        try:
+            file_.post_json()
+        except ConnectionError:
+            log.not_ok('Could not post to Elasticsearch.')
+    
     return {
         'id': file_.id,
         'status': 'ok'
@@ -650,19 +660,21 @@ def delete_entity( git_name, git_mail, collection_path, entity_id, agent='' ):
     # remove the entity
     collection = Collection.from_identifier(Identifier(collection_path))
     entity = Entity.from_identifier(Identifier(entity_id))
-    
+
+    # TODO move this code to webui.models.Entity.delete
     status,message = commands.entity_destroy(
         git_name, git_mail,
         collection, entity,
         agent
     )
+    log.ok('Updating Elasticsearch')
+    if settings.DOCSTORE_ENABLED:
+        ds = docstore.Docstore()
+        try:
+            ds.delete(entity_id)
+        except ConnectionError:
+            logger.error('Could not delete document from Elasticsearch.')
     
-    # update search index
-    ds = docstore.Docstore()
-    try:
-        ds.delete(entity_id)
-    except ConnectionError:
-        logger.error('Could not delete document from Elasticsearch.')
     return status,message,collection_path,entity_id
 
 # ----------------------------------------------------------------------
@@ -728,13 +740,7 @@ def reload_files(collection_path, entity_id, git_name, git_mail, agent=''):
         collection,
         {}
     )
-    
-    logger.debug('delete from search index')
-    ds = docstore.Docstore()
-    try:
-        ds.delete(entity.id)
-    except ConnectionError:
-        logger.error('Could not delete document from Elasticsearch.')
+
     return status,collection_path,entity_id
 
 # ----------------------------------------------------------------------
@@ -804,16 +810,18 @@ def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, 
     file_id = os.path.splitext(file_basename)[0]
     file_ = DDRFile.from_identifier(Identifier(file_id))
 
+    # TODO move this code to webui.models.File.delete
     exit,status,rm_files,updated_files = file_.delete(
         git_name, git_mail, agent
     )
-    
     logger.debug('delete from search index')
-    ds = docstore.Docstore()
-    try:
-        ds.delete(file_.id)
-    except ConnectionError:
-        logger.error('Could not delete document from Elasticsearch.')
+    if settings.DOCSTORE_ENABLED:
+        ds = docstore.Docstore()
+        try:
+            ds.delete(file_.id)
+        except ConnectionError:
+            logger.error('Could not delete document from Elasticsearch.')
+    
     return exit,status,collection_path,file_basename
 
 # ----------------------------------------------------------------------
@@ -849,17 +857,19 @@ def collection_sync( git_name, git_mail, collection_path ):
     gitstatus.lock(settings.MEDIA_BASE, 'collection_sync')
     collection = Collection.from_identifier(Identifier(path=collection_path))
     
+    # TODO move this code to webui.models.Collection.sync
     exit,status = commands.sync(
         git_name, git_mail,
         collection
     )
+    log.ok('Updating Elasticsearch')
+    if settings.DOCSTORE_ENABLED:
+        collection = Collection.from_identifier(Identifier(path=collection_path))
+        try:
+            collection.post_json()
+        except ConnectionError:
+            logger.error('Could not update search index')
     
-    # update search index
-    collection = Collection.from_identifier(Identifier(path=collection_path))
-    try:
-        collection.post_json()
-    except ConnectionError:
-        logger.error('Could not update search index')
     return collection_path
 
 
@@ -897,20 +907,22 @@ def collection_signatures(collection_path, git_name, git_mail):
     collection = Collection.from_identifier(Identifier(path=collection_path))
     updates = signatures.find_updates(collection)
     files_written = signatures.write_updates(updates)
-    
+
+    # TODO move this code to webui.models.Collection
     status,msg = signatures.commit_updates(
         collection,
         files_written,
         git_name, git_mail, agent='ddr-local'
     )
     logger.debug('DONE')
+    log.ok('Updating Elasticsearch')
+    if settings.DOCSTORE_ENABLED:
+        collection = Collection.from_identifier(Identifier(path=collection_path))
+        try:
+            collection.post_json()
+        except ConnectionError:
+            logger.error('Could not update search index')
     
-    # update search index
-    collection = Collection.from_identifier(Identifier(path=collection_path))
-    try:
-        collection.post_json()
-    except ConnectionError:
-        logger.error('Could not update search index')
     return collection_path
 
 
