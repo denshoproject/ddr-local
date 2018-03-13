@@ -291,6 +291,7 @@ def entity_add_file( git_name, git_mail, entity, src_path, role, data, agent='' 
     )
     
     log.ok('Updating Elasticsearch')
+    logger.debug('Updating Elasticsearch')
     if settings.DOCSTORE_ENABLED:
         try:
             result = file_.post_json()
@@ -324,6 +325,7 @@ def entity_add_external( git_name, git_mail, entity, data, agent='' ):
     )
     
     log.ok('Updating Elasticsearch')
+    logger.debug('Updating Elasticsearch')
     if settings.DOCSTORE_ENABLED:
         try:
             result = file_.post_json()
@@ -361,6 +363,7 @@ def entity_add_access( git_name, git_mail, entity, ddrfile, agent='' ):
     )
     
     log.ok('Updating Elasticsearch')
+    logger.debug('Updating Elasticsearch')
     if settings.DOCSTORE_ENABLED:
         try:
             file_.post_json()
@@ -667,7 +670,7 @@ def delete_entity( git_name, git_mail, collection_path, entity_id, agent='' ):
         collection, entity,
         agent
     )
-    log.ok('Updating Elasticsearch')
+    logger.debug('Updating Elasticsearch')
     if settings.DOCSTORE_ENABLED:
         ds = docstore.Docstore()
         try:
@@ -862,7 +865,7 @@ def collection_sync( git_name, git_mail, collection_path ):
         git_name, git_mail,
         collection
     )
-    log.ok('Updating Elasticsearch')
+    logger.debug('Updating Elasticsearch')
     if settings.DOCSTORE_ENABLED:
         collection = Collection.from_identifier(Identifier(path=collection_path))
         try:
@@ -915,7 +918,7 @@ def collection_signatures(collection_path, git_name, git_mail):
         git_name, git_mail, agent='ddr-local'
     )
     logger.debug('DONE')
-    log.ok('Updating Elasticsearch')
+    logger.debug('Updating Elasticsearch')
     if settings.DOCSTORE_ENABLED:
         collection = Collection.from_identifier(Identifier(path=collection_path))
         try:
