@@ -15,6 +15,7 @@ from django.template import RequestContext
 from django.utils.http import urlquote  as django_urlquote
 
 from elasticsearch import Elasticsearch
+from elasticsearch.exceptions import ConnectionError, ConnectionTimeout
 
 from DDR import converters
 from DDR import models
@@ -50,85 +51,6 @@ def massage_query_results( results, thispage, size ):
 
 # views ----------------------------------------------------------------
 
-@search_index
-def index( request ):
-    ds = docstore.Docstore()
-    if settings.DOCSTORE_INDEX in ds.aliases():
-        target_index = ds.target_index(settings.DOCSTORE_INDEX)
-    else:
-        target_index = None
-    return render_to_response(
-        'webui/search/index.html',
-        {'hide_header_search': True,
-         'search_form': SearchForm,
-         'docstore_index': settings.DOCSTORE_INDEX,
-         'target_index': target_index,},
-        context_instance=RequestContext(request, processors=[])
-    )
-
-@search_index
-def results( request ):
-    """Results of a search query or a DDR ID query.
-    """
-    ds = docstore.Docstore()
-    if settings.DOCSTORE_INDEX in ds.aliases():
-        target_index = ds.target_index(settings.DOCSTORE_INDEX)
-    else:
-        target_index = None
-    template = 'webui/search/results.html'
-    context = {
-        'hide_header_search': True,
-        'query': '',
-        'error_message': '',
-        'search_form': SearchForm(),
-        'paginator': None,
-        'page': None,
-        'filters': None,
-        'sort': None,
-        'docstore_index': settings.DOCSTORE_INDEX,
-        'target_index': target_index,
-    }
-    context['query'] = request.GET.get('query', '')
-    # silently strip out bad chars
-    query = context['query']
-    for char in BAD_CHARS:
-        query = query.replace(char, '')
-        
-    if query:
-        context['search_form'] = SearchForm({'query': query})
-        
-        # prep query for elasticsearch
-        model = request.GET.get('model', None)
-        filters = {}
-        fields = docstore.all_list_fields()
-        sort = {'record_created': request.GET.get('record_created', ''),
-                'record_lastmod': request.GET.get('record_lastmod', ''),}
-        
-        # do query and cache the results
-        results = ds.search(
-            query=query, filters=filters,
-            model='collection,entity,file', fields=fields, sort=sort
-        )
-        if results.get('hits',None) and not results.get('status',None):
-            # OK -- prep results for display
-            thispage = request.GET.get('page', 1)
-            objects = massage_query_results(results, thispage, settings.RESULTS_PER_PAGE)
-            paginator = Paginator(objects, settings.RESULTS_PER_PAGE)
-            page = paginator.page(thispage)
-            context['paginator'] = paginator
-            context['page'] = page
-        else:
-            # FAIL -- elasticsearch error
-            context['error_message'] = 'Search query "%s" caused an error. Please try again.' % query
-            return render_to_response(
-                template, context, context_instance=RequestContext(request, processors=[])
-            )
-    
-    return render_to_response(
-        template, context, context_instance=RequestContext(request, processors=[])
-    )
-
-
 import urlparse
 
 def _mkurl(request, path, query=None):
@@ -138,8 +60,28 @@ def _mkurl(request, path, query=None):
         path, None, query, None
     ))
 
+def test_elasticsearch(request):
+    try:
+        health = search.DOCSTORE.health()
+    except ConnectionError:
+        return 'Could not connect to search engine: "%s"' % settings.DOCSTORE_HOSTS
+    except ConnectionTimeout:
+        return 'Connection to search engine timed out: "%s"' % settings.DOCSTORE_HOSTS
+    index_exists = search.DOCSTORE.index_exists(settings.DOCSTORE_INDEX)
+    if not index_exists:
+        return 'Search engine index does not exist: "%s"' % settings.DOCSTORE_INDEX
+    return
+    
 @search_index
 def search_ui(request):
+    elasticsearch_error = test_elasticsearch(request)
+    if elasticsearch_error:
+        return render_to_response(
+            'webui/search/error.html',
+            {'message': elasticsearch_error,},
+            context_instance=RequestContext(request, processors=[])
+        )
+    
     api_url = '%s?%s' % (
         _mkurl(request, reverse('api-search')),
         request.META['QUERY_STRING']
