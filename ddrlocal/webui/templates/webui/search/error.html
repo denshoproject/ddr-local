@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load bootstrap_pagination thumbnail webui_tags %}
+
+
+{% block title %}
+Search Error
+{% endblock %}
+
+{% block headline %}
+Search Error
+{% endblock %}
+
+
+{% block content %}
+
+<div class="alert alert-danger" role="alert">
+  <h2>
+    {{ message }}
+  </h2>
+</div>
+
+{% endblock content %}

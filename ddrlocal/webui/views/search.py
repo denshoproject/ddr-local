@@ -15,6 +15,7 @@ from django.template import RequestContext
 from django.utils.http import urlquote  as django_urlquote
 
 from elasticsearch import Elasticsearch
+from elasticsearch.exceptions import ConnectionError, ConnectionTimeout
 
 from DDR import converters
 from DDR import models
@@ -138,8 +139,28 @@ def _mkurl(request, path, query=None):
         path, None, query, None
     ))
 
+def test_elasticsearch(request):
+    try:
+        health = search.DOCSTORE.health()
+    except ConnectionError:
+        return 'Could not connect to search engine: "%s"' % settings.DOCSTORE_HOSTS
+    except ConnectionTimeout:
+        return 'Connection to search engine timed out: "%s"' % settings.DOCSTORE_HOSTS
+    index_exists = search.DOCSTORE.index_exists(settings.DOCSTORE_INDEX)
+    if not index_exists:
+        return 'Search engine index does not exist: "%s"' % settings.DOCSTORE_INDEX
+    return
+    
 @search_index
 def search_ui(request):
+    elasticsearch_error = test_elasticsearch(request)
+    if elasticsearch_error:
+        return render_to_response(
+            'webui/search/error.html',
+            {'message': elasticsearch_error,},
+            context_instance=RequestContext(request, processors=[])
+        )
+    
     api_url = '%s?%s' % (
         _mkurl(request, reverse('api-search')),
         request.META['QUERY_STRING']
