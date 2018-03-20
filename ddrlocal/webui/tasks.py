@@ -852,13 +852,14 @@ class CollectionSyncDebugTask(Task):
 def collection_sync( git_name, git_mail, collection_path ):
     """Synchronizes collection repo with workbench server.
     
-    @param src_path: Absolute path to collection repo.
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
+    @param collection_path: Absolute path to collection repo.
     @return collection_path: Absolute path to collection.
     """
     gitstatus.lock(settings.MEDIA_BASE, 'collection_sync')
-    collection = Collection.from_identifier(Identifier(path=collection_path))
+    ci = Identifier(path=collection_path)
+    collection = Collection.from_identifier(ci)
     
     # TODO move this code to webui.models.Collection.sync
     exit,status = commands.sync(
@@ -867,9 +868,8 @@ def collection_sync( git_name, git_mail, collection_path ):
     )
     logger.debug('Updating Elasticsearch')
     if settings.DOCSTORE_ENABLED:
-        collection = Collection.from_identifier(Identifier(path=collection_path))
         try:
-            collection.post_json()
+            collection.reindex()
         except ConnectionError:
             logger.error('Could not update search index')
     
