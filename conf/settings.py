@@ -136,6 +136,7 @@ DOCSTORE_HOSTS = [
     {'host':ds_host, 'port':ds_port}
 ]
 DOCSTORE_INDEX       = config.get('local', 'docstore_index')
+DOCSTORE_TIMEOUT     = int(config.get('local', 'docstore_timeout'))
 RESULTS_PER_PAGE = 25
 ELASTICSEARCH_MAX_SIZE = 10000
 ELASTICSEARCH_DEFAULT_LIMIT = RESULTS_PER_PAGE
