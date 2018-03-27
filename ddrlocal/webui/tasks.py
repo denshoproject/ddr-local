@@ -67,6 +67,14 @@ TASK_STATUS_MESSAGES = {
         #'RETRY': '',
         #'REVOKED': '',
         },
+    'webui-collection-check': {
+        #'STARTED': '',
+        'PENDING': 'Checking <b><a href="{collection_url}">{collection_id}</a></b> files.',
+        'SUCCESS': 'Checked <b><a href="{collection_url}">{collection_id}</a></b> files. See Background Tasks for results.',
+        'FAILURE': 'Could not check <b><a href="{collection_url}">{collection_id}</a></b> files.',
+        #'RETRY': '',
+        #'REVOKED': '',
+        },
     'webui-collection-sync': {
         #'STARTED': '',
         'PENDING': 'Syncing <b><a href="{collection_url}">{collection_id}</a></b> with the workbench server.',
@@ -97,6 +105,45 @@ TASK_STATUS_MESSAGES = {
 
 class DebugTask(Task):
     abstract = True
+
+
+# ----------------------------------------------------------------------
+
+class CollectionCheckTask(Task):
+    abstract = True
+        
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
+        pass
+    
+    def on_success(self, retval, task_id, args, kwargs):
+        pass
+    
+    def after_return(self, status, retval, task_id, args, kwargs, einfo):
+        logger.debug('CollectionCheckTask.after_return(%s, %s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs, einfo))
+        gitstatus.log('CollectionCheckTask.after_return(%s, %s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs, einfo))
+
+@task(base=CollectionCheckTask, name='webui.tasks.collection_check')
+def collection_check( collection_path ):
+    if not os.path.exists(settings.MEDIA_BASE):
+        raise Exception('base_dir does not exist: %s' % settings.MEDIA_BASE)
+    paths = util.find_meta_files(
+        collection_path, recursive=1,
+        model=None, files_first=False, force_read=False, testing=0
+    )
+    bad_files = util.validate_paths(paths)
+    output = [
+        'Checked %s files' % len(paths),
+    ]
+    if bad_files:
+        for item in bad_files:
+            n,path,err = item
+            output.append(
+                '%s/%s ERROR %s - %s' % (n, len(paths), path, err)
+            )
+    else:
+        output.append('No bad files.')
+    output.append('DONE')
+    return '\n'.join(output)
 
 
 class ElasticsearchTask(Task):
