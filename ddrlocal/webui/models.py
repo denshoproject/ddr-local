@@ -191,6 +191,7 @@ class Collection( DDRCollection ):
     
     def admin_url(self): return reverse('webui-collection-admin', args=[self.id])
     def changelog_url(self): return reverse('webui-collection-changelog', args=[self.id])
+    def check_url(self): return reverse('webui-collection-check', args=[self.id])
     def children_url(self): return reverse('webui-collection-children', args=[self.id])
     def edit_url(self): return reverse('webui-collection-edit', args=[self.id])
     def export_entities_url(self): return reverse('webui-collection-export-entities', args=[self.id])

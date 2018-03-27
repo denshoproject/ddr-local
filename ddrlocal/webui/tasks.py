@@ -67,6 +67,14 @@ TASK_STATUS_MESSAGES = {
         #'RETRY': '',
         #'REVOKED': '',
         },
+    'webui-collection-check': {
+        #'STARTED': '',
+        'PENDING': 'Checking <b><a href="{collection_url}">{collection_id}</a></b> files.',
+        'SUCCESS': 'Checked <b><a href="{collection_url}">{collection_id}</a></b> files. See Background Tasks for results.',
+        'FAILURE': 'Could not check <b><a href="{collection_url}">{collection_id}</a></b> files.',
+        #'RETRY': '',
+        #'REVOKED': '',
+        },
     'webui-collection-sync': {
         #'STARTED': '',
         'PENDING': 'Syncing <b><a href="{collection_url}">{collection_id}</a></b> with the workbench server.',
@@ -97,6 +105,45 @@ TASK_STATUS_MESSAGES = {
 
 class DebugTask(Task):
     abstract = True
+
+
+# ----------------------------------------------------------------------
+
+class CollectionCheckTask(Task):
+    abstract = True
+        
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
+        pass
+    
+    def on_success(self, retval, task_id, args, kwargs):
+        pass
+    
+    def after_return(self, status, retval, task_id, args, kwargs, einfo):
+        logger.debug('CollectionCheckTask.after_return(%s, %s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs, einfo))
+        gitstatus.log('CollectionCheckTask.after_return(%s, %s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs, einfo))
+
+@task(base=CollectionCheckTask, name='webui.tasks.collection_check')
+def collection_check( collection_path ):
+    if not os.path.exists(settings.MEDIA_BASE):
+        raise Exception('base_dir does not exist: %s' % settings.MEDIA_BASE)
+    paths = util.find_meta_files(
+        collection_path, recursive=1,
+        model=None, files_first=False, force_read=False, testing=0
+    )
+    bad_files = util.validate_paths(paths)
+    output = [
+        'Checked %s files' % len(paths),
+    ]
+    if bad_files:
+        for item in bad_files:
+            n,path,err = item
+            output.append(
+                '%s/%s ERROR %s - %s' % (n, len(paths), path, err)
+            )
+    else:
+        output.append('No bad files.')
+    output.append('DONE')
+    return '\n'.join(output)
 
 
 class ElasticsearchTask(Task):
@@ -852,13 +899,14 @@ class CollectionSyncDebugTask(Task):
 def collection_sync( git_name, git_mail, collection_path ):
     """Synchronizes collection repo with workbench server.
     
-    @param src_path: Absolute path to collection repo.
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
+    @param collection_path: Absolute path to collection repo.
     @return collection_path: Absolute path to collection.
     """
     gitstatus.lock(settings.MEDIA_BASE, 'collection_sync')
-    collection = Collection.from_identifier(Identifier(path=collection_path))
+    ci = Identifier(path=collection_path)
+    collection = Collection.from_identifier(ci)
     
     # TODO move this code to webui.models.Collection.sync
     exit,status = commands.sync(
@@ -867,9 +915,8 @@ def collection_sync( git_name, git_mail, collection_path ):
     )
     logger.debug('Updating Elasticsearch')
     if settings.DOCSTORE_ENABLED:
-        collection = Collection.from_identifier(Identifier(path=collection_path))
         try:
-            collection.post_json()
+            collection.reindex()
         except ConnectionError:
             logger.error('Could not update search index')
     

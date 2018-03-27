@@ -534,3 +534,26 @@ def unlock( request, cid, task_id ):
         collection.unlock(task_id)
         messages.success(request, 'Collection <b>%s</b> unlocked.' % collection.id)
     return HttpResponseRedirect(collection.absolute_url())
+
+@ddrview
+@login_required
+@storage_required
+def check(request, cid):
+    ci = Identifier(cid)
+    result = tasks.collection_check.apply_async(
+        [ci.path_abs()],
+        countdown=2
+    )
+    # add celery task_id to session
+    celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
+    # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
+    task = {
+        'task_id': result.task_id,
+        'action': 'webui-collection-check',
+        'collection_id': ci.id,
+        'collection_url': ci.urlpath('editor'),
+        'start': converters.datetime_to_text(datetime.now(settings.TZ)),
+    }
+    celery_tasks[result.task_id] = task
+    request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
+    return HttpResponseRedirect(ci.urlpath('editor'))

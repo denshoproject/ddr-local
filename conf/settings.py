@@ -129,6 +129,9 @@ CSV_EXPORT_PATH = {
     'file': '/tmp/ddr/csv/%s-files.csv',
 }
 
+# Display (or not) list of remotes where file present
+GIT_ANNEX_WHEREIS = config.getboolean('local','git_annex_whereis')
+
 # ElasticSearch
 DOCSTORE_ENABLED     = config.getboolean('local','docstore_enabled')
 ds_host,ds_port      = config.get('local', 'docstore_host').split(':')
@@ -137,7 +140,6 @@ DOCSTORE_HOSTS = [
 ]
 DOCSTORE_INDEX       = config.get('local', 'docstore_index')
 DOCSTORE_TIMEOUT     = int(config.get('local', 'docstore_timeout'))
-DOCSTORE_TIMEOUT_LOCAL = int(config.get('local', 'docstore_timeout_local'))
 RESULTS_PER_PAGE = 25
 ELASTICSEARCH_MAX_SIZE = 10000
 ELASTICSEARCH_DEFAULT_LIMIT = RESULTS_PER_PAGE
