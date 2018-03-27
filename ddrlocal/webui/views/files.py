@@ -110,9 +110,10 @@ def detail( request, fid ):
     file_.model_def_commits()
     file_.model_def_fields()
     formdata = {'path':file_.path_rel}
-    annex_whereis = annex_whereis_file(
-        repository(collection.path_abs), file_
-    )
+    if settings.GIT_ANNEX_WHEREIS:
+        annex_whereis = annex_whereis_file(repository(collection.path_abs), file_)
+    else:
+        annex_whereis = {}
     return render_to_response(
         'webui/files/detail.html',
         {

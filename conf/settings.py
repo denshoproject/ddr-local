@@ -129,6 +129,9 @@ CSV_EXPORT_PATH = {
     'file': '/tmp/ddr/csv/%s-files.csv',
 }
 
+# Display (or not) list of remotes where file present
+GIT_ANNEX_WHEREIS = config.getboolean('local','git_annex_whereis')
+
 # ElasticSearch
 DOCSTORE_ENABLED     = config.getboolean('local','docstore_enabled')
 ds_host,ds_port      = config.get('local', 'docstore_host').split(':')
