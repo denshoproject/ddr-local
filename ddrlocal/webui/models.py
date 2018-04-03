@@ -16,8 +16,8 @@ from DDR import commands
 from DDR import dvcs
 from DDR import fileio
 from DDR import modules
-from DDR.models import from_json
-from DDR.models import Stub as DDRStub
+from DDR.models.common import from_json
+from DDR.models.common import Stub as DDRStub
 from DDR.models import Collection as DDRCollection
 from DDR.models import ListEntity, Entity as DDREntity
 from DDR.models import File
