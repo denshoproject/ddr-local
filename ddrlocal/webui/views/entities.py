@@ -54,7 +54,7 @@ def vocab_terms( fieldname ):
     data = cache.get(key)
     if not data:
         if 'http://' in settings.VOCAB_TERMS_URL:
-            path_url = settings.VOCAB_TERMS_URL + '%s.json' % fieldname
+            path_url = settings.VOCAB_TERMS_URL % fieldname
         else:
             path_url = os.path.join(settings.VOCAB_TERMS_URL, '%s.json' % fieldname)
         data = vocab.get_vocab(path_url)
