@@ -2,6 +2,7 @@ from copy import deepcopy
 import logging
 logger = logging.getLogger(__name__)
 import os
+import re
 import traceback
 
 from django import forms
@@ -11,6 +12,9 @@ from django.utils.encoding import force_text
 
 from DDR import modules
 from webui.identifier import Identifier
+
+NARRATOR_IMG_PATTERN = '^narrators/(\w)+$'
+NARRATOR_IMG_REGEX = re.compile(NARRATOR_IMG_PATTERN)
 
 
 class LoginForm(forms.Form):
@@ -194,14 +198,23 @@ class DDRForm(forms.Form):
                 self.tracebacks[fieldname] = traceback.format_exc().strip()
             # can't validate signature_id without causing an import loop
             # so do it here
+            # NOTE: field can contain a FILE ID or a NARRATOR ID
             if (fieldname == 'signature_id') and value:
-                si = None
-                try:
-                    si = Identifier(id=value)
-                except:
-                    self.add_error(fieldname, 'Not a valid object ID')
-                if si and not (si.model == 'file'):
-                    self.add_error(fieldname, 'Only files can be used as signatures.')
+                # narrator ID (ex: "narrators/NAME" or "narrators/NAME_2")
+                if 'narrator' in value:
+                    if NARRATOR_IMG_REGEX.match(value):
+                        continue
+                    else:
+                        self.add_error(fieldname, 'Not a valid narrator ID (example: "narrators/NAME")')
+                else:
+                    # signature file
+                    si = None
+                    try:
+                        si = Identifier(id=value)
+                    except:
+                        self.add_error(fieldname, 'Not a valid object ID')
+                    if si and not (si.model == 'file'):
+                        self.add_error(fieldname, 'Only files can be used as signatures.')
 
 
 def construct_form(model_fields):
