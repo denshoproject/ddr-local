@@ -151,7 +151,7 @@ Search
 <div class="media {{ object.model }}">
 
   <a class="pull-left" href="{{ object.links.ui }}">
-  {% if object.img_present %}
+    {% if object.links.img %}
   {% thumbnail object.links.img "100x100" crop="center" as img %}
     <img class="img-responsive img-thumbnail" src="{{ img.url }}" width="{{ img.width }}" height="{{ img.height }}" alt="{{ object.title }} ({{ object.id }})"/>
   {% endthumbnail %}
