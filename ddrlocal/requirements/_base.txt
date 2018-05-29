@@ -23,7 +23,7 @@ django-celery-with-redis==3.0 # BSD      ???      ???
 
 # misc
 django-bootstrap-pagination   # MIT y
-sorl-thumbnail==11.12.1b      # BSD      y
+sorl-thumbnail==12.4.1        # BSD      y
 
 #-e git://github.com/densho/ddr-cmdln.git#egg=DDR
 
