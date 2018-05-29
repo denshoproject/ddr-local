@@ -25,6 +25,7 @@ PACKAGE_SERVER=ddr.densho.org/static/ddrlocal
 SRC_REPO_CMDLN=https://github.com/densho/ddr-cmdln.git
 SRC_REPO_LOCAL=https://github.com/densho/ddr-local.git
 SRC_REPO_DEFS=https://github.com/densho/ddr-defs.git
+SRC_REPO_VOCAB=https://github.com/densho/ddr-vocab.git
 SRC_REPO_MANUAL=https://github.com/densho/ddr-manual.git
 
 INSTALL_BASE=/opt
@@ -32,6 +33,7 @@ INSTALL_LOCAL=$(INSTALL_BASE)/ddr-local
 INSTALL_STATIC=$(INSTALL_LOCAL)/static
 INSTALL_CMDLN=$(INSTALL_LOCAL)/ddr-cmdln
 INSTALL_DEFS=$(INSTALL_LOCAL)/ddr-defs
+INSTALL_VOCAB=$(INSTALL_LOCAL)/ddr-vocab
 INSTALL_MANUAL=$(INSTALL_LOCAL)/ddr-manual
 
 VIRTUALENV=$(INSTALL_LOCAL)/venv/ddrlocal
@@ -112,6 +114,7 @@ help:
 	@echo "vbox-guest     - Installs VirtualBox Guest Additions"
 	@echo "network-config - Installs standard network conf (CHANGES IP TO 192.168.56.101!)"
 	@echo "get-ddr-defs   - Downloads ddr-defs to $(INSTALL_DEFS)."
+	@echo "get-ddr-vocab  - Downloads ddr-vocab to $(INSTALL_VOCAB)."
 	@echo "enable-bkgnd   - Enable background processes. (Run make reload on completion)"
 	@echo "disable-bkgnd  - Disablebackground processes. (Run make reload on completion)"
 	@echo "syncdb         - Init/update Django app's database tables."
@@ -143,12 +146,13 @@ howto-install:
 	@echo "#make install"
 	@echo "# Place copy of 'ddr' repo in $(DDR_REPO_BASE)/ddr."
 	@echo "#make install-defs"
+	@echo "#make install-vocab"
 	@echo "#make enable-bkgnd"
 	@echo "#make syncdb"
 	@echo "make restart"
 
 
-get: get-app get-ddr-defs get-elasticsearch get-static
+get: get-app get-ddr-defs get-ddr-vocab get-elasticsearch get-static
 
 install: install-prep install-daemons install-app install-static install-configs
 
@@ -397,6 +401,16 @@ get-ddr-defs:
 	if test -d $(INSTALL_DEFS); \
 	then cd $(INSTALL_DEFS) && git pull; \
 	else cd $(INSTALL_LOCAL) && git clone $(SRC_REPO_DEFS) $(INSTALL_DEFS); \
+	fi
+
+
+get-ddr-vocab:
+	@echo ""
+	@echo "get-ddr-vocab ----------------------------------------------------------"
+	git status | grep "On branch"
+	if test -d $(INSTALL_VOCAB); \
+	then cd $(INSTALL_VOCAB) && git pull; \
+	else cd $(INSTALL_LOCAL) && git clone $(SRC_REPO_VOCAB) $(INSTALL_VOCAB); \
 	fi
 
 
@@ -696,6 +710,7 @@ deb-jessie:
 	COPYRIGHT=$(DEB_BASE)   \
 	ddr-cmdln=$(DEB_BASE)   \
 	ddr-defs=$(DEB_BASE)   \
+	ddr-vocab=$(DEB_BASE)   \
 	ddrlocal=$(DEB_BASE)   \
 	.git=$(DEB_BASE)   \
 	.gitignore=$(DEB_BASE)   \
@@ -768,6 +783,7 @@ deb-stretch:
 	COPYRIGHT=$(DEB_BASE)   \
 	ddr-cmdln=$(DEB_BASE)   \
 	ddr-defs=$(DEB_BASE)   \
+	ddr-vocab=$(DEB_BASE)   \
 	ddrlocal=$(DEB_BASE)   \
 	.git=$(DEB_BASE)   \
 	.gitignore=$(DEB_BASE)   \
