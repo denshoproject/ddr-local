@@ -112,6 +112,118 @@ def model_def_fields(document):
         document.model_def_fields_removed = removed
         document.model_def_fields_removed_msg = WEBUI_MESSAGES['MODEL_DEF_FIELDS_REMOVED'] % removed
 
+def format_object(oi, d, request, is_detail=False):
+    """Format detail or list objects for API
+    
+    Certain fields are always included (id, title, etc and links).
+    Everything else is determined by what fields are in the result dict.
+    
+    d is basically an elasticsearch_dsl.Result, packaged by search.SearchResults.
+    
+    @param oi: Identifier
+    @param d: dict
+    @param request: 
+    @param is_detail: boolean
+    """
+    try:
+        collection_id = oi.collection_id()
+    except:
+        collection_id = None
+    
+    data = OrderedDict()
+    data['id'] = d.pop('id')
+    data['model'] = oi.model
+    data['collection_id'] = collection_id
+    data['links'] = make_links(oi, d, request, source='es', is_detail=is_detail)
+    for key,val in d.items():
+        if key not in DETAIL_EXCLUDE:
+            data[key] = val
+    return data
+
+def make_links(oi, d, request, source='fs', is_detail=False):
+    """Make the 'links pod' at the top of detail or list objects.
+    
+    @param oi: Identifier
+    @param d: dict
+    @param request: 
+    @param source: str 'fs' (filesystem) or 'es' (elasticsearch)
+    @param is_detail: boolean
+    @returns: dict
+    """
+    assert source in ['fs', 'es']
+    try:
+        collection_id = oi.collection_id()
+        child_models = oi.child_models(stubs=False)
+    except:
+        collection_id = None
+        child_models = oi.child_models(stubs=True)
+    
+    img_url = ''
+    if d.get('signature_id'):
+        img_url = _access_url(identifier.Identifier(d['signature_id']))
+    elif d.get('access_rel'):
+        img_url = _access_url(oi)
+    elif oi.model in ['repository','organization']:
+        img_url = '%s%s/%s' % (
+            settings.MEDIA_URL,
+            oi.path_abs().replace(settings.MEDIA_ROOT, ''),
+            'logo.png'
+        )
+    
+    img_present = False
+    if img_url:
+        img_present = image_present(oi)
+    
+    links = OrderedDict()
+    
+    try:
+        links['ui'] = reverse('webui-%s' % oi.model, args=([oi.id]), request=request)
+    except NoReverseMatch:
+        links['ui'] = ''
+    
+    links['api'] = reverse('api-%s-detail' % source, args=([oi.id]), request=request)
+    
+    # links to opposite
+    if source == 'es':
+        links['file'] = reverse('api-fs-detail', args=([oi.id]), request=request)
+    elif source == 'fs':
+        links['elastic'] = reverse('api-es-detail', args=([oi.id]), request=request)
+    
+    if is_detail:
+        # objects above the collection level are stubs and do not have collection_id
+        # collections have collection_id but have to point up to parent stub
+        # API does not include stubs inside collections (roles)
+        if collection_id and (collection_id != oi.id):
+            parent_id = oi.parent_id(stubs=0)
+        else:
+            parent_id = oi.parent_id(stubs=1)
+        if parent_id:
+            links['parent'] = reverse('api-%s-detail' % source, args=[parent_id], request=request)
+     
+        if child_models:
+            links['children'] = reverse('api-%s-children' % source, args=([oi.id]), request=request)
+        else:
+            links['children'] = ''
+
+    links['img'] = img_url
+    
+    return links
+
+def _access_url(fi):
+    """
+    @param oi: (optional) file Identifier
+    """
+    return '%s%s%s' % (
+        settings.MEDIA_URL,
+        fi.path_abs().replace(settings.MEDIA_ROOT, ''),
+        settings.ACCESS_FILE_SUFFIX,
+    )
+
+def image_present(fi):
+    return os.path.exists(
+        '%s%s' % (fi.path_abs(), settings.ACCESS_FILE_SUFFIX)
+    )
+
 
 # functions relating to inheritance ------------------------------------
 

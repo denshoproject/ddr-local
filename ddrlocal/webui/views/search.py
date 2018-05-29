@@ -119,7 +119,7 @@ def search_ui(request):
         if results.objects:
             paginator = Paginator(
                 results.ordered_dict(
-                    request=request, list_function=api._prep_detail, pad=True
+                    request=request, list_function=format_object, pad=True
                 )['objects'],
                 results.page_size,
             )
