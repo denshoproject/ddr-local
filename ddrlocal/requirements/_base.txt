@@ -6,7 +6,7 @@
 
                               # LICENSE  Python3  PyPy
 
-django==1.7.11                # MIT      y
+django>=1.8.0,<1.9.0          # MIT      y
 django-bootstrap-pagination   # MIT      y
 django-redis==3.7.1           # BSD      y             NOTE: can't upgrade til Django 1.11
 django-redis-sessions         # BSD      y

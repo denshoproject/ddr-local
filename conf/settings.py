@@ -317,7 +317,10 @@ MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False
 # See https://docs.djangoproject.com/en/1.5/ref/settings/#allowed-hosts
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in config.get('local', 'allowed_hosts').split(',')
+]
 
 TEMPLATE_DIRS = (
     os.path.join(BASE_DIR, 'ddrlocal/templates'),
