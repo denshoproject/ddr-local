@@ -1,4 +1,3 @@
-import collections
 from copy import deepcopy
 import logging
 logger = logging.getLogger(__name__)
@@ -12,6 +11,7 @@ from django.utils.encoding import force_text
 
 from DDR import modules
 from webui.identifier import Identifier
+from ..util import OrderedDict
 
 INTERVIEW_SIG_PATTERN = r'^denshovh-[a-z_0-9]{1,}-[0-9]{2,2}$'
 INTERVIEW_SIG_REGEX = re.compile(INTERVIEW_SIG_PATTERN)
@@ -41,7 +41,7 @@ class TaskDismissForm( forms.Form ):
                 fields.append(
                     ('greyed_%s' % task['task_id'], forms.BooleanField(required=False))
                 )
-        self.fields = collections.OrderedDict(fields)
+        self.fields = OrderedDict(fields)
 
 class ObjectIDForm(forms.Form):
     """Accept new ID as text, check that it's a legal object ID
@@ -245,5 +245,5 @@ def construct_form(model_fields):
             #                            required=False, initial=False)
             fobject = forms.BooleanField(label='', required=False, help_text=helptext)
             fields.append(('%s_inherit' % fkwargs['name'], fobject))
-    fields = collections.OrderedDict(fields)
+    fields = OrderedDict(fields)
     return fields
