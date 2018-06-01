@@ -15,7 +15,6 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 # ----------------------------------------------------------------------
 
 DEBUG = True
-TEMPLATE_DEBUG = DEBUG
 
 import ConfigParser
 from datetime import timedelta
@@ -323,12 +322,6 @@ ALLOWED_HOSTS = [
     for host in config.get('local', 'allowed_hosts').split(',')
 ]
 
-TEMPLATE_DIRS = (
-    os.path.join(BASE_DIR, 'ddrlocal/templates'),
-    os.path.join(BASE_DIR, 'storage/templates'),
-    os.path.join(BASE_DIR, 'webui/templates'),
-)
-
 STATICFILES_DIRS = (
     #os.path.join(BASE_DIR, 'storage/static'),
     os.path.join(BASE_DIR, 'webui/static'),
@@ -412,26 +405,27 @@ FILE_UPLOAD_HANDLERS = (
     "django.core.files.uploadhandler.TemporaryFileUploadHandler",
 )
 
-# List of callables that know how to import templates from various sources.
-TEMPLATE_LOADERS = (
-    'django.template.loaders.filesystem.Loader',
-    'django.template.loaders.app_directories.Loader',
-#     'django.template.loaders.eggs.Loader',
-)
-
-TEMPLATE_CONTEXT_PROCESSORS = (
-    'django.contrib.auth.context_processors.auth',
-    'django.core.context_processors.debug',
-    'django.core.context_processors.i18n',
-    'django.core.context_processors.media',
-    'django.core.context_processors.request',
-    'django.core.context_processors.static',
-    'django.core.context_processors.tz',
-    'django.contrib.messages.context_processors.messages',
-    'storage.context_processors.sitewide',
-    'webui.context_processors.sitewide',
-)
-
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [
+            os.path.join(BASE_DIR, 'ddrlocal/templates'),
+            os.path.join(BASE_DIR, 'storage/templates'),
+            os.path.join(BASE_DIR, 'webui/templates'),
+        ],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+                'webui.context_processors.sitewide',
+            ],
+        },
+    },
+]
+                                                                        
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',

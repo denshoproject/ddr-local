@@ -9,9 +9,7 @@ from django.core.cache import cache
 from django.core.paginator import Paginator
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import Http404, get_object_or_404, render_to_response
-from django.shortcuts import render
-from django.template import RequestContext
+from django.shortcuts import Http404, render
 from django.utils.http import urlquote  as django_urlquote
 
 from elasticsearch import Elasticsearch
@@ -76,11 +74,9 @@ def test_elasticsearch(request):
 def search_ui(request):
     elasticsearch_error = test_elasticsearch(request)
     if elasticsearch_error:
-        return render_to_response(
-            'webui/search/error.html',
-            {'message': elasticsearch_error,},
-            context_instance=RequestContext(request, processors=[])
-        )
+        return render(request, 'webui/search/error.html', {
+            'message': elasticsearch_error,
+        })
     
     api_url = '%s?%s' % (
         _mkurl(request, reverse('api-search')),
@@ -181,18 +177,16 @@ def admin( request ):
     dropform = None
     if indices:
         dropform = DropConfirmForm(request=request)
-    return render_to_response(
-        'webui/search/admin.html',
-        {'ping': ping,
-         'no_indices': no_indices,
-         'server_info': server_info,
-         'indices': indices,
-         'indexform': indexform,
-         'dropform': dropform,
-         'docstore_index': settings.DOCSTORE_INDEX,
-         'target_index': target_index,},
-        context_instance=RequestContext(request, processors=[])
-    )
+    return render(request, 'webui/search/admin.html', {
+        'ping': ping,
+        'no_indices': no_indices,
+        'server_info': server_info,
+        'indices': indices,
+        'indexform': indexform,
+        'dropform': dropform,
+        'docstore_index': settings.DOCSTORE_INDEX,
+        'target_index': target_index,
+    })
 
 def reindex( request ):
     if request.method == 'POST':
