@@ -6,11 +6,11 @@
 
                               # LICENSE  Python3  PyPy
 
-django>=1.8.0,<1.9.0          # MIT      y
-django-bootstrap-pagination   # MIT      y
-django-redis==3.7.1           # BSD      y             NOTE: can't upgrade til Django 1.11
-django-redis-sessions         # BSD      y
-djangorestframework>=2.0.0,<3.0.0 # BSD  y
+django>=1.9.0,<1.10.0         # MIT      y
+django-bootstrap-pagination==1.5.1 # MIT      y
+django-redis==3.8.3           # BSD      y             NOTE: can't upgrade til Django 1.11
+django-redis-sessions==0.4.0  # BSD      y
+djangorestframework>=3.3.0,<3.4 # BSD      y
 
 celery>=3.1.0,<4.0.0          # BSD      y        y
 django-celery==3.1.17         # BSD      y        y

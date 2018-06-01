@@ -1,8 +1,8 @@
+import collections
 import logging
 logger = logging.getLogger(__name__)
 
 from django import forms
-from django.utils.datastructures import SortedDict
 
 
 class MergeCommitForm(forms.Form):
@@ -28,5 +28,4 @@ class MergeJSONForm(forms.Form):
             fields.append(('%s_right' % f['name'], forms.CharField(widget=forms.Textarea)))
             fields.append(('%s_choose' % f['name'],
                           forms.ChoiceField(choices=['left','right'], widget=forms.RadioSelect, required=True)))
-        # Django Form object takes a SortedDict rather than list
-        self.fields = SortedDict(fields)
+        self.fields = collections.OrderedDict(fields)

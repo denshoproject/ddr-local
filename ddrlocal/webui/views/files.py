@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 
 from django.conf import settings
 from django.contrib import messages
-from django.core.context_processors import csrf
+from django.template.context_processors import csrf
 from django.core.files import File
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect

@@ -1,3 +1,4 @@
+import collections
 from copy import deepcopy
 import logging
 logger = logging.getLogger(__name__)
@@ -7,7 +8,6 @@ import traceback
 
 from django import forms
 from django.conf import settings
-from django.utils.datastructures import SortedDict
 from django.utils.encoding import force_text
 
 from DDR import modules
@@ -41,8 +41,7 @@ class TaskDismissForm( forms.Form ):
                 fields.append(
                     ('greyed_%s' % task['task_id'], forms.BooleanField(required=False))
                 )
-        # Django Form object takes a SortedDict rather than list
-        self.fields = SortedDict(fields)
+        self.fields = collections.OrderedDict(fields)
 
 class ObjectIDForm(forms.Form):
     """Accept new ID as text, check that it's a legal object ID
@@ -246,6 +245,5 @@ def construct_form(model_fields):
             #                            required=False, initial=False)
             fobject = forms.BooleanField(label='', required=False, help_text=helptext)
             fields.append(('%s_inherit' % fkwargs['name'], fobject))
-    # Django Form object takes a SortedDict rather than list
-    fields = SortedDict(fields)
+    fields = collections.OrderedDict(fields)
     return fields

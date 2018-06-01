@@ -1,3 +1,4 @@
+import collections
 from datetime import datetime, date
 from copy import deepcopy
 import StringIO
@@ -5,7 +6,6 @@ import StringIO
 from lxml import etree
 
 from django import forms
-from django.utils.datastructures import SortedDict
 
 from xmlforms import tagtype, gettag, gettagvalue, settagvalue
 
@@ -121,8 +121,7 @@ class XMLForm(forms.Form):
             ftype = fkwargs['form_type']
             fobject = ftype(*fargs, **fkwargs['form'])
             fields.append((fkwargs['name'], fobject))
-        # Django Form object takes a SortedDict rather than list
-        self.fields = SortedDict(fields)
+        self.fields = collections.OrderedDict(fields)
     
     @staticmethod
     def prep_fields(fields, xml, namespaces=None):

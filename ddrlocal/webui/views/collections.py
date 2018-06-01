@@ -12,7 +12,7 @@ from elasticsearch.exceptions import ConnectionError
 from django.conf import settings
 from django.contrib import messages
 from django.core.cache import cache
-from django.core.context_processors import csrf
+from django.template.context_processors import csrf
 from django.core.files import File
 from django.core.paginator import Paginator
 from django.core.urlresolvers import reverse

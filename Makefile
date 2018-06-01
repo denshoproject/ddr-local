@@ -117,7 +117,7 @@ help:
 	@echo "get-ddr-vocab  - Downloads ddr-vocab to $(INSTALL_VOCAB)."
 	@echo "enable-bkgnd   - Enable background processes. (Run make reload on completion)"
 	@echo "disable-bkgnd  - Disablebackground processes. (Run make reload on completion)"
-	@echo "syncdb         - Init/update Django app's database tables."
+	@echo "migrate        - Init/update Django app's database tables."
 	@echo "branch BRANCH=[branch] - Switches ddr-local and ddr-cmdln repos to [branch]."
 	@echo ""
 	@echo "deb       - Makes a DEB package install file."
@@ -148,7 +148,7 @@ howto-install:
 	@echo "#make install-defs"
 	@echo "#make install-vocab"
 	@echo "#make enable-bkgnd"
-	@echo "#make syncdb"
+	@echo "#make migrate"
 	@echo "make restart"
 
 
@@ -414,9 +414,9 @@ get-ddr-vocab:
 	fi
 
 
-syncdb:
+migrate:
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_LOCAL)/ddrlocal && ./manage.py syncdb --noinput
+	cd $(INSTALL_LOCAL)/ddrlocal && ./manage.py migrate --noinput
 	chown -R ddr.root $(SQLITE_BASE)
 	chmod -R 750 $(SQLITE_BASE)
 	chown -R ddr.root $(LOG_BASE)
