@@ -265,12 +265,11 @@ REDIS_DB_SORL = 3
 
 CACHES = {
     "default": {
-        #"BACKEND": "redis_cache.cache.RedisCache",
-        #"LOCATION": "%s:%s:%s" % (REDIS_HOST, REDIS_PORT, REDIS_DB_CACHE),
-        #"OPTIONS": {
-        #    "CLIENT_CLASS": "redis_cache.client.DefaultClient",
-        #}
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "%s:%s:%s" % (REDIS_HOST, REDIS_PORT, REDIS_DB_CACHE),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
     }
 }
 
