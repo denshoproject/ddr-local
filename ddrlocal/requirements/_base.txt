@@ -10,7 +10,10 @@ django>=1.11.0,<2.0           # MIT      y
 django-bootstrap-pagination==1.6.4 # MIT y
 django-redis                  # BSD      y
 django-redis-sessions         # BSD      y
-djangorestframework>=3.4.0,<3.5 # BSD    y
+
+djangorestframework>=3.6.0,<3.7 # BSD    y
+coreapi==2.3.3                # BSD      y
+coreapi-cli==1.0.9            # BSD      y
 
 celery>=3.1.0,<4.0.0          # BSD      y        y
 django-celery                 # BSD      y        y
