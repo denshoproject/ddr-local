@@ -361,7 +361,7 @@ install-ddr-local: install-virtualenv mkdir-ddr-local
 	git status | grep "On branch"
 	apt-get --assume-yes install imagemagick libexempi3 libssl-dev python-dev libxml2 libxml2-dev libxslt1-dev supervisor
 	source $(VIRTUALENV)/bin/activate; \
-	pip install -U -r $(INSTALL_LOCAL)/ddrlocal/requirements/production.txt
+	pip install -U -r $(INSTALL_LOCAL)/requirements.txt
 
 mkdir-ddr-local:
 	@echo ""
@@ -387,7 +387,7 @@ uninstall-ddr-local: install-virtualenv
 	@echo ""
 	@echo "uninstall-ddr-local ----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_LOCAL)/ddrlocal && pip uninstall -y -r $(INSTALL_LOCAL)/ddrlocal/requirements/production.txt
+	cd $(INSTALL_LOCAL)/ddrlocal && pip uninstall -y -r $(INSTALL_LOCAL)/requirements.txt
 
 clean-ddr-local:
 	-rm -Rf $(VIRTUALENV)
