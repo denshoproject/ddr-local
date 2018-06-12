@@ -13,12 +13,13 @@ redis==2.10.6                 # MIT      y
 django-redis==4.9.0           # BSD      y
 django-redis-sessions==0.6.1  # BSD      y
 
+celery[redis]>=4.2.0,<4.3.0   # BSD      y        y
+django-celery-beat==1.1.1     # BSD      y        y
+django-celery-results==1.0.1  # BSD      y        y
+
 djangorestframework>=3.6.0,<3.7 # BSD    y
 coreapi==2.3.3                # BSD      y
 coreapi-cli==1.0.9            # BSD      y
-
-celery>=3.1.0,<4.0.0          # BSD      y        y
-django-celery                 # BSD      y        y
 
 envoy==0.0.3                  # MIT      y
 gunicorn==19.8.1              # MIT      y
