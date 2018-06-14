@@ -7,11 +7,10 @@ import git
 
 from django.conf import settings
 from django.contrib import messages
-from django.core.context_processors import csrf
+from django.template.context_processors import csrf
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import Http404, get_object_or_404, render_to_response
-from django.template import RequestContext
+from django.shortcuts import Http404, render
 from django.template.loader import get_template
 
 from DDR import commands
@@ -93,23 +92,21 @@ def merge( request, repo, org, cid ):
         elif diverged and staged:
             which = 'commit'
         form = MergeCommitForm({'path':collection.path, 'which':which,})
-    return render_to_response(
-        'webui/merge/index.html',
-        {'repo': repo,
-         'org': org,
-         'cid': cid,
-         'collection_path': collection.path,
-         'collection': collection,
-         'status': status,
-         'conflicted': conflicted,
-         'ahead': ahead,
-         'behind': behind,
-         'unmerged': unmerged,
-         'diverged': diverged,
-         'staged': staged,
-         'form': form,},
-        context_instance=RequestContext(request, processors=[])
-    )
+    return render(request, 'webui/merge/index.html', {
+        'repo': repo,
+        'org': org,
+        'cid': cid,
+        'collection_path': collection.path,
+        'collection': collection,
+        'status': status,
+        'conflicted': conflicted,
+        'ahead': ahead,
+        'behind': behind,
+        'unmerged': unmerged,
+        'diverged': diverged,
+        'staged': staged,
+        'form': form,
+    })
 
 
 @ddrview
@@ -167,15 +164,13 @@ def edit_raw( request, repo, org, cid ):
         with open(filepath, 'r') as f:
             text = f.read()
         form = MergeRawForm({'filename': filename, 'text': text,})
-    return render_to_response(
-        'webui/merge/edit-raw.html',
-        {'repo': repo,
-         'org': org,
-         'cid': cid,
-         'filename':filename,
-         'form': form,},
-        context_instance=RequestContext(request, processors=[])
-    )
+    return render(request, 'webui/merge/edit-raw.html', {
+        'repo': repo,
+        'org': org,
+        'cid': cid,
+        'filename':filename,
+        'form': form,
+    })
 
 def edit_json( request, repo, org, cid ):
     """
@@ -208,11 +203,9 @@ def edit_json( request, repo, org, cid ):
         assert False
     elif request.method == 'GET':
         form = MergeJSONForm(fields=fields)
-        return render_to_response(
-            'webui/merge/edit-json.html',
-            {'filename':filename,
-             'fields':fields,
-             'form':form,},
-            context_instance=RequestContext(request, processors=[])
-        )
+        return render(request, 'webui/merge/edit-json.html', {
+            'filename':filename,
+            'fields':fields,
+            'form':form,
+        })
     return HttpResponseRedirect( reverse('webui-merge', args=[repo,org,cid]) )

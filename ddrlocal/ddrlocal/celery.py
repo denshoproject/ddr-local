@@ -2,15 +2,15 @@
 
 from __future__ import absolute_import
 import os
-
 from celery import Celery
-
 from django.conf import settings
 
-# set the default Django settings module for the 'celery' program.
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ddrlocal.settings')
+PROJECT = 'ddrlocal'
 
-app = Celery('ddrlocal')
+# set the default Django settings module for the 'celery' program.
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', '%s.settings' % PROJECT)
+
+app = Celery(PROJECT)
 
 app.config_from_object(settings)
 # Using a string here means the worker will not have to

@@ -9,12 +9,11 @@ from bs4 import BeautifulSoup
 
 from django.conf import settings
 from django.contrib import messages
-from django.core.context_processors import csrf
+from django.template.context_processors import csrf
 from django.core.files import File
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import Http404, get_object_or_404, render_to_response
-from django.template import RequestContext
+from django.shortcuts import Http404, render
 
 from DDR import converters
 from DDR.ingest import addfile_logger
@@ -114,19 +113,15 @@ def detail( request, fid ):
         annex_whereis = annex_whereis_file(repository(collection.path_abs), file_)
     else:
         annex_whereis = {}
-    return render_to_response(
-        'webui/files/detail.html',
-        {
-            'collection': collection,
-            'entity': entity,
-            'role': file_.identifier.parts['role'],
-            'file': file_,
-            'new_access_url': file_.new_access_url,
-            'new_access_form': NewAccessFileForm(formdata),
-            'annex_whereis': annex_whereis,
-        },
-        context_instance=RequestContext(request, processors=[])
-    )
+    return render(request, 'webui/files/detail.html', {
+        'collection': collection,
+        'entity': entity,
+        'role': file_.identifier.parts['role'],
+        'file': file_,
+        'new_access_url': file_.new_access_url,
+        'new_access_form': NewAccessFileForm(formdata),
+        'annex_whereis': annex_whereis,
+    })
 
 @ddrview
 @login_required
@@ -165,18 +160,16 @@ def browse( request, rid ):
             attribs = {'basename':x, 'rel':rel, 'path':xabs, 'isdir':isdir, 'size':size, 'mtime':mtime}
             if os.path.exists(xabs):
                 listdir.append(attribs)
-    return render_to_response(
-        'webui/files/browse.html',
-        {'collection': collection,
-         'entity': entity,
-         'file_role': file_role,
-         'new_file_url': entity.new_file_url(role),
-         'shared_folder': settings.VIRTUALBOX_SHARED_FOLDER,
-         'listdir': listdir,
-         'parent': parent,
-         'home': home,},
-        context_instance=RequestContext(request, processors=[])
-    )
+    return render(request, 'webui/files/browse.html', {
+        'collection': collection,
+        'entity': entity,
+        'file_role': file_role,
+        'new_file_url': entity.new_file_url(role),
+        'shared_folder': settings.VIRTUALBOX_SHARED_FOLDER,
+        'listdir': listdir,
+        'parent': parent,
+        'home': home,
+    })
 
 @ddrview
 @login_required
@@ -249,15 +242,13 @@ def new( request, rid ):
         for field in entity.inheritable_fields():
             data[field] = getattr(entity, field)
         form = NewFileDDRForm(data, fields=FIELDS, path_choices=shared_folder_files())
-    return render_to_response(
-        'webui/files/new.html',
-        {'collection': collection,
-         'entity': entity,
-         'file_role': file_role,
-         'form': form,
-         'path': path,},
-        context_instance=RequestContext(request, processors=[])
-    )
+    return render(request, 'webui/files/new.html', {
+        'collection': collection,
+        'entity': entity,
+        'file_role': file_role,
+        'form': form,
+        'path': path,
+    })
 
 @ddrview
 @login_required
@@ -335,16 +326,12 @@ def new_external(request, rid):
     else:
         form = NewExternalFileForm()
     
-    return render_to_response(
-        'webui/files/new-external.html',
-        {
-            'collection': collection,
-            'entity': entity,
-            'file_role': file_role,
-            'form': form,
-        },
-        context_instance=RequestContext(request, processors=[])
-    )
+    return render(request, 'webui/files/new-external.html', {
+        'collection': collection,
+        'entity': entity,
+        'file_role': file_role,
+        'form': form,
+    })
 
 @ddrview
 @login_required
@@ -411,12 +398,10 @@ def batch( request, rid ):
     entity = Entity.from_request(request)
     collection = entity.collection()
     check_parents(entity, collection)
-    return render_to_response(
-        'webui/files/new.html',
-        {'collection': collection,
-         'entity': entity,},
-        context_instance=RequestContext(request, processors=[])
-    )
+    return render(request, 'webui/files/new.html', {
+        'collection': collection,
+        'entity': entity,
+    })
 
 @ddrview
 @login_required
@@ -452,16 +437,13 @@ def edit( request, fid ):
             
     else:
         form = DDRForm(file_.form_prep(), fields=module.FIELDS)
-    return render_to_response(
-        'webui/files/edit-json.html',
-        {'collection': collection,
-         'entity': entity,
-         'role': file_.identifier.parts['role'],
-         'file': file_,
-         'form': form,
-         },
-        context_instance=RequestContext(request, processors=[])
-    )
+    return render(request, 'webui/files/edit-json.html', {
+        'collection': collection,
+        'entity': entity,
+        'role': file_.identifier.parts['role'],
+        'file': file_,
+        'form': form,
+    })
 
 @ddrview
 @login_required
@@ -528,11 +510,8 @@ def delete( request, fid ):
             return HttpResponseRedirect(collection.absolute_url())
     else:
         form = DeleteFileForm()
-    return render_to_response(
-        'webui/files/delete.html',
-        {'file': file_,
-         'role': file_.identifier.parts['role'],
-         'form': form,
-         },
-        context_instance=RequestContext(request, processors=[])
-    )
+    return render(request, 'webui/files/delete.html', {
+        'file': file_,
+        'role': file_.identifier.parts['role'],
+        'form': form,
+    })

@@ -117,7 +117,7 @@ help:
 	@echo "get-ddr-vocab  - Downloads ddr-vocab to $(INSTALL_VOCAB)."
 	@echo "enable-bkgnd   - Enable background processes. (Run make reload on completion)"
 	@echo "disable-bkgnd  - Disablebackground processes. (Run make reload on completion)"
-	@echo "syncdb         - Init/update Django app's database tables."
+	@echo "migrate        - Init/update Django app's database tables."
 	@echo "branch BRANCH=[branch] - Switches ddr-local and ddr-cmdln repos to [branch]."
 	@echo ""
 	@echo "deb       - Makes a DEB package install file."
@@ -148,7 +148,7 @@ howto-install:
 	@echo "#make install-defs"
 	@echo "#make install-vocab"
 	@echo "#make enable-bkgnd"
-	@echo "#make syncdb"
+	@echo "#make migrate"
 	@echo "make restart"
 
 
@@ -361,7 +361,7 @@ install-ddr-local: install-virtualenv mkdir-ddr-local
 	git status | grep "On branch"
 	apt-get --assume-yes install imagemagick libexempi3 libssl-dev python-dev libxml2 libxml2-dev libxslt1-dev supervisor
 	source $(VIRTUALENV)/bin/activate; \
-	pip install -U -r $(INSTALL_LOCAL)/ddrlocal/requirements/production.txt
+	pip install -U -r $(INSTALL_LOCAL)/requirements.txt
 
 mkdir-ddr-local:
 	@echo ""
@@ -387,7 +387,7 @@ uninstall-ddr-local: install-virtualenv
 	@echo ""
 	@echo "uninstall-ddr-local ----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_LOCAL)/ddrlocal && pip uninstall -y -r $(INSTALL_LOCAL)/ddrlocal/requirements/production.txt
+	cd $(INSTALL_LOCAL)/ddrlocal && pip uninstall -y -r $(INSTALL_LOCAL)/requirements.txt
 
 clean-ddr-local:
 	-rm -Rf $(VIRTUALENV)
@@ -414,9 +414,9 @@ get-ddr-vocab:
 	fi
 
 
-syncdb:
+migrate:
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_LOCAL)/ddrlocal && ./manage.py syncdb --noinput
+	cd $(INSTALL_LOCAL)/ddrlocal && ./manage.py migrate --noinput
 	chown -R ddr.root $(SQLITE_BASE)
 	chmod -R 750 $(SQLITE_BASE)
 	chown -R ddr.root $(LOG_BASE)

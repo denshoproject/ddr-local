@@ -20,8 +20,11 @@ class SuppressCeleryNewConnections(logging.Filter):
     def filter(self, record):
         logthis = 1
         mod_connectionpool = (record.module == 'connectionpool')
-        msg_starting_http = RE_STARTING_HTTP.search(record.msg)
-        msg_celery_status = RE_CELERY_STATUS.search(record.msg)
+        msg_starting_http = None
+        msg_celery_status = None
+        if isinstance(record.msg, basestring):
+            msg_starting_http = RE_STARTING_HTTP.search(record.msg)
+            msg_celery_status = RE_CELERY_STATUS.search(record.msg)
         if mod_connectionpool and (msg_starting_http or msg_celery_status):
             logthis = 0
         return logthis

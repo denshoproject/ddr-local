@@ -1,5 +1,3 @@
-#from collections import OrderedDict # DOES NOT WORK BC OF webui.views.collections
-from webui import OrderedDict        # IMPORT FROM webui/__init__.py
 import logging
 logger = logging.getLogger(__name__)
 import os
@@ -10,6 +8,7 @@ from django.conf import settings
 from webui import docstore
 from webui import search
 from webui import set_docstore_index
+from ..util import OrderedDict
 
 
 class SearchForm(forms.Form):

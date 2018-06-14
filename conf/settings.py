@@ -15,7 +15,6 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 # ----------------------------------------------------------------------
 
 DEBUG = True
-TEMPLATE_DEBUG = DEBUG
 
 import ConfigParser
 from datetime import timedelta
@@ -205,7 +204,7 @@ GITSTATUS_BACKOFF = 30
 #   $ sudo supervisorctl reload
 GITSTATUS_BACKGROUND_ACTIVE = True
 if config.has_option('local', 'gitstatus_background_active'):
-    GITSTATUS_BACKGROUND_ACTIVE = config.get('local', 'gitstatus_background_active')
+    GITSTATUS_BACKGROUND_ACTIVE = config.getboolean('local', 'gitstatus_background_active')
     SUPERVISORD_PROCS.append('celerybeat')
 
 MANUAL_URL = os.path.join(MEDIA_URL, 'manual')
@@ -266,10 +265,10 @@ REDIS_DB_SORL = 3
 
 CACHES = {
     "default": {
-        "BACKEND": "redis_cache.cache.RedisCache",
+        "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": "%s:%s:%s" % (REDIS_HOST, REDIS_PORT, REDIS_DB_CACHE),
         "OPTIONS": {
-            "CLIENT_CLASS": "redis_cache.client.DefaultClient",
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
         }
     }
 }
@@ -317,13 +316,10 @@ MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False
 # See https://docs.djangoproject.com/en/1.5/ref/settings/#allowed-hosts
-ALLOWED_HOSTS = []
-
-TEMPLATE_DIRS = (
-    os.path.join(BASE_DIR, 'ddrlocal/templates'),
-    os.path.join(BASE_DIR, 'storage/templates'),
-    os.path.join(BASE_DIR, 'webui/templates'),
-)
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in config.get('local', 'allowed_hosts').split(',')
+]
 
 STATICFILES_DIRS = (
     #os.path.join(BASE_DIR, 'storage/static'),
@@ -356,7 +352,7 @@ LOGGING = {
     'handlers': {
         'null': {
             'level': 'DEBUG',
-            'class': 'django.utils.log.NullHandler',
+            'class': 'logging.NullHandler',
         },
         'console':{
             'level': 'DEBUG',
@@ -408,26 +404,27 @@ FILE_UPLOAD_HANDLERS = (
     "django.core.files.uploadhandler.TemporaryFileUploadHandler",
 )
 
-# List of callables that know how to import templates from various sources.
-TEMPLATE_LOADERS = (
-    'django.template.loaders.filesystem.Loader',
-    'django.template.loaders.app_directories.Loader',
-#     'django.template.loaders.eggs.Loader',
-)
-
-TEMPLATE_CONTEXT_PROCESSORS = (
-    'django.contrib.auth.context_processors.auth',
-    'django.core.context_processors.debug',
-    'django.core.context_processors.i18n',
-    'django.core.context_processors.media',
-    'django.core.context_processors.request',
-    'django.core.context_processors.static',
-    'django.core.context_processors.tz',
-    'django.contrib.messages.context_processors.messages',
-    'storage.context_processors.sitewide',
-    'webui.context_processors.sitewide',
-)
-
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [
+            os.path.join(BASE_DIR, 'ddrlocal/templates'),
+            os.path.join(BASE_DIR, 'storage/templates'),
+            os.path.join(BASE_DIR, 'webui/templates'),
+        ],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+                'webui.context_processors.sitewide',
+            ],
+        },
+    },
+]
+                                                                        
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
