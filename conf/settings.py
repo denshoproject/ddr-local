@@ -1,6 +1,3 @@
-# required for celery
-from __future__ import absolute_import, unicode_literals
-
 """
 Django settings for ddrlocal project.
 
@@ -207,12 +204,15 @@ GITSTATUS_BACKOFF = 30
 #   $ sudo supervisorctl reload
 GITSTATUS_BACKGROUND_ACTIVE = True
 if config.has_option('local', 'gitstatus_background_active'):
-    GITSTATUS_BACKGROUND_ACTIVE = config.get('local', 'gitstatus_background_active')
+    GITSTATUS_BACKGROUND_ACTIVE = config.getboolean('local', 'gitstatus_background_active')
     SUPERVISORD_PROCS.append('celerybeat')
 
 MANUAL_URL = os.path.join(MEDIA_URL, 'manual')
 
 # ----------------------------------------------------------------------
+
+import djcelery
+djcelery.setup_loader()
 
 ADMINS = (
     ('geoffrey jost', 'geoffrey.jost@densho.org'),
@@ -232,8 +232,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     #
     'bootstrap_pagination',
-    'django_celery_beat',
-    'django_celery_results',
+    'djcelery',
     'gunicorn',
     'rest_framework',
     'sorl.thumbnail',
@@ -275,29 +274,26 @@ CACHES = {
 }
 
 # celery
-
-CELERY_RESULT_BACKEND = 'redis://%s:%s/%s' % (REDIS_HOST, REDIS_PORT, REDIS_DB_CELERY_RESULT)
-CELERY_BROKER_URL     = 'redis://%s:%s/%s' % (REDIS_HOST, REDIS_PORT, REDIS_DB_CELERY_BROKER)
-CELERY_BROKER_TRANSPORT_OPTIONS = {'visibility_timeout': 60 * 60}  # 1 hour
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
 CELERY_TASKS_SESSION_KEY = 'celery-tasks'
-
-CELERYBEAT_PIDFILE = None
+CELERY_RESULT_BACKEND = 'redis://%s:%s/%s' % (REDIS_HOST, REDIS_PORT, REDIS_DB_CELERY_RESULT)
+BROKER_URL            = 'redis://%s:%s/%s' % (REDIS_HOST, REDIS_PORT, REDIS_DB_CELERY_BROKER)
+BROKER_TRANSPORT_OPTIONS = {'visibility_timeout': 60 * 60}  # 1 hour
+CELERYD_HIJACK_ROOT_LOGGER = False
+CELERY_ACCEPT_CONTENT = ['pickle', 'json', 'msgpack', 'yaml']
 CELERYBEAT_SCHEDULER = None
-CELERYBEAT_SCHEDULE = {}
+CELERYBEAT_PIDFILE = None
+CELERYBEAT_SCHEDULE = {
+    'webui-gitolite-info-refresh': {
+        'task': 'webui.tasks.gitolite_info_refresh',
+        'schedule': timedelta(seconds=GITOLITE_INFO_CHECK_PERIOD),
+    }
+}
 if GITSTATUS_BACKGROUND_ACTIVE:
+    CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
     CELERYBEAT_PIDFILE = '/tmp/celerybeat.pid'
-    CELERYBEAT_SCHEDULER = '/var/lib/ddr/celerybeat-schedule'
-    CELERYBEAT_SCHEDULE = {
-        'webui-gitolite-info-refresh': {
-            'task': 'webui.tasks.gitolite_info_refresh',
-            'schedule': timedelta(seconds=GITOLITE_INFO_CHECK_PERIOD),
-        },
-        'webui-git-status-update-store' = {
-            'task': 'webui.tasks.gitstatus_update_store',
-            'schedule': timedelta(seconds=60),
-        },
+    CELERYBEAT_SCHEDULE['webui-git-status-update-store'] = {
+        'task': 'webui.tasks.gitstatus_update_store',
+        'schedule': timedelta(seconds=60),
     }
 
 # sorl-thumbnail
