@@ -718,6 +718,8 @@ deb-jessie:
 	LICENSE=$(DEB_BASE)   \
 	Makefile=$(DEB_BASE)   \
 	README.rst=$(DEB_BASE)   \
+	requirements.txt=$(DEB_BASE)   \
+	setup-workstation.sh=$(DEB_BASE)   \
 	static=$(DEB_BASE)   \
 	venv=$(DEB_BASE)   \
 	VERSION=$(DEB_BASE)
@@ -791,6 +793,8 @@ deb-stretch:
 	LICENSE=$(DEB_BASE)   \
 	Makefile=$(DEB_BASE)   \
 	README.rst=$(DEB_BASE)   \
+	requirements.txt=$(DEB_BASE)   \
+	setup-workstation.sh=$(DEB_BASE)   \
 	static=$(DEB_BASE)   \
 	venv=$(DEB_BASE)   \
 	VERSION=$(DEB_BASE)
