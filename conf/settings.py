@@ -35,13 +35,11 @@ AGENT = 'ddr-local'
 # Include here in settings so only has to be retrieved once,
 # and so commits are visible in error pages and in page footers.
 from DDR import dvcs
-COMMITS_DDRCMDLN = dvcs.latest_commit(INSTALL_PATH)
-COMMITS_DDRLOCAL = dvcs.latest_commit(os.path.dirname(__file__))
-COMMITS_DDRDEFS = dvcs.latest_commit(REPO_MODELS_PATH)
-COMMITS_TEXT = '<br/>\n'.join([
-    'cmd: %s' % COMMITS_DDRCMDLN,
-    'loc: %s' % COMMITS_DDRLOCAL,
-    'def: %s' % COMMITS_DDRDEFS,
+dvcs.APP_COMMITS['loc'] = dvcs.latest_commit(os.path.dirname(__file__))
+APP_COMMITS_HTML = '<br/>\n'.join([
+    'loc: %s' % dvcs.APP_COMMITS['loc'],
+    'cmd: %s' % dvcs.APP_COMMITS['cmd'],
+    'def: %s' % dvcs.APP_COMMITS['def'],
     'def: %s' % REPO_MODELS_PATH,
 ])
 
