@@ -261,6 +261,14 @@ THUMBNAIL_ENGINE = 'sorl.thumbnail.engines.convert_engine.Engine'
 THUMBNAIL_CONVERT = 'convert'
 THUMBNAIL_IDENTIFY = 'identify'
 THUMBNAIL_CACHE_TIMEOUT = 60*60*24*365*10  # 10 years
+THUMBNAIL_DUMMY = True
+# Thumbnail dummy (placeholder) source. Some you might try are:
+# http://placekitten.com/%(width)s/%(height)s
+# http://placekitten.com/g/%(width)s/%(height)s
+# http://placehold.it/%(width)sx%(height)s
+THUMBNAIL_DUMMY_SOURCE = 'http://dummyimage.com/%(width)sx%(height)s'
+# Sets source image ratio for dummy images w only width or height
+THUMBNAIL_DUMMY_RATIO = 1.5
 
 SESSION_ENGINE = 'redis_sessions.session'
 
