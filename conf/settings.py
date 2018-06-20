@@ -23,34 +23,23 @@ import sys
 
 import pytz
 
-from DDR import config as ddrconfig
+# import all settings from ddr-cmdln DDR/config.py
+# including the ConfigParser object CONFIG
+from DDR.config import *
 
 os.environ['USER'] = 'ddr'
 
 AGENT = 'ddr-local'
 
-from DDR.config import CONFIG_FILES, NoConfigError
-config = ConfigParser.ConfigParser()
-configs_read = config.read(CONFIG_FILES)
-if not configs_read:
-    raise NoConfigError('No config file!')
-
-REPO_MODELS_PATH = config.get('cmdln','repo_models_path')
-if REPO_MODELS_PATH not in sys.path:
-    sys.path.append(REPO_MODELS_PATH)
-
 # Latest commits for ddr-cmdln and ddr-local.
 # Include here in settings so only has to be retrieved once,
 # and so commits are visible in error pages and in page footers.
 from DDR import dvcs
-DDRCMDLN_INSTALL_PATH = config.get('cmdln','install_path')
-COMMITS_DDRCMDLN = dvcs.latest_commit(DDRCMDLN_INSTALL_PATH)
-COMMITS_DDRLOCAL = dvcs.latest_commit(os.path.dirname(__file__))
-COMMITS_DDRDEFS = dvcs.latest_commit(REPO_MODELS_PATH)
-COMMITS_TEXT = '<br/>\n'.join([
-    'cmd: %s' % COMMITS_DDRCMDLN,
-    'loc: %s' % COMMITS_DDRLOCAL,
-    'def: %s' % COMMITS_DDRDEFS,
+dvcs.APP_COMMITS['loc'] = dvcs.latest_commit(os.path.dirname(__file__))
+APP_COMMITS_HTML = '<br/>\n'.join([
+    'loc: %s' % dvcs.APP_COMMITS['loc'],
+    'cmd: %s' % dvcs.APP_COMMITS['cmd'],
+    'def: %s' % dvcs.APP_COMMITS['def'],
     'def: %s' % REPO_MODELS_PATH,
 ])
 
@@ -59,104 +48,67 @@ COMMITS_TEXT = '<br/>\n'.join([
 # ddr.cfg is installed in /etc/ddr/ddr.cfg.
 # Settings in /etc/ddr/ddr.cfg may be overridden in /etc/ddr/local.cfg.
 
-GITOLITE             = config.get('workbench','gitolite')
-GITOLITE_TIMEOUT     = config.get('workbench','gitolite_timeout')
-CGIT_URL             = config.get('workbench','cgit_url')
-GIT_REMOTE_NAME      = config.get('workbench','remote')
-IDSERVICE_API_BASE   = config.get('idservice','api_base')
+GITOLITE             = CONFIG.get('workbench','gitolite')
+GITOLITE_TIMEOUT     = CONFIG.get('workbench','gitolite_timeout')
+CGIT_URL             = CONFIG.get('workbench','cgit_url')
+GIT_REMOTE_NAME      = CONFIG.get('workbench','remote')
+IDSERVICE_API_BASE   = CONFIG.get('idservice','api_base')
 
-MEDIA_BASE           = config.get('cmdln','media_base')
-# Location of Repository 'ddr' repo, which should contain repo_models
-# for the Repository.
-
-UTF8_STRICT = config.getboolean('cmdln','utf8_strict')
-
-# see notes in ddrlocal.cfg
-try:
-    DEFAULT_TIMEZONE = config.get('cmdln','default_timezone')
-except:
-    DEFAULT_TIMEZONE = 'America/Los_Angeles'
-TZ = pytz.timezone(DEFAULT_TIMEZONE)
-ALT_TIMEZONES = ddrconfig._parse_alt_timezones(config.get('cmdln','alt_timezones'))
-DATETIME_FORMAT = config.get('cmdln','datetime_format')
-DATE_FORMAT = config.get('cmdln','date_format')
-TIME_FORMAT = config.get('cmdln','time_format')
-PRETTY_DATETIME_FORMAT = config.get('cmdln','pretty_datetime_format')
-PRETTY_DATE_FORMAT = config.get('cmdln','pretty_date_format')
-PRETTY_TIME_FORMAT = config.get('cmdln','pretty_time_format')
-ELASTICSEARCH_DATETIME_FORMAT  = "%Y-%m-%dT%H:%M:%S"
-ELASTICSEARCH_DATETIME_MAPPING = "yyyy-MM-dd'T'HH:mm:ss"
-
-TEMPLATE_CJSON       = config.get('cmdln','template_cjson')
-TEMPLATE_EJSON       = config.get('cmdln','template_ejson')
-TEMPLATE_EAD         = os.path.join(REPO_MODELS_PATH, 'templates', 'ead.xml')
-TEMPLATE_METS        = os.path.join(REPO_MODELS_PATH, 'templates', 'mets.xml')
-ACCESS_FILE_APPEND   = config.get('cmdln','access_file_append')
-ACCESS_FILE_EXTENSION = config.get('cmdln','access_file_extension')
-ACCESS_FILE_SUFFIX = ACCESS_FILE_APPEND + ACCESS_FILE_EXTENSION
-ACCESS_FILE_GEOMETRY = config.get('cmdln','access_file_geometry')
-ACCESS_FILE_OPTIONS  = config.get('cmdln','access_file_options')
-THUMBNAIL_GEOMETRY   = config.get('cmdln','thumbnail_geometry')
-THUMBNAIL_COLORSPACE = 'sRGB'
-THUMBNAIL_OPTIONS    = config.get('cmdln','thumbnail_options')
-
-GITWEB_URL           = config.get('local','gitweb_url')
-SUPERVISORD_URL      = config.get('local','supervisord_url')
+GITWEB_URL           = CONFIG.get('local','gitweb_url')
+SUPERVISORD_URL      = CONFIG.get('local','supervisord_url')
 SUPERVISORD_PROCS    = ['ddrlocal', 'celery']
-SECRET_KEY           = config.get('local','secret_key')
-LANGUAGE_CODE        = config.get('local','language_code')
-TIME_ZONE            = config.get('local','time_zone')
-VIRTUALBOX_SHARED_FOLDER = config.get('local','virtualbox_shared_folder')
-DDR_ORGANIZATIONS    = config.get('local','organizations').split(',')
-DDR_SSHPUB_PATH      = config.get('local','ssh_pubkey')
-DDR_PROTOTYPE_USER   = config.get('testing','user_name')
-DDR_PROTOTYPE_MAIL   = config.get('testing','user_mail')
-STATIC_ROOT          = config.get('local','static_root')
-STATIC_URL           = config.get('local','static_url')
-MEDIA_ROOT           = config.get('local','media_root')
-MEDIA_URL            = config.get('local','media_url')
-DEFAULT_PERMISSION_COLLECTION = config.get('local','default_permission_collection')
-DEFAULT_PERMISSION_ENTITY     = config.get('local','default_permission_entity')
-DEFAULT_PERMISSION_FILE       = config.get('local','default_permission_file')
-LOG_DIR              = config.get('local', 'log_dir')
-LOG_FILE             = config.get('local', 'log_file')
-LOG_LEVEL            = config.get('local', 'log_level')
-VOCABS_PATH          = config.get('cmdln', 'vocabs_path')
-VOCAB_TERMS_URL      = config.get('local', 'vocab_terms_url')
+SECRET_KEY           = CONFIG.get('local','secret_key')
+LANGUAGE_CODE        = CONFIG.get('local','language_code')
+TIME_ZONE            = CONFIG.get('local','time_zone')
+VIRTUALBOX_SHARED_FOLDER = CONFIG.get('local','virtualbox_shared_folder')
+DDR_ORGANIZATIONS    = CONFIG.get('local','organizations').split(',')
+DDR_SSHPUB_PATH      = CONFIG.get('local','ssh_pubkey')
+DDR_PROTOTYPE_USER   = CONFIG.get('testing','user_name')
+DDR_PROTOTYPE_MAIL   = CONFIG.get('testing','user_mail')
+STATIC_ROOT          = CONFIG.get('local','static_root')
+STATIC_URL           = CONFIG.get('local','static_url')
+MEDIA_ROOT           = CONFIG.get('local','media_root')
+MEDIA_URL            = CONFIG.get('local','media_url')
+DEFAULT_PERMISSION_COLLECTION = CONFIG.get('local','default_permission_collection')
+DEFAULT_PERMISSION_ENTITY     = CONFIG.get('local','default_permission_entity')
+DEFAULT_PERMISSION_FILE       = CONFIG.get('local','default_permission_file')
+LOG_DIR              = CONFIG.get('local', 'log_dir')
+LOG_FILE             = CONFIG.get('local', 'log_file')
+LOG_LEVEL            = CONFIG.get('local', 'log_level')
 CSV_EXPORT_PATH = {
     'entity': '/tmp/ddr/csv/%s-objects.csv',
     'file': '/tmp/ddr/csv/%s-files.csv',
 }
 
 # Display (or not) list of remotes where file present
-GIT_ANNEX_WHEREIS = config.getboolean('local','git_annex_whereis')
+GIT_ANNEX_WHEREIS = CONFIG.getboolean('local','git_annex_whereis')
 
 # ElasticSearch
-DOCSTORE_ENABLED     = config.getboolean('local','docstore_enabled')
-ds_host,ds_port      = config.get('local', 'docstore_host').split(':')
+DOCSTORE_ENABLED     = CONFIG.getboolean('local','docstore_enabled')
+ds_host,ds_port      = CONFIG.get('local', 'docstore_host').split(':')
 DOCSTORE_HOSTS = [
     {'host':ds_host, 'port':ds_port}
 ]
-DOCSTORE_INDEX       = config.get('local', 'docstore_index')
-DOCSTORE_TIMEOUT     = int(config.get('local', 'docstore_timeout'))
+DOCSTORE_INDEX       = CONFIG.get('local', 'docstore_index')
+DOCSTORE_TIMEOUT     = int(CONFIG.get('local', 'docstore_timeout'))
 RESULTS_PER_PAGE = 25
 ELASTICSEARCH_MAX_SIZE = 10000
 ELASTICSEARCH_DEFAULT_LIMIT = RESULTS_PER_PAGE
 
-GITOLITE_INFO_CACHE_TIMEOUT = int(config.get('local', 'gitolite_info_cache_timeout'))
-GITOLITE_INFO_CACHE_CUTOFF  = int(config.get('local', 'gitolite_info_cache_cutoff'))
-GITOLITE_INFO_CHECK_PERIOD  = int(config.get('local', 'gitolite_info_check_period'))
+GITOLITE_INFO_CACHE_TIMEOUT = int(CONFIG.get('local', 'gitolite_info_cache_timeout'))
+GITOLITE_INFO_CACHE_CUTOFF  = int(CONFIG.get('local', 'gitolite_info_cache_cutoff'))
+GITOLITE_INFO_CHECK_PERIOD  = int(CONFIG.get('local', 'gitolite_info_check_period'))
 
-TESTING_USERNAME     = config.get('testing','username')
-TESTING_PASSWORD     = config.get('testing','password')
-TESTING_REPO         = config.get('testing','repo')
-TESTING_ORG          = config.get('testing','org')
-TESTING_CID          = config.get('testing','cid')
-TESTING_EID          = config.get('testing','eid')
-TESTING_ROLE         = config.get('testing','role')
-TESTING_SHA1         = config.get('testing','sha1')
-TESTING_DRIVE_LABEL  = config.get('testing','drive_label')
-TESTING_CREATE       = int(config.get('testing','create'))
+TESTING_USERNAME     = CONFIG.get('testing','username')
+TESTING_PASSWORD     = CONFIG.get('testing','password')
+TESTING_REPO         = CONFIG.get('testing','repo')
+TESTING_ORG          = CONFIG.get('testing','org')
+TESTING_CID          = CONFIG.get('testing','cid')
+TESTING_EID          = CONFIG.get('testing','eid')
+TESTING_ROLE         = CONFIG.get('testing','role')
+TESTING_SHA1         = CONFIG.get('testing','sha1')
+TESTING_DRIVE_LABEL  = CONFIG.get('testing','drive_label')
+TESTING_CREATE       = int(CONFIG.get('testing','create'))
 
 # Directory in root of USB HDD that marks it as a DDR disk
 # /media/USBHDDNAME/ddr
@@ -189,8 +141,8 @@ GITSTATUS_LOCK_PATH = os.path.join(MEDIA_BASE, '.gitstatus-stop')
 # add the following setting to /etc/ddr/local.cfg:
 #     gitstatus_use_global_lock=0
 GITSTATUS_USE_GLOBAL_LOCK = True
-if config.has_option('local', 'gitstatus_use_global_lock'):
-    GITSTATUS_USE_GLOBAL_LOCK = config.get('local', 'gitstatus_use_global_lock')
+if CONFIG.has_option('local', 'gitstatus_use_global_lock'):
+    GITSTATUS_USE_GLOBAL_LOCK = CONFIG.get('local', 'gitstatus_use_global_lock')
 # Minimum interval between git-status updates per collection repository.
 GITSTATUS_INTERVAL = 60*60*1
 GITSTATUS_BACKOFF = 30
@@ -203,8 +155,8 @@ GITSTATUS_BACKOFF = 30
 #   $ sudo rm /etc/supervisor/conf.d/celerybeat.conf
 #   $ sudo supervisorctl reload
 GITSTATUS_BACKGROUND_ACTIVE = True
-if config.has_option('local', 'gitstatus_background_active'):
-    GITSTATUS_BACKGROUND_ACTIVE = config.getboolean('local', 'gitstatus_background_active')
+if CONFIG.has_option('local', 'gitstatus_background_active'):
+    GITSTATUS_BACKGROUND_ACTIVE = CONFIG.getboolean('local', 'gitstatus_background_active')
     SUPERVISORD_PROCS.append('celerybeat')
 
 MANUAL_URL = os.path.join(MEDIA_URL, 'manual')
@@ -309,6 +261,14 @@ THUMBNAIL_ENGINE = 'sorl.thumbnail.engines.convert_engine.Engine'
 THUMBNAIL_CONVERT = 'convert'
 THUMBNAIL_IDENTIFY = 'identify'
 THUMBNAIL_CACHE_TIMEOUT = 60*60*24*365*10  # 10 years
+THUMBNAIL_DUMMY = True
+# Thumbnail dummy (placeholder) source. Some you might try are:
+# http://placekitten.com/%(width)s/%(height)s
+# http://placekitten.com/g/%(width)s/%(height)s
+# http://placehold.it/%(width)sx%(height)s
+THUMBNAIL_DUMMY_SOURCE = 'http://dummyimage.com/%(width)sx%(height)s'
+# Sets source image ratio for dummy images w only width or height
+THUMBNAIL_DUMMY_RATIO = 1.5
 
 SESSION_ENGINE = 'redis_sessions.session'
 
@@ -318,7 +278,7 @@ MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 # See https://docs.djangoproject.com/en/1.5/ref/settings/#allowed-hosts
 ALLOWED_HOSTS = [
     host.strip()
-    for host in config.get('local', 'allowed_hosts').split(',')
+    for host in CONFIG.get('local', 'allowed_hosts').split(',')
 ]
 
 STATICFILES_DIRS = (
