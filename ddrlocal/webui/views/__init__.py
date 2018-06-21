@@ -5,11 +5,10 @@ import os
 
 from django.conf import settings
 from django.contrib import messages
-from django.core.context_processors import csrf
+from django.template.context_processors import csrf
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import Http404, get_object_or_404, render_to_response
-from django.template import RequestContext
+from django.shortcuts import Http404, render
 
 from DDR import converters
 from DDR import idservice
@@ -104,11 +103,9 @@ def login( request ):
         form = LoginForm(initial={'next':request.GET.get('next',''),})
         # Using "initial" rather than passing in data dict lets form include
         # redirect link without complaining about blank username/password fields.
-    return render_to_response(
-        'webui/login.html',
-        {'form': form,},
-        context_instance=RequestContext(request, processors=[])
-    )
+    return render(request, 'webui/login.html', {
+        'form': form,
+    })
 
 @ddrview
 def logout( request ):
@@ -159,13 +156,9 @@ def gitstatus_queue(request):
             text = f.read()
     except AssertionError:
         text = None
-    return render_to_response(
-        'webui/gitstatus-queue.html',
-        {
-            'text': text,
-        },
-        context_instance=RequestContext(request, processors=[])
-    )
+    return render(request, 'webui/gitstatus-queue.html', {
+        'text': text,
+    })
 
 def task_list( request ):
     """Show pending/successful/failed tasks; UI for dismissing tasks.
@@ -198,24 +191,20 @@ def task_list( request ):
         }
         form = TaskDismissForm(data, celery_tasks=celery_tasks)
         dismissable_tasks = [1 for task in celery_tasks if task['dismissable']]
-    return render_to_response(
-        'webui/tasks.html',
-        {'form': form,
-         'celery_tasks': celery_tasks,
-         'dismissable_tasks': dismissable_tasks,
-         'hide_celery_tasks': True,},
-        context_instance=RequestContext(request, processors=[])
-    )
+    return render(request, 'webui/tasks.html', {
+        'form': form,
+        'celery_tasks': celery_tasks,
+        'dismissable_tasks': dismissable_tasks,
+        'hide_celery_tasks': True,
+    })
 
 def task_status( request ):
     """
     Gets celery task status, generates HTML for display in alert box in base template.
     """
-    return render_to_response(
-        'webui/task-include.html',
-        {'dismiss_next': request.GET.get('this', reverse('webui-index'))},
-        context_instance=RequestContext(request, processors=[])
-    )
+    return render(request, 'webui/task-include.html', {
+        'dismiss_next': request.GET.get('this', reverse('webui-index'))
+    })
 
 @login_required
 def task_dismiss( request, task_id ):

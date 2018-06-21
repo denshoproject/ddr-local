@@ -2,15 +2,19 @@ from copy import deepcopy
 import logging
 logger = logging.getLogger(__name__)
 import os
+import re
 import traceback
 
 from django import forms
 from django.conf import settings
-from django.utils.datastructures import SortedDict
 from django.utils.encoding import force_text
 
 from DDR import modules
 from webui.identifier import Identifier
+from ..util import OrderedDict
+
+INTERVIEW_SIG_PATTERN = r'^denshovh-[a-z_0-9]{1,}-[0-9]{2,2}$'
+INTERVIEW_SIG_REGEX = re.compile(INTERVIEW_SIG_PATTERN)
 
 
 class LoginForm(forms.Form):
@@ -37,8 +41,7 @@ class TaskDismissForm( forms.Form ):
                 fields.append(
                     ('greyed_%s' % task['task_id'], forms.BooleanField(required=False))
                 )
-        # Django Form object takes a SortedDict rather than list
-        self.fields = SortedDict(fields)
+        self.fields = OrderedDict(fields)
 
 class ObjectIDForm(forms.Form):
     """Accept new ID as text, check that it's a legal object ID
@@ -194,14 +197,28 @@ class DDRForm(forms.Form):
                 self.tracebacks[fieldname] = traceback.format_exc().strip()
             # can't validate signature_id without causing an import loop
             # so do it here
+            # NOTE: field can contain a FILE ID or an interview signature img
+            # TODO too much branching
             if (fieldname == 'signature_id') and value:
-                si = None
-                try:
-                    si = Identifier(id=value)
-                except:
-                    self.add_error(fieldname, 'Not a valid object ID')
-                if si and not (si.model == 'file'):
-                    self.add_error(fieldname, 'Only files can be used as signatures.')
+                # interview signature image
+                # (ex. "denshovh-aart-03", "denshovh-hlarry_g-02")
+                if 'denshovh' in value:
+                    if INTERVIEW_SIG_REGEX.match(value):
+                        continue
+                    else:
+                        self.add_error(
+                            fieldname,
+                            'Not a valid interview signature img (example: "denshovh-aart-03")'
+                        )
+                else:
+                    # signature file
+                    si = None
+                    try:
+                        si = Identifier(id=value)
+                    except:
+                        self.add_error(fieldname, 'Not a valid object ID')
+                    if si and not (si.model == 'file'):
+                        self.add_error(fieldname, 'Only files can be used as signatures.')
 
 
 def construct_form(model_fields):
@@ -228,6 +245,5 @@ def construct_form(model_fields):
             #                            required=False, initial=False)
             fobject = forms.BooleanField(label='', required=False, help_text=helptext)
             fields.append(('%s_inherit' % fkwargs['name'], fobject))
-    # Django Form object takes a SortedDict rather than list
-    fields = SortedDict(fields)
+    fields = OrderedDict(fields)
     return fields

@@ -11,13 +11,12 @@ from elasticsearch.exceptions import ConnectionError
 from django.conf import settings
 from django.contrib import messages
 from django.core.cache import cache
-from django.core.context_processors import csrf
+from django.template.context_processors import csrf
 from django.core.files import File
 from django.core.paginator import Paginator
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import Http404, get_object_or_404, render_to_response
-from django.template import RequestContext
+from django.shortcuts import Http404, render
 
 from DDR import commands
 from DDR import converters
@@ -54,7 +53,7 @@ def vocab_terms( fieldname ):
     data = cache.get(key)
     if not data:
         if 'http://' in settings.VOCAB_TERMS_URL:
-            path_url = settings.VOCAB_TERMS_URL + '%s.json' % fieldname
+            path_url = '%s/%s.json' % (settings.VOCAB_TERMS_URL, fieldname)
         else:
             path_url = os.path.join(settings.VOCAB_TERMS_URL, '%s.json' % fieldname)
         data = vocab.get_vocab(path_url)
@@ -224,19 +223,15 @@ def detail( request, eid ):
     entity.model_def_commits()
     entity.model_def_fields()
     tasks = request.session.get('celery-tasks', [])
-    return render_to_response(
-        'webui/entities/detail.html',
-        {
-            'collection': collection,
-            'entity': entity,
-            'children_urls': entity.children_urls(),
-            'tasks': tasks,
-            'entity_unlock_url': entity.unlock_url(entity.locked()),
-            # cache this for later
-            'annex_info': annex_info(repository(collection.path_abs)),
-        },
-        context_instance=RequestContext(request, processors=[])
-    )
+    return render(request, 'webui/entities/detail.html', {
+        'collection': collection,
+        'entity': entity,
+        'children_urls': entity.children_urls(),
+        'tasks': tasks,
+        'entity_unlock_url': entity.unlock_url(entity.locked()),
+        # cache this for later
+        'annex_info': annex_info(repository(collection.path_abs)),
+    })
 
 @storage_required
 def children(request, eid):
@@ -268,19 +263,15 @@ def children(request, eid):
         settings.RESULTS_PER_PAGE
     )
     page = paginator.page(thispage)
-    return render_to_response(
-        'webui/entities/children.html',
-        {
-            'collection': collection,
-            'entity': entity,
-            'children_models': children_models,
-            'children_urls': entity.children_urls(active='children'),
-            'paginator': paginator,
-            'page': page,
-            'thispage': thispage,
-        },
-        context_instance=RequestContext(request, processors=[])
-    )
+    return render(request, 'webui/entities/children.html', {
+        'collection': collection,
+        'entity': entity,
+        'children_models': children_models,
+        'children_urls': entity.children_urls(active='children'),
+        'paginator': paginator,
+        'page': page,
+        'thispage': thispage,
+    })
 
 @storage_required
 def file_role( request, rid ):
@@ -298,42 +289,36 @@ def file_role( request, rid ):
     thispage = request.GET.get('page', 1)
     paginator = Paginator(files, settings.RESULTS_PER_PAGE)
     page = paginator.page(thispage)
-    return render_to_response(
-        'webui/entities/files.html',
-        {'collection': collection,
-         'entity': entity,
-         'children_urls': entity.children_urls(active=role),
-         'browse_url': entity.file_browse_url(role),
-         'batch_url': entity.file_browse_url(role),
-         'paginator': paginator,
-         'page': page,
-         'thispage': thispage,},
-        context_instance=RequestContext(request, processors=[])
-    )
+    return render(request, 'webui/entities/files.html', {
+        'collection': collection,
+        'entity': entity,
+        'children_urls': entity.children_urls(active=role),
+        'browse_url': entity.file_browse_url(role),
+        'batch_url': entity.file_browse_url(role),
+        'paginator': paginator,
+        'page': page,
+        'thispage': thispage,
+    })
 
 @storage_required
 def addfile_log( request, eid ):
     entity = Entity.from_identifier(Identifier(eid))
     check_object(entity, check_locks=False)
     collection = entity.collection()
-    return render_to_response(
-        'webui/entities/addfiles-log.html',
-        {'collection': collection,
-         'entity': entity,},
-        context_instance=RequestContext(request, processors=[])
-    )
+    return render(request, 'webui/entities/addfiles-log.html', {
+        'collection': collection,
+        'entity': entity,
+    })
 
 @storage_required
 def changelog( request, eid ):
     entity = Entity.from_identifier(Identifier(eid))
     check_object(entity, check_locks=False)
     collection = entity.collection()
-    return render_to_response(
-        'webui/entities/changelog.html',
-        {'collection': collection,
-         'entity': entity,},
-        context_instance=RequestContext(request, processors=[])
-    )
+    return render(request, 'webui/entities/changelog.html', {
+        'collection': collection,
+        'entity': entity,
+    })
 
 @ddrview
 @login_required
@@ -470,17 +455,13 @@ def new_manual( request, oid ):
         existing_ids = sorted([e['id'] for e in parent.children_meta])
     existing_ids.reverse()
     
-    return render_to_response(
-        'webui/entities/new-manual.html',
-        {
-            'collection': collection,
-            'parent': parent,
-            'model': model,
-            'form': form,
-            'existing_ids': existing_ids,
-        },
-        context_instance=RequestContext(request, processors=[])
-    )
+    return render(request, 'webui/entities/new-manual.html', {
+        'collection': collection,
+        'parent': parent,
+        'model': model,
+        'form': form,
+        'existing_ids': existing_ids,
+    })
     
 @ddrview
 @login_required
@@ -548,19 +529,16 @@ def edit( request, eid ):
     # selected terms that don't appear in field_terms
     topics_legacy = tagmanager_legacy_terms(entity_topics, topics_terms)
     facility_legacy = tagmanager_legacy_terms(entity_facility, facility_terms)
-    return render_to_response(
-        'webui/entities/edit-json.html',
-        {'collection': collection,
-         'entity': entity,
-         'form': form,
-         # data for TagManager
-         'topics_terms': topics_terms,
-         'facility_terms': facility_terms,
-         'topics_prefilled': topics_prefilled,
-         'facility_prefilled': facility_prefilled,
-         },
-        context_instance=RequestContext(request, processors=[])
-    )
+    return render(request, 'webui/entities/edit-json.html', {
+        'collection': collection,
+        'entity': entity,
+        'form': form,
+        # data for TagManager
+        'topics_terms': topics_terms,
+        'facility_terms': facility_terms,
+        'topics_prefilled': topics_prefilled,
+        'facility_prefilled': facility_prefilled,
+    })
 
 
 def edit_vocab_terms( request, field ):
@@ -571,11 +549,9 @@ def edit_vocab_terms( request, field ):
         else:
             t = '%s [%s]' % (term['title'], term['id'])
         terms.append(t)
-    return render_to_response(
-        'webui/entities/vocab.html',
-        {'terms': terms,},
-        context_instance=RequestContext(request, processors=[])
-    )
+    return render(request, 'webui/entities/vocab.html', {
+        'terms': terms,
+    })
 
 @ddrview
 @login_required
@@ -601,13 +577,10 @@ def delete( request, eid, confirm=False ):
             return HttpResponseRedirect(collection.absolute_url())
     else:
         form = DeleteEntityForm()
-    return render_to_response(
-        'webui/entities/delete.html',
-        {'entity': entity,
-         'form': form,
-         },
-        context_instance=RequestContext(request, processors=[])
-    )
+    return render(request, 'webui/entities/delete.html', {
+        'entity': entity,
+        'form': form,
+    })
 
 @login_required
 @storage_required
@@ -683,14 +656,12 @@ def files_dedupe( request, eid ):
     else:
         data = {}
         form = RmDuplicatesForm()
-    return render_to_response(
-        'webui/entities/files-dedupe.html',
-        {'collection': collection,
-         'entity': entity,
-         'duplicates': duplicates,
-         'form': form,},
-        context_instance=RequestContext(request, processors=[])
-    )
+    return render(request, 'webui/entities/files-dedupe.html', {
+        'collection': collection,
+        'entity': entity,
+        'duplicates': duplicates,
+        'form': form,
+    })
 
 @ddrview
 @login_required

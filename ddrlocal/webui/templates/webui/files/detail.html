@@ -135,6 +135,7 @@
 {% endif %}
 
 
+{% if annex_whereis %}
 {% if annex_whereis.whereis %}
 <p>
 <b>Trusted remotes</b><br/>
@@ -164,6 +165,12 @@
 </table>
 </p>
 {% endif %}
+
+{% else %}{# annex_whereis #}
+<p>
+<b>Remote file locations list disabled</b><br/>
+</p>
+{% endif %}{# annex_whereis #}
 
     </div><!-- .span12 -->
   </div><!-- .row-fluid -->

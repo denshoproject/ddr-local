@@ -25,6 +25,7 @@ PACKAGE_SERVER=ddr.densho.org/static/ddrlocal
 SRC_REPO_CMDLN=https://github.com/densho/ddr-cmdln.git
 SRC_REPO_LOCAL=https://github.com/densho/ddr-local.git
 SRC_REPO_DEFS=https://github.com/densho/ddr-defs.git
+SRC_REPO_VOCAB=https://github.com/densho/ddr-vocab.git
 SRC_REPO_MANUAL=https://github.com/densho/ddr-manual.git
 
 INSTALL_BASE=/opt
@@ -32,6 +33,7 @@ INSTALL_LOCAL=$(INSTALL_BASE)/ddr-local
 INSTALL_STATIC=$(INSTALL_LOCAL)/static
 INSTALL_CMDLN=$(INSTALL_LOCAL)/ddr-cmdln
 INSTALL_DEFS=$(INSTALL_LOCAL)/ddr-defs
+INSTALL_VOCAB=$(INSTALL_LOCAL)/ddr-vocab
 INSTALL_MANUAL=$(INSTALL_LOCAL)/ddr-manual
 
 VIRTUALENV=$(INSTALL_LOCAL)/venv/ddrlocal
@@ -112,9 +114,10 @@ help:
 	@echo "vbox-guest     - Installs VirtualBox Guest Additions"
 	@echo "network-config - Installs standard network conf (CHANGES IP TO 192.168.56.101!)"
 	@echo "get-ddr-defs   - Downloads ddr-defs to $(INSTALL_DEFS)."
+	@echo "get-ddr-vocab  - Downloads ddr-vocab to $(INSTALL_VOCAB)."
 	@echo "enable-bkgnd   - Enable background processes. (Run make reload on completion)"
 	@echo "disable-bkgnd  - Disablebackground processes. (Run make reload on completion)"
-	@echo "syncdb         - Init/update Django app's database tables."
+	@echo "migrate        - Init/update Django app's database tables."
 	@echo "branch BRANCH=[branch] - Switches ddr-local and ddr-cmdln repos to [branch]."
 	@echo ""
 	@echo "deb       - Makes a DEB package install file."
@@ -143,12 +146,13 @@ howto-install:
 	@echo "#make install"
 	@echo "# Place copy of 'ddr' repo in $(DDR_REPO_BASE)/ddr."
 	@echo "#make install-defs"
+	@echo "#make install-vocab"
 	@echo "#make enable-bkgnd"
-	@echo "#make syncdb"
+	@echo "#make migrate"
 	@echo "make restart"
 
 
-get: get-app get-ddr-defs get-elasticsearch get-static
+get: get-app get-ddr-defs get-ddr-vocab get-elasticsearch get-static
 
 install: install-prep install-daemons install-app install-static install-configs
 
@@ -321,7 +325,7 @@ install-ddr-cmdln: install-virtualenv mkdir-ddr-cmdln
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_CMDLN)/ddr && python setup.py install
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_CMDLN)/ddr && pip install -U -r $(INSTALL_CMDLN)/ddr/requirements/production.txt
+	cd $(INSTALL_CMDLN)/ddr && pip install -U -r $(INSTALL_CMDLN)/requirements.txt
 
 mkdir-ddr-cmdln:
 	@echo ""
@@ -337,7 +341,7 @@ uninstall-ddr-cmdln: install-virtualenv
 	@echo ""
 	@echo "uninstall-ddr-cmdln ----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_CMDLN)/ddr && pip uninstall -y -r $(INSTALL_CMDLN)/ddr/requirements/production.txt
+	cd $(INSTALL_CMDLN)/ddr && pip uninstall -y -r $(INSTALL_CMDLN)/requirements.txt
 
 clean-ddr-cmdln:
 	-rm -Rf $(INSTALL_CMDLN)/ddr/build
@@ -357,7 +361,7 @@ install-ddr-local: install-virtualenv mkdir-ddr-local
 	git status | grep "On branch"
 	apt-get --assume-yes install imagemagick libexempi3 libssl-dev python-dev libxml2 libxml2-dev libxslt1-dev supervisor
 	source $(VIRTUALENV)/bin/activate; \
-	pip install -U -r $(INSTALL_LOCAL)/ddrlocal/requirements/production.txt
+	pip install -U -r $(INSTALL_LOCAL)/requirements.txt
 
 mkdir-ddr-local:
 	@echo ""
@@ -383,7 +387,7 @@ uninstall-ddr-local: install-virtualenv
 	@echo ""
 	@echo "uninstall-ddr-local ----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_LOCAL)/ddrlocal && pip uninstall -y -r $(INSTALL_LOCAL)/ddrlocal/requirements/production.txt
+	cd $(INSTALL_LOCAL)/ddrlocal && pip uninstall -y -r $(INSTALL_LOCAL)/requirements.txt
 
 clean-ddr-local:
 	-rm -Rf $(VIRTUALENV)
@@ -400,9 +404,19 @@ get-ddr-defs:
 	fi
 
 
-syncdb:
+get-ddr-vocab:
+	@echo ""
+	@echo "get-ddr-vocab ----------------------------------------------------------"
+	git status | grep "On branch"
+	if test -d $(INSTALL_VOCAB); \
+	then cd $(INSTALL_VOCAB) && git pull; \
+	else cd $(INSTALL_LOCAL) && git clone $(SRC_REPO_VOCAB) $(INSTALL_VOCAB); \
+	fi
+
+
+migrate:
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_LOCAL)/ddrlocal && ./manage.py syncdb --noinput
+	cd $(INSTALL_LOCAL)/ddrlocal && ./manage.py migrate --noinput
 	chown -R ddr.root $(SQLITE_BASE)
 	chmod -R 750 $(SQLITE_BASE)
 	chown -R ddr.root $(LOG_BASE)
@@ -696,6 +710,7 @@ deb-jessie:
 	COPYRIGHT=$(DEB_BASE)   \
 	ddr-cmdln=$(DEB_BASE)   \
 	ddr-defs=$(DEB_BASE)   \
+	ddr-vocab=$(DEB_BASE)   \
 	ddrlocal=$(DEB_BASE)   \
 	.git=$(DEB_BASE)   \
 	.gitignore=$(DEB_BASE)   \
@@ -703,6 +718,8 @@ deb-jessie:
 	LICENSE=$(DEB_BASE)   \
 	Makefile=$(DEB_BASE)   \
 	README.rst=$(DEB_BASE)   \
+	requirements.txt=$(DEB_BASE)   \
+	setup-workstation.sh=$(DEB_BASE)   \
 	static=$(DEB_BASE)   \
 	venv=$(DEB_BASE)   \
 	VERSION=$(DEB_BASE)
@@ -768,6 +785,7 @@ deb-stretch:
 	COPYRIGHT=$(DEB_BASE)   \
 	ddr-cmdln=$(DEB_BASE)   \
 	ddr-defs=$(DEB_BASE)   \
+	ddr-vocab=$(DEB_BASE)   \
 	ddrlocal=$(DEB_BASE)   \
 	.git=$(DEB_BASE)   \
 	.gitignore=$(DEB_BASE)   \
@@ -775,6 +793,8 @@ deb-stretch:
 	LICENSE=$(DEB_BASE)   \
 	Makefile=$(DEB_BASE)   \
 	README.rst=$(DEB_BASE)   \
+	requirements.txt=$(DEB_BASE)   \
+	setup-workstation.sh=$(DEB_BASE)   \
 	static=$(DEB_BASE)   \
 	venv=$(DEB_BASE)   \
 	VERSION=$(DEB_BASE)

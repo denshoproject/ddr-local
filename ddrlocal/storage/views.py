@@ -5,8 +5,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import Http404, get_object_or_404, render_to_response, redirect
-from django.template import RequestContext
+from django.shortcuts import Http404, render, redirect
 
 import storage
 from storage.forms import StorageForm
@@ -36,13 +35,9 @@ def index( request ):
                 'action': action,
             }
             device['action_forms'].append(form)
-    return render_to_response(
-        'storage/index.html',
-        {
-            'devices': devices,
-        },
-        context_instance=RequestContext(request, processors=[])
-    )
+    return render(request, 'storage/index.html', {
+        'devices': devices,
+    })
 
 def operation( request, opcode, devicetype ):
     """Mount/unmount or link/unlink a device.
@@ -76,8 +71,5 @@ def operation( request, opcode, devicetype ):
 def storage_required( request ):
     """@storage_required redirects to this page if no storage available.
     """
-    return render_to_response(
-        'storage/required.html',
-        {},
-        context_instance=RequestContext(request, processors=[])
-    )
+    return render(request, 'storage/required.html', {
+    })

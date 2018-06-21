@@ -12,13 +12,12 @@ from elasticsearch.exceptions import ConnectionError
 from django.conf import settings
 from django.contrib import messages
 from django.core.cache import cache
-from django.core.context_processors import csrf
+from django.template.context_processors import csrf
 from django.core.files import File
 from django.core.paginator import Paginator
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import Http404, get_object_or_404, render_to_response
-from django.template import RequestContext
+from django.shortcuts import Http404, render
 from django.template.loader import get_template
 
 from DDR import commands
@@ -82,12 +81,10 @@ def collections( request ):
         collections.append( (object_id,colls) )
     # load statuses in random order
     random.shuffle(collection_status_urls)
-    return render_to_response(
-        'webui/collections/index.html',
-        {'collections': collections,
-         'collection_status_urls': ', '.join(collection_status_urls),},
-        context_instance=RequestContext(request, processors=[])
-    )
+    return render(request, 'webui/collections/index.html', {
+        'collections': collections,
+        'collection_status_urls': ', '.join(collection_status_urls),
+    })
 
 @storage_required
 def detail( request, cid ):
@@ -95,16 +92,12 @@ def detail( request, cid ):
     collection.model_def_commits()
     collection.model_def_fields()
     alert_if_conflicted(request, collection)
-    return render_to_response(
-        'webui/collections/detail.html',
-        {
-            'collection': collection,
-            'collection_unlock_url': collection.unlock_url(collection.locked()),
-            # cache this for later
-            'annex_info': annex_info(repository(collection.path_abs)),
-        },
-        context_instance=RequestContext(request, processors=[])
-    )
+    return render(request, 'webui/collections/detail.html', {
+        'collection': collection,
+        'collection_unlock_url': collection.unlock_url(collection.locked()),
+        # cache this for later
+        'annex_info': annex_info(repository(collection.path_abs)),
+    })
 
 @storage_required
 def children( request, cid ):
@@ -115,24 +108,20 @@ def children( request, cid ):
     thispage = request.GET.get('page', 1)
     paginator = Paginator(objects, settings.RESULTS_PER_PAGE)
     page = paginator.page(thispage)
-    return render_to_response(
-        'webui/collections/entities.html',
-        {'collection': collection,
-         'paginator': paginator,
-         'page': page,
-         'thispage': thispage,},
-        context_instance=RequestContext(request, processors=[])
-    )
+    return render(request, 'webui/collections/entities.html', {
+        'collection': collection,
+        'paginator': paginator,
+        'page': page,
+        'thispage': thispage,
+    })
 
 @storage_required
 def changelog( request, cid ):
     collection = Collection.from_identifier(Identifier(cid))
     alert_if_conflicted(request, collection)
-    return render_to_response(
-        'webui/collections/changelog.html',
-        {'collection': collection,},
-        context_instance=RequestContext(request, processors=[])
-    )
+    return render(request, 'webui/collections/changelog.html', {
+        'collection': collection,
+    })
 
 @ddrview
 @storage_required
@@ -153,16 +142,13 @@ def git_status( request, cid ):
     alert_if_conflicted(request, collection)
     gitstatus = collection.gitstatus()
     remotes = dvcs.remotes(dvcs.repository(collection.path))
-    return render_to_response(
-        'webui/collections/git-status.html',
-        {'collection': collection,
-         'status': gitstatus.get('status', 'git-status unavailable'),
-         'astatus': gitstatus.get('annex_status', 'annex-status unavailable'),
-         'timestamp': gitstatus.get('timestamp'),
-         'remotes': remotes,
-         },
-        context_instance=RequestContext(request, processors=[])
-    )
+    return render(request, 'webui/collections/git-status.html', {
+        'collection': collection,
+        'status': gitstatus.get('status', 'git-status unavailable'),
+        'astatus': gitstatus.get('annex_status', 'annex-status unavailable'),
+        'timestamp': gitstatus.get('timestamp'),
+        'remotes': remotes,
+    })
 
 @ddrview
 @login_required
@@ -204,12 +190,10 @@ def sync( request, cid ):
         #    assert False
     else:
         form = SyncConfirmForm()
-    return render_to_response(
-        'webui/collections/sync-confirm.html',
-        {'collection': collection,
-         'form': form,},
-        context_instance=RequestContext(request, processors=[])
-    )
+    return render(request, 'webui/collections/sync-confirm.html', {
+        'collection': collection,
+        'form': form,
+    })
 
 @ddrview
 @login_required
@@ -344,14 +328,10 @@ def new_manual( request, oid ):
             'org': idparts['org'],
         }
         form = NewCollectionForm(data)
-    return render_to_response(
-        'webui/collections/new-manual.html',
-        {
-            'form': form,
-            'collection_ids': collection_ids,
-        },
-        context_instance=RequestContext(request, processors=[])
-    )
+    return render(request, 'webui/collections/new-manual.html', {
+        'form': form,
+        'collection_ids': collection_ids,
+    })
 
 @ddrview
 @login_required
@@ -392,13 +372,10 @@ def edit( request, cid ):
         
     else:
         form = DDRForm(collection.form_prep(), fields=module.FIELDS)
-    return render_to_response(
-        'webui/collections/edit-json.html',
-        {'collection': collection,
-         'form': form,
-         },
-        context_instance=RequestContext(request, processors=[])
-    )
+    return render(request, 'webui/collections/edit-json.html', {
+        'collection': collection,
+        'form': form,
+    })
 
 @ddrview
 @login_required
@@ -442,14 +419,10 @@ def signatures( request, cid ):
         
     else:
         form = SignaturesConfirmForm()
-    return render_to_response(
-        'webui/collections/signatures-confirm.html',
-        {
-            'collection': collection,
-            'form': form,
-        },
-        context_instance=RequestContext(request, processors=[])
-    )
+    return render(request, 'webui/collections/signatures-confirm.html', {
+        'collection': collection,
+        'form': form,
+    })
  
 @login_required
 @storage_required

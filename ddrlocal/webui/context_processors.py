@@ -28,7 +28,7 @@ def sitewide(request):
         'time': datetime.now(settings.TZ).isoformat(),
         'pid': os.getpid(),
         'host': os.uname()[1],
-        'commits': settings.COMMITS_TEXT,
+        'commits': settings.APP_COMMITS_HTML,
         'models_valid': repo_models_valid(request),
         # user info
         'username': request.session.get('idservice_username', None),
@@ -37,6 +37,7 @@ def sitewide(request):
         'celery_tasks': tasks.session_tasks_list(request),
         'celery_status_url': reverse("webui-task-status"),
         'celery_status_update': request.session.get('celery_status_update', False),
+        'STATIC_URL': settings.STATIC_URL,
         'supervisord_url': settings.SUPERVISORD_URL,
         'docstore_enabled': settings.DOCSTORE_ENABLED,
         'elasticsearch_url': elasticsearch_url,

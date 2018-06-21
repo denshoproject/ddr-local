@@ -4,7 +4,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from django.http import HttpResponse
-from django.template import Context, Template
+from django.template import Template
 
 from webui import supervisord
 
@@ -43,8 +43,7 @@ def procinfo_html( request ):
         data[name]['alert_class'] = STATE_BOOTSTRAP_ALERTS[data[name]['statename']]
         data[name]['timestamp'] = datetime.fromtimestamp(data[name]['now'])
     t = Template(PROCINFO_TEMPLATE)
-    c = Context(data)
-    html = t.render(c)
+    html = t.render(data)
     return HttpResponse(html)
 
 def procinfo_json( request ):

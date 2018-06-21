@@ -6,27 +6,25 @@ def collection( obj ):
     """list-view collection template
     """
     t = template.loader.get_template('webui/collections/list-object.html')
-    return t.render(template.Context({'object':obj}))
+    return t.render({'object':obj})
 
 def entity( obj ):
     """list-view entity template
     """
     t = template.loader.get_template('webui/entities/list-object.html')
-    return t.render(template.Context({'object':obj}))
+    return t.render({'object':obj})
 
 def file( obj ):
     """list-view file template
     """
     t = template.loader.get_template('webui/files/list-object.html')
-    return t.render(template.Context({'object':obj}))
+    return t.render({'object':obj})
 
 def breadcrumbs(obj, endpoint=''):
     identifier = obj.identifier
     breadcrumbs = identifier.breadcrumbs(endpoint)
     t = template.loader.get_template('webui/breadcrumbs.html')
-    return t.render(template.Context({
-        'breadcrumbs': breadcrumbs,
-    }))
+    return t.render({'breadcrumbs': breadcrumbs})
 
 register.simple_tag(collection)
 register.simple_tag(entity)

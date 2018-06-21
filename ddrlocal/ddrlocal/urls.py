@@ -1,4 +1,4 @@
-from django.conf.urls import patterns, include, url
+from django.conf.urls import include, url
 from django.views.debug import technical_500_response
 from django.views.generic import TemplateView
 
@@ -20,8 +20,7 @@ def debug(request):
     return technical_500_response(request, Debug, Debug(DEBUG_TEXT), None)
 
 
-urlpatterns = patterns(
-    '',
+urlpatterns = [
     #url(r'^admin/', include(admin.site.urls)),
     url(r'^404/', TemplateView.as_view(template_name="ddrlocal/404.html")),
     url(r'^500/', TemplateView.as_view(template_name="ddrlocal/500.html")),
@@ -30,4 +29,4 @@ urlpatterns = patterns(
     url(r'^storage/', include(storage_urls)),
     url(r'^ui/', include(webui_urls)),
     url(r'^$', TemplateView.as_view(template_name="webui/index.html"), name='index'),
-)
+]
