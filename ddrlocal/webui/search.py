@@ -123,9 +123,7 @@ SEARCH_FORM_LABELS = {
 def _vocab_choice_labels(field):
     return {
         str(term['id']): term['title']
-        for term in vocab.get_vocab(
-            os.path.join(settings.VOCABS_URL, '%s.json' % field)
-        )['terms']
+        for term in vocab.get_vocabs_all(settings.VOCABS_URL)[field]['terms']
     }
 VOCAB_TOPICS_IDS_TITLES = {
     'facility': _vocab_choice_labels('facility'),
