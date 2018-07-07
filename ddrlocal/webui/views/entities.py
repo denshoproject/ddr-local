@@ -52,10 +52,10 @@ def vocab_terms( fieldname ):
     timeout = 60*60*1  # 1 hour
     data = cache.get(key)
     if not data:
-        if 'http://' in settings.VOCAB_TERMS_URL:
-            path_url = '%s/%s.json' % (settings.VOCAB_TERMS_URL, fieldname)
+        if 'http://' in settings.VOCABS_URL:
+            path_url = os.path.join(settings.VOCABS_URL, fieldname)
         else:
-            path_url = os.path.join(settings.VOCAB_TERMS_URL, '%s.json' % fieldname)
+            path_url = os.path.join(settings.VOCABS_URL, '%s.json' % fieldname)
         data = vocab.get_vocab(path_url)
         cache.set(key, data, timeout)
     return data

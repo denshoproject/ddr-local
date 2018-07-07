@@ -124,7 +124,7 @@ def _vocab_choice_labels(field):
     return {
         str(term['id']): term['title']
         for term in vocab.get_vocab(
-            '%s/%s.json' % (settings.VOCAB_TERMS_URL, field)
+            os.path.join(settings.VOCABS_URL, '%s.json' % field)
         )['terms']
     }
 VOCAB_TOPICS_IDS_TITLES = {
