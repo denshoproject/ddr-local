@@ -16,11 +16,11 @@ from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import ConnectionError, ConnectionTimeout
 
 from DDR import converters
-from DDR import models
 from webui import api
 from webui import docstore
 from webui import forms
 from webui import identifier
+from webui import models
 from webui import search
 from webui import tasks
 from webui.decorators import search_index
@@ -115,7 +115,7 @@ def search_ui(request):
         if results.objects:
             paginator = Paginator(
                 results.ordered_dict(
-                    request=request, list_function=format_object, pad=True
+                    request=request, list_function=models.format_object, pad=True
                 )['objects'],
                 results.page_size,
             )
