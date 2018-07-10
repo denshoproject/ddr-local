@@ -10,8 +10,10 @@ from elasticsearch.exceptions import ConnectionError
 from django.conf import settings
 from django.contrib import messages
 from django.core.cache import cache
-from django.core.urlresolvers import reverse
+from django.core.urlresolvers import reverse, NoReverseMatch
 from django.db import models
+
+from rest_framework.reverse import reverse
 
 from DDR import commands
 from DDR import dvcs
@@ -136,6 +138,7 @@ def format_object(oi, d, request, is_detail=False):
     data['model'] = oi.model
     data['collection_id'] = collection_id
     data['links'] = make_links(oi, d, request, source='es', is_detail=is_detail)
+    DETAIL_EXCLUDE = []
     for key,val in d.items():
         if key not in DETAIL_EXCLUDE:
             data[key] = val
@@ -161,7 +164,7 @@ def make_links(oi, d, request, source='fs', is_detail=False):
     
     img_url = ''
     if d.get('signature_id'):
-        img_url = _access_url(identifier.Identifier(d['signature_id']))
+        img_url = _access_url(Identifier(d['signature_id']))
     elif d.get('access_rel'):
         img_url = _access_url(oi)
     elif oi.model in ['repository','organization']:
