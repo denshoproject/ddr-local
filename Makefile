@@ -168,6 +168,8 @@ get: get-app get-ddr-defs get-ddr-vocab get-elasticsearch get-static
 
 install: install-prep install-daemons install-app install-static install-configs
 
+test: test-app
+
 uninstall: uninstall-app uninstall-configs
 
 clean: clean-app
@@ -307,6 +309,8 @@ get-app: get-ddr-cmdln get-ddr-local get-ddr-manual
 
 install-app: install-git-annex install-virtualenv install-ddr-cmdln install-ddr-local install-configs install-daemon-configs
 
+test-app: test-ddr-cmdln
+
 uninstall-app: uninstall-ddr-cmdln uninstall-ddr-local uninstall-ddr-manual uninstall-configs uninstall-daemon-configs
 
 clean-app: clean-ddr-cmdln clean-ddr-local clean-ddr-manual
@@ -348,6 +352,12 @@ mkdir-ddr-cmdln:
 	-mkdir -p $(MEDIA_ROOT)
 	chown -R ddr.root $(MEDIA_ROOT)
 	chmod -R 755 $(MEDIA_ROOT)
+
+test-ddr-cmdln:
+	@echo ""
+	@echo "test-ddr-cmdln ---------------------------------------------------------"
+	source $(VIRTUALENV)/bin/activate; \
+	cd $(INSTALL_CMDLN)/ddr/DDR && bash test.sh
 
 uninstall-ddr-cmdln: install-virtualenv
 	@echo ""
