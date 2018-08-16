@@ -316,10 +316,16 @@ def changelog( request, eid ):
 def new( request, oid ):
     """Redirect to new_idservice or new_manual.
     """
+    model = request.GET.get('model', 'entity')
     if settings.IDSERVICE_API_BASE:
-        return HttpResponseRedirect(reverse('webui-entity-newidservice', args=[oid]))
+        # include model in URL
+        url = '%s?model=%s' % (
+            reverse('webui-entity-newidservice', args=[oid]),
+            model
+        )
+        return HttpResponseRedirect(url)
     # pass ID template in request.GET
-    url = reverse('webui-entity-newmanual', args=[oid]) + '?model=%s' % request.GET.get('model', 'entity')
+    url = reverse('webui-entity-newmanual', args=[oid]) + '?model=%s' % model
     return HttpResponseRedirect(url)
 
 def _create_entity(request, eidentifier, collection, git_name, git_mail):
@@ -374,12 +380,20 @@ def new_idservice( request, oid ):
             )
         )
         return HttpResponseRedirect(collection.absolute_url())
+    
     # get new entity ID
+    new_object_parent = Identifier(oid)
+    model = request.GET.get('model', 'entity')
+    ENTITY_MODELS = ['entity', 'segment']
+    if model not in ENTITY_MODELS:
+        raise Exception('Model "%s% not an entity model.' % model)
     http_status,http_reason,new_entity_id = ic.next_object_id(
-        collection.identifier,
-        'entity',
+        new_object_parent,
+        model,
         register=True,
     )
+    
+    # abort!
     if http_status not in [200,201]:
         err = '%s %s' % (http_status, http_reason)
         msg = WEBUI_MESSAGES['VIEWS_ENT_ERR_NO_IDS'] % (settings.IDSERVICE_API_BASE, err)
@@ -387,8 +401,8 @@ def new_idservice( request, oid ):
         messages.error(request, msg)
         return HttpResponseRedirect(collection.absolute_url())
     
-    eidentifier = Identifier(id=new_entity_id)
     # Create entity and redirect to edit page
+    eidentifier = Identifier(id=new_entity_id)
     entity = _create_entity(request, eidentifier, collection, git_name, git_mail)
     if entity:
         return HttpResponseRedirect(reverse('webui-entity-edit', args=[entity.id]))
