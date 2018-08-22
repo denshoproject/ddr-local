@@ -52,7 +52,7 @@ GITOLITE             = CONFIG.get('workbench','gitolite')
 GITOLITE_TIMEOUT     = CONFIG.get('workbench','gitolite_timeout')
 CGIT_URL             = CONFIG.get('workbench','cgit_url')
 GIT_REMOTE_NAME      = CONFIG.get('workbench','remote')
-IDSERVICE_API_BASE   = CONFIG.get('idservice','api_base')
+IDSERVICE_API_BASE   = CONFIG.get('cmdln', 'idservice_api_base')
 
 GITWEB_URL           = CONFIG.get('local','gitweb_url')
 SUPERVISORD_URL      = CONFIG.get('local','supervisord_url')
