@@ -119,6 +119,7 @@ help:
 	@echo ""
 	@echo "get     - Clones ddr-local, ddr-cmdln, ddr-defs, wgets static files & ES pkg."
 	@echo "install - Performs complete install. See also: make howto-install"
+	@echo "test    - Run unit tests"
 	@echo "reload  - Reloads supervisord and nginx configs"
 	@echo "restart - Restarts all daemons"
 	@echo "status  - Server status"
@@ -357,7 +358,7 @@ test-ddr-cmdln:
 	@echo ""
 	@echo "test-ddr-cmdln ---------------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_CMDLN)/ddr/DDR && bash test.sh
+	cd $(INSTALL_CMDLN)/ddr && tox
 
 uninstall-ddr-cmdln: install-virtualenv
 	@echo ""
