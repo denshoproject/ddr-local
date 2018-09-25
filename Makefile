@@ -657,6 +657,11 @@ clean-ddr-manual:
 
 
 # http://fpm.readthedocs.io/en/latest/
+install-fpm:
+	@echo "install-fpm ------------------------------------------------------------"
+	apt-get install ruby ruby-dev rubygems build-essential
+	gem install --no-ri --no-rdoc fpm
+
 # https://stackoverflow.com/questions/32094205/set-a-custom-install-directory-when-making-a-deb-package-with-fpm
 # https://brejoc.com/tag/fpm/
 deb: deb-jessie deb-stretch
