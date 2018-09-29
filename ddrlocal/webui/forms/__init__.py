@@ -10,7 +10,7 @@ from django.conf import settings
 from django.utils.encoding import force_text
 
 from DDR import modules
-from webui.identifier import Identifier
+from webui.identifier import Identifier, INHERITABLE_FIELDS
 from ..util import OrderedDict
 
 INTERVIEW_SIG_PATTERN = r'^denshovh-[a-z_0-9]{1,}-[0-9]{2,2}$'
@@ -236,8 +236,9 @@ def construct_form(model_fields):
                 form_field_object = getattr(forms, field_name)
                 fobject = form_field_object(*[], **fkwargs['form'])
                 fields.append((fkwargs['name'], fobject))
-        # if field is inheritable, add inherit-this checkbox
-        if fkwargs.get('inheritable', None):
+        # if field has children that inherit from it, add inherit-this checkbox
+        model_field = '.'.join([fkwargs['model'], fkwargs['name']])
+        if model_field in INHERITABLE_FIELDS:
             helptext = "Apply value of %s to this object's children" % fkwargs['form']['label']
             #CHOICES = ((1, helptext),)
             #fobject = forms.ChoiceField(label='', choices=CHOICES,
