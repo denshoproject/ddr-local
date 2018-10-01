@@ -11,6 +11,7 @@ from DDR.identifier import IdentifierFormatException
 from DDR.identifier import ELASTICSEARCH_CLASSES
 from DDR.identifier import ELASTICSEARCH_CLASSES_BY_MODEL
 from DDR.identifier import ELASTICSEARCH_LIST_FIELDS
+from DDR.identifier import INHERITABLE_FIELDS
 
 # TODO this isn't too far removed from hard-coding...
 MODEL_CLASSES = {}

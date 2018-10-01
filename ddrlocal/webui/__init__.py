@@ -64,6 +64,7 @@ WEBUI_MESSAGES = {
     'MODEL_DEF_COMMITS_STATUS_lt': ('info', "Document model definitions OLDER than module's."),
     'MODEL_DEF_COMMITS_STATUS_eq': ('info', "Document model definitions SAME as module's."),
     'MODEL_DEF_COMMITS_STATUS_gt': ('info', "Document model definitions NEWER than module's."),
+    'MODEL_DEF_COMMITS_STATUS_--': ('warning', "Cannot compare document model definitions: module repository is invalid or is a git worktree (git.InvalidGitRepositoryError)."),
     
     # webui.models.model_def_fields
     'MODEL_DEF_FIELDS_ADDED': "The following fields will be added to this docment the next time you edit. {}",
