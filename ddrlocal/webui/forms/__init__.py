@@ -237,14 +237,15 @@ def construct_form(model_fields):
                 fobject = form_field_object(*[], **fkwargs['form'])
                 fields.append((fkwargs['name'], fobject))
         # if field has children that inherit from it, add inherit-this checkbox
-        model_field = '.'.join([fkwargs['model'], fkwargs['name']])
-        if model_field in INHERITABLE_FIELDS:
-            helptext = "Apply value of %s to this object's children" % fkwargs['form']['label']
-            #CHOICES = ((1, helptext),)
-            #fobject = forms.ChoiceField(label='', choices=CHOICES,
-            #                            widget=forms.CheckboxSelectMultiple,
-            #                            required=False, initial=False)
-            fobject = forms.BooleanField(label='', required=False, help_text=helptext)
-            fields.append(('%s_inherit' % fkwargs['name'], fobject))
+        if fkwargs.get('model') and fkwargs.get('name'):
+            model_field = '.'.join([fkwargs['model'], fkwargs['name']])
+            if model_field in INHERITABLE_FIELDS:
+                helptext = "Apply value of %s to this object's children" % fkwargs['form']['label']
+                #CHOICES = ((1, helptext),)
+                #fobject = forms.ChoiceField(label='', choices=CHOICES,
+                #                            widget=forms.CheckboxSelectMultiple,
+                #                            required=False, initial=False)
+                fobject = forms.BooleanField(label='', required=False, help_text=helptext)
+                fields.append(('%s_inherit' % fkwargs['name'], fobject))
     fields = OrderedDict(fields)
     return fields
