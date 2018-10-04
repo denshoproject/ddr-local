@@ -28,16 +28,16 @@ SRC_REPO_DEFS=https://github.com/densho/ddr-defs.git
 SRC_REPO_VOCAB=https://github.com/densho/ddr-vocab.git
 SRC_REPO_MANUAL=https://github.com/densho/ddr-manual.git
 
-INSTALL_BASE=/opt
-INSTALL_LOCAL=$(INSTALL_BASE)/ddr-local
-INSTALL_STATIC=./static
-INSTALL_CMDLN=./ddr-cmdln
-INSTALL_DEFS=./ddr-defs
-INSTALL_VOCAB=./ddr-vocab
-INSTALL_MANUAL=./ddr-manual
+CWD := $(shell pwd)
+INSTALL_LOCAL=$(CWD)
+INSTALL_STATIC=$(INSTALL_LOCAL)/static
+INSTALL_CMDLN=$(INSTALL_LOCAL)/ddr-cmdln
+INSTALL_DEFS=$(INSTALL_LOCAL)/ddr-defs
+INSTALL_VOCAB=$(INSTALL_LOCAL)/ddr-vocab
+INSTALL_MANUAL=$(INSTALL_LOCAL)/ddr-manual
 
-VIRTUALENV=./venv/ddrlocal
-SETTINGS=./ddrlocal/ddrlocal/settings.py
+VIRTUALENV=$(INSTALL_LOCAL)/venv/ddrlocal
+SETTINGS=$(INSTALL_LOCAL)/ddrlocal/ddrlocal/settings.py
 
 CONF_BASE=/etc/ddr
 CONF_PRODUCTION=$(CONF_BASE)/ddrlocal.cfg
@@ -193,7 +193,7 @@ install-misc-tools:
 network-config:
 	@echo ""
 	@echo "Configuring network ---------------------------------------------"
-	-cp ./conf/network-interfaces.$(DEBIAN_CODENAME) /etc/network/interfaces
+	-cp $(INSTALL_LOCAL)/conf/network-interfaces.$(DEBIAN_CODENAME) /etc/network/interfaces
 	@echo "/etc/network/interfaces updated."
 	@echo "New config will take effect on next reboot."
 
@@ -256,7 +256,7 @@ install-elasticsearch: install-core
 # Elasticsearch is configured/restarted here so it's online by the time script is done.
 	apt-get --assume-yes install $(OPENJDK_PKG)
 	-gdebi --non-interactive /tmp/downloads/$(ELASTICSEARCH)
-#cp $(INSTALL_BASE)/ddr-public/conf/elasticsearch.yml /etc/elasticsearch/
+#cp $(INSTALL_LOCAL)/conf/elasticsearch.yml /etc/elasticsearch/
 #chown root.root /etc/elasticsearch/elasticsearch.yml
 #chmod 644 /etc/elasticsearch/elasticsearch.yml
 # 	@echo "${bldgrn}search engine (re)start${txtrst}"
@@ -372,7 +372,7 @@ install-ddr-local: install-virtualenv mkdir-ddr-local
 	git status | grep "On branch"
 	apt-get --assume-yes install imagemagick libexempi3 libssl-dev python-dev libxml2 libxml2-dev libxslt1-dev supervisor
 	source $(VIRTUALENV)/bin/activate; \
-	pip install -U -r ./requirements.txt
+	pip install -U -r $(INSTALL_LOCAL)/requirements.txt
 
 mkdir-ddr-local:
 	@echo ""
@@ -427,14 +427,14 @@ get-ddr-vocab:
 
 migrate:
 	source $(VIRTUALENV)/bin/activate; \
-	cd ./ddrlocal && ./manage.py migrate --noinput
+	cd $(INSTALL_LOCAL)/ddrlocal && $(INSTALL_LOCAL)/ddrlocal/manage.py migrate --noinput
 	chown -R ddr.root $(SQLITE_BASE)
 	chmod -R 750 $(SQLITE_BASE)
 	chown -R ddr.root $(LOG_BASE)
 	chmod -R 755 $(LOG_BASE)
 
 branch:
-	cd ./ddrlocal; python ./bin/git-checkout-branch.py $(BRANCH)
+	cd $(INSTALL_LOCAL)/ddrlocal; python $(INSTALL_LOCAL)/bin/git-checkout-branch.py $(BRANCH)
 
 
 get-static: get-modernizr get-bootstrap get-jquery get-tagmanager get-typeahead
@@ -497,14 +497,14 @@ install-configs:
 	@echo "configuring ddr-local --------------------------------------------------"
 # base settings file
 	-mkdir /etc/ddr
-	cp ./conf/ddrlocal.cfg $(CONF_PRODUCTION)
+	cp $(INSTALL_LOCAL)/conf/ddrlocal.cfg $(CONF_PRODUCTION)
 	chown root.root $(CONF_PRODUCTION)
 	chmod 644 $(CONF_PRODUCTION)
 	touch $(CONF_LOCAL)
 	chown ddr.root $(CONF_LOCAL)
 	chmod 640 $(CONF_LOCAL)
 # web app settings
-	cp ./conf/settings.py $(SETTINGS)
+	cp $(INSTALL_LOCAL)/conf/settings.py $(SETTINGS)
 	chown root.root $(SETTINGS)
 	chmod 644 $(SETTINGS)
 
@@ -517,15 +517,15 @@ install-daemon-configs:
 	@echo ""
 	@echo "install-daemon-configs -------------------------------------------------"
 # nginx settings
-	cp ./conf/nginx.conf $(NGINX_CONF)
+	cp $(INSTALL_LOCAL)/conf/nginx.conf $(NGINX_CONF)
 	chown root.root $(NGINX_CONF)
 	chmod 644 $(NGINX_CONF)
 	-ln -s $(NGINX_CONF) $(NGINX_CONF_LINK)
 	-rm /etc/nginx/sites-enabled/default
 # supervisord
-	cp ./conf/celeryd.conf $(SUPERVISOR_CELERY_CONF)
-	cp ./conf/supervisor.conf $(SUPERVISOR_GUNICORN_CONF)
-	cp ./conf/supervisord.conf $(SUPERVISOR_CONF)
+	cp $(INSTALL_LOCAL)/conf/celeryd.conf $(SUPERVISOR_CELERY_CONF)
+	cp $(INSTALL_LOCAL)/conf/supervisor.conf $(SUPERVISOR_GUNICORN_CONF)
+	cp $(INSTALL_LOCAL)/conf/supervisord.conf $(SUPERVISOR_CONF)
 	chown root.root $(SUPERVISOR_CELERY_CONF)
 	chown root.root $(SUPERVISOR_GUNICORN_CONF)
 	chown root.root $(SUPERVISOR_CONF)
@@ -533,7 +533,7 @@ install-daemon-configs:
 	chmod 644 $(SUPERVISOR_GUNICORN_CONF)
 	chmod 644 $(SUPERVISOR_CONF)
 # cgitrc
-	cp ./conf/cgitrc $(CGIT_CONF)
+	cp $(INSTALL_LOCAL)/conf/cgitrc $(CGIT_CONF)
 
 uninstall-daemon-configs:
 	-rm $(NGINX_CONF)
@@ -543,7 +543,7 @@ uninstall-daemon-configs:
 
 
 enable-bkgnd:
-	cp ./conf/celerybeat.conf $(SUPERVISOR_CELERYBEAT_CONF)
+	cp $(INSTALL_LOCAL)/conf/celerybeat.conf $(SUPERVISOR_CELERYBEAT_CONF)
 	chown root.root $(SUPERVISOR_CELERYBEAT_CONF)
 	chmod 644 $(SUPERVISOR_CELERYBEAT_CONF)
 
