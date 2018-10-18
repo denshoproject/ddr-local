@@ -192,10 +192,6 @@ def new( request, rid ):
         if form.is_valid():
             data = form.cleaned_data
             src_path = path
-            # inheritable fields
-            inherited = []
-            for field in entity.inheritable_fields():
-                inherited.append( (field,getattr(entity,field)) )
             # start tasks
             result = tasks.entity_add_file.apply_async(
                 (
