@@ -66,10 +66,6 @@ fi
 
 # Fix virtualenv path when making package from non-standard location
 # e.g. in /opt/ddr-local-develop (because git-worktree)
-cd /opt/ddr-local
-# activate script
-sed -i s/ddr-local-master/ddr-local/ venv/ddrlocal/bin/activate
-sed -i s/ddr-local-develop/ddr-local/ venv/ddrlocal/bin/activate
-# the various ddr commands
-grep -EIr '\W/opt/ddr-local-master/venv\W' /opt/ddr-local/venv
-grep -EIr '\W/opt/ddr-local-develop/venv\W' /opt/ddr-local/venv
+pip install virtualenv-relocate
+echo "Adjusting virtualenv paths"
+virtualenv-relocate /opt/ddr-local/venv/ddrlocal/
