@@ -673,7 +673,11 @@ deb-stretch:
 	@echo ""
 	@echo "FPM packaging (stretch) ------------------------------------------------"
 	-rm -Rf $(DEB_FILE_STRETCH)
-	virtualenv --relocatable $(VIRTUALENV)  # Make venv relocatable
+# Copy .git/ dir from master worktree
+	python bin/deb-prep-post.py before
+# Make venv relocatable
+	virtualenv --relocatable $(VIRTUALENV)
+# Make package
 	fpm   \
 	--verbose   \
 	--input-type dir   \
@@ -740,3 +744,5 @@ deb-stretch:
 	static=$(DEB_BASE)   \
 	venv=$(DEB_BASE)   \
 	VERSION=$(DEB_BASE)
+# Put worktree pointer file back in place
+	python bin/deb-prep-post.py after
