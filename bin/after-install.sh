@@ -63,3 +63,9 @@ if [ ! -f /var/www/static/js/typeahead ]
 then
     ln -s /var/www/static/typeahead-0.10.2 /var/www/static/js/typeahead
 fi
+
+# Fix virtualenv path when making package from non-standard location
+# e.g. in /opt/ddr-local-develop (because git-worktree)
+pip install virtualenv-relocate
+echo "Adjusting virtualenv paths"
+virtualenv-relocate /opt/ddr-local/venv/ddrlocal/
