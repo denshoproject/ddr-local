@@ -69,3 +69,9 @@ fi
 pip install virtualenv-relocate
 echo "Adjusting virtualenv paths"
 virtualenv-relocate /opt/ddr-local/venv/ddrlocal/
+
+# Install customized ImageMagick-6/policy.xml.  This disables default
+# memory and cache limits put in place to protect against DDoS attacks
+# but these are not an issue in our local install.
+echo "Installing custom Imagemagick policy.xml"
+cp /opt/ddr-local/ddr-cmdln/conf/imagemagick-policy.xml /etc/ImageMagick-6/policy.xml
