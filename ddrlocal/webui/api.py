@@ -114,7 +114,7 @@ def es_children(request, oid, limit=None, offset=None):
     if not offset:
         offset = int(request.GET.get('offset', 0))
     
-    searcher = search.Searcher(
+    searcher = search.WebSearcher(
         mappings=identifier.ELASTICSEARCH_CLASSES_BY_MODEL,
         fields=identifier.ELASTICSEARCH_LIST_FIELDS,
         search=s,
@@ -138,7 +138,7 @@ def search_form(request, format=None):
         limit = settings.RESULTS_PER_PAGE
         offset = 0
     
-    searcher = search.Searcher(
+    searcher = search.WebSearcher(
         mappings=identifier.ELASTICSEARCH_CLASSES_BY_MODEL,
         fields=identifier.ELASTICSEARCH_LIST_FIELDS,
     )
