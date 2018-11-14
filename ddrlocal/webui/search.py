@@ -9,7 +9,7 @@ import os
 import urlparse
 
 from elasticsearch_dsl import Index, Search, A, Q, A
-from elasticsearch_dsl.query import MultiMatch, Match
+from elasticsearch_dsl.query import Match, MultiMatch, QueryString
 from elasticsearch_dsl.connections import connections
 from elasticsearch_dsl.result import Result
 
@@ -253,9 +253,10 @@ class Searcher(object):
                 fulltext = fulltext[0]
             # fulltext search
             s = s.query(
-                MultiMatch(
+                QueryString(
                     query=fulltext,
-                    fields=SEARCH_INCLUDE_FIELDS
+                    fields=SEARCH_INCLUDE_FIELDS,
+                    allow_leading_wildcard=False,
                 )
             )
 
