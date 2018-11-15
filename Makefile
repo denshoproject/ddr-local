@@ -476,7 +476,7 @@ get-tagmanager:
 	@echo "tagmanager -------------------------------------------------------------"
 	mkdir -p $(INSTALL_STATIC)/
 	wget -nc -P $(INSTALL_STATIC)/ http://$(PACKAGE_SERVER)/$(TAGMANAGER).tgz
-	cd $(INSTALL_STATIC)/ && tar xzf $(INSTALL_STATIC)/$(TAGMANAGER).tgz
+	cd $(INSTALL_STATIC)/ && tar xzf $(TAGMANAGER).tgz
 	-rm $(INSTALL_STATIC)/$(TAGMANAGER).tgz
 
 get-typeahead:
@@ -484,7 +484,7 @@ get-typeahead:
 	@echo "typeahead --------------------------------------------------------------"
 	mkdir -p $(INSTALL_STATIC)/
 	wget -nc -P $(INSTALL_STATIC)/ http://$(PACKAGE_SERVER)/$(TYPEAHEAD).tgz
-	cd $(INSTALL_STATIC)/ && tar xzf $(INSTALL_STATIC)/$(TYPEAHEAD).tgz
+	cd $(INSTALL_STATIC)/ && tar xzf $(TYPEAHEAD).tgz
 	-rm $(INSTALL_STATIC)/$(TYPEAHEAD).tgz
 
 install-static:
