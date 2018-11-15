@@ -114,13 +114,13 @@ def es_children(request, oid, limit=None, offset=None):
     if not offset:
         offset = int(request.GET.get('offset', 0))
     
-    searcher = search.Searcher(
+    searcher = search.WebSearcher(
         mappings=identifier.ELASTICSEARCH_CLASSES_BY_MODEL,
         fields=identifier.ELASTICSEARCH_LIST_FIELDS,
         search=s,
     )
     results = searcher.execute(limit, offset)
-    data = results.ordered_dict(request, list_function=format_object)
+    data = results.ordered_dict(list_function=format_object, request=request)
     return Response(data)
 
 
@@ -138,12 +138,12 @@ def search_form(request, format=None):
         limit = settings.RESULTS_PER_PAGE
         offset = 0
     
-    searcher = search.Searcher(
+    searcher = search.WebSearcher(
         mappings=identifier.ELASTICSEARCH_CLASSES_BY_MODEL,
         fields=identifier.ELASTICSEARCH_LIST_FIELDS,
     )
     searcher.prepare(request)
     results = searcher.execute(limit, offset)
     return Response(
-        results.ordered_dict(request, list_function=format_object)
+        results.ordered_dict(list_function=format_object, request=request)
     )
