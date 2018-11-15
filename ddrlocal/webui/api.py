@@ -120,7 +120,7 @@ def es_children(request, oid, limit=None, offset=None):
         search=s,
     )
     results = searcher.execute(limit, offset)
-    data = results.ordered_dict(request, list_function=format_object)
+    data = results.ordered_dict(list_function=format_object, request=request)
     return Response(data)
 
 
@@ -145,5 +145,5 @@ def search_form(request, format=None):
     searcher.prepare(request)
     results = searcher.execute(limit, offset)
     return Response(
-        results.ordered_dict(request, list_function=format_object)
+        results.ordered_dict(list_function=format_object, request=request)
     )
