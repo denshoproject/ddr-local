@@ -123,93 +123,25 @@ class WebSearcher(Searcher):
         for key in bad_fields:
             params.pop(key)
         
-        # doctypes
+        fulltext = params.pop('fulltext')
+        
         if params.get('models'):
             models = params.pop('models')
         else:
             models = SEARCH_MODELS
-
-        # TODO call parent class function here
         
-        s = Search(
-            using=DOCSTORE.es,
-            index=DOCSTORE.indexname,
-            doc_type=models,
-        )
-        s = s.source(include=identifier.ELASTICSEARCH_LIST_FIELDS)
-        
-        # fulltext query
-        if params.get('fulltext'):
-            # MultiMatch chokes on lists
-            fulltext = params.pop('fulltext')
-            if isinstance(fulltext, list) and (len(fulltext) == 1):
-                fulltext = fulltext[0]
-            # fulltext search
-            s = s.query(
-                QueryString(
-                    query=fulltext,
-                    fields=SEARCH_INCLUDE_FIELDS,
-                    allow_leading_wildcard=False,
-                )
-            )
-
-        # parent
+        parent = ''
         if params.get('parent'):
-            param = params.pop('parent')
-            parent = '%s*' % param[0]
-            s = s.query("wildcard", id=parent)
+            parent = params.pop('parent')
+            if isinstance(parent, list) and (len(parent) == 1):
+                parent = parent[0]
+            if parent:
+                parent = '%s*' % parent
         
-        # filters
-        for key,val in params.items():
-            
-            if key in SEARCH_NESTED_FIELDS:
-    
-                # search for *ALL* the topics (AND)
-                for term_id in val:
-                    s = s.filter(
-                        Q('bool',
-                          must=[
-                              Q('nested',
-                                path=key,
-                                query=Q('term', **{'%s.id' % key: term_id})
-                              )
-                          ]
-                        )
-                    )
-                
-                ## search for *ANY* of the topics (OR)
-                #s = s.query(
-                #    Q('bool',
-                #      must=[
-                #          Q('nested',
-                #            path=key,
-                #            query=Q('terms', **{'%s.id' % key: val})
-                #          )
-                #      ]
-                #    )
-                #)
-    
-            elif key in SEARCH_PARAM_WHITELIST:
-                s = s.filter('terms', **{key: val})
-        
-        # aggregations
-        for fieldname,field in SEARCH_AGG_FIELDS.items():
-            
-            # nested aggregation (Elastic docs: https://goo.gl/xM8fPr)
-            if fieldname == 'topics':
-                s.aggs.bucket('topics', 'nested', path='topics') \
-                      .bucket('topic_ids', 'terms', field='topics.id', size=1000)
-            elif fieldname == 'facility':
-                s.aggs.bucket('facility', 'nested', path='facility') \
-                      .bucket('facility_ids', 'terms', field='facility.id', size=1000)
-                # result:
-                # results.aggregations['topics']['topic_ids']['buckets']
-                #   {u'key': u'69', u'doc_count': 9}
-                #   {u'key': u'68', u'doc_count': 2}
-                #   {u'key': u'62', u'doc_count': 1}
-            
-            # simple aggregations
-            else:
-                s.aggs.bucket(fieldname, 'terms', field=field)
-        
-        self.s = s
+        # TODO call parent class function here
+        super(WebSearcher, self).prepare(
+            fulltext=fulltext,
+            models=models,
+            parent=parent,
+            filters=params,
+        )
