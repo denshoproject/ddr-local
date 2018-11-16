@@ -706,7 +706,6 @@ deb-stretch:
 	--depends "libz-dev"   \
 	--depends "munin"   \
 	--depends "munin-node"   \
-	--depends "openjdk-8-jre"   \
 	--depends "pmount"   \
 	--depends "python-dev"   \
 	--depends "python-pip"   \
