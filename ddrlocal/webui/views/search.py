@@ -87,6 +87,20 @@ def search_ui(request):
     }
 
     if request.GET.get('fulltext'):
+        
+        # Redirect if fulltext is a DDR ID
+        try:
+            ddr_index = text.index('ddr')
+        except:
+            ddr_index = -1
+        if ddr_index == 0:
+            try:
+                oi = identifier.Identifier(request.GET.get('fulltext'))
+                return HttpResponseRedirect(
+                    reverse('webui-detail', args=[oi.id])
+                )
+            except:
+                pass
 
         if request.GET.get('offset'):
             # limit and offset args take precedence over page
@@ -100,7 +114,7 @@ def search_ui(request):
             limit = settings.RESULTS_PER_PAGE
             offset = 0
         
-        searcher = search.Searcher(
+        searcher = search.WebSearcher(
             mappings=identifier.ELASTICSEARCH_CLASSES_BY_MODEL,
             fields=identifier.ELASTICSEARCH_LIST_FIELDS,
         )
@@ -131,7 +145,7 @@ def search_ui(request):
 def admin( request ):
     """Administrative stuff like re-indexing.
     """
-    target_index = docstore.Docstore().target_index()
+    target_index = search.DOCSTORE.target_index()
     server_info = []
     index_names = []
     indices = []
@@ -211,7 +225,7 @@ def drop_index( request ):
         form = DropConfirmForm(request.POST, request=request)
         if form.is_valid():
             index = form.cleaned_data['index']
-            ds = docstore.Docstore(index=index)
+            ds = search.docstore.Docstore(index=index)
             ds.delete_index()
             messages.error(request,
                            'Search index "%s" dropped. ' \

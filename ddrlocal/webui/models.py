@@ -481,10 +481,13 @@ class Collection( DDRCollection ):
         @param git_mail: str
         @param cleaned_data: dict
         """
+        if cleaned_data:
+            self.form_post(cleaned_data)
+        
         exit,status,updated_files = super(Collection, self).save(
             git_name, git_mail,
             settings.AGENT,
-            cleaned_data,
+            self.selected_inheritables(cleaned_data),
             commit=commit
         )
         
@@ -742,7 +745,7 @@ class Entity( DDREntity ):
         
         return entity
     
-    def save( self, git_name, git_mail, collection=None, form_data={}, commit=True ):
+    def save( self, git_name, git_mail, collection=None, cleaned_data={}, commit=True ):
         """Save Entity metadata
         
         Commit files, delete cache, update search index.
@@ -751,15 +754,17 @@ class Entity( DDREntity ):
         @param git_name: str
         @param git_mail: str
         @param collection: Collection
-        @param form_data: dict
+        @param cleaned_data: dict
         """
         collection = self.collection()
+        if cleaned_data:
+            self.form_post(cleaned_data)
         
         exit,status,updated_files = super(Entity, self).save(
             git_name, git_mail,
             settings.AGENT,
             collection,
-            form_data,
+            self.selected_inheritables(cleaned_data),
             commit=commit
         )
         
@@ -888,7 +893,7 @@ class DDRFile( File ):
         """
         model_def_fields(self)
     
-    def save( self, git_name, git_mail, form_data={}, commit=True ):
+    def save( self, git_name, git_mail, cleaned_data={}, commit=True ):
         """Save file metadata
         
         Commit files, delete cache, update search index.
@@ -896,15 +901,17 @@ class DDRFile( File ):
         
         @param git_name: str
         @param git_mail: str
-        @param form_data: dict
+        @param cleaned_data: dict
         """
         collection = self.collection()
+        if cleaned_data:
+            self.form_post(cleaned_data)
         
         exit,status,updated_files = super(DDRFile, self).save(
             git_name, git_mail,
             settings.AGENT,
             collection, self.parent(),
-            form_data,
+            self.selected_inheritables(cleaned_data),
             commit=commit
         )
         

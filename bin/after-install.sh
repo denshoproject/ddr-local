@@ -63,3 +63,15 @@ if [ ! -f /var/www/static/js/typeahead ]
 then
     ln -s /var/www/static/typeahead-0.10.2 /var/www/static/js/typeahead
 fi
+
+# Fix virtualenv path when making package from non-standard location
+# e.g. in /opt/ddr-local-develop (because git-worktree)
+pip install virtualenv-relocate
+echo "Adjusting virtualenv paths"
+virtualenv-relocate /opt/ddr-local/venv/ddrlocal/
+
+# Install customized ImageMagick-6/policy.xml.  This disables default
+# memory and cache limits put in place to protect against DDoS attacks
+# but these are not an issue in our local install.
+echo "Installing custom Imagemagick policy.xml"
+cp /opt/ddr-local/ddr-cmdln/conf/imagemagick-policy.xml /etc/ImageMagick-6/policy.xml
