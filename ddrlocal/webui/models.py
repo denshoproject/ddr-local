@@ -312,6 +312,8 @@ class Collection( DDRCollection ):
     def edit_url(self): return reverse('webui-collection-edit', args=[self.id])
     def export_entities_url(self): return reverse('webui-collection-export-entities', args=[self.id])
     def export_files_url(self): return reverse('webui-collection-export-files', args=[self.id])
+    def import_entities_url(self): return reverse('webui-collection-import-entities', args=[self.id])
+    def import_files_url(self): return reverse('webui-collection-import-files', args=[self.id])
     def git_status_url(self): return reverse('webui-collection-git-status', args=[self.id])
     def merge_url(self): return reverse('webui-merge-raw', args=[self.id])
     def new_entity_url(self): return reverse('webui-entity-new', args=[self.id])

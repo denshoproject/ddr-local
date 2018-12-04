@@ -20,3 +20,6 @@ class SignaturesConfirmForm(forms.Form):
     confirmed = forms.BooleanField(
         help_text='Yes, I want to choose signatures for this collection.'
     )
+
+class UploadFileForm(forms.Form):
+    file = forms.FileField()
