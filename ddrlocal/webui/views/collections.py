@@ -20,6 +20,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import Http404, render
 from django.template.loader import get_template
 
+from DDR import batch
 from DDR import commands
 from DDR import converters
 from DDR import dvcs
@@ -31,7 +32,7 @@ from webui import WEBUI_MESSAGES
 from webui import docstore
 from webui.decorators import ddrview, search_index
 from webui.forms import DDRForm
-from webui.forms.collections import NewCollectionForm, UpdateForm
+from webui.forms.collections import NewCollectionForm, UpdateForm, UploadFileForm
 from webui.forms.collections import SyncConfirmForm, SignaturesConfirmForm
 from webui import gitolite
 from webui.gitstatus import repository, annex_info
@@ -491,6 +492,134 @@ def csv_download( request, cid, model=None ):
         for row in reader:
             writer.writerow(row)
     return response
+
+CSV_IMPORT_FILE = '/tmp/import-{cid}-{model}.csv'
+
+def handle_uploaded_file(cid, model, f):
+    path = CSV_IMPORT_FILE.format(cid=cid, model=model)
+    with open(path, 'wb+') as destination:
+        for chunk in f.chunks():
+            destination.write(chunk)
+ 
+@login_required
+@storage_required
+def csv_import( request, cid, model=None ):
+    """Accepts a CSV file for batch.Import
+    """
+    if (not model) or (not (model in ['entity','file'])):
+        raise Http404
+    collection = Collection.from_identifier(Identifier(cid))
+    repo = dvcs.repository(collection.identifier.path_abs())
+    if request.method == 'POST':
+        form = UploadFileForm(request.POST, request.FILES)
+        if form.is_valid():
+            
+            git_name = request.session['git_name']
+            git_mail = request.session['git_mail']
+            
+            csv_path = CSV_IMPORT_FILE.format(
+                cid=collection.identifier.id,
+                model=collection.identifier.model
+            )
+            handle_uploaded_file(
+                collection.identifier.id,
+                collection.identifier.model,
+                request.FILES['file']
+            )
+            if os.path.exists(csv_path):
+                messages.success(request, 'CSV file upload success!.')
+            else:
+                messages.error(request, 'CSV file upload failed!')
+                return HttpResponseRedirect(collection.absolute_url())
+
+            if model == 'entity':
+                
+                imported = batch.Importer.import_entities(
+                    csv_path=csv_path,
+                    cidentifier=collection.identifier,
+                    vocabs_url=settings.VOCABS_URL,
+                    git_name=git_name,
+                    git_mail=git_mail,
+                    agent='ddrlocal-csv-import-entity',
+                    dryrun=False,
+                )
+                imported_rel = [
+                    o.identifier.path_rel()
+                    for o in imported
+                ]
+                changelogs = list(set([
+                    os.path.join(
+                        os.path.dirname(path_rel),
+                        'changelog'
+                    )
+                    for path_rel in imported_rel
+                    if 'entity.json' in path_rel
+                ]))
+                imported_all = imported_rel + changelogs
+                result = commands.commit_files(
+                    repo=repo,
+                    message='Imported by ddr-local from file "%s"' % csv_path,
+                    git_files=imported_all,
+                    annex_files=[]
+                )
+                msg = 'Successfully imported {} objects from {}.'.format(
+                    str(len(imported)),
+                    request.FILES['file'].name,
+                )
+                messages.success(request, msg)
+
+            elif model == 'file':
+                
+                imported = batch.Importer.import_files(
+                    csv_path=csv_path,
+                    cidentifier=collection.identifier,
+                    vocabs_url=settings.VOCABS_URL,
+                    git_name=git_name,
+                    git_mail=git_mail,
+                    agent='ddrlocal-csv-import-file',
+                    row_start=0,
+                    row_end=9999999,
+                    dryrun=False
+                )
+                # flatten: import_files returns a list of file,entity lists
+                imported_flat = [i for imprtd in imported for i in imprtd]
+                # import_files returns absolute paths but we need relative
+                imported_rel = [
+                    os.path.relpath(
+                        file_path_abs,
+                        collection.identifier.path_abs()
+                    )
+                    for file_path_abs in imported_flat
+                ]
+                # Add changelog for each entity
+                changelogs = list(set([
+                    os.path.join(
+                        os.path.dirname(path_rel),
+                        'changelog'
+                    )
+                    for path_rel in imported_rel
+                    if 'entity.json' in path_rel
+                ]))
+                imported_all = imported_rel + changelogs
+                result = commands.commit_files(
+                    repo=repo,
+                    message='Imported by ddr-local from file "%s"' % csv_path,
+                    git_files=imported_all,
+                    annex_files=[],
+                )
+                msg = 'Successfully imported {} files from {}.'.format(
+                    str(len(imported)),
+                    request.FILES['file'].name,
+                )
+                messages.success(request, msg)
+
+            return HttpResponseRedirect(collection.absolute_url())
+    else:
+        form = UploadFileForm()
+    return render(request, 'webui/collections/csv-import.html', {
+        'collection': collection,
+        'form': form,
+    })
 
 @ddrview
 @login_required

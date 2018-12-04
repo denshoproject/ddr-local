@@ -312,6 +312,8 @@ class Collection( DDRCollection ):
     def edit_url(self): return reverse('webui-collection-edit', args=[self.id])
     def export_entities_url(self): return reverse('webui-collection-export-entities', args=[self.id])
     def export_files_url(self): return reverse('webui-collection-export-files', args=[self.id])
+    def import_entities_url(self): return reverse('webui-collection-import-entities', args=[self.id])
+    def import_files_url(self): return reverse('webui-collection-import-files', args=[self.id])
     def git_status_url(self): return reverse('webui-collection-git-status', args=[self.id])
     def merge_url(self): return reverse('webui-merge-raw', args=[self.id])
     def new_entity_url(self): return reverse('webui-entity-new', args=[self.id])
@@ -745,7 +747,7 @@ class Entity( DDREntity ):
         
         return entity
     
-    def save( self, git_name, git_mail, collection=None, cleaned_data={}, commit=True ):
+    def save( self, git_name, git_mail, agent=settings.AGENT, collection=None, cleaned_data={}, commit=True ):
         """Save Entity metadata
         
         Commit files, delete cache, update search index.
@@ -761,10 +763,11 @@ class Entity( DDREntity ):
             self.form_post(cleaned_data)
         
         exit,status,updated_files = super(Entity, self).save(
-            git_name, git_mail,
-            settings.AGENT,
-            collection,
-            self.selected_inheritables(cleaned_data),
+            git_name=git_name,
+            git_mail=git_mail,
+            agent=settings.AGENT,
+            collection=collection,
+            inheritables=self.selected_inheritables(cleaned_data),
             commit=commit
         )
         
@@ -893,7 +896,7 @@ class DDRFile( File ):
         """
         model_def_fields(self)
     
-    def save( self, git_name, git_mail, cleaned_data={}, commit=True ):
+    def save( self, git_name, git_mail, agent=settings.AGENT, cleaned_data={}, commit=True ):
         """Save file metadata
         
         Commit files, delete cache, update search index.
@@ -908,10 +911,12 @@ class DDRFile( File ):
             self.form_post(cleaned_data)
         
         exit,status,updated_files = super(DDRFile, self).save(
-            git_name, git_mail,
-            settings.AGENT,
-            collection, self.parent(),
-            self.selected_inheritables(cleaned_data),
+            git_name=git_name,
+            git_mail=git_mail,
+            agent=settings.AGENT,
+            collection=collection,
+            parent=self.parent(),
+            inheritables=self.selected_inheritables(cleaned_data),
             commit=commit
         )
         
