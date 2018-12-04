@@ -745,7 +745,7 @@ class Entity( DDREntity ):
         
         return entity
     
-    def save( self, git_name, git_mail, collection=None, cleaned_data={}, commit=True ):
+    def save( self, git_name, git_mail, agent=settings.AGENT, collection=None, cleaned_data={}, commit=True ):
         """Save Entity metadata
         
         Commit files, delete cache, update search index.
@@ -761,10 +761,11 @@ class Entity( DDREntity ):
             self.form_post(cleaned_data)
         
         exit,status,updated_files = super(Entity, self).save(
-            git_name, git_mail,
-            settings.AGENT,
-            collection,
-            self.selected_inheritables(cleaned_data),
+            git_name=git_name,
+            git_mail=git_mail,
+            agent=settings.AGENT,
+            collection=collection,
+            inheritables=self.selected_inheritables(cleaned_data),
             commit=commit
         )
         
@@ -893,7 +894,7 @@ class DDRFile( File ):
         """
         model_def_fields(self)
     
-    def save( self, git_name, git_mail, cleaned_data={}, commit=True ):
+    def save( self, git_name, git_mail, agent=settings.AGENT, cleaned_data={}, commit=True ):
         """Save file metadata
         
         Commit files, delete cache, update search index.
@@ -908,10 +909,12 @@ class DDRFile( File ):
             self.form_post(cleaned_data)
         
         exit,status,updated_files = super(DDRFile, self).save(
-            git_name, git_mail,
-            settings.AGENT,
-            collection, self.parent(),
-            self.selected_inheritables(cleaned_data),
+            git_name=git_name,
+            git_mail=git_mail,
+            agent=settings.AGENT,
+            collection=collection,
+            parent=self.parent(),
+            inheritables=self.selected_inheritables(cleaned_data),
             commit=commit
         )
         
