@@ -66,6 +66,8 @@ urlpatterns = [
     url(r'^collection/(?P<cid>[\w\d-]+)/export/files/$', collections.csv_export, kwargs={'model':'file'}, name='webui-collection-export-files'),
     url(r'^collection/(?P<cid>[\w\d-]+)-objects.csv$', collections.csv_download, kwargs={'model':'entity'}, name='webui-collection-csv-entities'),
     url(r'^collection/(?P<cid>[\w\d-]+)-files.csv$', collections.csv_download, kwargs={'model':'file'}, name='webui-collection-csv-files'),
+    url(r'^collection/(?P<cid>[\w\d-]+)/import/objects/$', collections.csv_import, kwargs={'model':'entity'}, name='webui-collection-import-entities'),
+    url(r'^collection/(?P<cid>[\w\d-]+)/import/files/$', collections.csv_import, kwargs={'model':'file'}, name='webui-collection-import-files'),
 
     url(r'^collection/(?P<cid>[\w\d-]+)/children/$', collections.children, name='webui-collection-children'),
     url(r'^collection/(?P<cid>[\w\d-]+)/changelog/$', collections.changelog, name='webui-collection-changelog'),

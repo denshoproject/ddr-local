@@ -1,0 +1,46 @@
+{% extends "webui/collections/base.html" %}
+{% load thumbnail webui_tags%}
+
+{% block title %}CSV Import | {{ collection.id }}{% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+{% breadcrumbs collection "CSV Import" %}
+{% endblock breadcrumbs %}
+
+
+{% block content %}
+
+  <div class="row-fluid">
+    <div class="span12">
+
+<h1>
+{{ collection.id }}
+</h1>
+
+<div class="alert alert-danger" role="alert">
+
+<h2 style="margin-top:0px;">
+<span class="glyphicon glyphicon-warning-sign"></span>
+CSV Import
+</h2>
+<p>
+NOTE: CSV import cannot be used to import new files.
+</p>
+
+<table>
+  <form name="csv-upload" action="" method="post" enctype="multipart/form-data">{% csrf_token %}
+    {{ form.as_table }}
+    <tr>
+      <td colspan="2">
+        <input type="submit" value="Upload" />
+      </td>
+    </tr>
+</form>
+</table>
+
+</div><!-- .alert-danger -->
+ 
+    </div><!-- .span12 -->
+  </div><!-- .row -->
+
+{% endblock content %}
