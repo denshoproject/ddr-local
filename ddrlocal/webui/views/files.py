@@ -195,7 +195,7 @@ def new( request, rid ):
             data = form.cleaned_data
             src_path = path
             # start tasks
-            result = file_tasks.entity_add_file.apply_async(
+            result = file_tasks.add_file.apply_async(
                 (
                     request.session['git_name'], request.session['git_mail'],
                     entity, src_path, role, data, settings.AGENT
@@ -286,7 +286,7 @@ def new_external(request, rid):
             }
             
             # start tasks
-            result = file_tasks.entity_add_external.apply_async(
+            result = file_tasks.add_external.apply_async(
                 (
                     request.session['git_name'], request.session['git_mail'],
                     entity, data, settings.AGENT
@@ -351,7 +351,7 @@ def new_access( request, fid ):
         if form.is_valid():
             src_path = form.cleaned_data['path']
             # start tasks
-            result = file_tasks.entity_add_access.apply_async(
+            result = file_tasks.add_access.apply_async(
                 (
                     request.session['git_name'], request.session['git_mail'],
                     entity, file_
@@ -425,7 +425,7 @@ def edit( request, fid ):
             file_.write_json()
             
             # commit files, delete cache, update search index, update git status
-            file_tasks.entity_file_edit(
+            file_tasks.edit(
                 request,
                 collection, file_, form.cleaned_data,
                 request.session['git_name'], request.session['git_mail'],
@@ -465,7 +465,7 @@ def set_signature( request, fid ):
         if request.POST.get('object_id') == entity.id:
             cleaned_data = entity.form_prep()
             cleaned_data['signature_id'] = file_.id
-            entity_tasks.collection_entity_edit(
+            entity_tasks.edit(
                 request,
                 collection,
                 entity,
@@ -476,7 +476,7 @@ def set_signature( request, fid ):
         elif request.POST.get('object_id') == collection.id:
             cleaned_data = collection.form_prep()
             cleaned_data['signature_id'] = file_.id
-            collection_tasks.collection_edit(
+            collection_tasks.edit(
                 request,
                 collection,
                 cleaned_data,
@@ -499,7 +499,7 @@ def delete( request, fid ):
     if request.method == 'POST':
         form = DeleteFileForm(request.POST)
         if form.is_valid() and form.cleaned_data['confirmed']:
-            file_tasks.entity_delete_file(
+            file_tasks.delete(
                 request,
                 request.session['git_name'], request.session['git_mail'],
                 collection, entity, file_,

@@ -25,7 +25,7 @@ from .common import DebugTask
 
 # ----------------------------------------------------------------------
 
-def collection_entity_edit(request, collection, entity, form_data, git_name, git_mail, agent):
+def edit(request, collection, entity, form_data, git_name, git_mail, agent):
     # start tasks
     
     result = entity_edit.apply_async(
@@ -137,7 +137,7 @@ class DeleteEntityTask(Task):
         gitstatus.unlock(settings.MEDIA_BASE, 'delete_entity')
 
 @task(base=DeleteEntityTask, name='webui-entity-delete')
-def delete_entity( git_name, git_mail, collection_path, entity_id, agent='' ):
+def delete( git_name, git_mail, collection_path, entity_id, agent='' ):
     """
     @param collection_path: string
     @param entity_id: string

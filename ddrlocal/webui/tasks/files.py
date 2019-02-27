@@ -59,7 +59,7 @@ class FileAddDebugTask(Task):
         gitstatus.unlock(settings.MEDIA_BASE, 'entity_add_file')
 
 @task(base=FileAddDebugTask, name='entity-add-file')
-def entity_add_file( git_name, git_mail, entity, src_path, role, data, agent='' ):
+def add_file( git_name, git_mail, entity, src_path, role, data, agent='' ):
     """
     @param entity: Entity
     @param src_path: Absolute path to an uploadable file.
@@ -96,7 +96,7 @@ def entity_add_file( git_name, git_mail, entity, src_path, role, data, agent='' 
     }
 
 @task(base=FileAddDebugTask, name='entity-add-external')
-def entity_add_external( git_name, git_mail, entity, data, agent='' ):
+def add_external( git_name, git_mail, entity, data, agent='' ):
     """
     @param entity: Entity
     @param data: Dict containing form data.
@@ -130,7 +130,7 @@ def entity_add_external( git_name, git_mail, entity, data, agent='' ):
     }
 
 @task(base=FileAddDebugTask, name='entity-add-access')
-def entity_add_access( git_name, git_mail, entity, ddrfile, agent='' ):
+def add_access( git_name, git_mail, entity, ddrfile, agent='' ):
     """
     @param entity: Entity
     @param ddrfile: DDRFile
@@ -169,7 +169,7 @@ def entity_add_access( git_name, git_mail, entity, ddrfile, agent='' ):
 
 # ----------------------------------------------------------------------
 
-def entity_file_edit(request, collection, file_, form_data, git_name, git_mail):
+def edit(request, collection, file_, form_data, git_name, git_mail):
     # start tasks
     
     result = file_edit.apply_async(
@@ -230,7 +230,7 @@ def file_edit(collection_path, file_id, form_data, git_name, git_mail):
 
 # ----------------------------------------------------------------------
 
-def entity_delete_file(request, git_name, git_mail, collection, entity, file_, agent):
+def delete(request, git_name, git_mail, collection, entity, file_, agent):
     # start tasks
     
     result = delete_file.apply_async(

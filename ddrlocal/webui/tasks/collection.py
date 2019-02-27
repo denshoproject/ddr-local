@@ -41,7 +41,7 @@ class CollectionCheckTask(Task):
         gitstatus.log('CollectionCheckTask.after_return(%s, %s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs, einfo))
 
 @task(base=CollectionCheckTask, name='webui.tasks.collection_check')
-def collection_check( collection_path ):
+def check( collection_path ):
     if not os.path.exists(settings.MEDIA_BASE):
         raise Exception('base_dir does not exist: %s' % settings.MEDIA_BASE)
     paths = util.find_meta_files(
@@ -66,10 +66,10 @@ def collection_check( collection_path ):
 
 # ----------------------------------------------------------------------
 
-def collection_edit(request, collection, cleaned_data, git_name, git_mail):
+def edit(request, collection, cleaned_data, git_name, git_mail):
     # start tasks
     
-    result = collection_save.apply_async(
+    result = save.apply_async(
         (collection.path, cleaned_data, git_name, git_mail),
         countdown=2
     )
@@ -99,7 +99,7 @@ class CollectionEditTask(Task):
         gitstatus.unlock(settings.MEDIA_BASE, 'collection_edit')
 
 @task(base=CollectionEditTask, name='webui-collection-edit')
-def collection_save(collection_path, cleaned_data, git_name, git_mail):
+def save(collection_path, cleaned_data, git_name, git_mail):
     """The time-consuming parts of collection-edit.
     
     @param collection_path: str Absolute path to collection
@@ -148,7 +148,7 @@ class CollectionSyncDebugTask(Task):
         gitstatus.unlock(settings.MEDIA_BASE, 'collection_sync')
 
 @task(base=CollectionSyncDebugTask, name='collection-sync')
-def collection_sync( git_name, git_mail, collection_path ):
+def sync( git_name, git_mail, collection_path ):
     """Synchronizes collection repo with workbench server.
     
     @param git_name: Username of git committer.
@@ -197,7 +197,7 @@ class CollectionSignaturesDebugTask(Task):
         gitstatus.unlock(settings.MEDIA_BASE, 'collection_signatures')
 
 @task(base=CollectionSignaturesDebugTask, name='webui-collection-signatures')
-def collection_signatures(collection_path, git_name, git_mail):
+def signatures(collection_path, git_name, git_mail):
     """Identifies signature files for collection and entities.
     
     @param collection_path: Absolute path to collection repo.
