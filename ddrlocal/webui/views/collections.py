@@ -38,7 +38,8 @@ from webui import gitolite
 from webui.gitstatus import repository, annex_info
 from webui.models import Collection, COLLECTION_STATUS_CACHE_KEY, COLLECTION_STATUS_TIMEOUT
 from webui.identifier import Identifier
-from webui import tasks
+from webui.tasks import collection as collection_tasks
+from webui.tasks import dvcs as dvcs_tasks
 from webui.views.decorators import login_required
 
 
@@ -171,7 +172,7 @@ def sync( request, cid ):
         form = SyncConfirmForm(request.POST)
         form_is_valid = form.is_valid()
         if form.is_valid() and form.cleaned_data['confirmed']:
-            result = tasks.collection_sync.apply_async(
+            result = collection_tasks.collection_sync.apply_async(
                 (git_name,git_mail,collection.path),
                 countdown=2
             )
@@ -221,7 +222,7 @@ def _create_collection(request, cidentifier, git_name, git_mail):
             collection.post_json()
         except ConnectionError:
             logger.error('Could not post to Elasticsearch.')
-        tasks.gitstatus_update.apply_async(
+        dvcs_tasks.gitstatus_update.apply_async(
             (cidentifier.path_abs(),),
             countdown=2
         )
@@ -363,7 +364,7 @@ def edit( request, cid ):
             collection.write_json()
             
             # commit files, delete cache, update search index, update git status
-            tasks.collection_edit(
+            collection_tasks.collection_edit(
                 request,
                 collection, form.cleaned_data,
                 git_name, git_mail
@@ -399,7 +400,7 @@ def signatures( request, cid ):
         form_is_valid = form.is_valid()
         if form.is_valid() and form.cleaned_data['confirmed']:
             
-            result = tasks.collection_signatures.apply_async(
+            result = collection_tasks.collection_signatures.apply_async(
                 (collection.path,git_name,git_mail),
                 countdown=2
             )
@@ -441,7 +442,7 @@ def csv_export( request, cid, model=None ):
     elif model == 'file':
         file_url = reverse('webui-collection-csv-files', args=[collection.id])
     # do it
-    result = tasks.csv_export_model.apply_async(
+    result = collection_tasks.csv_export_model.apply_async(
         (collection.path,model),
         countdown=2
     )
@@ -642,7 +643,7 @@ def unlock( request, cid, task_id ):
 @storage_required
 def check(request, cid):
     ci = Identifier(cid)
-    result = tasks.collection_check.apply_async(
+    result = collection_tasks.collection_check.apply_async(
         [ci.path_abs()],
         countdown=2
     )

@@ -7,7 +7,7 @@ from django.conf import settings
 from django.core.urlresolvers import reverse
 
 from webui.models import repo_models_valid
-from webui import tasks
+from webui.tasks import common as tasks_common
 
 
 def sitewide(request):
@@ -34,7 +34,7 @@ def sitewide(request):
         'username': request.session.get('idservice_username', None),
         'git_name': request.session.get('git_name', None),
         'git_mail': request.session.get('git_mail', None),
-        'celery_tasks': tasks.session_tasks_list(request),
+        'celery_tasks': tasks_common.session_tasks_list(request),
         'celery_status_url': reverse("webui-task-status"),
         'celery_status_update': request.session.get('celery_status_update', False),
         'STATIC_URL': settings.STATIC_URL,

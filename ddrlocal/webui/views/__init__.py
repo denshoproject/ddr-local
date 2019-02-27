@@ -18,7 +18,7 @@ from webui import gitstatus
 from webui.decorators import ddrview
 from webui.forms import LoginForm, TaskDismissForm
 from webui import identifier
-from webui import tasks
+from webui.tasks import common as common_tasks
 from webui.views.decorators import login_required
 
 # helpers --------------------------------------------------------------
@@ -164,7 +164,7 @@ def task_list( request ):
     """Show pending/successful/failed tasks; UI for dismissing tasks.
     """
     # add start datetime to tasks list
-    celery_tasks = tasks.session_tasks_list(
+    celery_tasks = common_tasks.session_tasks_list(
         request
     )
     for task in celery_tasks:
@@ -176,7 +176,7 @@ def task_list( request ):
             for task in celery_tasks:
                 fieldname = 'dismiss_%s' % task['task_id']
                 if (fieldname in form.cleaned_data.keys()) and form.cleaned_data[fieldname]:
-                    tasks.dismiss_session_task(
+                    common_tasks.dismiss_session_task(
                         request,
                         task['task_id']
                     )
@@ -208,7 +208,7 @@ def task_status( request ):
 
 @login_required
 def task_dismiss( request, task_id ):
-    tasks.dismiss_session_task(
+    common_tasks.dismiss_session_task(
         request,
         task_id
     )
