@@ -40,7 +40,7 @@ def edit(request, collection, entity, form_data, git_name, git_mail, agent):
     # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
     celery_tasks[result.task_id] = {
         'task_id': result.task_id,
-        'action': 'webui-entity-edit',
+        'action': 'entity-edit',
         'collection_url': collection.absolute_url(),
         'collection_id': collection.id,
         'entity_url': entity.absolute_url(),
@@ -65,7 +65,7 @@ class EntityEditTask(Task):
         gitstatus.update(settings.MEDIA_BASE, collection_path)
         gitstatus.unlock(settings.MEDIA_BASE, 'entity_edit')
 
-@task(base=EntityEditTask, name='webui-entity-edit')
+@task(base=EntityEditTask, name='entity-edit')
 def entity_edit(collection_path, entity_id, form_data, git_name, git_mail, agent=''):
     """The time-consuming parts of entity-edit.
     
@@ -111,7 +111,7 @@ def collection_delete_entity(request, git_name, git_mail, collection, entity, ag
     # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
     celery_tasks[result.task_id] = {
         'task_id': result.task_id,
-        'action': 'webui-entity-delete',
+        'action': 'entity-delete',
         'collection_url': collection.absolute_url(),
         'collection_id': collection.id,
         'entity_url': entity.absolute_url(),
@@ -136,7 +136,7 @@ class DeleteEntityTask(Task):
         gitstatus.update(settings.MEDIA_BASE, collection_path)
         gitstatus.unlock(settings.MEDIA_BASE, 'delete_entity')
 
-@task(base=DeleteEntityTask, name='webui-entity-delete')
+@task(base=DeleteEntityTask, name='entity-delete')
 def delete( git_name, git_mail, collection_path, entity_id, agent='' ):
     """
     @param collection_path: string
@@ -184,7 +184,7 @@ def entity_reload_files(request, collection, entity, git_name, git_mail, agent):
     # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
     celery_tasks[result.task_id] = {
         'task_id': result.task_id,
-        'action': 'webui-entity-reload-files',
+        'action': 'entity-reload-files',
         'entity_url': entity.absolute_url(),
         'entity_id': entity.id,
         'start': converters.datetime_to_text(datetime.now(settings.TZ)),}
@@ -209,7 +209,7 @@ class EntityReloadTask(Task):
         gitstatus.update(settings.MEDIA_BASE, collection_path)
         gitstatus.unlock(settings.MEDIA_BASE, 'reload_files')
 
-@task(base=EntityReloadTask, name='webui-entity-reload-files')
+@task(base=EntityReloadTask, name='entity-reload-files')
 def reload_files(collection_path, entity_id, git_name, git_mail, agent=''):
     """Regenerate entity.json's list of child files.
     

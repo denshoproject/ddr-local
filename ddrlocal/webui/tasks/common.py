@@ -47,6 +47,103 @@ TASK_STATUSES_DISMISSABLE = ['STARTED', 'SUCCESS', 'FAILURE', 'RETRY', 'REVOKED'
 # IMPORTANT: These are templates.  Arguments (words in {parentheses}) MUST match keys in the task dict. 
 # See "Accessing arguments by name" section on http://docs.python.org/2.7/library/string.html#format-examples
 TASK_STATUS_MESSAGES = {
+
+    'collection-check': {
+        #'STARTED': '',
+        'PENDING': 'Checking <b><a href="{collection_url}">{collection_id}</a></b> files.',
+        'SUCCESS': 'Checked <b><a href="{collection_url}">{collection_id}</a></b> files. See Background Tasks for results.',
+        'FAILURE': 'Could not check <b><a href="{collection_url}">{collection_id}</a></b> files.',
+        #'RETRY': '',
+        #'REVOKED': '',
+    },
+
+    'collection-edit': {
+        #'STARTED': '',
+        'PENDING': 'Saving changes to collection <b><a href="{collection_url}">{collection_id}</a></b>...',
+        'SUCCESS': 'Saved changes to collection <b><a href="{collection_url}">{collection_id}</a></b>.',
+        'FAILURE': 'Could not save changes to collection <b><a href="{collection_url}">{collection_id}</a></b>.',
+        #'RETRY': '',
+        #'REVOKED': '',
+    },
+
+    'collection-sync': {
+        #'STARTED': '',
+        'PENDING': 'Syncing <b><a href="{collection_url}">{collection_id}</a></b> with the workbench server.',
+        'SUCCESS': 'Synced <b><a href="{collection_url}">{collection_id}</a></b> with the workbench server.',
+        'FAILURE': 'Could not sync <b><a href="{collection_url}">{collection_id}</a></b> with the workbench server.',
+        #'RETRY': '',
+        #'REVOKED': '',
+    },
+
+    'collection-signatures': {
+        #'STARTED': '',
+        'PENDING': 'Choosing signatures for <b><a href="{collection_url}">{collection_id}</a></b>.',
+        'SUCCESS': 'Signatures chosen for <b><a href="{collection_url}">{collection_id}</a></b>.',
+        'FAILURE': 'Could not choose signatures for <b><a href="{collection_url}">{collection_id}</a></b>.',
+        #'RETRY': '',
+        #'REVOKED': '',
+    },
+
+    'csv-export-model': {
+        #'STARTED': '',
+        'PENDING': 'Exporting {collection_id} {things} to CSV.',
+        'SUCCESS': 'CSV file ready for download: <a href="{file_url}">{file_name}</a>.',
+        'FAILURE': 'Could not export {collection_id} {things} to CSV.',
+        #'RETRY': '',
+        #'REVOKED': '',
+    },
+
+    'search-reindex': {
+        #'STARTED': '',
+        'PENDING': 'Recreating search index <b>{index}</b>.',
+        'SUCCESS': 'Reindexing <b>{index}</b> completed.',
+        'FAILURE': 'Reindexing <b>{index}</b> failed!',
+        #'RETRY': '',
+        #'REVOKED': '',
+    },
+
+    'entity-edit': {
+        #'STARTED': '',
+        'PENDING': 'Saving changes to object <b><a href="{entity_url}">{entity_id}</a></b>...',
+        'SUCCESS': 'Saved changes to object <b><a href="{entity_url}">{entity_id}</a></b>.',
+        'FAILURE': 'Could not save changes to object <b><a href="{entity_url}">{entity_id}</a></b>.',
+        #'RETRY': '',
+        #'REVOKED': '',
+    },
+
+    'entity-delete': {
+        #'STARTED': '',
+        'PENDING': 'Deleting object <b>{entity_id}</b> from <a href="{collection_url}">{collection_id}</a>.',
+        'SUCCESS': 'Deleted object <b>{entity_id}</b> from <a href="{collection_url}">{collection_id}</a>.',
+        'FAILURE': 'Could not delete object <a href="{entity_url}">{entity_id}</a> from <a href="{collection_url}">{collection_id}</a>.',
+        #'RETRY': '',
+        #'REVOKED': '',
+    },
+
+    'entity-reload-files': {},
+
+    'entity-add-external': {},
+
+    'entity-add-access': {},
+    
+    'file-edit': {
+        #'STARTED': '',
+        'PENDING': 'Saving changes to file <b><a href="{file_url}">{file_id}</a></b>...',
+        'SUCCESS': 'Saved changes to file <b><a href="{file_url}">{file_id}</a></b>.',
+        'FAILURE': 'Could not save changes to file <b><a href="{file_url}">{file_id}</a></b>.',
+        #'RETRY': '',
+        #'REVOKED': '',
+    },
+
+    'file-delete': {
+        #'STARTED': '',
+        'PENDING': 'Deleting file <b>{filename}</b> from <a href="{entity_url}">{entity_id}</a>.',
+        'SUCCESS': 'Deleted file <b>{filename}</b> from <a href="{entity_url}">{entity_id}</a>.',
+        'FAILURE': 'Could not delete file <a href="{file_url}">{filename}</a> from <a href="{entity_url}">{entity_id}</a>.',
+        #'RETRY': '',
+        #'REVOKED': '',
+    },
+
     'webui-file-new-master': {
         #'STARTED': '',
         'PENDING': 'Uploading <b>{filename}</b> to <a href="{entity_url}">{entity_id}</a>.',
@@ -71,94 +168,7 @@ TASK_STATUS_MESSAGES = {
         #'RETRY': '',
         #'REVOKED': '',
     },
-    'webui-collection-check': {
-        #'STARTED': '',
-        'PENDING': 'Checking <b><a href="{collection_url}">{collection_id}</a></b> files.',
-        'SUCCESS': 'Checked <b><a href="{collection_url}">{collection_id}</a></b> files. See Background Tasks for results.',
-        'FAILURE': 'Could not check <b><a href="{collection_url}">{collection_id}</a></b> files.',
-        #'RETRY': '',
-        #'REVOKED': '',
-    },
-    'webui-collection-sync': {
-        #'STARTED': '',
-        'PENDING': 'Syncing <b><a href="{collection_url}">{collection_id}</a></b> with the workbench server.',
-        'SUCCESS': 'Synced <b><a href="{collection_url}">{collection_id}</a></b> with the workbench server.',
-        'FAILURE': 'Could not sync <b><a href="{collection_url}">{collection_id}</a></b> with the workbench server.',
-        #'RETRY': '',
-        #'REVOKED': '',
-    },
-    'webui-collection-signatures': {
-        #'STARTED': '',
-        'PENDING': 'Choosing signatures for <b><a href="{collection_url}">{collection_id}</a></b>.',
-        'SUCCESS': 'Signatures chosen for <b><a href="{collection_url}">{collection_id}</a></b>.',
-        'FAILURE': 'Could not choose signatures for <b><a href="{collection_url}">{collection_id}</a></b>.',
-        #'RETRY': '',
-        #'REVOKED': '',
-    },
-    'webui-search-reindex': {
-        #'STARTED': '',
-        'PENDING': 'Recreating search index <b>{index}</b>.',
-        'SUCCESS': 'Reindexing <b>{index}</b> completed.',
-        'FAILURE': 'Reindexing <b>{index}</b> failed!',
-        #'RETRY': '',
-        #'REVOKED': '',
-    },
-    'webui-collection-edit': {
-        #'STARTED': '',
-        'PENDING': 'Saving changes to collection <b><a href="{collection_url}">{collection_id}</a></b>...',
-        'SUCCESS': 'Saved changes to collection <b><a href="{collection_url}">{collection_id}</a></b>.',
-        'FAILURE': 'Could not save changes to collection <b><a href="{collection_url}">{collection_id}</a></b>.',
-        #'RETRY': '',
-        #'REVOKED': '',
-    },
-    'webui-file-edit': {
-        #'STARTED': '',
-        'PENDING': 'Saving changes to file <b><a href="{file_url}">{file_id}</a></b>...',
-        'SUCCESS': 'Saved changes to file <b><a href="{file_url}">{file_id}</a></b>.',
-        'FAILURE': 'Could not save changes to file <b><a href="{file_url}">{file_id}</a></b>.',
-        #'RETRY': '',
-        #'REVOKED': '',
-    },
-    'webui-entity-edit': {
-        #'STARTED': '',
-        'PENDING': 'Saving changes to object <b><a href="{entity_url}">{entity_id}</a></b>...',
-        'SUCCESS': 'Saved changes to object <b><a href="{entity_url}">{entity_id}</a></b>.',
-        'FAILURE': 'Could not save changes to object <b><a href="{entity_url}">{entity_id}</a></b>.',
-        #'RETRY': '',
-        #'REVOKED': '',
-    },
-    'webui-entity-delete': {
-        #'STARTED': '',
-        'PENDING': 'Deleting object <b>{entity_id}</b> from <a href="{collection_url}">{collection_id}</a>.',
-        'SUCCESS': 'Deleted object <b>{entity_id}</b> from <a href="{collection_url}">{collection_id}</a>.',
-        'FAILURE': 'Could not delete object <a href="{entity_url}">{entity_id}</a> from <a href="{collection_url}">{collection_id}</a>.',
-        #'RETRY': '',
-        #'REVOKED': '',
-    },
-    'webui-file-edit': {
-        #'STARTED': '',
-        'PENDING': 'Saving changes to file <b><a href="{file_url}">{file_id}</a></b>...',
-        'SUCCESS': 'Saved changes to file <b><a href="{file_url}">{file_id}</a></b>.',
-        'FAILURE': 'Could not save changes to file <b><a href="{file_url}">{file_id}</a></b>.',
-        #'RETRY': '',
-        #'REVOKED': '',
-    },
-    'webui-file-delete': {
-        #'STARTED': '',
-        'PENDING': 'Deleting file <b>{filename}</b> from <a href="{entity_url}">{entity_id}</a>.',
-        'SUCCESS': 'Deleted file <b>{filename}</b> from <a href="{entity_url}">{entity_id}</a>.',
-        'FAILURE': 'Could not delete file <a href="{file_url}">{filename}</a> from <a href="{entity_url}">{entity_id}</a>.',
-        #'RETRY': '',
-        #'REVOKED': '',
-    },
-    'webui-csv-export-model': {
-        #'STARTED': '',
-        'PENDING': 'Exporting {collection_id} {things} to CSV.',
-        'SUCCESS': 'CSV file ready for download: <a href="{file_url}">{file_name}</a>.',
-        'FAILURE': 'Could not export {collection_id} {things} to CSV.',
-        #'RETRY': '',
-        #'REVOKED': '',
-    },
+
 }
 
 

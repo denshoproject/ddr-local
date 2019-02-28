@@ -184,7 +184,7 @@ def edit(request, collection, file_, form_data, git_name, git_mail):
     # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
     celery_tasks[result.task_id] = {
         'task_id': result.task_id,
-        'action': 'webui-file-edit',
+        'action': 'file-edit',
         'file_url': file_.absolute_url(),
         'file_id': file_.id,
         'start': converters.datetime_to_text(datetime.now(settings.TZ)),}
@@ -201,7 +201,7 @@ class FileEditTask(Task):
         gitstatus.update(settings.MEDIA_BASE, collection_path)
         gitstatus.unlock(settings.MEDIA_BASE, 'file_edit')
 
-@task(base=FileEditTask, name='webui-file-edit')
+@task(base=FileEditTask, name='file-edit')
 def file_edit(collection_path, file_id, form_data, git_name, git_mail):
     """The time-consuming parts of file-edit.
     
@@ -245,7 +245,7 @@ def delete(request, git_name, git_mail, collection, entity, file_, agent):
     # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
     celery_tasks[result.task_id] = {
         'task_id': result.task_id,
-        'action': 'webui-file-delete',
+        'action': 'file-delete',
         'entity_url': entity.absolute_url(),
         'entity_id': entity.id,
         'filename': file_.basename,
@@ -270,7 +270,7 @@ class DeleteFileTask(Task):
         gitstatus.update(settings.MEDIA_BASE, collection_path)
         gitstatus.unlock(settings.MEDIA_BASE, 'delete_file')
 
-@task(base=DeleteFileTask, name='webui-file-delete')
+@task(base=DeleteFileTask, name='file-delete')
 def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, agent='' ):
     """
     @param collection_path: string

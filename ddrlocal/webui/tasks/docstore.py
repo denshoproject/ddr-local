@@ -30,7 +30,7 @@ class ElasticsearchTask(Task):
         gitstatus.unlock(settings.MEDIA_BASE, 'reindex')
         logger.debug('ElasticsearchTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
 
-@task(base=ElasticsearchTask, name='webui-search-reindex')
+@task(base=ElasticsearchTask, name='search-reindex')
 def reindex( index ):
     """
     @param index: Name of index to create or update
@@ -84,7 +84,7 @@ def reindex_and_notify( index ):
     # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
     task = {
         'task_id': result.task_id,
-        'action': 'webui-search-reindex',
+        'action': 'search-reindex',
         'index': index,
         'start': converters.datetime_to_text(datetime.now(settings.TZ)),
     }

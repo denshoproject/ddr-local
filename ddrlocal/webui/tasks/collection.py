@@ -81,7 +81,7 @@ def edit(request, collection, cleaned_data, git_name, git_mail):
     # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
     celery_tasks[result.task_id] = {
         'task_id': result.task_id,
-        'action': 'webui-collection-edit',
+        'action': 'collection-edit',
         'collection_url': collection.absolute_url(),
         'collection_id': collection.id,
         'start': converters.datetime_to_text(datetime.now(settings.TZ)),}
@@ -98,7 +98,7 @@ class CollectionEditTask(Task):
         gitstatus.update(settings.MEDIA_BASE, collection_path)
         gitstatus.unlock(settings.MEDIA_BASE, 'collection_edit')
 
-@task(base=CollectionEditTask, name='webui-collection-edit')
+@task(base=CollectionEditTask, name='collection-edit')
 def save(collection_path, cleaned_data, git_name, git_mail):
     """The time-consuming parts of collection-edit.
     
@@ -196,7 +196,7 @@ class CollectionSignaturesDebugTask(Task):
         gitstatus.update(settings.MEDIA_BASE, collection_path)
         gitstatus.unlock(settings.MEDIA_BASE, 'collection_signatures')
 
-@task(base=CollectionSignaturesDebugTask, name='webui-collection-signatures')
+@task(base=CollectionSignaturesDebugTask, name='collection-signatures')
 def signatures(collection_path, git_name, git_mail):
     """Identifies signature files for collection and entities.
     

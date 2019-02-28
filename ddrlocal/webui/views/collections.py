@@ -181,7 +181,7 @@ def sync( request, cid ):
             celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
             # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
             task = {'task_id': result.task_id,
-                    'action': 'webui-collection-sync',
+                    'action': 'collection-sync',
                     'collection_id': collection.id,
                     'collection_url': collection.absolute_url(),
                     'start': converters.datetime_to_text(datetime.now(settings.TZ)),}
@@ -410,7 +410,7 @@ def signatures( request, cid ):
             # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
             task = {
                 'task_id': result.task_id,
-                'action': 'webui-collection-signatures',
+                'action': 'collection-signatures',
                 'collection_id': collection.id,
                 'collection_url': collection.absolute_url(),
                 'start': converters.datetime_to_text(datetime.now(settings.TZ)),
@@ -450,7 +450,7 @@ def csv_export( request, cid, model=None ):
     celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
     # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
     task = {'task_id': result.task_id,
-            'action': 'webui-csv-export-model',
+            'action': 'csv-export-model',
             'collection_id': collection.id,
             'collection_url': collection.absolute_url(),
             'things': things[model],
@@ -652,7 +652,7 @@ def check(request, cid):
     # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
     task = {
         'task_id': result.task_id,
-        'action': 'webui-collection-check',
+        'action': 'collection-check',
         'collection_id': ci.id,
         'collection_url': ci.urlpath('editor'),
         'start': converters.datetime_to_text(datetime.now(settings.TZ)),
