@@ -139,6 +139,15 @@ TASK_STATUS_MESSAGES = {
         #'REVOKED': '',
     },
 
+    'set-signature': {
+        #'STARTED': '',
+        'PENDING': 'Setting signature for <b><a href="{parent_url}">{parent_id}</a></b>...',
+        'SUCCESS': 'Set signature for <b><a href="{parent_url}">{parent_id}</a></b>.',
+        'FAILURE': 'Could not set signature for <b><a href="{parent_url}">{parent_id}</a></b>.',
+        #'RETRY': '',
+        #'REVOKED': '',
+    },
+
     'webui-file-new-master': {
         #'STARTED': '',
         'PENDING': 'Uploading <b>{filename}</b> to <a href="{entity_url}">{entity_id}</a>.',

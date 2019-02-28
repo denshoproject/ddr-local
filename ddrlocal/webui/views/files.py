@@ -456,33 +456,16 @@ def set_signature( request, fid ):
     collection = file_.collection()
     check_parents(entity, collection)
     #
-    if (request.method == 'POST') and (request.POST.get('object_id')):
-            
-        # NOTE: We have to populate dict with entity/collection data
-        # prepped with converters.form_prep because OBJECT.save() assumes
-        # the data is coming from a form, and was converted into
-        # form-friendly text.
-        if request.POST.get('object_id') == entity.id:
-            cleaned_data = entity.form_prep()
-            cleaned_data['signature_id'] = file_.id
-            entity_tasks.edit(
+    if request.method == 'POST':
+        parent_id = request.POST.get('object_id')
+        if parent_id in [entity.id, collection.id]:
+            file_tasks.signature(
                 request,
-                collection,
-                entity,
-                cleaned_data,
-                request.session['git_name'], request.session['git_mail'],
-                settings.AGENT
+                parent_id=parent_id,
+                file_id=fid,
+                git_name=request.session['git_name'],
+                git_mail=request.session['git_mail'],
             )
-        elif request.POST.get('object_id') == collection.id:
-            cleaned_data = collection.form_prep()
-            cleaned_data['signature_id'] = file_.id
-            collection_tasks.edit(
-                request,
-                collection,
-                cleaned_data,
-                request.session['git_name'], request.session['git_mail'],
-            )
-            
     return HttpResponseRedirect( file_.absolute_url() )
 
 @ddrview

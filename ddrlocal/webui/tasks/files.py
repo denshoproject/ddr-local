@@ -297,3 +297,76 @@ def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, 
             logger.error('Could not delete document from Elasticsearch.')
     
     return exit,status,collection_path,file_basename
+
+
+# ----------------------------------------------------------------------
+
+def signature(request, parent_id, file_id, git_name, git_mail):
+    # start tasks
+    parent = Identifier(id=parent_id).object()
+    if parent.identifier.model == 'collection':
+        collection = parent
+    else:
+        collection = parent.collection()
+    result = set_signature.apply_async(
+        (parent_id, file_id, git_name, git_mail),
+        countdown=2
+    )
+    # lock collection
+    lockstatus = collection.lock(result.task_id)
+    # add celery task_id to session
+    celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
+    # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
+    celery_tasks[result.task_id] = {
+        'task_id': result.task_id,
+        'action': 'set-signature',
+        'parent_id': parent_id,
+        'parent_url': parent.absolute_url(),
+        'file_id': file_id,
+        'start': converters.datetime_to_text(datetime.now(settings.TZ)),}
+    request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
+
+class FileSignatureTask(Task):
+    abstract = True
+    
+    def after_return(self, status, retval, task_id, args, kwargs, einfo):
+        logger.debug('FileSignatureTask.after_return(%s, %s, %s, %s, %s)' % (
+            status, retval, task_id, args, kwargs
+        ))
+        parent_id = args[0]
+        parent = Identifier(id=parent_id).object()
+        if parent.identifier.model == 'collection':
+            collection = parent
+        else:
+            collection = parent.collection()
+        collection_path = collection.identifier.path_abs()
+        lockstatus = collection.unlock(task_id)
+        gitstatus.update(settings.MEDIA_BASE, collection_path)
+        gitstatus.unlock(settings.MEDIA_BASE, 'set_signature')
+
+@task(base=FileSignatureTask, name='set-signature')
+def set_signature(parent_id, file_id, git_name, git_mail):
+    """Set file_id as signature of specified parent.
+    
+    @param parent_id: str
+    @param file_id: str
+    @param git_name: Username of git committer.
+    @param git_mail: Email of git committer.
+    """
+    logger.debug('tasks.files.set_signature(%s,%s,%s,%s)' % (
+        parent_id, file_id, git_name, git_mail
+    ))
+    parent = Identifier(id=parent_id).object()
+    file_ = Identifier(id=file_id).object()
+    collection_path = file_.collection_path
+    parent.signature_id = file_id
+    gitstatus.lock(settings.MEDIA_BASE, 'set_signature')
+    exit,status,updated_files = parent.save(
+        git_name, git_mail,
+        {}
+    )
+    dvcs_tasks.gitstatus_update.apply_async(
+        (collection_path,),
+        countdown=2
+    )
+    return status,parent_id,file_id
