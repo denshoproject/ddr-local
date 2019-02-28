@@ -76,7 +76,7 @@ def entity_edit(collection_path, entity_id, form_data, git_name, git_mail, agent
     @param git_mail: Email of git committer.
     @param agent: (optional) Name of software making the change.
     """
-    logger.debug('collection_entity_edit(%s,%s,%s,%s,%s)' % (
+    logger.debug('tasks.entity.entity_edit(%s,%s,%s,%s,%s)' % (
         git_name, git_mail, collection_path, entity_id, agent))
     collection = Collection.from_identifier(Identifier(path=collection_path))
     entity = Entity.from_identifier(Identifier(id=entity_id))
@@ -146,7 +146,7 @@ def delete( git_name, git_mail, collection_path, entity_id, agent='' ):
     @param agent: (optional) Name of software making the change.
     """
     gitstatus.lock(settings.MEDIA_BASE, 'delete_entity')
-    logger.debug('collection_delete_entity(%s,%s,%s,%s,%s)' % (git_name, git_mail, collection_path, entity_id, agent))
+    logger.debug('tasks.entity.delete(%s,%s,%s,%s,%s)' % (git_name, git_mail, collection_path, entity_id, agent))
     # remove the entity
     collection = Collection.from_identifier(Identifier(collection_path))
     entity = Entity.from_identifier(Identifier(entity_id))
@@ -219,7 +219,7 @@ def reload_files(collection_path, entity_id, git_name, git_mail, agent=''):
     @param git_mail: Email of git committer.
     @param agent: (optional) Name of software making the change.
     """
-    logger.debug('reload_files(%s,%s,%s,%s,%s)' % (collection_path, entity_id, git_name, git_mail, agent))
+    logger.debug('tasks.entity.reload_files(%s,%s,%s,%s,%s)' % (collection_path, entity_id, git_name, git_mail, agent))
     gitstatus.lock(settings.MEDIA_BASE, 'reload_files')
     entity = Entity.from_identifier(Identifier(entity_id))
     collection = Collection.from_identifier(Identifier(path=collection_path))

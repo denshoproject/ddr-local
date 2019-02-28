@@ -107,7 +107,7 @@ def save(collection_path, cleaned_data, git_name, git_mail):
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
     """
-    logger.debug('collection_save(%s,%s,%s)' % (
+    logger.debug('tasks.collection.save(%s,%s,%s)' % (
         git_name, git_mail, collection_path))
     
     collection = Collection.from_identifier(Identifier(path=collection_path))

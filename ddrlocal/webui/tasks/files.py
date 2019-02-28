@@ -211,7 +211,7 @@ def file_edit(collection_path, file_id, form_data, git_name, git_mail):
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
     """
-    logger.debug('file_edit(%s,%s,%s,%s)' % (git_name, git_mail, collection_path, file_id))
+    logger.debug('tasks.files.edit(%s,%s,%s,%s)' % (git_name, git_mail, collection_path, file_id))
     fidentifier = Identifier(id=file_id)
     file_ = DDRFile.from_identifier(fidentifier)
     gitstatus.lock(settings.MEDIA_BASE, 'file_edit')
@@ -280,7 +280,7 @@ def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, 
     @param git_mail: Email of git committer.
     @param agent: (optional) Name of software making the change.
     """
-    logger.debug('delete_file(%s,%s,%s,%s,%s,%s)' % (git_name, git_mail, collection_path, entity_id, file_basename, agent))
+    logger.debug('tasks.files.delete_file(%s,%s,%s,%s,%s,%s)' % (git_name, git_mail, collection_path, entity_id, file_basename, agent))
     
     gitstatus.lock(settings.MEDIA_BASE, 'delete_file')
     file_id = os.path.splitext(file_basename)[0]
