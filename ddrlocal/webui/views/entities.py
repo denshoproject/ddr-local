@@ -34,7 +34,8 @@ from webui.forms.entities import JSONForm, UpdateForm, DeleteEntityForm, RmDupli
 from webui.gitstatus import repository, annex_info
 from webui.identifier import Identifier
 from webui.models import Stub, Collection, Entity
-from webui import tasks
+from webui.tasks import entity as entity_tasks
+from webui.tasks import dvcs as dvcs_tasks
 from webui.views.decorators import login_required
 
 
@@ -346,7 +347,7 @@ def _create_entity(request, eidentifier, collection, git_name, git_mail):
             entity.post_json()
         except ConnectionError:
             logger.error('Could not post to Elasticsearch.')
-        tasks.gitstatus_update.apply_async(
+        dvcs_tasks.gitstatus_update.apply_async(
             (collection.path,),
             countdown=2
         )
@@ -508,7 +509,7 @@ def edit( request, eid ):
             # do the rest in the background:
             # update inheriable fields, commit files, delete cache,
             # update search index, update git status
-            tasks.collection_entity_edit(
+            entity_tasks.edit(
                 request,
                 collection, entity, form.cleaned_data,
                 git_name, git_mail, settings.AGENT
@@ -572,7 +573,7 @@ def delete( request, eid, confirm=False ):
     if request.method == 'POST':
         form = DeleteEntityForm(request.POST)
         if form.is_valid() and form.cleaned_data['confirmed']:
-            tasks.collection_delete_entity(
+            entity_tasks.delete(
                 request,
                 git_name, git_mail,
                 collection, entity,
@@ -597,7 +598,7 @@ def files_reload( request, eid ):
     collection = entity.collection()
     check_parent(collection)
     
-    tasks.entity_reload_files(
+    entity_tasks.reload_files(
         request,
         collection, entity,
         git_name, git_mail, settings.AGENT
@@ -650,7 +651,7 @@ def files_dedupe( request, eid ):
                     entity.post_json()
                 except ConnectionError:
                     logger.error('Could not post to Elasticsearch.')
-                tasks.gitstatus_update.apply_async(
+                dvcs_tasks.gitstatus_update.apply_async(
                     (collection.path,),
                     countdown=2
                 )
