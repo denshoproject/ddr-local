@@ -8,13 +8,10 @@ logger = get_task_logger(__name__)
 
 from django.conf import settings
 
-from webui import docstore
-
 from DDR import converters
 from DDR import models
 
-from .common import TASK_STATUSES, TASK_STATUSES_DISMISSABLE, TASK_STATUS_MESSAGES
-from .common import DebugTask
+from webui import docstore
 
 
 class ElasticsearchTask(Task):

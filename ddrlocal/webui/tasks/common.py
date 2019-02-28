@@ -19,13 +19,6 @@ from django.contrib import messages
 from django.core.cache import cache
 from django.core.urlresolvers import reverse
 
-from webui import docstore
-from webui import GITOLITE_INFO_CACHE_KEY
-from webui import gitolite
-from webui import gitstatus
-from webui.models import Collection, Entity, DDRFile
-from webui.identifier import Identifier
-
 from DDR import batch
 from DDR import commands
 from DDR import converters
@@ -35,9 +28,11 @@ from DDR import signatures
 from DDR import util
 from DDR.ingest import addfile_logger
 
-
-class DebugTask(Task):
-    abstract = True
+from webui import docstore
+from webui import GITOLITE_INFO_CACHE_KEY
+from webui import gitolite
+from webui import gitstatus
+from webui import identifier
 
 
 TASK_STATUSES = ['STARTED', 'PENDING', 'SUCCESS', 'FAILURE', 'RETRY', 'REVOKED',]
@@ -219,7 +214,7 @@ def session_tasks( request ):
                 r = ctask['result']
                 if type(r) == type({}):
                     if r.get('id', None):
-                        oid = Identifier(r['id'])
+                        oid = identifier.Identifier(r['id'])
                         object_url = reverse('webui-%s' % oid.model, args=[oid.id])
                         ctask['%s_url' % oid.model] = object_url
             tasks[task['id']] = ctask

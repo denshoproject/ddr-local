@@ -10,18 +10,16 @@ logger = get_task_logger(__name__)
 
 from django.conf import settings
 
-from webui import docstore
-from webui import gitstatus
-from webui.models import Collection, Entity, DDRFile
-from webui.identifier import Identifier
-
 from DDR import commands
 from DDR import converters
 from DDR import models
 from DDR.ingest import addfile_logger
 
-from .common import TASK_STATUSES, TASK_STATUSES_DISMISSABLE, TASK_STATUS_MESSAGES
-from .common import DebugTask
+from webui import docstore
+from webui import gitstatus
+from webui.models import Collection, Entity, DDRFile
+from webui.identifier import Identifier
+from webui.tasks import dvcs as dvcs_tasks
 
 
 # ----------------------------------------------------------------------
@@ -221,7 +219,7 @@ def file_edit(collection_path, file_id, form_data, git_name, git_mail):
         form_data
     )
     
-    gitstatus_update.apply_async(
+    dvcs_tasks.gitstatus_update.apply_async(
         (collection_path,),
         countdown=2
     )

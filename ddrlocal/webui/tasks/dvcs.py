@@ -11,8 +11,9 @@ from webui import GITOLITE_INFO_CACHE_KEY
 from webui import gitolite
 from webui import gitstatus
 
-from .common import TASK_STATUSES, TASK_STATUSES_DISMISSABLE, TASK_STATUS_MESSAGES
-from .common import DebugTask
+
+class DebugTask(Task):
+    abstract = True
 
 
 # ----------------------------------------------------------------------
