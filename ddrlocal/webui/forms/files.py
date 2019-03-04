@@ -29,7 +29,21 @@ class NewFileDDRForm(DDRForm):
 
 MIMETYPE_CHOICES = [
     ('text/html', 'text/html'),
+    ('application/pdf', 'application/pdf'),
+    ('video/mpg', 'video/mpg'),
     ('video/mp4', 'video/mp4'),
+    ('video/ogg', 'video/ogg'),
+    ('video/x-m4v', 'video/x-m4v'),
+    ('video/x-msvideo', 'video/x-msvideo'),
+    ('video/quicktime', 'video/quicktime'),
+    ('application/mxf', 'application/mxf'),
+    ('audio/mp3', 'audio/mp3'),
+    ('audio/x-wav', 'audio/x-wav'),
+    ('audio/mp4', 'audio/mp4'),
+    ('audio/ogg', 'audio/ogg'),
+    ('image/tiff', 'image/tiff'),
+    ('image/jpeg', 'image/jpeg'), 
+    ('image/bmp', 'image/bmp')
 ]
 
 class NewExternalFileForm(forms.Form):
