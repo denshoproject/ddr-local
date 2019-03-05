@@ -47,12 +47,21 @@ MIMETYPE_CHOICES = [
 ]
 
 class NewExternalFileForm(forms.Form):
-    filename = forms.CharField(required=True, max_length=255)
-    mimetype = forms.ChoiceField(choices=MIMETYPE_CHOICES, required=True)
-    size = forms.CharField(required=True, max_length=255)
-    sha1 = forms.CharField(required=True, max_length=255)
-    md5 = forms.CharField(required=True, max_length=255)
-    sha256 = forms.CharField(required=True, max_length=255)
+    filename = forms.CharField(required=True, max_length=255, label='Original Filename')
+    mimetype = forms.ChoiceField(choices=MIMETYPE_CHOICES, required=True, label='Mime Type')
+    size = forms.CharField(required=True, max_length=255, label='File Size', help_text='Expressed in bytes')
+    sha1 = forms.CharField(required=True, max_length=255, label='SHA1 Hash')
+    md5 = forms.CharField(required=True, max_length=255, label='MD5 Hash')
+    sha256 = forms.CharField(required=True, max_length=255, label='SHA256 Hash')
+    filelabel = forms.CharField(required=False, max_length=255, label='Label')
+    sort = forms.CharField(required=True, max_length=255, initial=0, label='Sort Order')
+    digitize_person = forms.CharField(required=False, max_length=255, label='Digitize Person')
+    tech_notes = forms.CharField(required=False, max_length=255, label='Technical Notes')
+    external_urls = forms.CharField(required=False, 
+                           label='External URLs',
+                           widget='TextArea',
+                           max_length=4000,
+                           help_text='Use the following format: "Label:URL" (e.g., "Internet Archive download:https://archive.org/download/..."). Multiple URLs are allowed, but must be separated using a semi-colon.')
 
 class NewMetaFileForm(forms.Form):
     sha1 = forms.CharField(max_length=255)

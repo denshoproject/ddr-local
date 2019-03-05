@@ -283,6 +283,10 @@ def new_external(request, rid):
                 'md5': form.cleaned_data['md5'],
                 'size': form.cleaned_data['size'],
                 'mimetype': form.cleaned_data['mimetype'],
+                'label': form.cleaned_data['filelabel'],
+                'digitize_person': form.cleaned_data['digitizer'],
+                'external_urls': form.cleaned_data['external_urls'],
+                'tech_notes': form.cleaned_data['tech_notes']
             }
             
             # start tasks
