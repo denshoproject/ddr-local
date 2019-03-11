@@ -35,6 +35,7 @@
 {% if entity.locked or collection.locked or collection.repo_behind or collection.repo_conflicted %}
 <p>
 <button class="btn btn-mini" href="{{ browse_url }}"><span class="glyphicon glyphicon-plus"></span> Add a file</button>
+<button class="btn btn-mini" href="{{ browse_url }}"><span class="glyphicon glyphicon-plus"></span> Add an external file</button>
 <!--
 or <a class="btn btn-mini" href="{{ batch_url }}">Add a batch of files</a>
 -->
@@ -48,6 +49,7 @@ or <a class="btn btn-mini" href="{{ batch_url }}">Add a batch of files</a>
 {% else %}{# locked/conflicted #}
 <p>
 <a class="btn btn-primary btn-mini" href="{{ browse_url }}"><span class="glyphicon glyphicon-plus icon-white"></span> Add a file</a>
+<a class="btn btn-primary btn-mini" href="{{ external_url }}"><span class="glyphicon glyphicon-plus icon-white"></span> Add an external file</a>
 <!--
 or <a class="btn btn-primary btn-mini" href="{{ batch_url }}">Add a batch of files</a>
 -->

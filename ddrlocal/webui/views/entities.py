@@ -285,6 +285,7 @@ def file_role( request, rid ):
         'entity': entity,
         'children_urls': entity.children_urls(active=role),
         'browse_url': entity.file_browse_url(role),
+        'external_url': entity.file_external_url(role),
         'batch_url': entity.file_browse_url(role),
         'paginator': paginator,
         'page': page,

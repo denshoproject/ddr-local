@@ -576,6 +576,13 @@ class Entity( DDREntity ):
         ri = Identifier(idparts)
         return reverse('webui-file-browse', args=[ri.id])
     
+    def file_external_url(self, role):
+        idparts = self.identifier.idparts
+        idparts['model'] = 'file-role'
+        idparts['role'] = role
+        ri = Identifier(idparts)
+        return reverse('webui-file-new-external', args=[ri.id])
+    
     def children_urls(self, active=None):
         """Generate data for populating entity children/roles tabs
         """
