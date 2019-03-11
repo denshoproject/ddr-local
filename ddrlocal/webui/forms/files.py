@@ -47,13 +47,25 @@ MIMETYPE_CHOICES = [
 ]
 
 class NewExternalFileForm(forms.Form):
-    filename = forms.CharField(required=True, max_length=255)
-    mimetype = forms.ChoiceField(choices=MIMETYPE_CHOICES, required=True)
-    size = forms.CharField(required=True, max_length=255)
-    sha1 = forms.CharField(required=True, max_length=255)
-    md5 = forms.CharField(required=True, max_length=255)
-    sha256 = forms.CharField(required=True, max_length=255)
-
+    filename = forms.CharField(
+        label='Filename', max_length=255, required=True
+    )
+    mimetype = forms.ChoiceField(
+        label='Mimetype', choices=MIMETYPE_CHOICES, required=True,
+    )
+    size = forms.IntegerField(
+        label='File size (bytes)', required=True,
+    )
+    sha1 = forms.CharField(
+        label='SHA1', max_length=40, required=True,
+    )
+    md5 = forms.CharField(
+        label='MD5', max_length=32, required=True,
+    )
+    sha256 = forms.CharField(
+        label='SHA256', max_length=64, required=True,
+    )
+        
 class NewMetaFileForm(forms.Form):
     sha1 = forms.CharField(max_length=255)
     filename = forms.CharField(max_length=255)
