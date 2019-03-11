@@ -184,7 +184,7 @@ def enforce_git_credentials(request):
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     return git_name,git_mail
 
-def check_object(entity, check_locks=True):
+def check_object(entity, request, check_locks=True):
     if not entity:
         raise Http404
     if check_locks and entity.locked():
@@ -209,7 +209,7 @@ def check_parent(collection, check_locks=True, fetch=True):
 @storage_required
 def detail( request, eid ):
     entity = Entity.from_identifier(Identifier(eid))
-    check_object(entity, check_locks=False)
+    check_object(entity, request, check_locks=False)
     collection = entity.collection()
     entity.model_def_commits()
     entity.model_def_fields()
@@ -227,7 +227,7 @@ def detail( request, eid ):
 @storage_required
 def children(request, eid):
     entity = Entity.from_identifier(Identifier(eid))
-    check_object(entity, check_locks=False)
+    check_object(entity, request, check_locks=False)
     collection = entity.collection()
     
     # models that are under entity but are not nodes (i.e. files)
@@ -269,7 +269,7 @@ def file_role( request, rid ):
     file_role = Stub.from_identifier(Identifier(rid))
     role = file_role.identifier.parts['role']
     entity = file_role.parent(stubs=True)
-    check_object(entity, check_locks=False)
+    check_object(entity, request, check_locks=False)
     collection = entity.collection()
     duplicates = entity.detect_file_duplicates(role)
     if duplicates:
@@ -295,7 +295,7 @@ def file_role( request, rid ):
 @storage_required
 def addfile_log( request, eid ):
     entity = Entity.from_identifier(Identifier(eid))
-    check_object(entity, check_locks=False)
+    check_object(entity, request, check_locks=False)
     collection = entity.collection()
     return render(request, 'webui/entities/addfiles-log.html', {
         'collection': collection,
@@ -305,7 +305,7 @@ def addfile_log( request, eid ):
 @storage_required
 def changelog( request, eid ):
     entity = Entity.from_identifier(Identifier(eid))
-    check_object(entity, check_locks=False)
+    check_object(entity, request, check_locks=False)
     collection = entity.collection()
     return render(request, 'webui/entities/changelog.html', {
         'collection': collection,
@@ -479,7 +479,7 @@ def edit( request, eid ):
     """
     git_name,git_mail = enforce_git_credentials(request)
     entity = Entity.from_identifier(Identifier(eid))
-    check_object(entity)
+    check_object(entity, request)
     module = entity.identifier.fields_module()
     collection = entity.collection()
     check_parent(collection)
@@ -567,7 +567,7 @@ def delete( request, eid, confirm=False ):
     """
     git_name,git_mail = enforce_git_credentials(request)
     entity = Entity.from_identifier(Identifier(eid))
-    check_object(entity)
+    check_object(entity, request)
     collection = entity.collection()
     check_parent(collection)
     
@@ -595,7 +595,7 @@ def files_reload( request, eid ):
     """
     git_name,git_mail = enforce_git_credentials(request)
     entity = Entity.from_identifier(Identifier(eid))
-    check_object(entity)
+    check_object(entity, request)
     collection = entity.collection()
     check_parent(collection)
     
@@ -618,7 +618,7 @@ def files_reload( request, eid ):
 def files_dedupe( request, eid ):
     git_name,git_mail = enforce_git_credentials(request)
     entity = Entity.from_identifier(Identifier(eid))
-    check_object(entity)
+    check_object(entity, request)
     collection = entity.collection()
     check_parent(collection)
     
@@ -677,7 +677,7 @@ def unlock( request, eid, task_id ):
     """
     git_name,git_mail = enforce_git_credentials(request)
     entity = Entity.from_identifier(Identifier(eid))
-    check_object(entity)
+    check_object(entity, request)
     collection = entity.collection()
     
     if task_id and entity.locked() and (task_id == entity.locked()):
