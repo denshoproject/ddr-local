@@ -22,7 +22,7 @@ from webui import forms
 from webui import identifier
 from webui import models
 from webui import search
-from webui import tasks
+from webui.tasks import docstore as docstore_tasks
 from webui.decorators import search_index
 from webui.forms.search import SearchForm, IndexConfirmForm, DropConfirmForm
 from webui.identifier import Identifier
@@ -208,7 +208,7 @@ def reindex( request ):
         if form.is_valid():
             index = form.cleaned_data['index']
             if index:
-                result = tasks.reindex.apply_async( [index], countdown=2)
+                result = docstore_tasks.reindex.apply_async( [index], countdown=2)
                 # add celery task_id to session
                 celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
                 # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.

@@ -576,6 +576,13 @@ class Entity( DDREntity ):
         ri = Identifier(idparts)
         return reverse('webui-file-browse', args=[ri.id])
     
+    def file_external_url(self, role):
+        idparts = self.identifier.idparts
+        idparts['model'] = 'file-role'
+        idparts['role'] = role
+        ri = Identifier(idparts)
+        return reverse('webui-file-new-external', args=[ri.id])
+    
     def children_urls(self, active=None):
         """Generate data for populating entity children/roles tabs
         """
@@ -784,22 +791,24 @@ class Entity( DDREntity ):
 class DDRFile( File ):
     
     @staticmethod
-    def from_json(path_abs, identifier=None):
+    def from_json(path_abs, identifier=None, inherit=True):
         """Instantiates a File object from specified *.json.
         
         @param path_abs: Absolute path to .json file.
+        @param inherit: boolean Whether to inherit values from ancestor(s)
         @returns: DDRFile
         """
-        return from_json(DDRFile, path_abs, identifier)
+        return from_json(DDRFile, path_abs, identifier, inherit=inherit)
     
     @staticmethod
-    def from_identifier(identifier):
+    def from_identifier(identifier, inherit=True):
         """Instantiates a File object, loads data from FILE.json.
         
         @param identifier: Identifier
+        @param inherit: boolean Whether to inherit values from ancestor(s)
         @returns: File
         """
-        return DDRFile.from_json(identifier.path_abs('json'), identifier)
+        return DDRFile.from_json(identifier.path_abs('json'), identifier, inherit=inherit)
     
     @staticmethod
     def from_request(request):

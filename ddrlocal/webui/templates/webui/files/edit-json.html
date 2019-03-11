@@ -35,6 +35,20 @@ Edit
 <form name="edit" action="" method="POST">{% csrf_token %}
 <table>
   <tr><th><label>Object ID:</label></th><td>{{ entity.id }}</td></tr>
+  <tr>
+    <th>
+      <label>
+        SHA1:<br/>
+        SHA256:<br/>
+        MD5:
+      </label>
+    </th>
+    <td>
+      {{ file.sha1 }}<br/>
+      {{ file.sha256 }}<br/>
+      {{ file.md5 }}<br/>
+    </td>
+  </tr>
   {{ form.as_table }}
   <tr>
     <th></th>

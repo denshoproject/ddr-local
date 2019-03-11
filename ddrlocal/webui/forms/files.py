@@ -29,17 +29,43 @@ class NewFileDDRForm(DDRForm):
 
 MIMETYPE_CHOICES = [
     ('text/html', 'text/html'),
+    ('application/pdf', 'application/pdf'),
+    ('video/mpg', 'video/mpg'),
     ('video/mp4', 'video/mp4'),
+    ('video/ogg', 'video/ogg'),
+    ('video/x-m4v', 'video/x-m4v'),
+    ('video/x-msvideo', 'video/x-msvideo'),
+    ('video/quicktime', 'video/quicktime'),
+    ('application/mxf', 'application/mxf'),
+    ('audio/mp3', 'audio/mp3'),
+    ('audio/x-wav', 'audio/x-wav'),
+    ('audio/mp4', 'audio/mp4'),
+    ('audio/ogg', 'audio/ogg'),
+    ('image/tiff', 'image/tiff'),
+    ('image/jpeg', 'image/jpeg'), 
+    ('image/bmp', 'image/bmp')
 ]
 
 class NewExternalFileForm(forms.Form):
-    filename = forms.CharField(required=True, max_length=255)
-    mimetype = forms.ChoiceField(choices=MIMETYPE_CHOICES, required=True)
-    size = forms.CharField(required=True, max_length=255)
-    sha1 = forms.CharField(required=True, max_length=255)
-    md5 = forms.CharField(required=True, max_length=255)
-    sha256 = forms.CharField(required=True, max_length=255)
-
+    filename = forms.CharField(
+        label='Filename', max_length=255, required=True
+    )
+    mimetype = forms.ChoiceField(
+        label='Mimetype', choices=MIMETYPE_CHOICES, required=True,
+    )
+    size = forms.IntegerField(
+        label='File size (bytes)', required=True,
+    )
+    sha1 = forms.CharField(
+        label='SHA1', max_length=40, required=True,
+    )
+    md5 = forms.CharField(
+        label='MD5', max_length=32, required=True,
+    )
+    sha256 = forms.CharField(
+        label='SHA256', max_length=64, required=True,
+    )
+        
 class NewMetaFileForm(forms.Form):
     sha1 = forms.CharField(max_length=255)
     filename = forms.CharField(max_length=255)

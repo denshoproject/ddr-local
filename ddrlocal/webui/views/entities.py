@@ -34,7 +34,8 @@ from webui.forms.entities import JSONForm, UpdateForm, DeleteEntityForm, RmDupli
 from webui.gitstatus import repository, annex_info
 from webui.identifier import Identifier
 from webui.models import Stub, Collection, Entity
-from webui import tasks
+from webui.tasks import entity as entity_tasks
+from webui.tasks import dvcs as dvcs_tasks
 from webui.views.decorators import login_required
 
 
@@ -183,7 +184,7 @@ def enforce_git_credentials(request):
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
     return git_name,git_mail
 
-def check_object(entity, check_locks=True):
+def check_object(entity, request, check_locks=True):
     if not entity:
         raise Http404
     if check_locks and entity.locked():
@@ -208,7 +209,7 @@ def check_parent(collection, check_locks=True, fetch=True):
 @storage_required
 def detail( request, eid ):
     entity = Entity.from_identifier(Identifier(eid))
-    check_object(entity, check_locks=False)
+    check_object(entity, request, check_locks=False)
     collection = entity.collection()
     entity.model_def_commits()
     entity.model_def_fields()
@@ -226,7 +227,7 @@ def detail( request, eid ):
 @storage_required
 def children(request, eid):
     entity = Entity.from_identifier(Identifier(eid))
-    check_object(entity, check_locks=False)
+    check_object(entity, request, check_locks=False)
     collection = entity.collection()
     
     # models that are under entity but are not nodes (i.e. files)
@@ -268,7 +269,7 @@ def file_role( request, rid ):
     file_role = Stub.from_identifier(Identifier(rid))
     role = file_role.identifier.parts['role']
     entity = file_role.parent(stubs=True)
-    check_object(entity, check_locks=False)
+    check_object(entity, request, check_locks=False)
     collection = entity.collection()
     duplicates = entity.detect_file_duplicates(role)
     if duplicates:
@@ -284,6 +285,7 @@ def file_role( request, rid ):
         'entity': entity,
         'children_urls': entity.children_urls(active=role),
         'browse_url': entity.file_browse_url(role),
+        'external_url': entity.file_external_url(role),
         'batch_url': entity.file_browse_url(role),
         'paginator': paginator,
         'page': page,
@@ -293,7 +295,7 @@ def file_role( request, rid ):
 @storage_required
 def addfile_log( request, eid ):
     entity = Entity.from_identifier(Identifier(eid))
-    check_object(entity, check_locks=False)
+    check_object(entity, request, check_locks=False)
     collection = entity.collection()
     return render(request, 'webui/entities/addfiles-log.html', {
         'collection': collection,
@@ -303,7 +305,7 @@ def addfile_log( request, eid ):
 @storage_required
 def changelog( request, eid ):
     entity = Entity.from_identifier(Identifier(eid))
-    check_object(entity, check_locks=False)
+    check_object(entity, request, check_locks=False)
     collection = entity.collection()
     return render(request, 'webui/entities/changelog.html', {
         'collection': collection,
@@ -346,7 +348,7 @@ def _create_entity(request, eidentifier, collection, git_name, git_mail):
             entity.post_json()
         except ConnectionError:
             logger.error('Could not post to Elasticsearch.')
-        tasks.gitstatus_update.apply_async(
+        dvcs_tasks.gitstatus_update.apply_async(
             (collection.path,),
             countdown=2
         )
@@ -477,7 +479,7 @@ def edit( request, eid ):
     """
     git_name,git_mail = enforce_git_credentials(request)
     entity = Entity.from_identifier(Identifier(eid))
-    check_object(entity)
+    check_object(entity, request)
     module = entity.identifier.fields_module()
     collection = entity.collection()
     check_parent(collection)
@@ -508,7 +510,7 @@ def edit( request, eid ):
             # do the rest in the background:
             # update inheriable fields, commit files, delete cache,
             # update search index, update git status
-            tasks.collection_entity_edit(
+            entity_tasks.edit(
                 request,
                 collection, entity, form.cleaned_data,
                 git_name, git_mail, settings.AGENT
@@ -565,14 +567,14 @@ def delete( request, eid, confirm=False ):
     """
     git_name,git_mail = enforce_git_credentials(request)
     entity = Entity.from_identifier(Identifier(eid))
-    check_object(entity)
+    check_object(entity, request)
     collection = entity.collection()
     check_parent(collection)
     
     if request.method == 'POST':
         form = DeleteEntityForm(request.POST)
         if form.is_valid() and form.cleaned_data['confirmed']:
-            tasks.collection_delete_entity(
+            entity_tasks.delete(
                 request,
                 git_name, git_mail,
                 collection, entity,
@@ -593,11 +595,11 @@ def files_reload( request, eid ):
     """
     git_name,git_mail = enforce_git_credentials(request)
     entity = Entity.from_identifier(Identifier(eid))
-    check_object(entity)
+    check_object(entity, request)
     collection = entity.collection()
     check_parent(collection)
     
-    tasks.entity_reload_files(
+    entity_tasks.reload_files(
         request,
         collection, entity,
         git_name, git_mail, settings.AGENT
@@ -616,7 +618,7 @@ def files_reload( request, eid ):
 def files_dedupe( request, eid ):
     git_name,git_mail = enforce_git_credentials(request)
     entity = Entity.from_identifier(Identifier(eid))
-    check_object(entity)
+    check_object(entity, request)
     collection = entity.collection()
     check_parent(collection)
     
@@ -650,7 +652,7 @@ def files_dedupe( request, eid ):
                     entity.post_json()
                 except ConnectionError:
                     logger.error('Could not post to Elasticsearch.')
-                tasks.gitstatus_update.apply_async(
+                dvcs_tasks.gitstatus_update.apply_async(
                     (collection.path,),
                     countdown=2
                 )
@@ -675,7 +677,7 @@ def unlock( request, eid, task_id ):
     """
     git_name,git_mail = enforce_git_credentials(request)
     entity = Entity.from_identifier(Identifier(eid))
-    check_object(entity)
+    check_object(entity, request)
     collection = entity.collection()
     
     if task_id and entity.locked() and (task_id == entity.locked()):
