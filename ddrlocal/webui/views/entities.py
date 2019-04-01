@@ -561,10 +561,7 @@ def delete( request, eid, confirm=False ):
         form = DeleteEntityForm(request.POST)
         if form.is_valid() and form.cleaned_data['confirmed']:
             entity_tasks.delete(
-                request,
-                git_name, git_mail,
-                collection, entity,
-                settings.AGENT
+                collection, entity, git_name, git_mail, settings.AGENT
             )
             return HttpResponseRedirect(collection.absolute_url())
     else:
