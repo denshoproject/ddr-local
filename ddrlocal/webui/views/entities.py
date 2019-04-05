@@ -21,6 +21,7 @@ from django.shortcuts import Http404, render
 from DDR import commands
 from DDR import converters
 from DDR import fileio
+from DDR.identifier import CHILDREN, NODES
 from DDR import idservice
 from DDR import vocab
 
@@ -231,33 +232,18 @@ def children(request, eid):
     collection = entity.collection()
     
     # models that are under entity but are not nodes (i.e. files)
-    from DDR.identifier import CHILDREN, NODES, MODELS_IDPARTS
-    children_models = [
-        m for m in CHILDREN['entity'] if m not in NODES
-    ]
     
     # paginate
-    children_meta = sorted(
-        entity.children_meta,
-        key=lambda entity: (
-            int(entity.get('sort',1000000)),
-            entity['id']
-        )
-    )
-    children = [
-        Entity.from_identifier(Identifier(item['id']))
-        for item in children_meta
-    ]
     thispage = request.GET.get('page', 1)
     paginator = Paginator(
-        children,
+        [c for c in entity.children() if c.identifier.model != 'file'],
         settings.RESULTS_PER_PAGE
     )
     page = paginator.page(thispage)
     return render(request, 'webui/entities/children.html', {
         'collection': collection,
         'entity': entity,
-        'children_models': children_models,
+        'children_models': [m for m in CHILDREN['entity'] if m not in NODES],
         'children_urls': entity.children_urls(active='children'),
         'paginator': paginator,
         'page': page,
@@ -271,7 +257,7 @@ def file_role( request, rid ):
     entity = file_role.parent(stubs=True)
     check_object(entity, request, check_locks=False)
     collection = entity.collection()
-    duplicates = entity.detect_file_duplicates(role)
+    duplicates = entity.detect_children_duplicates()
     if duplicates:
         url = reverse('webui-entity-files-dedupe', args=[entity.id])
         messages.error(request, 'Duplicate files detected. <a href="%s">More info</a>' % url)
