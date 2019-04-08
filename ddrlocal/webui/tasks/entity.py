@@ -94,14 +94,12 @@ def entity_edit(collection_path, entity_id, form_data, git_name, git_mail, agent
 
 # ------------------------------------------------------------------------
 
-def collection_delete_entity(request, git_name, git_mail, collection, entity, agent):
+def delete(request, collection, entity, git_name, git_mail, agent):
     # start tasks
-    
-    result = delete_entity.apply_async(
-        (git_name, git_mail, collection.path, entity.id, agent),
+    result = delete.apply_async(
+        (collection.path, entity.id, git_name, git_mail, agent),
         countdown=2
     )
-    
     # lock collection
     lockstatus = collection.lock(result.task_id)
     # add celery task_id to session
@@ -121,13 +119,19 @@ class DeleteEntityTask(Task):
     abstract = True
         
     def on_failure(self, exc, task_id, args, kwargs, einfo):
-        logger.debug('DeleteEntityTask.on_failure(%s, %s, %s, %s)' % (exc, task_id, args, kwargs))
+        logger.debug('DeleteEntityTask.on_failure(%s, %s, %s, %s)' % (
+            exc, task_id, args, kwargs
+        ))
     
     def on_success(self, retval, task_id, args, kwargs):
-        logger.debug('DeleteEntityTask.on_success(%s, %s, %s, %s)' % (retval, task_id, args, kwargs))
+        logger.debug('DeleteEntityTask.on_success(%s, %s, %s, %s)' % (
+            retval, task_id, args, kwargs
+        ))
     
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
-        logger.debug('DeleteEntityTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
+        logger.debug('DeleteEntityTask.after_return(%s, %s, %s, %s, %s)' % (
+            status, retval, task_id, args, kwargs
+        ))
         collection_path = args[2]
         collection = Collection.from_identifier(Identifier(path=collection_path))
         lockstatus = collection.unlock(task_id)
@@ -135,7 +139,7 @@ class DeleteEntityTask(Task):
         gitstatus.unlock(settings.MEDIA_BASE, 'delete_entity')
 
 @task(base=DeleteEntityTask, name='entity-delete')
-def delete( git_name, git_mail, collection_path, entity_id, agent='' ):
+def delete(collection, entity, git_name, git_mail, agent):
     """
     @param collection_path: string
     @param entity_id: string
@@ -143,27 +147,19 @@ def delete( git_name, git_mail, collection_path, entity_id, agent='' ):
     @param git_mail: Email of git committer.
     @param agent: (optional) Name of software making the change.
     """
+    logger.debug('tasks.entity.delete(%s,%s,%s,%s,%s)' % (
+        collection, entity, git_name, git_mail, agent
+    ))
     gitstatus.lock(settings.MEDIA_BASE, 'delete_entity')
-    logger.debug('tasks.entity.delete(%s,%s,%s,%s,%s)' % (git_name, git_mail, collection_path, entity_id, agent))
-    # remove the entity
-    collection = Collection.from_identifier(Identifier(collection_path))
-    entity = Entity.from_identifier(Identifier(entity_id))
-
-    # TODO move this code to webui.models.Entity.delete
-    status,message = commands.entity_destroy(
-        git_name, git_mail,
-        collection, entity,
-        agent
-    )
+    status,message = entity.delete(git_name, git_mail, agent, commit=True)
     logger.debug('Updating Elasticsearch')
     if settings.DOCSTORE_ENABLED:
         ds = docstore.Docstore()
         try:
-            ds.delete(entity_id)
+            ds.delete(entity.id)
         except ConnectionError:
             logger.error('Could not delete document from Elasticsearch.')
-    
-    return status,message,collection_path,entity_id
+    return status,message,collection.path_abs,entity.id
 
 # ----------------------------------------------------------------------
 
