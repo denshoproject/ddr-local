@@ -251,12 +251,8 @@ if GITSTATUS_BACKGROUND_ACTIVE:
 # sorl-thumbnail
 THUMBNAIL_DEBUG = DEBUG
 #THUMBNAIL_DEBUG = False
-THUMBNAIL_KVSTORE = 'sorl.thumbnail.kvstores.redis_kvstore.KVStore'
-#THUMBNAIL_KVSTORE = 'sorl.thumbnail.kvstores.cached_db_kvstore.KVStore'
-THUMBNAIL_REDIS_PASSWORD = ''
-THUMBNAIL_REDIS_HOST = REDIS_HOST
-THUMBNAIL_REDIS_PORT = int(REDIS_PORT)
-THUMBNAIL_REDIS_DB = REDIS_DB_SORL
+THUMBNAIL_KVSTORE = 'sorl.thumbnail.kvstores.dbm_kvstore.KVStore'
+THUMBNAIL_DBM_FILE = CONFIG.get('local', 'thumbnail_dbm_file')
 THUMBNAIL_ENGINE = 'sorl.thumbnail.engines.convert_engine.Engine'
 THUMBNAIL_CONVERT = 'convert'
 THUMBNAIL_IDENTIFY = 'identify'

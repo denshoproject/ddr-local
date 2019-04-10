@@ -586,22 +586,16 @@ class Entity( DDREntity ):
     def children_urls(self, active=None):
         """Generate data for populating entity children/roles tabs
         """
-        role_counts = {x['role']: len(x['files']) for x in self.file_groups}
         tabs = [
             {
                 'name': role,
                 'url': self.children_url(role),
                 'active': role == active,
-                'count': role_counts.get(role, 0),
+                'count': count,
             }
-            for role in VALID_COMPONENTS['role']
+            for role,count in self.children_counts().iteritems()
         ]
-        tabs.insert(0, {
-            'name': 'Children',
-            'url': reverse('webui-entity-children', args=[self.id]),
-            'active': active=='children',
-            'count': len(self.children_meta),
-        })
+        tabs[0]['url'] = reverse('webui-entity-children', args=[self.id])
         return tabs
     
     def file_batch_urls(self, active=None):
