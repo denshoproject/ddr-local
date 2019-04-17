@@ -551,18 +551,10 @@ class Entity( DDREntity ):
     def edit_url(self): return reverse('webui-entity-edit', args=[self.id])
     
     def new_file_url(self, role):
-        idparts = self.identifier.idparts
-        idparts['model'] = 'file-role'
-        idparts['role'] = role
-        ri = Identifier(idparts)
-        return reverse('webui-file-new', args=[ri.id])
+        return reverse('webui-file-new', args=[ '-'.join([self.id, role]) ])
     
     def children_url(self, role):
-        idparts = self.identifier.idparts
-        idparts['model'] = 'file-role'
-        idparts['role'] = role
-        ri = Identifier(idparts)
-        return reverse('webui-file-role', args=[ri.id])
+        return reverse('webui-file-role', args=[ '-'.join([self.id, role]) ])
     
     def file_batch_url(self, role):
         args = [a for a in self.idparts]
