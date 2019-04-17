@@ -15,6 +15,13 @@
 
 <h1>Add External File</h1>
 
+<p>
+  External files are used to store metadata about binary content that is stored outside of the DDR. Specifically, 
+  this functionality is for audio/visual content hosted at Internet Archive.
+</p>
+<div class="alert alert-warning">
+  Do not add external files unless directed by your supervisor archivist!
+</div>
 <form name="entity-add" action="" method="POST" enctype="multipart/form-data">{% csrf_token %}
 <table>
   {{ form.as_table }}

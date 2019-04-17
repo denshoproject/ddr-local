@@ -35,7 +35,7 @@
 {% if entity.locked or collection.locked or collection.repo_behind or collection.repo_conflicted %}
 <p>
 <button class="btn btn-mini" href="{{ browse_url }}"><span class="glyphicon glyphicon-plus"></span> Add a file</button>
-<button class="btn btn-mini" href="{{ browse_url }}"><span class="glyphicon glyphicon-plus"></span> Add an external file</button>
+<button class="btn btn-mini" data-toggle="tooltip" data-placement="right" title="Do not add an external file unless directed by your supervisor archivist!" href="{{ browse_url }}"><span class="glyphicon glyphicon-plus"></span> Add an external file</button>
 <!--
 or <a class="btn btn-mini" href="{{ batch_url }}">Add a batch of files</a>
 -->
