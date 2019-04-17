@@ -613,8 +613,6 @@ def files_dedupe( request, eid ):
         form = RmDuplicatesForm(request.POST)
         if form.is_valid() and form.cleaned_data.get('confirmed',None) \
                 and (form.cleaned_data['confirmed'] == True):
-            # remove duplicates
-            entity.rm_file_duplicates()
             # update metadata files
             entity.write_json()
             entity.write_mets()
