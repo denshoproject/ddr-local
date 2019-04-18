@@ -18,7 +18,7 @@ from DDR import signatures
 from DDR import util
 
 from webui import gitstatus
-from webui.models import Collection, Entity, DDRFile
+from webui.models import Collection, Entity, File
 from webui.identifier import Identifier
 from webui.tasks import dvcs as dvcs_tasks
 

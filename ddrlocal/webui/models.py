@@ -23,7 +23,7 @@ from DDR.models.common import from_json
 from DDR.models.common import Stub as DDRStub
 from DDR.models import Collection as DDRCollection
 from DDR.models import ListEntity, Entity as DDREntity
-from DDR.models import File
+from DDR.models import File as DDRFile
 from DDR.models import COLLECTION_FILES_PREFIX, ENTITY_FILES_PREFIX
 
 from webui import docstore
@@ -71,7 +71,7 @@ def model_def_commits(document):
     """
     Wrapper around DDR.models.model_def_commits
     
-    @param document: Collection, Entity, DDRFile
+    @param document: Collection, Entity, File
     """
     module = modules.Module(document.identifier.fields_module())
     document_commit = module.document_commit(document)
@@ -689,15 +689,15 @@ class Entity( DDREntity ):
         model_def_fields(self)
     
     def load_file_objects(self, identifier_class, object_class, force_read=False):
-        """Replaces list of file info dicts with list of DDRFile objects
+        """Replaces list of file info dicts with list of File objects
         
         Overrides the function in .models.DDRLocalEntity, which
         adds DDRLocalFile objects which are missing certain methods of
-        DDRFile.
+        File.
         """
         super(Entity, self).load_file_objects(
             Identifier,
-            DDRFile,
+            File,
             force_read=force_read
         )
     
@@ -774,7 +774,7 @@ class Entity( DDREntity ):
         return exit,status,updated_files
 
 
-class DDRFile( File ):
+class File( DDRFile ):
     
     @staticmethod
     def from_json(path_abs, identifier=None, inherit=True):
@@ -782,9 +782,9 @@ class DDRFile( File ):
         
         @param path_abs: Absolute path to .json file.
         @param inherit: boolean Whether to inherit values from ancestor(s)
-        @returns: DDRFile
+        @returns: File
         """
-        return from_json(DDRFile, path_abs, identifier, inherit=inherit)
+        return from_json(File, path_abs, identifier, inherit=inherit)
     
     @staticmethod
     def from_identifier(identifier, inherit=True):
@@ -794,16 +794,16 @@ class DDRFile( File ):
         @param inherit: boolean Whether to inherit values from ancestor(s)
         @returns: File
         """
-        return DDRFile.from_json(identifier.path_abs('json'), identifier, inherit=inherit)
+        return File.from_json(identifier.path_abs('json'), identifier, inherit=inherit)
     
     @staticmethod
     def from_request(request):
-        """Instantiates a DDRFile object using django.http.HttpRequest.
+        """Instantiates a File object using django.http.HttpRequest.
         
         @param request: Request
-        @returns: DDRFile
+        @returns: File
         """
-        return DDRFile.from_identifier(Identifier(request))
+        return File.from_identifier(Identifier(request))
     
     def collection(self):
         return Collection.from_identifier(self.identifier.collection())
@@ -838,7 +838,7 @@ class DDRFile( File ):
     def api_url(self):
         """Returns local REST API URL for file.
         
-        >>> f = DDRFile('/tmp/ddr-testing-123-456-master-abc123')
+        >>> f = File('/tmp/ddr-testing-123-456-master-abc123')
         >>> f.api_url()
         '/ui/api/1.0/ddr-testing-123-456-master-abc123/'
         """
@@ -905,7 +905,7 @@ class DDRFile( File ):
         if cleaned_data:
             self.form_post(cleaned_data)
         
-        exit,status,updated_files = super(DDRFile, self).save(
+        exit,status,updated_files = super(File, self).save(
             git_name=git_name,
             git_mail=git_mail,
             agent=settings.AGENT,
