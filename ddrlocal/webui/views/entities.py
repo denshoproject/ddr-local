@@ -440,7 +440,10 @@ def new_manual( request, oid ):
     if isinstance(parent, Collection):
         existing_ids = sorted([entity.id for entity in parent.children(quick=True)])
     elif isinstance(parent, Entity):
-        existing_ids = sorted([e['id'] for e in parent.children_meta])
+        existing_ids = sorted([
+            entity.id
+            for entity in parent.children(models=['entity','segment'])
+        ])
     existing_ids.reverse()
     
     return render(request, 'webui/entities/new-manual.html', {
