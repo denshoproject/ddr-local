@@ -257,7 +257,7 @@ def file_role( request, rid ):
     entity = file_role.parent(stubs=True)
     check_object(entity, request, check_locks=False)
     collection = entity.collection()
-    files = entity.children(role, force_read=True)
+    files = entity.children(role=role)
     # paginate
     thispage = request.GET.get('page', 1)
     paginator = Paginator(files, settings.RESULTS_PER_PAGE)
