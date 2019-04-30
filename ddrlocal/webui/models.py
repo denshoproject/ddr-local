@@ -473,7 +473,7 @@ class Collection( DDRCollection ):
         
         return collection
     
-    def save( self, git_name, git_mail, cleaned_data, commit=True ):
+    def save( self, git_name, git_mail, cleaned_data={}, commit=True ):
         """Save Collection metadata.
         
         Commit files, delete cache, update search index.
