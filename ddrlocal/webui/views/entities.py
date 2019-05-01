@@ -261,7 +261,7 @@ def file_role( request, rid ):
     if duplicates:
         url = reverse('webui-entity-files-dedupe', args=[entity.id])
         messages.error(request, 'Duplicate files detected. <a href="%s">More info</a>' % url)
-    files = entity.children(role)
+    files = entity.children(role=role)
     # paginate
     thispage = request.GET.get('page', 1)
     paginator = Paginator(files, settings.RESULTS_PER_PAGE)
