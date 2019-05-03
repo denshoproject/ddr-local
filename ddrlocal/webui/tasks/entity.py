@@ -16,7 +16,7 @@ from DDR import converters
 
 from webui import docstore
 from webui import gitstatus
-from webui.models import Collection, Entity, DDRFile
+from webui.models import Collection, Entity, File
 from webui.identifier import Identifier
 from webui.tasks import dvcs as dvcs_tasks
 

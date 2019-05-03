@@ -69,6 +69,10 @@ class ObjectIDForm(forms.Form):
         """
         cleaned_data_copy = deepcopy(super(ObjectIDForm, self).clean())
         model = cleaned_data_copy['model']
+        models = [model]
+        # TODO hard-coded
+        if model in ['entity','segment']:
+            models = ['entity','segment']
         pid = cleaned_data_copy['parent_id']
         oid = cleaned_data_copy['object_id']
         try:
@@ -83,7 +87,7 @@ class ObjectIDForm(forms.Form):
             raise forms.ValidationError(
                 '"%s" is not a valid object ID.' % oid
             )
-        if oidentifier.model != model:
+        if oidentifier.model not in models:
             raise forms.ValidationError(
                 '"%s" should be a %s but is a %s.' % (
                     oidentifier.id, model, oidentifier.model

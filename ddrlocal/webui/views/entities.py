@@ -257,10 +257,6 @@ def file_role( request, rid ):
     entity = file_role.parent(stubs=True)
     check_object(entity, request, check_locks=False)
     collection = entity.collection()
-    duplicates = entity.detect_children_duplicates()
-    if duplicates:
-        url = reverse('webui-entity-files-dedupe', args=[entity.id])
-        messages.error(request, 'Duplicate files detected. <a href="%s">More info</a>' % url)
     files = entity.children(role=role)
     # paginate
     thispage = request.GET.get('page', 1)
@@ -444,7 +440,10 @@ def new_manual( request, oid ):
     if isinstance(parent, Collection):
         existing_ids = sorted([entity.id for entity in parent.children(quick=True)])
     elif isinstance(parent, Entity):
-        existing_ids = sorted([e['id'] for e in parent.children_meta])
+        existing_ids = sorted([
+            entity.id
+            for entity in parent.children(models=['entity','segment'])
+        ])
     existing_ids.reverse()
     
     return render(request, 'webui/entities/new-manual.html', {
@@ -613,8 +612,6 @@ def files_dedupe( request, eid ):
         form = RmDuplicatesForm(request.POST)
         if form.is_valid() and form.cleaned_data.get('confirmed',None) \
                 and (form.cleaned_data['confirmed'] == True):
-            # remove duplicates
-            entity.rm_file_duplicates()
             # update metadata files
             entity.write_json()
             entity.write_mets()

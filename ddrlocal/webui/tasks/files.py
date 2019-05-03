@@ -17,7 +17,7 @@ from DDR.ingest import addfile_logger
 
 from webui import docstore
 from webui import gitstatus
-from webui.models import Collection, Entity, DDRFile
+from webui.models import Collection, Entity, File
 from webui.identifier import Identifier
 from webui.tasks import dvcs as dvcs_tasks
 
@@ -128,10 +128,10 @@ def add_external( git_name, git_mail, entity, data, agent='' ):
     }
 
 @task(base=FileAddDebugTask, name='entity-add-access')
-def add_access( git_name, git_mail, entity, ddrfile, agent='' ):
+def add_access( git_name, git_mail, entity, file_, agent='' ):
     """
     @param entity: Entity
-    @param ddrfile: DDRFile
+    @param file_: File
     @param src_path: Absolute path to an uploadable file.
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
@@ -140,7 +140,7 @@ def add_access( git_name, git_mail, entity, ddrfile, agent='' ):
     gitstatus.lock(settings.MEDIA_BASE, 'entity_add_access')
     
     file_,repo,log,op = entity.add_access(
-        ddrfile, ddrfile.path_abs,
+        file_, file_.path_abs,
         git_name, git_mail, agent
     )
     if op and (op == 'pass'):
@@ -211,7 +211,7 @@ def file_edit(collection_path, file_id, form_data, git_name, git_mail):
     """
     logger.debug('tasks.files.edit(%s,%s,%s,%s)' % (git_name, git_mail, collection_path, file_id))
     fidentifier = Identifier(id=file_id)
-    file_ = DDRFile.from_identifier(fidentifier)
+    file_ = File.from_identifier(fidentifier)
     gitstatus.lock(settings.MEDIA_BASE, 'file_edit')
     
     exit,status,updated_files = file_.save(
@@ -282,7 +282,7 @@ def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, 
     
     gitstatus.lock(settings.MEDIA_BASE, 'delete_file')
     file_id = os.path.splitext(file_basename)[0]
-    file_ = DDRFile.from_identifier(Identifier(file_id))
+    file_ = File.from_identifier(Identifier(file_id))
 
     # TODO move this code to webui.models.File.delete
     exit,status,rm_files,updated_files = file_.delete(
