@@ -217,7 +217,7 @@ def new( request, rid ):
             celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
             # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
             task = {'task_id': result.task_id,
-                    'action': 'webui-file-new-%s' % role,
+                    'action': 'webui-file-new-local',
                     'filename': os.path.basename(src_path),
                     'entity_id': entity.id,
                     'start': converters.datetime_to_text(datetime.now(settings.TZ)),}
