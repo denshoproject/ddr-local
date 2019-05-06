@@ -16,7 +16,7 @@ from DDR import converters
 
 from webui import docstore
 from webui import gitstatus
-from webui.models import Collection, Entity, DDRFile
+from webui.models import Collection, Entity, File
 from webui.identifier import Identifier
 from webui.tasks import dvcs as dvcs_tasks
 
@@ -96,7 +96,7 @@ def entity_edit(collection_path, entity_id, form_data, git_name, git_mail, agent
 
 def delete(request, collection, entity, git_name, git_mail, agent):
     # start tasks
-    result = delete.apply_async(
+    result = entity_delete.apply_async(
         (collection.path, entity.id, git_name, git_mail, agent),
         countdown=2
     )
@@ -132,26 +132,40 @@ class DeleteEntityTask(Task):
         logger.debug('DeleteEntityTask.after_return(%s, %s, %s, %s, %s)' % (
             status, retval, task_id, args, kwargs
         ))
-        collection_path = args[2]
+        collection_path = args[0]
         collection = Collection.from_identifier(Identifier(path=collection_path))
         lockstatus = collection.unlock(task_id)
         gitstatus.update(settings.MEDIA_BASE, collection_path)
-        gitstatus.unlock(settings.MEDIA_BASE, 'delete_entity')
+        gitstatus.unlock(settings.MEDIA_BASE, 'entity_delete')
 
 @task(base=DeleteEntityTask, name='entity-delete')
-def delete(collection, entity, git_name, git_mail, agent):
-    """
-    @param collection_path: string
-    @param entity_id: string
+def entity_delete(collection_path, entity_id, git_name, git_mail, agent):
+    """The time-consuming parts of entity-delete.
+    
+    @param collection_path: str Absolute path to collection
+    @param entity_id: str
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
     @param agent: (optional) Name of software making the change.
     """
     logger.debug('tasks.entity.delete(%s,%s,%s,%s,%s)' % (
-        collection, entity, git_name, git_mail, agent
+        collection_path, entity_id, git_name, git_mail, agent
     ))
-    gitstatus.lock(settings.MEDIA_BASE, 'delete_entity')
-    status,message = entity.delete(git_name, git_mail, agent, commit=True)
+    collection = Collection.from_identifier(Identifier(path=collection_path))
+    entity = Entity.from_identifier(Identifier(id=entity_id))
+    #gitstatus.lock(settings.MEDIA_BASE, 'entity_delete')
+    
+    status,message = entity.delete(
+        git_name, git_mail, agent, commit=True
+        #
+        #
+    )
+    
+    dvcs_tasks.gitstatus_update.apply_async(
+        (collection.path,),
+        countdown=2
+    )
+    
     logger.debug('Updating Elasticsearch')
     if settings.DOCSTORE_ENABLED:
         ds = docstore.Docstore()

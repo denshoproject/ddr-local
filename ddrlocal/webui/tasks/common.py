@@ -148,7 +148,7 @@ TASK_STATUS_MESSAGES = {
         #'REVOKED': '',
     },
 
-    'webui-file-new-master': {
+    'webui-file-new-local': {
         #'STARTED': '',
         'PENDING': 'Uploading <b>{filename}</b> to <a href="{entity_url}">{entity_id}</a>.',
         'SUCCESS': 'Uploaded <a href="{file_url}">{filename}</a> to <a href="{entity_url}">{entity_id}</a>.',
@@ -156,11 +156,11 @@ TASK_STATUS_MESSAGES = {
         #'RETRY': '',
         #'REVOKED': '',
     },
-    'webui-file-new-mezzanine': {
+    'webui-file-new-external': {
         #'STARTED': '',
-        'PENDING': 'Uploading <b>{filename}</b> to <a href="{entity_url}">{entity_id}</a>.',
-        'SUCCESS': 'Uploaded <a href="{file_url}">{filename}</a> to <a href="{entity_url}">{entity_id}</a>.',
-        'FAILURE': 'Could not upload <b>{filename}</b> to <a href="{entity_url}">{entity_id}</a>.<br/>{result}',
+        'PENDING': 'Adding <b>{filename}</b> to <a href="{entity_url}">{entity_id}</a>.',
+        'SUCCESS': 'Added <a href="{file_url}">{filename}</a> to <a href="{entity_url}">{entity_id}</a>.',
+        'FAILURE': 'Could not add <b>{filename}</b> to <a href="{entity_url}">{entity_id}</a>.<br/>{result}',
         #'RETRY': '',
         #'REVOKED': '',
     },
@@ -191,8 +191,8 @@ def session_tasks( request ):
     # add entity URLs
     for task_id in tasks.keys():
         task = tasks.get(task_id, None)
-        if task and task['action'] in ['webui-file-new-master',
-                                       'webui-file-new-mezzanine',
+        if task and task['action'] in ['webui-file-new-local',
+                                       'webui-file-new-external',
                                        'webui-file-new-access']:
                 # Add entity_url to task for newly-created file
                 task['entity_url'] = reverse('webui-entity', args=[task['entity_id']])

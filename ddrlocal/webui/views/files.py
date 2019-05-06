@@ -25,7 +25,7 @@ from webui.forms.files import NewFileDDRForm, NewExternalFileForm, NewAccessFile
 from webui.forms.files import DeleteFileForm
 from webui.forms.files import shared_folder_files
 from webui.gitstatus import repository, annex_info, annex_whereis_file
-from webui.models import Stub, Collection, Entity, DDRFile
+from webui.models import Stub, Collection, Entity, File
 from webui.models import MODULES
 from webui.identifier import Identifier, CHILDREN_ALL
 from webui.tasks import collection as collection_tasks
@@ -103,7 +103,7 @@ def check_parents(entity, collection, check_locks=True, fetch=True):
 def detail( request, fid ):
     """Add file to entity.
     """
-    file_ = DDRFile.from_identifier(Identifier(fid))
+    file_ = File.from_identifier(Identifier(fid))
     check_file(file_)
     entity = file_.parent()
     collection = file_.collection()
@@ -217,7 +217,7 @@ def new( request, rid ):
             celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
             # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
             task = {'task_id': result.task_id,
-                    'action': 'webui-file-new-%s' % role,
+                    'action': 'webui-file-new-local',
                     'filename': os.path.basename(src_path),
                     'entity_id': entity.id,
                     'start': converters.datetime_to_text(datetime.now(settings.TZ)),}
@@ -340,7 +340,7 @@ def new_access( request, fid ):
     NOTE: There is no GET for this view.  GET requests will redirect to entity.
     """
     enforce_git_credentials(request)
-    file_ = DDRFile.from_identifier(Identifier(fid))
+    file_ = File.from_identifier(Identifier(fid))
     check_file(file_)
     entity = file_.parent()
     collection = file_.collection()
@@ -406,7 +406,7 @@ def batch( request, rid ):
 @storage_required
 def edit( request, fid ):
     enforce_git_credentials(request)
-    file_ = DDRFile.from_identifier(Identifier(fid))
+    file_ = File.from_identifier(Identifier(fid))
     check_file(file_)
     entity = file_.parent()
     collection = file_.collection()
@@ -450,7 +450,7 @@ def set_signature( request, fid ):
     """Make file the signature of the specified entity or collection.
     """
     enforce_git_credentials(request)
-    file_ = DDRFile.from_identifier(Identifier(fid))
+    file_ = File.from_identifier(Identifier(fid))
     check_file(file_)
     entity = file_.parent()
     collection = file_.collection()
@@ -473,7 +473,7 @@ def set_signature( request, fid ):
 @storage_required
 def delete( request, fid ):
     enforce_git_credentials(request)
-    file_ = DDRFile.from_identifier(Identifier(fid))
+    file_ = File.from_identifier(Identifier(fid))
     check_file(file_)
     entity = file_.parent()
     collection = file_.collection()
