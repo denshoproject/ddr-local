@@ -159,6 +159,8 @@ install: install-prep install-daemons install-app install-static install-configs
 
 test: test-app
 
+coverage: coverage-app
+
 uninstall: uninstall-app uninstall-configs
 
 clean: clean-app
@@ -300,6 +302,8 @@ install-app: install-git-annex install-virtualenv install-ddr-cmdln install-ddr-
 
 test-app: test-ddr-cmdln
 
+coverage-app: coverage-ddr-cmdln
+
 uninstall-app: uninstall-ddr-cmdln uninstall-ddr-local uninstall-ddr-manual uninstall-configs uninstall-daemon-configs
 
 clean-app: clean-ddr-cmdln clean-ddr-local clean-ddr-manual
@@ -348,7 +352,13 @@ test-ddr-cmdln:
 	@echo ""
 	@echo "test-ddr-cmdln ---------------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_CMDLN)/ddr && tox
+	cd $(INSTALL_LOCAL)/; pytest ddr-cmdln/ddr/tests/
+
+coverage-ddr-cmdln:
+	@echo ""
+	@echo "coverage-ddr-cmdln -----------------------------------------------------"
+	source $(VIRTUALENV)/bin/activate; \
+	cd $(INSTALL_LOCAL)/; pytest --cov-config=ddr-cmdln/.coveragerc --cov-report=html --cov=DDR ddr-cmdln/ddr/tests/
 
 uninstall-ddr-cmdln: install-virtualenv
 	@echo ""
@@ -395,6 +405,24 @@ mkdir-ddr-local:
 	-mkdir -p $(STATIC_ROOT)
 	chown -R ddr.root $(STATIC_ROOT)
 	chmod -R 755 $(STATIC_ROOT)
+
+test-ddr-local:
+	@echo ""
+	@echo "test-ddr-local ---------------------------------------------------------"
+	source $(VIRTUALENV)/bin/activate; \
+	cd $(INSTALL_LOCAL)/; python ddrlocal/manage.py test webui --keepdb
+
+shell:
+	source $(VIRTUALENV)/bin/activate; \
+	python ddrlocal/manage.py shell
+
+runserver:
+	source $(VIRTUALENV)/bin/activate; \
+	python ddrlocal/manage.py runserver 0.0.0.0:8000
+
+runworker:
+	source $(VIRTUALENV)/bin/activate; \
+	python ddrlocal/manage.py celery worker --autoreload
 
 uninstall-ddr-local: install-virtualenv
 	@echo ""
