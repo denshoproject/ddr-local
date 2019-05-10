@@ -1,3 +1,4 @@
+from copy import deepcopy
 import os
 
 from django.conf import settings
@@ -15,7 +16,7 @@ from DDR.identifier import INHERITABLE_FIELDS
 
 # TODO this isn't too far removed from hard-coding...
 MODEL_CLASSES = {}
-for k,v in DDR_MODEL_CLASSES.iteritems():
+for k,v in deepcopy(DDR_MODEL_CLASSES).iteritems():
     v['module'] = v['module'] = 'webui.models'
     MODEL_CLASSES[k] = v
 
