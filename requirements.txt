@@ -23,3 +23,10 @@ coreapi-cli==1.0.9            # BSD      y
 envoy==0.0.3                  # MIT      y
 gunicorn==19.8.1              # MIT      y
 sorl-thumbnail==12.4.1        # BSD      y
+
+coverage
+pytest
+pytest-cov
+pytest-django
+pytest-testmon
+pytest-xdist

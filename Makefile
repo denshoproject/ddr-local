@@ -410,7 +410,7 @@ test-ddr-local:
 	@echo ""
 	@echo "test-ddr-local ---------------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_LOCAL)/; python ddrlocal/manage.py test webui --keepdb
+	cd $(INSTALL_LOCAL); pytest --disable-warnings ddrlocal/
 
 shell:
 	source $(VIRTUALENV)/bin/activate; \

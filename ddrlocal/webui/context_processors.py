@@ -20,7 +20,7 @@ def sitewide(request):
     elif logout_next.find('batch') > -1: logout_next = logout_next.split('batch')[0]
     
     elasticsearch_url = 'http://%s:%s' % (
-        request.META['HTTP_HOST'], settings.DOCSTORE_HOSTS[0]['port']
+        request.META.get('HTTP_HOST'), settings.DOCSTORE_HOSTS[0]['port']
     )
     return {
         'request': request,
