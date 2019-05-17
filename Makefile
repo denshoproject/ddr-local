@@ -342,11 +342,11 @@ mkdir-ddr-cmdln:
 	@echo ""
 	@echo "mkdir-ddr-cmdln --------------------------------------------------------"
 	-mkdir $(LOG_BASE)
-	chown -R ddr.root $(LOG_BASE)
-	chmod -R 755 $(LOG_BASE)
+	chown -R ddr.ddr $(LOG_BASE)
+	chmod -R 775 $(LOG_BASE)
 	-mkdir -p $(MEDIA_ROOT)
-	chown -R ddr.root $(MEDIA_ROOT)
-	chmod -R 755 $(MEDIA_ROOT)
+	chown -R ddr.ddr $(MEDIA_ROOT)
+	chmod -R 775 $(MEDIA_ROOT)
 
 test-ddr-cmdln:
 	@echo ""
@@ -391,26 +391,26 @@ mkdir-ddr-local:
 	@echo "mkdir-ddr-local --------------------------------------------------------"
 # logs dir
 	-mkdir $(LOG_BASE)
-	chown -R ddr.root $(LOG_BASE)
-	chmod -R 755 $(LOG_BASE)
+	chown -R ddr.ddr $(LOG_BASE)
+	chmod -R 775 $(LOG_BASE)
 # sqlite db dir
 	-mkdir $(SQLITE_BASE)
-	chown -R ddr.root $(SQLITE_BASE)
-	chmod -R 755 $(SQLITE_BASE)
+	chown -R ddr.ddr $(SQLITE_BASE)
+	chmod -R 775 $(SQLITE_BASE)
 # media dir
 	-mkdir -p $(MEDIA_ROOT)
-	chown -R ddr.root $(MEDIA_ROOT)
-	chmod -R 755 $(MEDIA_ROOT)
+	chown -R ddr.ddr $(MEDIA_ROOT)
+	chmod -R 775 $(MEDIA_ROOT)
 # static dir
 	-mkdir -p $(STATIC_ROOT)
-	chown -R ddr.root $(STATIC_ROOT)
-	chmod -R 755 $(STATIC_ROOT)
+	chown -R ddr.ddr $(STATIC_ROOT)
+	chmod -R 775 $(STATIC_ROOT)
 
 test-ddr-local:
 	@echo ""
 	@echo "test-ddr-local ---------------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_LOCAL)/; python ddrlocal/manage.py test webui --keepdb
+	cd $(INSTALL_LOCAL); pytest --disable-warnings ddrlocal/
 
 shell:
 	source $(VIRTUALENV)/bin/activate; \
@@ -458,10 +458,10 @@ get-ddr-vocab:
 migrate:
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_LOCAL)/ddrlocal && $(INSTALL_LOCAL)/ddrlocal/manage.py migrate --noinput
-	chown -R ddr.root $(SQLITE_BASE)
-	chmod -R 750 $(SQLITE_BASE)
-	chown -R ddr.root $(LOG_BASE)
-	chmod -R 755 $(LOG_BASE)
+	chown -R ddr.ddr $(SQLITE_BASE)
+	chmod -R 770 $(SQLITE_BASE)
+	chown -R ddr.ddr $(LOG_BASE)
+	chmod -R 775 $(LOG_BASE)
 
 branch:
 	cd $(INSTALL_LOCAL)/ddrlocal; python $(INSTALL_LOCAL)/bin/git-checkout-branch.py $(BRANCH)
@@ -531,7 +531,7 @@ install-configs:
 	chown root.root $(CONF_PRODUCTION)
 	chmod 644 $(CONF_PRODUCTION)
 	touch $(CONF_LOCAL)
-	chown ddr.root $(CONF_LOCAL)
+	chown ddr.ddr $(CONF_LOCAL)
 	chmod 640 $(CONF_LOCAL)
 # web app settings
 	cp $(INSTALL_LOCAL)/conf/settings.py $(SETTINGS)
