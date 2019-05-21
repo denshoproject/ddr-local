@@ -37,7 +37,6 @@ INSTALL_VOCAB=$(INSTALL_LOCAL)/ddr-vocab
 INSTALL_MANUAL=$(INSTALL_LOCAL)/ddr-manual
 
 VIRTUALENV=$(INSTALL_LOCAL)/venv/ddrlocal
-SETTINGS=$(INSTALL_LOCAL)/ddrlocal/ddrlocal/settings.py
 
 CONF_BASE=/etc/ddr
 CONF_PRODUCTION=$(CONF_BASE)/ddrlocal.cfg
@@ -533,13 +532,8 @@ install-configs:
 	touch $(CONF_LOCAL)
 	chown ddr.ddr $(CONF_LOCAL)
 	chmod 640 $(CONF_LOCAL)
-# web app settings
-	cp $(INSTALL_LOCAL)/conf/settings.py $(SETTINGS)
-	chown root.root $(SETTINGS)
-	chmod 644 $(SETTINGS)
 
 uninstall-configs:
-	-rm $(SETTINGS)
 	-rm $(CONF_PRODUCTION)
 
 
