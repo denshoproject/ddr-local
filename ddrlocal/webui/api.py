@@ -66,11 +66,17 @@ def fs_detail(request, oid, format=None):
     # everything else, we're rewriting the above fields but oh well
     with open(oi.path_abs('json'), 'r') as f:
         d = json.loads(f.read())
-        for line in d:
-            if 'git_version' in line.keys():
-                data['meta'] = line
-            else:
-                data[line.keys()[0]] = line.values()[0]
+        # DDR object JSONs are lists of dicts
+        if isinstance(d, list):
+            for line in d:
+                if 'git_version' in line.keys():
+                    data['meta'] = line
+                else:
+                    data[line.keys()[0]] = line.values()[0]
+        # repository and organization JSON are just dicts
+        elif isinstance(d, dict):
+            for key,val in d.iteritems():
+                data[key] = val
     # didn't have the data we need before
     data['links'] = make_links(oi, data, request, source='fs', is_detail=True)
     return Response(data)
