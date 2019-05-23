@@ -26,6 +26,7 @@ from webui.tasks import dvcs as dvcs_tasks
 
 TASK_FILE_ADD_LOCAL_NAME = 'webui-file-new-local'
 TASK_FILE_ADD_EXTERNAL_NAME = 'webui-file-new-external'
+TASK_FILE_ADD_ACCESS_NAME = 'webui-file-new-access'
 
 def add_local(request, form_data, entity, role, src_path, git_name, git_mail):
     collection = entity.collection()
@@ -98,6 +99,38 @@ def add_external(request, form_data, entity, file_role, git_name, git_mail):
         'task_id': result.task_id,
         'action': TASK_FILE_ADD_EXTERNAL_NAME,
         'filename': os.path.basename(basename_orig),
+        'entity_id': entity.id,
+        'start': converters.datetime_to_text(datetime.now(settings.TZ)),
+    }
+    request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
+
+def add_access(request, form_data, entity, file_, git_name, git_mail):
+    collection = entity.collection()
+    src_path = form_data['path']
+    # start tasks
+    result = file_add_access.apply_async(
+        (entity, file_, src_path, git_name, git_mail),
+        countdown=2
+    )
+    log = addfile_logger(entity.identifier)
+    log.ok('START %s' % TASK_FILE_ADD_LOCAL_NAME)
+    log.ok('task_id %s' % result.task_id)
+    log.ok('ddrlocal.webui.file.new_access')
+    log.ok('Locking %s' % collection.id)
+    # lock collection
+    lockstatus = collection.lock(result.task_id)
+    if lockstatus == 'ok':
+        log.ok('locked')
+    else:
+        log.not_ok(lockstatus)
+    # add celery task_id to session
+    celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
+    # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
+    celery_tasks[result.task_id] = {
+        'task_id': result.task_id,
+        'action': TASK_FILE_ADD_ACCESS_NAME,
+        'filename': os.path.basename(src_path),
+        'file_url': file_.absolute_url(),
         'entity_id': entity.id,
         'start': converters.datetime_to_text(datetime.now(settings.TZ)),
     }
@@ -200,30 +233,27 @@ def file_add_external(entity, data, git_name, git_mail):
         'status': 'ok'
     }
 
-@task(base=FileAddDebugTask, name='entity-add-access')
-def add_access( git_name, git_mail, entity, file_, agent='' ):
+@task(base=FileAddDebugTask, name=TASK_FILE_ADD_ACCESS_NAME)
+def file_add_access(entity, file_, src_path, git_name, git_mail):
     """
     @param entity: Entity
     @param file_: File
     @param src_path: Absolute path to an uploadable file.
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
-    @param agent: (optional) Name of software making the change.
     """
-    gitstatus.lock(settings.MEDIA_BASE, 'entity_add_access')
-    
+    gitstatus.lock(settings.MEDIA_BASE, 'file-add-*')
     file_,repo,log,op = entity.add_access(
         file_, file_.path_abs,
-        git_name, git_mail, agent
+        git_name, git_mail, agent=settings.AGENT
     )
     if op and (op == 'pass'):
         log.ok('Things are okay as they are.  Leaving them alone.')
         return file_.__dict__
     file_,repo,log = entity.add_file_commit(
         file_, repo, log,
-        git_name, git_mail, agent
+        git_name, git_mail, agent=settings.AGENT
     )
-    
     log.ok('Updating Elasticsearch')
     logger.debug('Updating Elasticsearch')
     if settings.DOCSTORE_ENABLED:
@@ -231,7 +261,6 @@ def add_access( git_name, git_mail, entity, file_, agent='' ):
             file_.post_json()
         except ConnectionError:
             log.not_ok('Could not post to Elasticsearch.')
-    
     return {
         'id': file_.id,
         'status': 'ok'

@@ -273,40 +273,12 @@ def new_access( request, fid ):
     if request.method == 'POST':
         form = NewAccessFileForm(request.POST)
         if form.is_valid():
-            src_path = form.cleaned_data['path']
-            # start tasks
-            result = file_tasks.add_access.apply_async(
-                (
-                    request.session['git_name'], request.session['git_mail'],
-                    entity, file_
-                ),
-                countdown=2
+            file_tasks.add_access(
+                request, form.cleaned_data,
+                entity, file_,
+                request.session['git_name'], request.session['git_mail'],
             )
-            result_dict = result.__dict__
-            log = addfile_logger(entity.identifier)
-            log.ok('START task_id %s' % result.task_id)
-            log.ok('ddrlocal.webui.file.new_access')
-            log.ok('Locking %s' % entity.id)
-            # lock entity
-            lockstatus = entity.lock(result.task_id)
-            if lockstatus == 'ok':
-                log.ok( 'locked')
-            else:
-                log.not_ok( lockstatus)
-            # add celery task_id to session
-            celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
-            # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
-            task = {'task_id': result.task_id,
-                    'action': 'webui-file-new-access',
-                    'filename': os.path.basename(src_path),
-                    'file_url': file_.absolute_url(),
-                    'entity_id': entity.id,
-                    'start': converters.datetime_to_text(datetime.now(settings.TZ)),}
-            celery_tasks[result.task_id] = task
-            #del request.session[settings.CELERY_TASKS_SESSION_KEY]
-            request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
-            # feedback
-            #messages.success(request, WEBUI_MESSAGES['VIEWS_FILES_NEWACCESS'] % os.path.basename(src_path))
+    
     # redirect to entity
     return HttpResponseRedirect(entity.absolute_url())
 
