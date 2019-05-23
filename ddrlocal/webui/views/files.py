@@ -237,58 +237,12 @@ def new_external(request, rid):
     if request.method == 'POST':
         form = NewExternalFileForm(request.POST)
         if form.is_valid():
-            idparts = file_role.identifier.idparts
-            idparts['model'] = 'file'
-            idparts['sha1'] = form.cleaned_data['sha1']
-            fi = Identifier(parts=idparts)
-            basename_orig = form.cleaned_data['filename']
+            file_tasks.add_external(
+                request, form.cleaned_data,
+                entity, file_role,
+                request.session['git_name'], request.session['git_mail'],
+            )
             
-            data = {
-                'id': fi.id,
-                'external': 1,
-                'role': role,
-                'basename_orig': basename_orig,
-                'sha1': form.cleaned_data['sha1'],
-                'sha256': form.cleaned_data['sha256'],
-                'md5': form.cleaned_data['md5'],
-                'size': form.cleaned_data['size'],
-                'mimetype': form.cleaned_data['mimetype'],
-            }
-            
-            # start tasks
-            result = file_tasks.add_external.apply_async(
-                (
-                    request.session['git_name'], request.session['git_mail'],
-                    entity, data, settings.AGENT
-                ),
-                countdown=2)
-            result_dict = result.__dict__
-            log = addfile_logger(entity.identifier)
-            log.ok('START task_id %s' % result.task_id)
-            log.ok('ddrlocal.webui.file.new_external')
-            log.ok('Locking %s' % entity.id)
-            # lock entity
-            lockstatus = entity.lock(result.task_id)
-            if lockstatus == 'ok':
-                log.ok('locked')
-            else:
-                log.not_ok(lockstatus)
-            
-            # add celery task_id to session
-            celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
-            # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
-            task = {
-                'task_id': result.task_id,
-                'action': 'webui-file-new-external',
-                'filename': os.path.basename(basename_orig),
-                'entity_id': entity.id,
-                'start': converters.datetime_to_text(datetime.now(settings.TZ)),
-            }
-            celery_tasks[result.task_id] = task
-            #del request.session[settings.CELERY_TASKS_SESSION_KEY]
-            request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
-            
-            # redirect to entity
         return HttpResponseRedirect(entity.absolute_url())
             
     else:

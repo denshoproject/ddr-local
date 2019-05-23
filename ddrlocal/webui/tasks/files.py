@@ -25,6 +25,7 @@ from webui.tasks import dvcs as dvcs_tasks
 # ----------------------------------------------------------------------
 
 TASK_FILE_ADD_LOCAL_NAME = 'webui-file-new-local'
+TASK_FILE_ADD_EXTERNAL_NAME = 'webui-file-new-external'
 
 def add_local(request, form_data, entity, role, src_path, git_name, git_mail):
     collection = entity.collection()
@@ -51,6 +52,52 @@ def add_local(request, form_data, entity, role, src_path, git_name, git_mail):
         'task_id': result.task_id,
         'action': TASK_FILE_ADD_LOCAL_NAME,
         'filename': os.path.basename(src_path),
+        'entity_id': entity.id,
+        'start': converters.datetime_to_text(datetime.now(settings.TZ)),
+    }
+    request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
+
+def add_external(request, form_data, entity, file_role, git_name, git_mail):
+    collection = entity.collection()
+    idparts = file_role.identifier.idparts
+    idparts['model'] = 'file'
+    idparts['sha1'] = form_data['sha1']
+    fi = Identifier(parts=idparts)
+    basename_orig = form_data['filename']
+    data = {
+        'id': fi.id,
+        'external': 1,
+        'role': idparts['role'],
+        'basename_orig': basename_orig,
+        'sha1': form_data['sha1'],
+        'sha256': form_data['sha256'],
+        'md5': form_data['md5'],
+        'size': form_data['size'],
+        'mimetype': form_data['mimetype'],
+    }
+    # start tasks
+    result = file_add_external.apply_async(
+        (entity, data, git_name, git_mail),
+        countdown=2
+    )
+    log = addfile_logger(entity.identifier)
+    log.ok('START %s' % TASK_FILE_ADD_EXTERNAL_NAME)
+    log.ok('task_id %s' % result.task_id)
+    log.ok('ddrlocal.webui.file.external')
+    log.ok('Locking %s' % collection.id)
+    # lock collection
+    lockstatus = collection.lock(result.task_id)
+    if lockstatus == 'ok':
+        log.ok('locked')
+    else:
+        log.not_ok(lockstatus)
+    # add celery task_id to session
+    celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
+    # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
+    celery_tasks[result.task_id] = {
+        'task_id': result.task_id,
+        'action': TASK_FILE_ADD_EXTERNAL_NAME,
+        'filename': os.path.basename(basename_orig),
         'entity_id': entity.id,
         'start': converters.datetime_to_text(datetime.now(settings.TZ)),
     }
@@ -118,32 +165,28 @@ def file_add_local(entity, src_path, role, data, git_name, git_mail):
             log.ok('| %s' % result)
         except ConnectionError:
             log.not_ok('Could not post to Elasticsearch.')
-    
     return {
         'id': file_.id,
         'status': 'ok'
     }
 
-@task(base=FileAddDebugTask, name='entity-add-external')
-def add_external( git_name, git_mail, entity, data, agent='' ):
+@task(base=FileAddDebugTask, name=TASK_FILE_ADD_EXTERNAL_NAME)
+def file_add_external(entity, data, git_name, git_mail):
     """
     @param entity: Entity
     @param data: Dict containing form data.
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
-    @param agent: (optional) Name of software making the change.
     """
-    gitstatus.lock(settings.MEDIA_BASE, 'entity_add_external')
-    
+    gitstatus.lock(settings.MEDIA_BASE, 'file-add-*')
     file_,repo,log = entity.add_external_file(
         data,
-        git_name, git_mail, agent
+        git_name, git_mail, agent=settings.AGENT
     )
     file_,repo,log = entity.add_file_commit(
         file_, repo, log,
-        git_name, git_mail, agent
+        git_name, git_mail, agent=settings.AGENT
     )
-    
     log.ok('Updating Elasticsearch')
     logger.debug('Updating Elasticsearch')
     if settings.DOCSTORE_ENABLED:
