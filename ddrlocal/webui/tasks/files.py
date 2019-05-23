@@ -169,12 +169,10 @@ def add_access( git_name, git_mail, entity, file_, agent='' ):
 
 def edit(request, collection, file_, form_data, git_name, git_mail):
     # start tasks
-    
     result = file_edit.apply_async(
         (collection.path, file_.id, form_data, git_name, git_mail),
         countdown=2
     )
-    
     # lock collection
     lockstatus = collection.lock(result.task_id)
     # add celery task_id to session
@@ -230,12 +228,10 @@ def file_edit(collection_path, file_id, form_data, git_name, git_mail):
 
 def delete(request, git_name, git_mail, collection, entity, file_, agent):
     # start tasks
-    
     result = delete_file.apply_async(
         (git_name, git_mail, collection.path, entity.id, file_.basename, agent),
         countdown=2
     )
-    
     # lock collection
     lockstatus = collection.lock(result.task_id)
     # add celery task_id to session
