@@ -192,42 +192,12 @@ def new( request, rid ):
     if request.method == 'POST':
         form = NewFileDDRForm(request.POST, fields=FIELDS, path_choices=shared_folder_files())
         if form.is_valid():
-            data = form.cleaned_data
-            src_path = path
-            # start tasks
-            result = file_tasks.add_file.apply_async(
-                (
-                    request.session['git_name'], request.session['git_mail'],
-                    entity, src_path, role, data, settings.AGENT
-                ),
-                countdown=2)
-            result_dict = result.__dict__
-            log = addfile_logger(entity.identifier)
-            log.ok('START task_id %s' % result.task_id)
-            log.ok('ddrlocal.webui.file.new')
-            log.ok('Locking %s' % entity.id)
-            # lock entity
-            lockstatus = entity.lock(result.task_id)
-            if lockstatus == 'ok':
-                log.ok('locked')
-            else:
-                log.not_ok(lockstatus)
+            file_tasks.add_local(
+                request, form.cleaned_data,
+                entity, role, path,
+                request.session['git_name'], request.session['git_mail'],
+            )
             
-            # add celery task_id to session
-            celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
-            # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
-            task = {'task_id': result.task_id,
-                    'action': 'webui-file-new-local',
-                    'filename': os.path.basename(src_path),
-                    'entity_id': entity.id,
-                    'start': converters.datetime_to_text(datetime.now(settings.TZ)),}
-            celery_tasks[result.task_id] = task
-            #del request.session[settings.CELERY_TASKS_SESSION_KEY]
-            request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
-            
-            # feedback
-#            messages.success(request, WEBUI_MESSAGES['VIEWS_FILES_UPLOADING'] % (os.path.basename(src_path), result))
-            # redirect to entity
         return HttpResponseRedirect(entity.absolute_url())
     else:
         if not path:

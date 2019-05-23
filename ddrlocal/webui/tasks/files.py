@@ -24,40 +24,74 @@ from webui.tasks import dvcs as dvcs_tasks
 
 # ----------------------------------------------------------------------
 
+TASK_FILE_ADD_LOCAL_NAME = 'webui-file-new-local'
+
+def add_local(request, form_data, entity, role, src_path, git_name, git_mail):
+    collection = entity.collection()
+    # start tasks
+    result = file_add_local.apply_async(
+        (entity, src_path, role, form_data, git_name, git_mail),
+        countdown=2
+    )
+    log = addfile_logger(entity.identifier)
+    log.ok('START %s' % TASK_FILE_ADD_LOCAL_NAME)
+    log.ok('task_id %s' % result.task_id)
+    log.ok('ddrlocal.webui.file.new')
+    log.ok('Locking %s' % collection.id)
+    # lock collection
+    lockstatus = collection.lock(result.task_id)
+    if lockstatus == 'ok':
+        log.ok('locked')
+    else:
+        log.not_ok(lockstatus)
+    # add celery task_id to session
+    celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
+    # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
+    celery_tasks[result.task_id] = {
+        'task_id': result.task_id,
+        'action': TASK_FILE_ADD_LOCAL_NAME,
+        'filename': os.path.basename(src_path),
+        'entity_id': entity.id,
+        'start': converters.datetime_to_text(datetime.now(settings.TZ)),
+    }
+    request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
+
 class FileAddDebugTask(Task):
     abstract = True
         
     def on_failure(self, exc, task_id, args, kwargs, einfo):
-        entity = args[2]
+        entity = args[0]
         log = addfile_logger(entity.identifier)
         log.not_ok('DDRTask.ON_FAILURE')
+        log.not_ok('exc %s' % exc)
+        log.not_ok('einfo %s' % einfo)
     
     def on_success(self, retval, task_id, args, kwargs):
-        entity = args[2]
+        entity = args[0]
         log = addfile_logger(entity.identifier)
         log.ok('DDRTask.ON_SUCCESS')
+        log.ok('retval %s' % retval)
     
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
-        entity = args[2]
+        entity = args[0]
         collection = entity.collection()
         log = addfile_logger(entity.identifier)
         log.ok('FileAddDebugTask.AFTER_RETURN')
         log.ok('task_id: %s' % task_id)
         log.ok('status: %s' % status)
-        log.ok('retval: %s' % retval)
-        log.ok('Unlocking %s' % entity.id)
-        lockstatus = entity.unlock(task_id)
+        log.ok('Unlocking %s' % collection.id)
+        lockstatus = collection.unlock(task_id)
         if lockstatus == 'ok':
             log.ok('unlocked')
         else:
             log.not_ok(lockstatus)
-        log.ok( 'END task_id %s\n' % task_id)
+        log.ok('END task_id %s\n' % task_id)
         collection.cache_delete()
         gitstatus.update(settings.MEDIA_BASE, collection.path)
-        gitstatus.unlock(settings.MEDIA_BASE, 'entity_add_file')
+        gitstatus.unlock(settings.MEDIA_BASE, 'file-add-*')
 
-@task(base=FileAddDebugTask, name='entity-add-file')
-def add_file( git_name, git_mail, entity, src_path, role, data, agent='' ):
+@task(base=FileAddDebugTask, name=TASK_FILE_ADD_LOCAL_NAME)
+def file_add_local(entity, src_path, role, data, git_name, git_mail):
     """
     @param entity: Entity
     @param src_path: Absolute path to an uploadable file.
@@ -65,20 +99,17 @@ def add_file( git_name, git_mail, entity, src_path, role, data, agent='' ):
     @param data: Dict containing form data.
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
-    @param agent: (optional) Name of software making the change.
     """
-    gitstatus.lock(settings.MEDIA_BASE, 'entity_add_file')
-
+    gitstatus.lock(settings.MEDIA_BASE, 'file-add-*')
     # TODO move this code to webui.models.Entity or .File
     file_,repo,log = entity.add_local_file(
         src_path, role, data,
-        git_name, git_mail, agent
+        git_name, git_mail, agent=settings.AGENT
     )
     file_,repo,log = entity.add_file_commit(
         file_, repo, log,
-        git_name, git_mail, agent
+        git_name, git_mail, agent=settings.AGENT
     )
-    
     log.ok('Updating Elasticsearch')
     logger.debug('Updating Elasticsearch')
     if settings.DOCSTORE_ENABLED:
@@ -121,7 +152,6 @@ def add_external( git_name, git_mail, entity, data, agent='' ):
             log.ok('| %s' % result)
         except ConnectionError:
             log.not_ok('Could not post to Elasticsearch.')
-    
     return {
         'id': file_.id,
         'status': 'ok'
