@@ -169,7 +169,7 @@ install-prep: ddr-user install-core git-config install-misc-tools
 
 ddr-user:
 	-addgroup --gid=1001 ddr
-	-adduser --uid=1001 --gid=1001 --home=/home/ddr --shell=/bin/bash --disabled-login ddr
+	-adduser --uid=1001 --gid=1001 --home=/home/ddr --shell=/bin/bash --disabled-login --gecos "" ddr
 	-addgroup ddr plugdev
 	-addgroup ddr vboxsf
 	printf "\n\n# ddrlocal: Activate virtualnv on login\nsource $(VIRTUALENV)/bin/activate\n" >> /home/ddr/.bashrc; \
