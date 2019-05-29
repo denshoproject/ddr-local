@@ -186,7 +186,7 @@ def entity_reload_files(request, collection, entity, git_name, git_mail, agent):
     )
     
     # lock collection
-    lockstatus = entity.lock(result.task_id)
+    lockstatus = collection.lock(result.task_id)
     # add celery task_id to session
     celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
     # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
@@ -213,7 +213,7 @@ class EntityReloadTask(Task):
         collection = Collection.from_identifier(Identifier(path=collection_path))
         entity_id = args[1]
         entity = Entity.from_identifier(Identifier(id=entity_id))
-        lockstatus = entity.unlock(task_id)
+        lockstatus = collection.unlock(task_id)
         gitstatus.update(settings.MEDIA_BASE, collection_path)
         gitstatus.unlock(settings.MEDIA_BASE, 'reload_files')
 

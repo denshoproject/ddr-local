@@ -75,20 +75,20 @@
       <td>
         {% if entity.signature_id %}
         {% thumbnail entity.signature_abs "100x100" crop="center" as img %}
-        <a href="{{ entity.absolute_url }}">
+        <a href="{% url "webui-entity" entity.id %}">
           <img class="img-responsive img-thumbnail" src="{{ img.url }}" width="{{ img.width }}" height="{{ img.height }}">
         </a>
         {% endthumbnail %}
         {% endif %}
       </td>
       <td>
-        <a href="{{ entity.absolute_url }}">
+        <a href="{% url "webui-entity" entity.id %}">
           {{ entity.id }}
         </a>
       </td>
       <td>
         {% if entity.title %}
-        <a href="{{ entity.absolute_url }}">{{ entity.title }}</a>
+        <a href="{% url "webui-entity" entity.id %}">{{ entity.title }}</a>
         {% endif %}
       </td>
     </tr>

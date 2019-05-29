@@ -42,7 +42,6 @@ COMMIT_DEFS := $(shell git -C $(INSTALL_DEFS) log --decorate --abbrev-commit --p
 COMMIT_VOCAB := $(shell git -C $(INSTALL_VOCAB) log --decorate --abbrev-commit --pretty=oneline -1)
 
 VIRTUALENV=$(INSTALL_LOCAL)/venv/ddrlocal
-SETTINGS=$(INSTALL_LOCAL)/ddrlocal/ddrlocal/settings.py
 
 CONF_BASE=/etc/ddr
 CONF_PRODUCTION=$(CONF_BASE)/ddrlocal.cfg
@@ -171,6 +170,8 @@ install: install-prep install-daemons install-app install-static install-configs
 
 test: test-app
 
+coverage: coverage-app
+
 uninstall: uninstall-app uninstall-configs
 
 clean: clean-app
@@ -180,7 +181,7 @@ install-prep: ddr-user install-core git-config install-misc-tools
 
 ddr-user:
 	-addgroup --gid=1001 ddr
-	-adduser --uid=1001 --gid=1001 --home=/home/ddr --shell=/bin/bash ddr
+	-adduser --uid=1001 --gid=1001 --home=/home/ddr --shell=/bin/bash --disabled-login --gecos "" ddr
 	-addgroup ddr plugdev
 	-addgroup ddr vboxsf
 	printf "\n\n# ddrlocal: Activate virtualnv on login\nsource $(VIRTUALENV)/bin/activate\n" >> /home/ddr/.bashrc; \
@@ -312,6 +313,8 @@ install-app: install-git-annex install-virtualenv install-ddr-cmdln install-ddr-
 
 test-app: test-ddr-cmdln
 
+coverage-app: coverage-ddr-cmdln
+
 uninstall-app: uninstall-ddr-cmdln uninstall-ddr-local uninstall-ddr-manual uninstall-configs uninstall-daemon-configs
 
 clean-app: clean-ddr-cmdln clean-ddr-local clean-ddr-manual
@@ -350,17 +353,23 @@ mkdir-ddr-cmdln:
 	@echo ""
 	@echo "mkdir-ddr-cmdln --------------------------------------------------------"
 	-mkdir $(LOG_BASE)
-	chown -R ddr.root $(LOG_BASE)
-	chmod -R 755 $(LOG_BASE)
+	chown -R ddr.ddr $(LOG_BASE)
+	chmod -R 775 $(LOG_BASE)
 	-mkdir -p $(MEDIA_ROOT)
-	chown -R ddr.root $(MEDIA_ROOT)
-	chmod -R 755 $(MEDIA_ROOT)
+	chown -R ddr.ddr $(MEDIA_ROOT)
+	chmod -R 775 $(MEDIA_ROOT)
 
 test-ddr-cmdln:
 	@echo ""
 	@echo "test-ddr-cmdln ---------------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_CMDLN)/ddr && tox
+	cd $(INSTALL_LOCAL)/; pytest ddr-cmdln/ddr/tests/
+
+coverage-ddr-cmdln:
+	@echo ""
+	@echo "coverage-ddr-cmdln -----------------------------------------------------"
+	source $(VIRTUALENV)/bin/activate; \
+	cd $(INSTALL_LOCAL)/; pytest --cov-config=ddr-cmdln/.coveragerc --cov-report=html --cov=DDR ddr-cmdln/ddr/tests/
 
 uninstall-ddr-cmdln: install-virtualenv
 	@echo ""
@@ -393,20 +402,38 @@ mkdir-ddr-local:
 	@echo "mkdir-ddr-local --------------------------------------------------------"
 # logs dir
 	-mkdir $(LOG_BASE)
-	chown -R ddr.root $(LOG_BASE)
-	chmod -R 755 $(LOG_BASE)
+	chown -R ddr.ddr $(LOG_BASE)
+	chmod -R 775 $(LOG_BASE)
 # sqlite db dir
 	-mkdir $(SQLITE_BASE)
-	chown -R ddr.root $(SQLITE_BASE)
-	chmod -R 755 $(SQLITE_BASE)
+	chown -R ddr.ddr $(SQLITE_BASE)
+	chmod -R 775 $(SQLITE_BASE)
 # media dir
 	-mkdir -p $(MEDIA_ROOT)
-	chown -R ddr.root $(MEDIA_ROOT)
-	chmod -R 755 $(MEDIA_ROOT)
+	chown -R ddr.ddr $(MEDIA_ROOT)
+	chmod -R 775 $(MEDIA_ROOT)
 # static dir
 	-mkdir -p $(STATIC_ROOT)
-	chown -R ddr.root $(STATIC_ROOT)
-	chmod -R 755 $(STATIC_ROOT)
+	chown -R ddr.ddr $(STATIC_ROOT)
+	chmod -R 775 $(STATIC_ROOT)
+
+test-ddr-local:
+	@echo ""
+	@echo "test-ddr-local ---------------------------------------------------------"
+	source $(VIRTUALENV)/bin/activate; \
+	cd $(INSTALL_LOCAL); pytest --disable-warnings ddrlocal/
+
+shell:
+	source $(VIRTUALENV)/bin/activate; \
+	python ddrlocal/manage.py shell
+
+runserver:
+	source $(VIRTUALENV)/bin/activate; \
+	python ddrlocal/manage.py runserver 0.0.0.0:8000
+
+runworker:
+	source $(VIRTUALENV)/bin/activate; \
+	python ddrlocal/manage.py celery worker --autoreload
 
 uninstall-ddr-local: install-virtualenv
 	@echo ""
@@ -442,10 +469,10 @@ get-ddr-vocab:
 migrate:
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_LOCAL)/ddrlocal && $(INSTALL_LOCAL)/ddrlocal/manage.py migrate --noinput
-	chown -R ddr.root $(SQLITE_BASE)
-	chmod -R 750 $(SQLITE_BASE)
-	chown -R ddr.root $(LOG_BASE)
-	chmod -R 755 $(LOG_BASE)
+	chown -R ddr.ddr $(SQLITE_BASE)
+	chmod -R 770 $(SQLITE_BASE)
+	chown -R ddr.ddr $(LOG_BASE)
+	chmod -R 775 $(LOG_BASE)
 
 branch:
 	cd $(INSTALL_LOCAL)/ddrlocal; python $(INSTALL_LOCAL)/bin/git-checkout-branch.py $(BRANCH)
@@ -515,15 +542,10 @@ install-configs:
 	chown root.root $(CONF_PRODUCTION)
 	chmod 644 $(CONF_PRODUCTION)
 	touch $(CONF_LOCAL)
-	chown ddr.root $(CONF_LOCAL)
+	chown ddr.ddr $(CONF_LOCAL)
 	chmod 640 $(CONF_LOCAL)
-# web app settings
-	cp $(INSTALL_LOCAL)/conf/settings.py $(SETTINGS)
-	chown root.root $(SETTINGS)
-	chmod 644 $(SETTINGS)
 
 uninstall-configs:
-	-rm $(SETTINGS)
 	-rm $(CONF_PRODUCTION)
 
 

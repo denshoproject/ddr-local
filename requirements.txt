@@ -14,7 +14,7 @@ django-redis==4.9.0           # BSD      y
 django-redis-sessions==0.6.1  # BSD      y
 
 celery>=3.1.0,<4.0.0          # BSD      y        y
-django-celery                 # BSD      y        y
+git+https://github.com/densho/django-celery#egg=djcelery
 
 djangorestframework>=3.6.0,<3.7 # BSD    y
 coreapi==2.3.3                # BSD      y
@@ -23,3 +23,10 @@ coreapi-cli==1.0.9            # BSD      y
 envoy==0.0.3                  # MIT      y
 gunicorn==19.8.1              # MIT      y
 sorl-thumbnail==12.4.1        # BSD      y
+
+coverage
+pytest
+pytest-cov
+pytest-django
+pytest-testmon
+pytest-xdist

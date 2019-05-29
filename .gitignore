@@ -2,7 +2,6 @@
 *.pyc
 *.db
 *.svg
-ddrlocal/ddrlocal/settings.py
 ddr-cmdln
 ddr-cmdln/
 ddr-defs
