@@ -364,6 +364,14 @@ def set_signature( request, fid ):
             )
     return HttpResponseRedirect( file_.absolute_url() )
 
+@storage_required
+def xmp(request, fid):
+    """View file XMP data.
+    """
+    file_ = File.from_identifier(Identifier(fid))
+    check_file(file_)
+    return HttpResponse(file_.xmp, content_type="application/xml")
+
 @ddrview
 @login_required
 @storage_required

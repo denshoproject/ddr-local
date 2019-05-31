@@ -102,6 +102,7 @@ urlpatterns = [
     # files
 
     url(r'^file/(?P<fid>[\w\d-]+)/delete/$', files.delete, name='webui-file-delete'),
+    url(r'^file/(?P<fid>[\w\d-]+)/xmp.xml$', files.xmp, name='webui-file-xmp'),
     url(r'^file/(?P<fid>[\w\d-]+)/sig/$', files.set_signature, name='webui-file-sig'),
     url(r'^file/(?P<fid>[\w\d-]+)/edit/$', files.edit, name='webui-file-edit'),
     url(r'^file/(?P<fid>[\w\d-]+)/$', files.detail, name='webui-file'),
