@@ -9,10 +9,12 @@ from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
 from django.conf import settings
+from django.core.urlresolvers import reverse
 
 from DDR import batch
 from DDR import commands
 from DDR import converters
+from DDR import idservice
 from DDR import models
 from DDR import signatures
 from DDR import util
@@ -60,6 +62,146 @@ def check( collection_path ):
         output.append('No bad files.')
     output.append('DONE')
     return '\n'.join(output)
+
+
+# ----------------------------------------------------------------------
+
+TASK_COLLECTION_NEW_NAME = 'collection-new'
+TASK_COLLECTION_NEW_MANUAL_NAME = 'collection-new-manual'
+TASK_COLLECTION_NEW_IDSERVICE_NAME = 'collection-new-idservice'
+
+def new_manual(request, cidentifier):
+    # start tasks
+    git_name = request.session.get('git_name')
+    git_mail = request.session.get('git_mail')
+    result = collection_new_manual.apply_async(
+        (cidentifier.path_abs(), git_name, git_mail),
+        countdown=2
+    )
+    # add celery task_id to session
+    celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
+    # IMPORTANT: 'action' *must* match a msg in webui.tasks.TASK_STATUS_MESSAGES.
+    celery_tasks[result.task_id] = {
+        'task_id': result.task_id,
+        'action': TASK_COLLECTION_NEW_MANUAL_NAME,
+        'collection_url': reverse('webui-detail', args=[cidentifier.id]),
+        'collection_id': cidentifier.id,
+        'start': converters.datetime_to_text(datetime.now(settings.TZ)),}
+    request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
+
+def new_idservice(request, oidentifier, git_name, git_mail):
+    # start tasks
+    result = collection_new_idservice.apply_async((
+        oidentifier.id,
+        request.session['idservice_token'],
+        git_name,
+        git_mail
+    ))
+    celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
+    # IMPORTANT: 'action' *must* match a msg in webui.tasks.TASK_STATUS_MESSAGES.
+    celery_tasks[result.task_id] = {
+        'task_id': result.task_id,
+        'action': TASK_COLLECTION_NEW_IDSERVICE_NAME,
+        'organization_id': oidentifier.id,
+        'collection_url': 'UNKNOWN',
+        'collection_id': 'UNKNOWN',
+        'start': converters.datetime_to_text(datetime.now(settings.TZ)),}
+    request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
+
+class CollectionNewTask(Task):
+    abstract = True
+    
+    def after_return(self, status, retval, task_id, args, kwargs, einfo):
+        logger.debug('CollectionNewTask.after_return(%s, %s, %s, %s, %s)' % (
+            status, retval, task_id, args, kwargs
+        ))
+        collection_path = args[0]
+        collection = Collection.from_identifier(Identifier(path=collection_path))
+        lockstatus = collection.unlock(task_id)
+        gitstatus.update(settings.MEDIA_BASE, collection_path)
+        # locking uses common name
+        gitstatus.unlock(settings.MEDIA_BASE, TASK_COLLECTION_NEW_NAME)
+
+@task(base=CollectionNewTask, name=TASK_COLLECTION_NEW_MANUAL_NAME)
+def collection_new_manual(collection_path, git_name, git_mail):
+    """The time-consuming parts of collection-new-manual.
+    
+    @param collection_path: str Absolute path to collection
+    @param git_name: Username of git committer.
+    @param git_mail: Email of git committer.
+    """
+    logger.debug('tasks.collection.new_manual(%s,%s,%s)' % (
+        collection_path, git_name, git_mail
+    ))
+    cidentifier = Identifier(path=collection_path)
+    # locking uses common name
+    gitstatus.lock(settings.MEDIA_BASE, TASK_COLLECTION_NEW_NAME)
+    
+    # Create collection
+    exit,status = Collection.new(cidentifier, git_name, git_mail, settings.AGENT)
+    collection = Collection.from_identifier(cidentifier)
+    
+    # update search index
+    try:
+        collection.post_json()
+    except ConnectionError:
+        logger.error('Could not post to Elasticsearch.')
+    # do whatever this is
+    dvcs_tasks.gitstatus_update.apply_async(
+        (collection_path,),
+        countdown=2
+    )
+    return status,collection_path
+
+@task(base=CollectionNewTask, name=TASK_COLLECTION_NEW_IDSERVICE_NAME)
+def collection_new_idservice(organization_id, idservice_token, git_name, git_mail):
+    """The time-consuming parts of collection-new-idservice.
+    
+    @param organization_id: str
+    @param idservice_token: str
+    @param git_name: Username of git committer.
+    @param git_mail: Email of git committer.
+    """
+    logger.debug('tasks.collection.new_manual(%s,%s,%s,%s)' % (
+        organization_id, idservice_token, git_name, git_mail
+    ))
+    oidentifier = Identifier(id=organization_id)
+    # locking uses common name
+    gitstatus.lock(settings.MEDIA_BASE, TASK_COLLECTION_NEW_NAME)
+    
+    ic = idservice.IDServiceClient()
+    # resume session
+    auth_status,auth_reason = ic.resume(idservice_token)
+    # get new collection ID
+    http_status,http_reason,collection_id = ic.next_object_id(
+        oidentifier,
+        'collection',
+        register=True,
+    )
+    if http_status not in [200,201]:
+        raise Exception('Could not get next %s id for %s: %s %s' % (
+            'collection', organization_id, http_status, http_reason
+        ))
+    # Create collection
+    cidentifier = Identifier(id=collection_id, base_path=settings.MEDIA_BASE)
+    exit,status = Collection.new(cidentifier, git_name, git_mail, settings.AGENT)
+    collection = Collection.from_identifier(cidentifier)
+    
+    # update search index
+    try:
+        collection.post_json()
+    except ConnectionError:
+        logger.error('Could not post to Elasticsearch.')
+    # do whatever this is
+    dvcs_tasks.gitstatus_update.apply_async(
+        (collection.path,),
+        countdown=2
+    )
+    return {
+        'status':status,
+        'collection_id': collection.id,
+        'collection_url': reverse('webui-detail', args=[cidentifier.id]),
+    }
 
 
 # ----------------------------------------------------------------------

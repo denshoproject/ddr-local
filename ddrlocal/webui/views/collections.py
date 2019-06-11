@@ -25,7 +25,6 @@ from DDR import commands
 from DDR import converters
 from DDR import dvcs
 from DDR import fileio
-from DDR import idservice
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
@@ -204,29 +203,10 @@ def new( request, oid ):
     """Redirect to new_idservice or new_manual.
     """
     if settings.IDSERVICE_API_BASE:
-        return HttpResponseRedirect(reverse('webui-collection-newidservice', args=[oid]))
-    return HttpResponseRedirect(reverse('webui-collection-newmanual', args=[oid]))
-
-def _create_collection(request, cidentifier, git_name, git_mail):
-    """used by both new_idservice and new_manual
-    """
-    exit,status = Collection.new(cidentifier, git_name, git_mail, settings.AGENT)
-    collection = Collection.from_identifier(cidentifier)
-    if exit:
-        logger.error(exit)
-        logger.error(status)
-        messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
-    else:
-        # update search index
-        try:
-            collection.post_json()
-        except ConnectionError:
-            logger.error('Could not post to Elasticsearch.')
-        dvcs_tasks.gitstatus_update.apply_async(
-            (cidentifier.path_abs(),),
-            countdown=2
+        return HttpResponseRedirect(
+            reverse('webui-collection-newidservice', args=[oid])
         )
-    return collection
+    return HttpResponseRedirect(reverse('webui-collection-newmanual', args=[oid]))
 
 @ddrview
 @login_required
@@ -241,42 +221,12 @@ def new_idservice( request, oid ):
     git_mail = request.session.get('git_mail')
     if not (git_name and git_mail):
         messages.error(request, WEBUI_MESSAGES['LOGIN_REQUIRED'])
-    
-    ic = idservice.IDServiceClient()
-    # resume session
-    auth_status,auth_reason = ic.resume(request.session['idservice_token'])
-    if auth_status != 200:
-        request.session['idservice_username'] = None
-        request.session['idservice_token'] = None
-        messages.warning(
-            request,
-            'Session resume failed: %s %s (%s)' % (
-                auth_status,auth_reason,settings.IDSERVICE_API_BASE
-            )
-        )
-        return HttpResponseRedirect(reverse('webui-collections'))
-    # get new collection ID
-    http_status,http_reason,collection_id = ic.next_object_id(
+    # refer task to celery backend
+    collection_tasks.new_idservice(
+        request,
         oidentifier,
-        'collection',
-        register=True,
+        git_name, git_mail
     )
-    if http_status not in [200,201]:
-        err = '%s %s' % (http_status, http_reason)
-        msg = WEBUI_MESSAGES['VIEWS_COLL_ERR_NO_IDS'] % (settings.IDSERVICE_API_BASE, err)
-        logger.error(msg)
-        messages.error(request, msg)
-        return HttpResponseRedirect(reverse('webui-collections'))
-    
-    cidentifier = Identifier(id=collection_id, base_path=settings.MEDIA_BASE)
-    # Create collection and redirect to edit page
-    collection = _create_collection(request, cidentifier, git_name, git_mail)
-    if collection:
-        return HttpResponseRedirect( reverse('webui-collection-edit', args=[collection.id]) )
-    
-    # something happened...
-    logger.error('Could not create new collecion!')
-    messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_ERR_CREATE'])
     return HttpResponseRedirect(reverse('webui-collections'))
 
 @ddrview
@@ -311,18 +261,31 @@ def new_manual( request, oid ):
             idparts['cid'] = str(form.cleaned_data['cid'])
             cidentifier = Identifier(parts=idparts)
             if not cidentifier:
-                messages.error(request, "Could not generate a legal ID from your input. Try again.")
+                messages.error(
+                    request,
+                    "Could not generate a legal ID from your input. Try again."
+                )
             elif cidentifier.parent_id(stubs=True) != oidentifier.id:
-                messages.error(request, "Can only create collections for this organization. Try again.")
+                messages.error(
+                    request,
+                    "Can only create collections for this organization. Try again."
+                )
             elif cidentifier.id in collection_ids:
-                messages.error(request, "Object ID %s already exists. Try again." % cidentifier.id)
+                messages.error(
+                    request,
+                    "Object ID %s already exists. Try again." % cidentifier.id
+                )
             else:
-                
-                # Create collection and redirect to edit page
-                collection = _create_collection(request, cidentifier, git_name, git_mail)
-                if collection:
-                    messages.warning(request, 'IMPORTANT: Register this ID with the ID service as soon as possible!')
-                    return HttpResponseRedirect(reverse('webui-collection-edit', args=[collection.id]))
+                # refer task to celery backend
+                collection_tasks.new_manual(request, cidentifier)
+                messages.warning(
+                    request,
+                    'IMPORTANT: Register this ID with the ID service ASAP!'
+                )
+                    
+            return HttpResponseRedirect(
+                reverse('webui-collections')
+            )
             
     else:
         data = {
