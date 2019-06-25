@@ -282,6 +282,8 @@ install-virtualenv:
 	apt-get --assume-yes install python-six python-pip python-virtualenv python-dev
 	test -d $(VIRTUALENV) || virtualenv --distribute --setuptools $(VIRTUALENV)
 	source $(VIRTUALENV)/bin/activate; \
+	pip install -U pip
+	source $(VIRTUALENV)/bin/activate; \
 	pip install -U bpython appdirs blessings curtsies greenlet packaging pygments pyparsing setuptools wcwidth
 #	virtualenv --relocatable $(VIRTUALENV)  # Make venv relocatable
 
