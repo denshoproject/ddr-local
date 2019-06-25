@@ -23,6 +23,7 @@ PACKAGE_TIMESTAMP := $(shell git log -1 --pretty="%ad" --date=short | tr -d -)
 PACKAGE_SERVER=ddr.densho.org/static/ddrlocal
 
 SRC_REPO_CMDLN=https://github.com/densho/ddr-cmdln.git
+SRC_REPO_CMDLN_ASSETS=https://github.com/densho/ddr-cmdln-assets.git
 SRC_REPO_LOCAL=https://github.com/densho/ddr-local.git
 SRC_REPO_DEFS=https://github.com/densho/ddr-defs.git
 SRC_REPO_VOCAB=https://github.com/densho/ddr-vocab.git
@@ -32,6 +33,7 @@ CWD := $(shell pwd)
 INSTALL_LOCAL=$(CWD)
 INSTALL_STATIC=$(INSTALL_LOCAL)/static
 INSTALL_CMDLN=$(INSTALL_LOCAL)/ddr-cmdln
+INSTALL_CMDLN_ASSETS=$(INSTALL_LOCAL)/ddr-cmdln-assets
 INSTALL_DEFS=$(INSTALL_LOCAL)/ddr-defs
 INSTALL_VOCAB=$(INSTALL_LOCAL)/ddr-vocab
 INSTALL_MANUAL=$(INSTALL_LOCAL)/ddr-manual
@@ -318,6 +320,11 @@ get-ddr-cmdln:
 	if test -d $(INSTALL_CMDLN); \
 	then cd $(INSTALL_CMDLN) && git pull; \
 	else git clone $(SRC_REPO_CMDLN); \
+	fi
+	@echo "get-ddr-cmdln-assets"
+	if test -d $(INSTALL_CMDLN_ASSETS); \
+	then cd $(INSTALL_CMDLN_ASSETS) && git pull; \
+	else git clone $(SRC_REPO_CMDLN_ASSETS); \
 	fi
 
 setup-ddr-cmdln:
