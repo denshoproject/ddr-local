@@ -44,7 +44,7 @@ def check( collection_path ):
         raise Exception('base_dir does not exist: %s' % settings.MEDIA_BASE)
     paths = util.find_meta_files(
         collection_path, recursive=1,
-        model=None, files_first=False, force_read=False, testing=0
+        model=None, files_first=False, force_read=False
     )
     bad_files = util.validate_paths(paths)
     output = [
