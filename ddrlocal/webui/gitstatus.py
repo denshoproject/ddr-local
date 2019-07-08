@@ -192,6 +192,7 @@ def loads( text ):
     variables = [None,None,None,None]
     for n,part in enumerate(text.split('%%')):
         variables[n] = part.strip()
+    timestamp = None
     meta = variables[0]
     if meta:
         ts,elapsed = meta.split(' ')
