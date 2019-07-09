@@ -64,7 +64,7 @@ def add_external(request, form_data, entity, file_role, git_name, git_mail):
     idparts['model'] = 'file'
     idparts['sha1'] = form_data['sha1']
     fi = Identifier(parts=idparts)
-    basename_orig = form_data['filename']
+    basename_orig = form_data['basename_orig']
     data = {
         'id': fi.id,
         'external': 1,
