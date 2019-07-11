@@ -190,11 +190,23 @@ def new( request, rid ):
     path = request.GET.get('path', None)
     FIELDS = prep_newfile_form_fields(module.FIELDS_NEW)
     if request.method == 'POST':
-        form = NewFileDDRForm(request.POST, fields=FIELDS, path_choices=shared_folder_files())
+        form = NewFileDDRForm(
+            request.POST,
+            fields=FIELDS,
+            path_choices=shared_folder_files()
+        )
         if form.is_valid():
+            rowd = {
+                'id': entity.id,
+                'external': False,
+                'role': role,
+                'basename_orig': form.cleaned_data['path'],
+                'public': form.cleaned_data['public'],
+                'sort': form.cleaned_data['sort'],
+                'label': form.cleaned_data['label'],
+            }
             file_tasks.add_local(
-                request, form.cleaned_data,
-                entity, role, path,
+                request, rowd, entity, role, path,
                 request.session['git_name'], request.session['git_mail'],
             )
             
@@ -237,9 +249,19 @@ def new_external(request, rid):
     if request.method == 'POST':
         form = NewExternalFileForm(request.POST)
         if form.is_valid():
+            rowd = {
+                'id': entity.id,
+                'external': True,
+                'role': role,
+                'basename_orig': form.cleaned_data['filename'],
+                'sha1': form.cleaned_data['sha1'],
+                'sha256': form.cleaned_data['sha256'],
+                'md5': form.cleaned_data['md5'],
+                'size': form.cleaned_data['size'],
+                'mimetype': form.cleaned_data['mimetype'],
+            }
             file_tasks.add_external(
-                request, form.cleaned_data,
-                entity, file_role,
+                request, rowd, entity, file_role,
                 request.session['git_name'], request.session['git_mail'],
             )
             
@@ -363,6 +385,14 @@ def set_signature( request, fid ):
                 git_mail=request.session['git_mail'],
             )
     return HttpResponseRedirect( file_.absolute_url() )
+
+@storage_required
+def xmp(request, fid):
+    """View file XMP data.
+    """
+    file_ = File.from_identifier(Identifier(fid))
+    check_file(file_)
+    return HttpResponse(file_.xmp, content_type="application/xml")
 
 @ddrview
 @login_required

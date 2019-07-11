@@ -84,7 +84,13 @@
       &nbsp;&bull;&nbsp; <a class="btn btn-mini muted"><span class="glyphicon glyphicon-download-alt"></span> download access</a>
 {% endif %}
   </p></dd>
-  <dt>xmp</dt><dd><p>{{ file.xmp }}</p></dd>
+  <dt>xmp</dt>
+  <dd>
+    <p>
+      <a href="{% url "webui-file-xmp" file.id %}" style="float:right;">View raw</a>
+      {{ file.xmp }}
+    </p>
+  </dd>
   <dt>links</dt>
   <dd><p>
     {% for link in file.links_all %}
