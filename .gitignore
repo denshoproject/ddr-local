@@ -3,6 +3,7 @@
 *.db
 *.deb
 *.svg
+.ackrc
 ddr-cmdln
 ddr-cmdln/
 ddr-cmdln-assets/
