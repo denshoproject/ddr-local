@@ -288,7 +288,7 @@ install-virtualenv:
 #	virtualenv --relocatable $(VIRTUALENV)  # Make venv relocatable
 
 
-install-dependencies: install-core install-misc-tools install-daemons install-git-annex
+install-dependencies: install-core install-misc-tools install-daemons
 	@echo ""
 	@echo "install-dependencies ---------------------------------------------------"
 	apt-get --assume-yes install python-pip python-virtualenv
@@ -301,7 +301,7 @@ mkdirs: mkdir-ddr-cmdln mkdir-ddr-local
 
 get-app: get-ddr-cmdln get-ddr-local get-ddr-manual
 
-install-app: install-git-annex install-virtualenv install-ddr-cmdln install-ddr-local install-configs install-daemon-configs
+install-app: install-dependencies install-virtualenv install-ddr-cmdln install-ddr-local install-configs install-daemon-configs
 
 test-app: test-ddr-cmdln
 
@@ -311,9 +311,6 @@ uninstall-app: uninstall-ddr-cmdln uninstall-ddr-local uninstall-ddr-manual unin
 
 clean-app: clean-ddr-cmdln clean-ddr-local clean-ddr-manual
 
-
-install-git-annex:
-	apt-get --assume-yes install git-core git-annex
 
 get-ddr-cmdln:
 	@echo ""
@@ -338,7 +335,6 @@ install-ddr-cmdln: install-virtualenv mkdir-ddr-cmdln
 	@echo ""
 	@echo "install-ddr-cmdln ------------------------------------------------------"
 	git status | grep "On branch"
-	apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev libz-dev pmount udisks2
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_CMDLN)/ddr; python setup.py install
 	source $(VIRTUALENV)/bin/activate; \
@@ -390,7 +386,6 @@ install-ddr-local: install-virtualenv mkdir-ddr-local
 	@echo ""
 	@echo "install-ddr-local ------------------------------------------------------"
 	git status | grep "On branch"
-	apt-get --assume-yes install imagemagick libexempi3 libssl-dev python-dev libxml2 libxml2-dev libxslt1-dev supervisor
 	source $(VIRTUALENV)/bin/activate; \
 	pip install -U -r $(INSTALL_LOCAL)/requirements.txt
 
