@@ -6,23 +6,24 @@
 
                               # LICENSE  Python3  PyPy
 
-django>=1.11.0,<2.0           # MIT      y
+django>=1.11.0,<2.0           # MIT      y             Last python2.* release: 1.11.*
 django-bootstrap-pagination==1.6.4 # MIT y
 
-redis==2.10.6                 # MIT      y
-django-redis==4.9.0           # BSD      y
+django-redis==4.10.0          # BSD      y
 django-redis-sessions==0.6.1  # BSD      y
 
-celery>=3.1.0,<4.0.0          # BSD      y        y
+celery>=3.1.0,<4.0.0          # BSD      y        y    Last python2.* release: 4.3.0
 git+https://github.com/densho/django-celery#egg=djcelery
 
-djangorestframework>=3.6.0,<3.7 # BSD    y
+djangorestframework>=3.6.0,<3.7 # BSD    y             Last python2.* release: 3.9.4
 coreapi==2.3.3                # BSD      y
 coreapi-cli==1.0.9            # BSD      y
 
 envoy==0.0.3                  # MIT      y
-gunicorn==19.8.1              # MIT      y
-sorl-thumbnail==12.4.1        # BSD      y
+gunicorn==19.9.0              # MIT      y
+sorl-thumbnail==12.5.0        # BSD      y
+
+# development
 
 coverage
 pytest
