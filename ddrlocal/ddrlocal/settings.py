@@ -218,7 +218,7 @@ REDIS_DB_SORL = 3
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "%s:%s:%s" % (REDIS_HOST, REDIS_PORT, REDIS_DB_CACHE),
+        "LOCATION": "redis://%s:%s:%s" % (REDIS_HOST, REDIS_PORT, REDIS_DB_CACHE),
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         }
