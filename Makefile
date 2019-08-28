@@ -757,6 +757,7 @@ deb-stretch:
 	conf=$(DEB_BASE)   \
 	COPYRIGHT=$(DEB_BASE)   \
 	ddr-cmdln=$(DEB_BASE)   \
+	ddr-cmdln-assets=$(DEB_BASE)   \
 	ddr-defs=$(DEB_BASE)   \
 	ddr-vocab=$(DEB_BASE)   \
 	ddrlocal=$(DEB_BASE)   \
