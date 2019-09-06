@@ -61,13 +61,13 @@ ifeq ($(DEBIAN_CODENAME), stretch)
 	OPENJDK_PKG=openjdk-8-jre
 endif
 
-ELASTICSEARCH=elasticsearch-2.4.4.deb
+ELASTICSEARCH=elasticsearch-7.3.1.deb
 MODERNIZR=modernizr-2.6.2.js
 JQUERY=jquery-1.11.0.min.js
 BOOTSTRAP=bootstrap-3.1.1-dist
 TAGMANAGER=tagmanager-3.0.1
 TYPEAHEAD=typeahead-0.10.2
-# wget https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-2.4.4.deb
+# wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.3.1.deb
 # wget http://code.jquery.com/jquery-1.11.0.min.js
 # wget https://github.com/twbs/bootstrap/releases/download/v3.1.1/bootstrap-3.1.1-dist.zip
 # wget https://github.com/max-favilli/tagmanager/archive/v3.0.1.tar.gz
