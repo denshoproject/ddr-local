@@ -27,6 +27,7 @@ SRC_REPO_CMDLN_ASSETS=https://github.com/densho/ddr-cmdln-assets.git
 SRC_REPO_LOCAL=https://github.com/densho/ddr-local.git
 SRC_REPO_DEFS=https://github.com/densho/ddr-defs.git
 SRC_REPO_VOCAB=https://github.com/densho/ddr-vocab.git
+SRC_REPO_VOCAB2=https://github.com/densho/densho-vocab.git
 SRC_REPO_MANUAL=https://github.com/densho/ddr-manual.git
 
 CWD := $(shell pwd)
@@ -36,6 +37,7 @@ INSTALL_CMDLN=$(INSTALL_LOCAL)/ddr-cmdln
 INSTALL_CMDLN_ASSETS=$(INSTALL_LOCAL)/ddr-cmdln-assets
 INSTALL_DEFS=$(INSTALL_LOCAL)/ddr-defs
 INSTALL_VOCAB=$(INSTALL_LOCAL)/ddr-vocab
+INSTALL_VOCAB2=$(INSTALL_LOCAL)/densho-vocab
 INSTALL_MANUAL=$(INSTALL_LOCAL)/ddr-manual
 
 VIRTUALENV=$(INSTALL_LOCAL)/venv/ddrlocal
@@ -456,6 +458,11 @@ get-ddr-vocab:
 	then cd $(INSTALL_VOCAB) && git pull; \
 	else git clone $(SRC_REPO_VOCAB) $(INSTALL_VOCAB); \
 	fi
+	@echo "get-densho-vocab -------------------------------------------------------"
+	if test -d $(INSTALL_VOCAB2); \
+	then cd $(INSTALL_VOCAB2) && git pull; \
+	else git clone $(SRC_REPO_VOCAB2) $(INSTALL_VOCAB2); \
+	fi
 
 
 migrate:
@@ -761,6 +768,7 @@ deb-stretch:
 	ddr-defs=$(DEB_BASE)   \
 	ddr-vocab=$(DEB_BASE)   \
 	ddrlocal=$(DEB_BASE)   \
+	densho-vocab=$(DEB_BASE)   \
 	.git=$(DEB_BASE)   \
 	.gitignore=$(DEB_BASE)   \
 	INSTALL.rst=$(DEB_BASE)   \
