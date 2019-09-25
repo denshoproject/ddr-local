@@ -709,16 +709,15 @@ class Entity( DDREntity ):
         eidentifier = Identifier(id=entity_id)
         entity_path = eidentifier.path_abs()
         
-        # write entity.json template to entity location and commit
-        fileio.write_text(Entity(entity_path).dump_json(template=True),
-                   settings.TEMPLATE_EJSON)
+        # create blank entity and commit
         exit,status = commands.entity_create(
-            git_name, git_mail,
-            collection, eidentifier,
-            [collection.json_path_rel, collection.ead_path_rel],
-            [settings.TEMPLATE_EJSON, settings.TEMPLATE_METS],
-            agent=agent)
-        
+            user_name=git_name,
+            user_mail=git_mail,
+            collection=collection,
+            eidentifier=eidentifier,
+            updated_files=[collection.json_path_rel, collection.ead_path_rel],
+            agent=agent,
+        )
         # load new entity, inherit values from parent, write and commit
         entity = Entity.from_json(entity_path)
         entity.inherit(collection)
