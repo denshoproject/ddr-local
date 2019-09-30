@@ -316,7 +316,7 @@ def _create_entity(request, eidentifier, collection, git_name, git_mail):
     """used by both new_idservice and new_manual
     """
     # load Entity object, inherit values from parent, write back to file
-    exit,status = Entity.new(eidentifier, git_name, git_mail, agent=settings.AGENT)
+    exit,status = Entity.create(eidentifier, git_name, git_mail)
     entity = Entity.from_identifier(eidentifier)
     
     collection.cache_delete()

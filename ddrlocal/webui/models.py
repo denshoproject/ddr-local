@@ -446,32 +446,23 @@ class Collection( DDRCollection ):
         model_def_fields(self)
     
     @staticmethod
-    def create(collection_path, git_name, git_mail):
-        """create new entity given an entity ID
-        TODO remove write and commit, just create object
+    def create(cidentifier, git_name, git_mail, agent=settings.AGENT):
+        """Creates new Collection, writes files, performs initial commit
         """
-        # write collection.json template to collection location and commit
-        fileio.write_text(Collection(collection_path).dump_json(template=True),
-                   settings.TEMPLATE_CJSON)
-        templates = [settings.TEMPLATE_CJSON, settings.TEMPLATE_EAD]
-        agent = settings.AGENT
-
-        cidentifier = Identifier(collection_path)
         exit,status = commands.create(
-            git_name, git_mail, cidentifier, templates, agent
+            git_name, git_mail, cidentifier, agent
         )
-        
         collection = Collection.from_identifier(cidentifier)
         
         # [delete cache], update search index
         #collection.cache_delete()
         if settings.DOCSTORE_ENABLED:
             try:
-                docstore.Docstore().post(self)
+                docstore.Docstore().post(collection)
             except ConnectionError:
                 logger.error('Could not post to Elasticsearch.')
         
-        return collection
+        return exit,status
     
     def save( self, git_name, git_mail, cleaned_data={}, commit=True ):
         """Save Collection metadata.
@@ -702,25 +693,20 @@ class Entity( DDREntity ):
         )
     
     @staticmethod
-    def create(collection, entity_id, git_name, git_mail, agent=settings.AGENT):
-        """create new entity given an entity ID
-        TODO remove write and commit, just create object
+    def create(eidentifier, git_name, git_mail, agent=settings.AGENT):
+        """Creates new Entity, writes files, performs initial commit
         """
-        eidentifier = Identifier(id=entity_id)
-        entity_path = eidentifier.path_abs()
-        
-        # write entity.json template to entity location and commit
-        fileio.write_text(Entity(entity_path).dump_json(template=True),
-                   settings.TEMPLATE_EJSON)
+        collection = eidentifier.collection().object()
         exit,status = commands.entity_create(
-            git_name, git_mail,
-            collection, eidentifier,
-            [collection.json_path_rel, collection.ead_path_rel],
-            [settings.TEMPLATE_EJSON, settings.TEMPLATE_METS],
-            agent=agent)
-        
+            user_name=git_name,
+            user_mail=git_mail,
+            collection=collection,
+            eidentifier=eidentifier,
+            updated_files=[],
+            agent=agent,
+        )
         # load new entity, inherit values from parent, write and commit
-        entity = Entity.from_json(entity_path)
+        entity = eidentifier.object()
         entity.inherit(collection)
         entity.write_json()
         updated_files = [entity.json_path]
@@ -734,11 +720,11 @@ class Entity( DDREntity ):
         collection.cache_delete()
         if settings.DOCSTORE_ENABLED:
             try:
-                docstore.Docstore().post(self)
+                docstore.Docstore().post(entity)
             except ConnectionError:
                 logger.error('Could not post to Elasticsearch.')
         
-        return entity
+        return exit,status
     
     def save( self, git_name, git_mail, agent=settings.AGENT, collection=None, cleaned_data={}, commit=True ):
         """Save Entity metadata

@@ -210,7 +210,7 @@ def new( request, oid ):
 def _create_collection(request, cidentifier, git_name, git_mail):
     """used by both new_idservice and new_manual
     """
-    exit,status = Collection.new(cidentifier, git_name, git_mail, settings.AGENT)
+    exit,status = Collection.create(cidentifier, git_name, git_mail, settings.AGENT)
     collection = Collection.from_identifier(cidentifier)
     if exit:
         logger.error(exit)
