@@ -89,7 +89,6 @@ ds_host,ds_port      = CONFIG.get('local', 'docstore_host').split(':')
 DOCSTORE_HOSTS = [
     {'host':ds_host, 'port':ds_port}
 ]
-DOCSTORE_INDEX       = CONFIG.get('local', 'docstore_index')
 DOCSTORE_TIMEOUT     = int(CONFIG.get('local', 'docstore_timeout'))
 RESULTS_PER_PAGE = 25
 ELASTICSEARCH_MAX_SIZE = 10000

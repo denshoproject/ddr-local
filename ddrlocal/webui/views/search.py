@@ -23,8 +23,7 @@ from webui import identifier
 from webui import models
 from webui import search
 from webui.tasks import docstore as docstore_tasks
-from webui.decorators import search_index
-from webui.forms.search import SearchForm, IndexConfirmForm, DropConfirmForm
+from webui.forms.search import SearchForm
 from webui.identifier import Identifier
 
 BAD_CHARS = ('{', '}', '[', ']')
@@ -65,12 +64,8 @@ def test_elasticsearch(request):
         return 'Could not connect to search engine: "%s"' % settings.DOCSTORE_HOSTS
     except ConnectionTimeout:
         return 'Connection to search engine timed out: "%s"' % settings.DOCSTORE_HOSTS
-    index_exists = search.DOCSTORE.index_exists(settings.DOCSTORE_INDEX)
-    if not index_exists:
-        return 'Search engine index does not exist: "%s"' % settings.DOCSTORE_INDEX
     return
     
-@search_index
 def search_ui(request):
     elasticsearch_error = test_elasticsearch(request)
     if elasticsearch_error:
@@ -141,7 +136,6 @@ def search_ui(request):
     
     return render(request, 'webui/search/search.html', context)
     
-@search_index
 def admin( request ):
     """Administrative stuff like re-indexing.
     """
@@ -187,18 +181,11 @@ def admin( request ):
             index_names.append(name)
             index = {'name':name, 'exists':True}
             indices.append(index)
-    indexform = IndexConfirmForm(request=request)
-    dropform = None
-    if indices:
-        dropform = DropConfirmForm(request=request)
     return render(request, 'webui/search/admin.html', {
         'ping': ping,
         'no_indices': no_indices,
         'server_info': server_info,
         'indices': indices,
-        'indexform': indexform,
-        'dropform': dropform,
-        'docstore_index': settings.DOCSTORE_INDEX,
         'target_index': target_index,
     })
 
@@ -218,16 +205,4 @@ def reindex( request ):
                         'start': converters.datetime_to_text(datetime.now(settings.TZ)),}
                 celery_tasks[result.task_id] = task
                 request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
-    return HttpResponseRedirect( reverse('webui-search-admin') )
-
-def drop_index( request ):
-    if request.method == 'POST':
-        form = DropConfirmForm(request.POST, request=request)
-        if form.is_valid():
-            index = form.cleaned_data['index']
-            ds = search.docstore.Docstore(index=index)
-            ds.delete_index()
-            messages.error(request,
-                           'Search index "%s" dropped. ' \
-                           'Click "Re-index" to reindex your collections.' % index)
     return HttpResponseRedirect( reverse('webui-search-admin') )

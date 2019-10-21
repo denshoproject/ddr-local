@@ -352,12 +352,13 @@ class Collection( DDRCollection ):
         
         >>> c = DDRLocalCollection('/tmp/ddr-testing-123')
         >>> c.docstore_url()
-        'http://DOCSTORE_HOSTS/DOCSTORE_INDEX/collection/ddr-testing-123/'
+        'http://DOCSTORE_HOSTS/_doc/ddrcollection/ddr-testing-123/'
         """
-        return 'http://{}:{}/{}/{}/{}'.format(
-            settings.DOCSTORE_HOSTS[0]['host'], settings.DOCSTORE_HOSTS[0]['port'],
-            settings.DOCSTORE_INDEX,
-            self.identifier.model, self.identifier.id
+        return 'http://{}:{}/{}/{}'.format(
+            settings.DOCSTORE_HOSTS[0]['host'],
+            settings.DOCSTORE_HOSTS[0]['port'],
+            docstore.Docstore().index_name(self.identifier.model),
+            self.identifier.id
         )
     
     def fs_url( self ):
@@ -646,12 +647,13 @@ class Entity( DDREntity ):
         
         >>> e = DDRLocalEntity('/tmp/ddr-testing-123-456')
         >>> e.docstore_url()
-        'http://DOCSTORE_HOSTS/DOCSTORE_INDEX/entity/ddr-testing-123-456/'
+        'http://DOCSTORE_HOSTS/_doc/ddrentity/ddr-testing-123-456/'
         """
-        return 'http://{}:{}/{}/{}/{}'.format(
-            settings.DOCSTORE_HOSTS[0]['host'], settings.DOCSTORE_HOSTS[0]['port'],
-            settings.DOCSTORE_INDEX,
-            self.identifier.model, self.identifier.id
+        return 'http://{}:{}/{}/{}'.format(
+            settings.DOCSTORE_HOSTS[0]['host'],
+            settings.DOCSTORE_HOSTS[0]['port'],
+            docstore.Docstore().index_name(self.identifier.model),
+            self.identifier.id
         )
     
     def gitweb_url( self ):
@@ -849,12 +851,13 @@ class File( DDRFile ):
         
         >>> f = DDRLocalEntity('/tmp/ddr-testing-123-456-master-abc123')
         >>> f.docstore_url()
-        'http://DOCSTORE_HOSTS/DOCSTORE_INDEX/file/ddr-testing-123-456-master-abc123/'
+        'http://DOCSTORE_HOSTS/_doc/ddrfile/ddr-testing-123-456-master-abc123/'
         """
-        return 'http://{}:{}/{}/{}/{}'.format(
-            settings.DOCSTORE_HOSTS[0]['host'], settings.DOCSTORE_HOSTS[0]['port'],
-            settings.DOCSTORE_INDEX,
-            self.identifier.model, self.identifier.id
+        return 'http://{}:{}/{}/{}'.format(
+            settings.DOCSTORE_HOSTS[0]['host'],
+            settings.DOCSTORE_HOSTS[0]['port'],
+            docstore.Docstore().index_name(self.identifier.model),
+            self.identifier.id
         )
     
     def fs_url( self ):
