@@ -1,30 +1,125 @@
-{% extends "webui/search/base.html" %}
+{% extends "base.html" %}
 {% load bootstrap_pagination webui_tags %}
+
 
 {% block title %}Search Results{% endblock %}
 
 
 {% block breadcrumbs %}{{ block.super }}
-<li class="active">Results</li>
+{% if object %}
+
+{% breadcrumbs object.breadcrumbs True %}
+<li>Search Results</li>
+
+{% else %}{# object #}
+
+<li>
+  <a href="{{ object.links.html }}">
+    {{ object.title }}
+  </a>
+</li>
+<li>Search Results</li>
+
+{% endif %}
 {% endblock breadcrumbs %}
 
-{% block content %}
-  <div class="row-fluid">
-    <div class="span12">
 
+{% block content %}
+
+<!-- query
+
+{{ query_json|safe }}
+
+-->
+
+<section class="container" id="portfolio">
+  <div class="row">
+    <div class="col-sm-12 col-md-12">
+
+{% if object %}
+<h2>
+  Search:
+  {{ object.title }}
+  <small>{{ object.id }}</small>
+</h2>
+<p>
+  <a class="btn btn-primary btn-sm" href="{{ object.links.html }}">
+    <i class="fa fa-arrow-circle-left"></i>
+    Back to {{ object.model }} detail
+  </a>
+</p>
+{% endif %}{# object #}
+      
 {% if error_message %}
 <p class="error">
 {{ error_message }}
 </p>
 {% endif %}
 
-<p></p>
+<!-- --------------------------------------------------------------- -->
 
-<form role="form" action="{% url "webui-search-results" %}" method="get">
-  <input name="query" id="id_query" type="text" class="form-control" placeholder="Search..." value="{{ query }}">
-  <button type="submit" class="btn btn-primary"><span class="glyphicon glyphicon-search"></span> Search</button>
+<form action="{{ this_url }}" method="get">
+  <div class="row">
+    <div class="col-sm-10 col-md-10">
+      <div class="input-group">
+        {{ search_form.fulltext }}
+        <span class="input-group-btn">
+          <button class="btn btn-primary"><i class="fa fa-search"></i></button>
+        </span>
+      </div>
+    </div><!-- .col -->
+  </div><!-- .row -->
+{% if searching %}
+  <div class="row">
+	<div class="col-sm-12 col-md-12">
+
+          <div class="panel-group" id="filters_accordion">
+              <div class="panel panel-default">
+                  <div class="panel-heading">
+                      <h4 class="panel-title">
+                          <a id="searchfilters" data-toggle="collapse" data-parent="#filters_accordion" href="#acordion1">
+                              <i class="fa fa-filter"></i> Filters
+                          </a>
+                      </h4>
+                  </div>
+                  <div id="acordion1" class="collapse {% if request.session.searchfilters == "open" %}in{% endif %}">
+                      <div class="panel-body">
+                          <div class="row">
+                            <div class="col-sm-12 col-md-12">
+                              <b>Topics</b><br />
+                              {{ search_form.topics }}
+                            </div>
+                          </div>
+                          <div class="row">
+                            <div class="col-sm-3 col-md-3">
+                              <b>Facilities</b><br />{{ search_form.facility }}
+                            </div>
+                            <div class="col-sm-3 col-md-3">
+                              <b>Format</b><br />{{ search_form.format }}
+                            </div>
+                            <div class="col-sm-3 col-md-3">
+                              <b>Genre</b><br />{{ search_form.genre }}
+                            </div>
+                          </div>
+                          <div class="row">
+                            <div class="col-sm-3 col-md-3">
+                              <b>Usage</b><br />{{ search_form.rights }}
+                            </div>
+                          </div>
+                          <p>
+                            <button class="btn btn-sm btn-primary"><i class="fa fa-filter"></i> Apply filters</button> <span class="muted small" style="padding-left:20px;">Use &lt;Ctrl&gt; or (⌘) keys to select multiple terms</span>
+                          </p>
+                      </div>
+                  </div>
+              </div>
+          </div>
+
+        </div>
+  </div><!-- .row -->
+{% endif %}{# searching #}
 </form>
 
+<!-- --------------------------------------------------------------- -->
 
 <div id="querymeta">
 
@@ -32,80 +127,93 @@
   <div class="terms">
     <b>Terms</b>
 
-    <strong><a href="{# url "webui-browse-facet" terms.field #}">{{ terms.field }}</a>:</strong>
+    <strong><a href="{% url "ui-browse-facet" terms.field %}">{{ terms.field }}</a>:</strong>
     {{ terms.term }}
 
-  </div>
-{% endif %}
-
-<!--
-  <div class="filters">
-    <b>Filters</b>
-    &mdash;
-
-    <span class="public">
-      <b>public:</b>
-{% if filters.public == "1" %}yes{% else %}<a href="?query={{ query }}&record_created={{ record_created }}&record_lastmod={{ sort.record_lastmod }}&public=1&workflow={{ filters.workflow }}">yes</a>{% endif %}
-/ {% if filters.public == "0" %}<b>no</b>{% else %}<a href="?query={{ query }}&record_created={{ record_created }}&record_lastmod={{ sort.record_lastmod }}&public=0&workflow={{ filters.workflow }}">no</a>{% endif %}
-{% if filters.public %}(<a href="?query={{ query }}&record_created={{ record_created }}&record_lastmod={{ sort.record_lastmod }}&public=&workflow={{ filters.workflow }}">clear</a>){% endif %}
-    </span>
-    &bull;
-    <span class="status">
-      <b>status:</b>
-{% if filters.status == "completed" %}completed{% else %}<a href="?query={{ query }}&record_created={{ record_created }}&record_lastmod={{ sort.record_lastmod }}&public={{ filters.public }}&status=completed">completed</a>{% endif %}
-/ {% if filters.status == "inprocess" %}inprocess{% else %}<a href="?query={{ query }}&record_created={{ record_created }}&record_lastmod={{ sort.record_lastmod }}&public={{ filters.public }}&status=inprocess">inprocess</a>{% endif %}
-{% if filters.status %}(<a href="?query={{ query }}&record_created={{ record_created }}&record_lastmod={{ sort.record_lastmod }}&public={{ filters.public }}&status=">clear</a>){% endif %}
-    </span>
-  </div>
--->
-
-<!--
-  <div class="sort">
-    <b>Sort</b>
-    &mdash;
-    <span class="record_created">
-      <b>record_created:</b>
-{% if sort.record_created == "asc" %}ascending{% else %}<a href="?query={{ query }}&record_created=asc&record_lastmod={{ sort.record_lastmod }}&public={{ filters.public }}&workflow={{ filters.workflow }}">ascending</a>{% endif %}
-/ {% if record_created.date == "desc" %}descending{% else %}<a href="?query={{ query }}&record_created=desc&record_lastmod={{ sort.record_lastmod }}&public={{ filters.public }}&workflow={{ filters.workflow }}">descending</a>{% endif %}
-{% if sort.record_created %}(<a href="?query={{ query }}&record_created=&record_lastmod={{ sort.record_lastmod }}&public={{ filters.public }}&workflow={{ filters.workflow }}">clear</a>){% endif %}
-    </span>
-    <span class="record_lastmod">
-      <b>record_lastmod:</b>
-{% if sort.record_lastmod == "asc" %}ascending{% else %}<a href="?query={{ query }}&record_created={{ record_created }}&record_lastmod=asc&public={{ filters.public }}&workflow={{ filters.workflow }}">ascending</a>{% endif %}
-/ {% if record_lastmod.date == "desc" %}descending{% else %}<a href="?query={{ query }}&record_created={{ record_created }}&record_lastmod=desc&public={{ filters.public }}&workflow={{ filters.workflow }}">descending</a>{% endif %}
-{% if sort.record_lastmod %}(<a href="?query={{ query }}&record_created={{ record_created }}&record_lastmod=&public={{ filters.public }}&workflow={{ filters.workflow }}">clear</a>){% endif %}
-    </span>
-  </div>
--->
-
-{% if page.object_list %}
-  <div>
-    {{ paginator.count }} items<br/>
   </div>
 {% endif %}
 
 </div><!-- .querymeta -->
 
 {% if page.object_list %}
+<div class="row"> <!-- results content -->
+    <div class="col-sm-12 col-md-12">
+        <!--  view selection tabs -->
+        <div class="tabs no-margin-top" style="margin:10px 0;">
+    <ul class="nav nav-tabs">
+        <li class="gallery {% if request.session.liststyle == "gallery" %}active{% endif %}">
+            <a href="#gallery_tab" data-toggle="tab">
+                <i class="fa fa-th"></i> Gallery view
+            </a>
+        </li>
+        <li class="list {% if request.session.liststyle == "list" %}active{% endif %}">
+            <a href="#list_tab" data-toggle="tab">
+                <i class="fa fa-list"></i> List view
+            </a>
+        </li>
+    </ul>
+    <div class="tab-content">
+        <div id="gallery_tab" class="tab-pane {% if request.session.liststyle == "gallery" %}active{% endif %}">
+            <div id="item-count">
+                {{ paginator.count }} items<br/>
+            </div>
+{% if paginator.num_pages > 1 %}
+{% bootstrap_paginate page range=10 show_first_last="true" %}
+{% endif %}
+            <div class="row">
+                <ul class="sort-destination isotope fullwidth" data-sort-id="isotope-list">
+{% for object in page.object_list %}
+{% galleryitem object %}
+{% endfor %}
+                </ul>
+            </div><!-- /.masonry-container -->
 
 {% if paginator.num_pages > 1 %}
 {% bootstrap_paginate page range=10 show_first_last="true" %}
 {% endif %}
 
-{% for hit in page.object_list %}
-  {% if hit.model == "collection" %}{% collection hit %}{% endif %}
-  {% if hit.model == "entity" %}{% entity hit %}{% endif %}
-  {% if hit.model == "file" %}{% file hit %}{% endif %}
+        </div> <!-- end gallery_tab -->
+        <div id="list_tab" class="tab-pane {% if request.session.liststyle == "list" %}active{% endif %}">
+              <div id="item-count">
+                {{ paginator.count }} items<br/>
+              </div>
+
+{% if paginator.num_pages > 1 %}
+{% bootstrap_paginate page range=10 show_first_last="true" %}
+{% endif %}
+
+{% for object in page.object_list %}
+{% listitem object %}
 {% endfor %}
 
 {% if paginator.num_pages > 1 %}
 {% bootstrap_paginate page range=10 show_first_last="true" %}
 {% endif %}
 
+        </div> <!-- end list_tab -->
+    </div> <!-- end tabs content -->
+</div> <!-- end tabs -->
+    </div>
+</div> <!-- .row results content -->
 {% endif %}
+    </td>
+  </tr>
+</table>
 
-  </div><!-- .span12 -->
-</div><!-- .row-fluid -->
+    </div><!-- .col-sm-12 col-md-12 -->
+  </div><!-- .row -->
 
+  <!-- query
 
+{{ query_json|safe }}
+
+  -->
+  <div class="row">
+    <div class="col-sm-12 col-md-12 text-muted text-right">
+      <small><a class="api" href="{{ api_url }}">API</a></small>
+    </div>
+
+  </div><!-- .row -->
+
+</section><!-- .container-fluid -->
 {% endblock content %}

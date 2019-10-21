@@ -2,7 +2,7 @@ from django.conf.urls import include, url
 from django.views.generic import TemplateView
 
 from webui import api
-from views import merge, search, supervisord
+from views import merge, search, searching, supervisord
 from views import collections, entities, files
 from webui import views
 
@@ -38,7 +38,7 @@ urlpatterns = [
     url(r'^search/admin/$', search.admin, name='webui-search-admin'),
     url(r'^search/reindex/$', search.reindex, name='webui-search-reindex'),
     #url(r'^search/(?P<field>[\w]+):(?P<term>[\w ,]+)/$', search.term_query, name='webui-search-term-query'),
-    url(r'^search/$', search.search_ui, name='webui-search'),
+    url(r'^search/$', searching.search_ui, name='webui-search'),
 
     # merge
 
