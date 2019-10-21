@@ -22,20 +22,14 @@ class WebSearchResults(SearchResults):
                 None,
             ])
         return '?%s' % query
-    
-    def to_dict(self, list_function, request):
-        """Express search results in API and Redis-friendly structure
-        returns: dict
-        """
-        return self._dict({}, list_function, request)
-    
-    def ordered_dict(self, list_function, request, pad=False):
-        """Express search results in API and Redis-friendly structure
-        returns: OrderedDict
-        """
-        return self._dict(OrderedDict(), list_function, request, pad=pad)
 
-    def _dict(self, data, list_function, request, pad=False):
+    def _dict(self, params, data, format_functions, request=None, pad=False):
+        """
+        @param params: dict
+        @param data: dict
+        @param format_functions: dict
+        @param pad: bool
+        """
         data['total'] = self.total
         data['limit'] = self.limit
         data['offset'] = self.offset
@@ -43,14 +37,36 @@ class WebSearchResults(SearchResults):
         data['next_offset'] = self.next_offset
         data['page_size'] = self.page_size
         data['this_page'] = self.this_page
-
-        params = {key:val for key,val in request.GET.items()}
+        data['num_this_page'] = len(self.objects)
         if params.get('page'): params.pop('page')
         if params.get('limit'): params.pop('limit')
         if params.get('offset'): params.pop('offset')
         qs = [key + '=' + val for key,val in params.items()]
         query_string = '&'.join(qs)
-
+        data['prev_api'] = ''
+        data['next_api'] = ''
+        data['objects'] = []
+        data['query'] = self.query
+        data['aggregations'] = self.aggregations
+        
+        # pad before
+        if pad:
+            data['objects'] += [{'n':n} for n in range(0, self.page_start)]
+        # page
+        for o in self.objects:
+            format_function = format_functions[o.meta.index]
+            data['objects'].append(
+                format_function(
+                    identifier.Identifier(o['id']),
+                    o.to_dict(),
+                    request,
+                    is_detail=False,
+                )
+            )
+        # pad after
+        if pad:
+            data['objects'] += [{'n':n} for n in range(self.page_next, self.total)]
+        
         data['prev_api'] = ''
         if self.prev_offset != None:
             data['prev_api'] = self._make_prevnext_url(
@@ -69,79 +85,4 @@ class WebSearchResults(SearchResults):
             )
         data['objects'] = []
         
-        # pad before
-        if pad:
-            data['objects'] += [
-                {'n':n} for n in range(0, self.page_start)
-            ]
-        
-        # page
-        for o in self.objects:
-            data['objects'].append(
-                list_function(
-                    identifier.Identifier(o['id']),
-                    o.to_dict(),
-                    request,
-                    is_detail=False,
-                )
-            )
-        
-        # pad after
-        if pad:
-            data['objects'] += [
-                {'n':n} for n in range(self.page_next, self.total)
-            ]
-        
-        data['query'] = self.query
-        data['aggregations'] = self.aggregations
         return data
-
-
-class WebSearcher(Searcher):
-    search_results_class = WebSearchResults
-
-    def prepare(self, request):
-        """assemble elasticsearch_dsl.Search object
-        """
-
-        # gather inputs ------------------------------
-        
-        if hasattr(request, 'query_params'):
-            # api (rest_framework)
-            params = dict(request.query_params)
-        elif hasattr(request, 'GET'):
-            # web ui (regular Django)
-            params = dict(request.GET)
-        else:
-            params = {}
-        
-        # whitelist params
-        bad_fields = [
-            key for key in params.keys()
-            if key not in SEARCH_PARAM_WHITELIST + ['page']
-        ]
-        for key in bad_fields:
-            params.pop(key)
-        
-        fulltext = params.pop('fulltext')
-        
-        if params.get('models'):
-            models = params.pop('models')
-        else:
-            models = SEARCH_MODELS
-        
-        parent = ''
-        if params.get('parent'):
-            parent = params.pop('parent')
-            if isinstance(parent, list) and (len(parent) == 1):
-                parent = parent[0]
-            if parent:
-                parent = '%s*' % parent
-        
-        # TODO call parent class function here
-        super(WebSearcher, self).prepare(
-            fulltext=fulltext,
-            models=models,
-            parent=parent,
-            filters=params,
-        )
