@@ -228,6 +228,18 @@ def image_present(fi):
         '%s%s' % (fi.path_abs(), settings.ACCESS_FILE_SUFFIX)
     )
 
+def docstore_url(oidentifier):
+    """Returns local Elasticsearch URL for collection.
+    
+    >>> c = DDRLocalCollection('/tmp/ddr-testing-123')
+    >>> c.docstore_url()
+    'http://DOCSTORE_HOSTS/_docs/ddrcollection/ddr-testing-123/'
+    """
+    return 'http://{}:{}/_doc/{}/{}'.format(
+        settings.DOCSTORE_HOSTS[0]['host'], settings.DOCSTORE_HOSTS[0]['port'],
+        oidentifier.model, oidentifier.id
+    )
+
 
 # functions relating to inheritance ------------------------------------
 
@@ -348,17 +360,8 @@ class Collection( DDRCollection ):
         return reverse('api-es-detail', args=([self.id]))
         
     def docstore_url( self ):
-        """Returns local Elasticsearch URL for collection.
-        
-        >>> c = DDRLocalCollection('/tmp/ddr-testing-123')
-        >>> c.docstore_url()
-        'http://DOCSTORE_HOSTS/DOCSTORE_INDEX/collection/ddr-testing-123/'
-        """
-        return 'http://{}:{}/{}/{}/{}'.format(
-            settings.DOCSTORE_HOSTS[0]['host'], settings.DOCSTORE_HOSTS[0]['port'],
-            settings.DOCSTORE_INDEX,
-            self.identifier.model, self.identifier.id
-        )
+        """Returns local Elasticsearch URL for collection."""
+        return docstore_url(self.identifier)
     
     def fs_url( self ):
         """URL of the collection directory browsable via Nginx.
@@ -633,17 +636,8 @@ class Entity( DDREntity ):
         return reverse('api-es-detail', args=([self.id]))
     
     def docstore_url( self ):
-        """Returns local Elasticsearch URL for entity.
-        
-        >>> e = DDRLocalEntity('/tmp/ddr-testing-123-456')
-        >>> e.docstore_url()
-        'http://DOCSTORE_HOSTS/DOCSTORE_INDEX/entity/ddr-testing-123-456/'
-        """
-        return 'http://{}:{}/{}/{}/{}'.format(
-            settings.DOCSTORE_HOSTS[0]['host'], settings.DOCSTORE_HOSTS[0]['port'],
-            settings.DOCSTORE_INDEX,
-            self.identifier.model, self.identifier.id
-        )
+        """Returns local Elasticsearch URL for collection."""
+        return docstore_url(self.identifier)
     
     def gitweb_url( self ):
         """Returns local gitweb URL for entity directory.
@@ -831,17 +825,8 @@ class File( DDRFile ):
         return reverse('api-es-detail', args=([self.id]))
     
     def docstore_url( self ):
-        """Returns local Elasticsearch URL for file.
-        
-        >>> f = DDRLocalEntity('/tmp/ddr-testing-123-456-master-abc123')
-        >>> f.docstore_url()
-        'http://DOCSTORE_HOSTS/DOCSTORE_INDEX/file/ddr-testing-123-456-master-abc123/'
-        """
-        return 'http://{}:{}/{}/{}/{}'.format(
-            settings.DOCSTORE_HOSTS[0]['host'], settings.DOCSTORE_HOSTS[0]['port'],
-            settings.DOCSTORE_INDEX,
-            self.identifier.model, self.identifier.id
-        )
+        """Returns local Elasticsearch URL for collection."""
+        return docstore_url(self.identifier)
     
     def fs_url( self ):
         """URL of the files directory browsable via Nginx.

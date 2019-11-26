@@ -35,9 +35,6 @@ urlpatterns = [
     
     # search
 
-    url(r'^search/admin/$', search.admin, name='webui-search-admin'),
-    url(r'^search/reindex/$', search.reindex, name='webui-search-reindex'),
-    url(r'^search/drop/$', search.drop_index, name='webui-search-drop'),
     #url(r'^search/(?P<field>[\w]+):(?P<term>[\w ,]+)/$', search.term_query, name='webui-search-term-query'),
     url(r'^search/$', search.search_ui, name='webui-search'),
 
