@@ -63,7 +63,7 @@ ifeq ($(DEBIAN_CODENAME), stretch)
 	OPENJDK_PKG=openjdk-8-jre
 endif
 
-ELASTICSEARCH=elasticsearch-7.3.1.deb
+ELASTICSEARCH=elasticsearch-7.3.1-amd64.deb
 MODERNIZR=modernizr-2.6.2.js
 JQUERY=jquery-1.11.0.min.js
 BOOTSTRAP=bootstrap-3.1.1-dist
