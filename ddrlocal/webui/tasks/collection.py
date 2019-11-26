@@ -138,7 +138,7 @@ def collection_new_manual(collection_path, git_name, git_mail):
     gitstatus.lock(settings.MEDIA_BASE, TASK_COLLECTION_NEW_NAME)
     
     # Create collection
-    exit,status = Collection.new(cidentifier, git_name, git_mail, settings.AGENT)
+    exit,status = Collection.create(cidentifier, git_name, git_mail)
     collection = Collection.from_identifier(cidentifier)
     
     # update search index
@@ -184,7 +184,7 @@ def collection_new_idservice(organization_id, idservice_token, git_name, git_mai
         ))
     # Create collection
     cidentifier = Identifier(id=collection_id, base_path=settings.MEDIA_BASE)
-    exit,status = Collection.new(cidentifier, git_name, git_mail, settings.AGENT)
+    exit,status = Collection.create(cidentifier, git_name, git_mail)
     collection = Collection.from_identifier(cidentifier)
     
     # update search index

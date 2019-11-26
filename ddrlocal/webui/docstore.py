@@ -8,9 +8,8 @@ from DDR.docstore import doctype_fields
 
 class Docstore(docstore.Docstore):
 
-    def __init__(self, hosts=settings.DOCSTORE_HOSTS, index=settings.DOCSTORE_INDEX, connection=None):
+    def __init__(self, hosts=settings.DOCSTORE_HOSTS, connection=None):
         self.hosts = hosts
-        self.indexname = index
         if connection:
             self.es = connection
         else:

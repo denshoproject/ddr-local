@@ -30,5 +30,5 @@ coverage
 pytest
 pytest-cov
 pytest-django
-pytest-testmon
+#pytest-testmon
 pytest-xdist

@@ -71,35 +71,3 @@ WEBUI_MESSAGES = {
     'MODEL_DEF_FIELDS_REMOVED': "The following fields in this document are absent from the repository's model definitions. If you edit this document these fields and their data will disappear! {}",
 
 }
-
-def set_docstore_index( request ):
-    """Ensure active Elasticsearch index matches active storage; complain if not.
-    
-    Look at mounted storage. Make an index name based on that.
-    If mounted and corresponding index exists in Elasticsearch, make sure it's
-    in session.  If index is in session but storage not mounted or Elasticearch
-    index doesn't exist, remove from session.
-    
-    storage_label: label of storage currently in session
-    docstore_index_exists: Elasticsearch index exists for storage_label (or not)
-    
-    @param request:
-    @returns: storage_label,docstore_index_exists
-    """
-    # gather info
-    docstore_index = None
-    docstore_index_exists = None
-    storage_label = request.session.get('storage_label', None)
-    if not storage_label:
-        storage_label = docstore.Docstore().target_index(settings.DOCSTORE_INDEX)
-    if storage_label:
-        docstore_index = docstore.make_index_name(storage_label)
-        if docstore_index:
-            docstore_index_exists = docstore.Docstore(index=docstore_index).index_exists()
-    # rm index from session
-    if not (storage_label or docstore_index_exists):
-        request.session['docstore_index'] = None
-    # add index to session
-    if storage_label and docstore_index_exists and not request.session.get('docstore_index',None):
-        request.session['docstore_index'] = docstore_index
-    return storage_label,docstore_index_exists

@@ -29,7 +29,7 @@ from DDR import fileio
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
 from webui import docstore
-from webui.decorators import ddrview, search_index
+from webui.decorators import ddrview
 from webui.forms import DDRForm
 from webui.forms.collections import NewCollectionForm, UpdateForm, UploadFileForm
 from webui.forms.collections import SyncConfirmForm, SignaturesConfirmForm
@@ -53,7 +53,6 @@ def alert_if_conflicted(request, collection):
 
 # views ----------------------------------------------------------------
 
-@search_index
 @storage_required
 def collections( request ):
     """

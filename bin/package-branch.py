@@ -12,6 +12,8 @@ import os
 import subprocess
 import sys
 
+RELEASE_STR = 'rc'
+
 def app_version():
     script_path = os.path.abspath(__file__)
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -26,7 +28,7 @@ def git_branch():
 
 def decide(version, branch):
     if '-rc' in version:
-        return 'release'
+        return RELEASE_STR
     else:
         return branch
 
