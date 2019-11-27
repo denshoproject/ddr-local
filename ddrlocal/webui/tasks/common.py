@@ -52,6 +52,24 @@ TASK_STATUS_MESSAGES = {
         #'REVOKED': '',
     },
 
+    'collection-new-manual': {
+        #'STARTED': '',
+        'PENDING': 'Manually creating collection <b><a href="{collection_url}">{collection_id}</a></b>...',
+        'SUCCESS': 'Manually created collection <b><a href="{collection_url}">{collection_id}</a></b>.',
+        'FAILURE': 'Could not manually create collection <b><a href="{collection_url}">{collection_id}</a></b>.',
+        #'RETRY': '',
+        #'REVOKED': '',
+    },
+
+    'collection-new-idservice': {
+        #'STARTED': '',
+        'PENDING': 'Creating new <b>{organization_id}</b> collection...',
+        'SUCCESS': 'Created collection <b><a href="{result[collection_url]}">{result[collection_id]}</a></b>.',
+        'FAILURE': 'Could not create collection <b>{organization_id}</b> collection.',
+        #'RETRY': '',
+        #'REVOKED': '',
+    },
+
     'collection-edit': {
         #'STARTED': '',
         'PENDING': 'Saving changes to collection <b><a href="{collection_url}">{collection_id}</a></b>...',

@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 import os
 
-from elasticsearch.exceptions import ConnectionError
+from elasticsearch.exceptions import ConnectionError, RequestError
 
 from celery import task
 from celery import Task
@@ -196,8 +196,10 @@ def file_add_local(entity, src_path, role, data, git_name, git_mail):
         try:
             result = file_.post_json()
             log.ok('| %s' % result)
-        except ConnectionError:
-            log.not_ok('Could not post to Elasticsearch.')
+        except ConnectionError as err:
+            log.not_ok("ConnectionError: {0}".format(err))
+        except RequestError as err:
+            log.not_ok("RequestError: {0}".format(err))
     return {
         'id': file_.id,
         'status': 'ok'
@@ -226,8 +228,10 @@ def file_add_external(entity, data, git_name, git_mail):
         try:
             result = file_.post_json()
             log.ok('| %s' % result)
-        except ConnectionError:
-            log.not_ok('Could not post to Elasticsearch.')
+        except ConnectionError as err:
+            log.not_ok("ConnectionError: {0}".format(err))
+        except RequestError as err:
+            log.not_ok("RequestError: {0}".format(err))
     return {
         'id': file_.id,
         'status': 'ok'
@@ -259,8 +263,10 @@ def file_add_access(entity, file_, src_path, git_name, git_mail):
     if settings.DOCSTORE_ENABLED:
         try:
             file_.post_json()
-        except ConnectionError:
-            log.not_ok('Could not post to Elasticsearch.')
+        except ConnectionError as err:
+            log.not_ok("ConnectionError: {0}".format(err))
+        except RequestError as err:
+            log.not_ok("RequestError: {0}".format(err))
     return {
         'id': file_.id,
         'status': 'ok'
@@ -314,10 +320,16 @@ def file_edit(collection_path, file_id, form_data, git_name, git_mail):
     file_ = File.from_identifier(fidentifier)
     gitstatus.lock(settings.MEDIA_BASE, 'file_edit')
     
-    exit,status,updated_files = file_.save(
-        git_name, git_mail,
-        form_data
-    )
+    try:
+        exit,status,updated_files = file_.save(
+            git_name, git_mail, form_data
+        )
+    except ConnectionError as err:
+        logger.error("ConnectionError: {0}".format(err))
+        exit = 1; status = {'error': err}
+    except RequestError as err:
+        logger.error("RequestError: {0}".format(err))
+        exit = 1; status = {'error': err}
     
     dvcs_tasks.gitstatus_update.apply_async(
         (collection_path,),
@@ -391,8 +403,10 @@ def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, 
         ds = docstore.Docstore()
         try:
             ds.delete(file_.id)
-        except ConnectionError:
-            logger.error('Could not delete document from Elasticsearch.')
+        except ConnectionError as err:
+            logger.error("ConnectionError: {0}".format(err))
+        except RequestError as err:
+            logger.error("RequestError: {0}".format(err))
     
     return exit,status,collection_path,file_basename
 

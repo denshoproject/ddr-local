@@ -40,6 +40,11 @@ INSTALL_VOCAB=$(INSTALL_LOCAL)/ddr-vocab
 INSTALL_VOCAB2=$(INSTALL_LOCAL)/densho-vocab
 INSTALL_MANUAL=$(INSTALL_LOCAL)/ddr-manual
 
+COMMIT_LOCAL := $(shell git -C $(INSTALL_LOCAL) log --decorate --abbrev-commit --pretty=oneline -1)
+COMMIT_CMDLN := $(shell git -C $(INSTALL_CMDLN) log --decorate --abbrev-commit --pretty=oneline -1)
+COMMIT_DEFS := $(shell git -C $(INSTALL_DEFS) log --decorate --abbrev-commit --pretty=oneline -1)
+COMMIT_VOCAB := $(shell git -C $(INSTALL_VOCAB) log --decorate --abbrev-commit --pretty=oneline -1)
+
 VIRTUALENV=$(INSTALL_LOCAL)/venv/ddrlocal
 
 CONF_BASE=/etc/ddr
@@ -99,6 +104,13 @@ DEB_VENDOR=Densho.org
 DEB_MAINTAINER=<geoffrey.jost@densho.org>
 DEB_DESCRIPTION=Densho Digital Repository editor
 DEB_BASE=opt/ddr-local
+
+
+debug:
+	@echo "ddr-local: $(COMMIT_LOCAL)"
+	@echo "ddr-cmdln: $(COMMIT_CMDLN)"
+	@echo "ddr-defs:  $(COMMIT_DEFS)"
+	@echo "ddr-vocab: $(COMMIT_VOCAB)"
 
 
 .PHONY: help
