@@ -6,7 +6,7 @@ import re
 import sys
 
 from bs4 import BeautifulSoup
-from elasticsearch.exceptions import ConnectionError
+from elasticsearch.exceptions import ConnectionError, RequestError
 
 from django.conf import settings
 from django.contrib import messages
@@ -316,7 +316,14 @@ def _create_entity(request, eidentifier, collection, git_name, git_mail):
     """used by both new_idservice and new_manual
     """
     # load Entity object, inherit values from parent, write back to file
-    exit,status = Entity.create(eidentifier, git_name, git_mail)
+    try:
+        exit,status = Entity.create(eidentifier, git_name, git_mail)
+    except ConnectionError as err:
+        logger.error("ConnectionError: {0}".format(err))
+        exit = 1; status = {'error': err}
+    except RequestError as err:
+        logger.error("RequestError: {0}".format(err))
+        exit = 1; status = {'error': err}
     entity = Entity.from_identifier(eidentifier)
     
     collection.cache_delete()
@@ -328,8 +335,10 @@ def _create_entity(request, eidentifier, collection, git_name, git_mail):
         # update search index
         try:
             entity.post_json()
-        except ConnectionError:
-            logger.error('Could not post to Elasticsearch.')
+        except ConnectionError as err:
+            logger.error("ConnectionError: {0}".format(err))
+        except RequestError as err:
+            logger.error("RequestError: {0}".format(err))
         dvcs_tasks.gitstatus_update.apply_async(
             (collection.path,),
             countdown=2
