@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 import os
 
-from elasticsearch.exceptions import ConnectionError
+from elasticsearch.exceptions import ConnectionError, RequestError
 
 from celery import task
 from celery import Task
@@ -80,11 +80,16 @@ def entity_edit(collection_path, entity_id, form_data, git_name, git_mail, agent
     entity = Entity.from_identifier(Identifier(id=entity_id))
     gitstatus.lock(settings.MEDIA_BASE, 'entity_edit')
     
-    exit,status,updated_files = entity.save(
-        git_name, git_mail,
-        collection,
-        form_data
-    )
+    try:
+        exit,status,updated_files = entity.save(
+            git_name, git_mail, collection, form_data
+        )
+    except ConnectionError as err:
+        logger.error("ConnectionError: {0}".format(err))
+        exit = 1; status = {'error': err}
+    except RequestError as err:
+        logger.error("RequestError: {0}".format(err))
+        exit = 1; status = {'error': err}
     
     dvcs_tasks.gitstatus_update.apply_async(
         (collection.path,),
@@ -155,11 +160,16 @@ def entity_delete(collection_path, entity_id, git_name, git_mail, agent):
     entity = Entity.from_identifier(Identifier(id=entity_id))
     #gitstatus.lock(settings.MEDIA_BASE, 'entity_delete')
     
-    status,message = entity.delete(
-        git_name, git_mail, agent, commit=True
-        #
-        #
-    )
+    try:
+        status,message = entity.delete(
+            git_name, git_mail, agent, commit=True
+        )
+    except ConnectionError as err:
+        logger.error("ConnectionError: {0}".format(err))
+        exit = 1; status = {'error': err}
+    except RequestError as err:
+        logger.error("RequestError: {0}".format(err))
+        exit = 1; status = {'error': err}
     
     dvcs_tasks.gitstatus_update.apply_async(
         (collection.path,),

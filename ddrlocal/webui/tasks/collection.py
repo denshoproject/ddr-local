@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 import os
 
-from elasticsearch.exceptions import ConnectionError
+from elasticsearch.exceptions import ConnectionError, RequestError
 
 from celery import task
 from celery import Task
@@ -138,7 +138,14 @@ def collection_new_manual(collection_path, git_name, git_mail):
     gitstatus.lock(settings.MEDIA_BASE, TASK_COLLECTION_NEW_NAME)
     
     # Create collection
-    exit,status = Collection.create(cidentifier, git_name, git_mail)
+    try:
+        exit,status = Collection.create(cidentifier, git_name, git_mail)
+    except ConnectionError as err:
+        logger.error("ConnectionError: {0}".format(err))
+        exit = 1; status = {'error': err}
+    except RequestError as err:
+        logger.error("RequestError: {0}".format(err))
+        exit = 1; status = {'error': err}
     collection = Collection.from_identifier(cidentifier)
     
     # update search index
@@ -184,7 +191,14 @@ def collection_new_idservice(organization_id, idservice_token, git_name, git_mai
         ))
     # Create collection
     cidentifier = Identifier(id=collection_id, base_path=settings.MEDIA_BASE)
-    exit,status = Collection.create(cidentifier, git_name, git_mail)
+    try:
+        exit,status = Collection.create(cidentifier, git_name, git_mail)
+    except ConnectionError as err:
+        logger.error("ConnectionError: {0}".format(err))
+        exit = 1; status = {'error': err}
+    except RequestError as err:
+        logger.error("RequestError: {0}".format(err))
+        exit = 1; status = {'error': err}
     collection = Collection.from_identifier(cidentifier)
     
     # update search index
@@ -253,10 +267,16 @@ def save(collection_path, cleaned_data, git_name, git_mail):
     collection = Collection.from_identifier(Identifier(path=collection_path))
     gitstatus.lock(settings.MEDIA_BASE, 'collection_edit')
     
-    exit,status,updated_files = collection.save(
-        git_name, git_mail,
-        cleaned_data
-    )
+    try:
+        exit,status,updated_files = collection.save(
+            git_name, git_mail, cleaned_data
+        )
+    except ConnectionError as err:
+        logger.error("ConnectionError: {0}".format(err))
+        exit = 1; status = {'error': err}
+    except RequestError as err:
+        logger.error("RequestError: {0}".format(err))
+        exit = 1; status = {'error': err}
     
     dvcs_tasks.gitstatus_update.apply_async(
         (collection_path,),
