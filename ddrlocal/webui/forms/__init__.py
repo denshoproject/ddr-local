@@ -167,7 +167,7 @@ class DDRForm(forms.Form):
         if settings.UTF8_STRICT:
             # per-field errors if can't convert to UTF-8
             for fieldname,value in cleaned_data_copy.items():
-                if isinstance(value, basestring):
+                if isinstance(value, str):
                     try:
                         data = value.decode('utf-8', 'strict')
                     except UnicodeError as err:

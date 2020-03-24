@@ -599,7 +599,7 @@ def update_store( base_dir, delta, minimum, local=False ):
                 response = next_repo(queue, local=local)
                 if isinstance(response, list) or isinstance(response, tuple):
                     messages.append('next_repo %s' % str(response))
-                elif isinstance(response, basestring) and os.path.exists(response):
+                elif isinstance(response, str) and os.path.exists(response):
                     collection_path = response
                 if collection_path:
                     timestamp,elapsed,status,annex_status,syncstatus = update(base_dir, collection_path)

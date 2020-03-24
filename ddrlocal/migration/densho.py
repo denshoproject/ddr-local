@@ -877,7 +877,7 @@ def export_entities( collection_path, csv_path ):
                         'csvexport_%s' % key,
                         getattr(entity, f['name'])
                     )
-                    if not (isinstance(val, str) or isinstance(val, unicode)):
+                    if not (isinstance(val, str) or isinstance(val, str)):
                         val = unicode(val)
                     if val:
                         value = val.encode('utf-8')
@@ -938,7 +938,7 @@ def export_files( collection_path, csv_path ):
                             'csvexport_%s' % key,
                             getattr(file_, f['name'])
                         )
-                        if not (isinstance(val, str) or isinstance(val, unicode)):
+                        if not (isinstance(val, str) or isinstance(val, str)):
                             val = unicode(val)
                         if val:
                             value = val.encode('utf-8')
