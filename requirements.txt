@@ -4,25 +4,25 @@
 # sudo apt-get install libssl-dev redis-server python2.7 supervisor
 # Elasticsearch 2.4.3
 
-                              # LICENSE  Python3  PyPy
+                              # LICENSE
 
-django>=1.11.0,<2.0           # MIT      y             Last python2.* release: 1.11.*
-django-bootstrap-pagination==1.6.4 # MIT y
+django>=1.11.0,<2.0           # MIT
+django-bootstrap-pagination==1.6.4 # MIT
 
-redis==2.10.6                 # MIT      y
-django-redis==4.9.0           # BSD      y
-django-redis-sessions==0.6.1  # BSD      y
+redis==2.10.6                 # MIT
+django-redis==4.9.0           # BSD
+django-redis-sessions==0.6.1  # BSD
 
-celery>=3.1.0,<4.0.0          # BSD      y        y    Last python2.* release: 4.3.0
+celery>=3.1.0,<4.0.0          # BSD
 git+https://github.com/densho/django-celery#egg=djcelery
 
-djangorestframework>=3.6.0,<3.7 # BSD    y             Last python2.* release: 3.9.4
-coreapi==2.3.3                # BSD      y
-coreapi-cli==1.0.9            # BSD      y
+djangorestframework>=3.6.0,<3.7 # BSD
+coreapi==2.3.3                # BSD
+coreapi-cli==1.0.9            # BSD
 
-envoy==0.0.3                  # MIT      y
-gunicorn==19.9.0              # MIT      y
-sorl-thumbnail==12.5.0        # BSD      y
+envoy==0.0.3                  # MIT
+gunicorn==19.9.0              # MIT
+sorl-thumbnail==12.5.0        # BSD
 
 # development
 
