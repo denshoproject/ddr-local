@@ -6,6 +6,8 @@ SHELL = /bin/bash
 APP_VERSION := $(shell cat VERSION)
 GIT_SOURCE_URL=https://github.com/densho/ddr-local
 
+PYTHON_VERSION=3.5
+
 # Release name e.g. jessie
 DEBIAN_CODENAME := $(shell lsb_release -sc)
 # Release numbers e.g. 8.10
@@ -28,6 +30,11 @@ SRC_REPO_LOCAL=https://github.com/densho/ddr-local.git
 SRC_REPO_DEFS=https://github.com/densho/ddr-defs.git
 SRC_REPO_VOCAB=https://github.com/densho/densho-vocab.git
 SRC_REPO_MANUAL=https://github.com/densho/ddr-manual.git
+
+INSTALL_BASE=/opt
+INSTALLDIR=$(INSTALL_BASE)/ddr-cmdln
+REQUIREMENTS=$(INSTALLDIR)/requirements.txt
+PIP_CACHE_DIR=$(INSTALL_BASE)/pip-cache
 
 CWD := $(shell pwd)
 INSTALL_LOCAL=$(CWD)
@@ -293,20 +300,21 @@ remove-elasticsearch:
 install-virtualenv:
 	@echo ""
 	@echo "install-virtualenv -----------------------------------------------------"
-	apt-get --assume-yes install python-six python-pip python-virtualenv python-dev
-	test -d $(VIRTUALENV) || virtualenv --distribute --setuptools $(VIRTUALENV)
+	apt-get --assume-yes install python3-pip python3-virtualenv
+	test -d $(VIRTUALENV) || virtualenv --python=python3 --distribute --setuptools $(VIRTUALENV)
+
+install-setuptools: install-virtualenv
+	@echo ""
+	@echo "install-setuptools -----------------------------------------------------"
+	apt-get --assume-yes install python3-dev
 	source $(VIRTUALENV)/bin/activate; \
-	pip install -U pip
-	source $(VIRTUALENV)/bin/activate; \
-	pip install -U bpython appdirs blessings curtsies greenlet packaging pygments pyparsing setuptools wcwidth
-#	virtualenv --relocatable $(VIRTUALENV)  # Make venv relocatable
+	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) setuptools
 
 
 install-dependencies: install-core install-misc-tools install-daemons
 	@echo ""
 	@echo "install-dependencies ---------------------------------------------------"
-	apt-get --assume-yes install python-pip python-virtualenv
-	apt-get --assume-yes install python-dev
+	apt-get --assume-yes install python3-pip python3-virtualenv python3-dev
 	apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev libz-dev pmount udisks2
 	apt-get --assume-yes install imagemagick libexempi3 libssl-dev python-dev libxml2 libxml2-dev libxslt1-dev supervisor
 
@@ -315,7 +323,7 @@ mkdirs: mkdir-ddr-cmdln mkdir-ddr-local
 
 get-app: get-ddr-cmdln get-ddr-local get-ddr-manual
 
-install-app: install-dependencies install-virtualenv install-ddr-cmdln install-ddr-local install-configs install-daemon-configs
+install-app: install-dependencies install-setuptools install-ddr-cmdln install-ddr-local install-configs install-daemon-configs
 
 test-app: test-ddr-cmdln
 
@@ -334,7 +342,10 @@ get-ddr-cmdln:
 	then cd $(INSTALL_CMDLN) && git pull; \
 	else git clone $(SRC_REPO_CMDLN); \
 	fi
-	@echo "get-ddr-cmdln-assets"
+
+get-ddr-cmdln-assets:
+	@echo ""
+	@echo "get-ddr-cmdln-assets ---------------------------------------------------"
 	if test -d $(INSTALL_CMDLN_ASSETS); \
 	then cd $(INSTALL_CMDLN_ASSETS) && git pull; \
 	else git clone $(SRC_REPO_CMDLN_ASSETS); \
@@ -345,14 +356,14 @@ setup-ddr-cmdln:
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_CMDLN)/ddr; python setup.py install
 
-install-ddr-cmdln: install-virtualenv mkdir-ddr-cmdln
+install-ddr-cmdln: install-setuptools
 	@echo ""
 	@echo "install-ddr-cmdln ------------------------------------------------------"
 	git status | grep "On branch"
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_CMDLN)/ddr; python setup.py install
 	source $(VIRTUALENV)/bin/activate; \
-	pip install -U -r $(INSTALL_CMDLN)/requirements.txt
+	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) -r $(INSTALL_CMDLN)/requirements.txt
 	-mkdir -p /etc/ImageMagick-6/
 	cp $(INSTALL_CMDLN)/conf/imagemagick-policy.xml /etc/ImageMagick-6/policy.xml
 
@@ -370,19 +381,19 @@ test-ddr-cmdln:
 	@echo ""
 	@echo "test-ddr-cmdln ---------------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_LOCAL)/; pytest ddr-cmdln/ddr/tests/
+	cd $(INSTALL_CMDLN)/; pytest --disable-warnings ddr/tests/
 
 coverage-ddr-cmdln:
 	@echo ""
 	@echo "coverage-ddr-cmdln -----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_LOCAL)/; pytest --cov-config=ddr-cmdln/.coveragerc --cov-report=html --cov=DDR ddr-cmdln/ddr/tests/
+	cd $(INSTALL_CMDLN)/; pytest --cov-config=ddr-cmdln/.coveragerc --cov-report=html --cov=DDR ddr-cmdln/ddr/tests/
 
-uninstall-ddr-cmdln: install-virtualenv
+uninstall-ddr-cmdln: install-setuptools
 	@echo ""
 	@echo "uninstall-ddr-cmdln ----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_CMDLN)/ddr && pip uninstall -y -r requirements.txt
+	cd $(INSTALL_CMDLN)/ddr && pip3 uninstall -y -r requirements.txt
 
 clean-ddr-cmdln:
 	-rm -Rf $(INSTALL_CMDLN)/ddr/build
@@ -396,12 +407,12 @@ get-ddr-local:
 	git status | grep "On branch"
 	git pull
 
-install-ddr-local: install-virtualenv mkdir-ddr-local
+install-ddr-local: install-setuptools mkdir-ddr-local
 	@echo ""
 	@echo "install-ddr-local ------------------------------------------------------"
 	git status | grep "On branch"
 	source $(VIRTUALENV)/bin/activate; \
-	pip install -U -r $(INSTALL_LOCAL)/requirements.txt
+	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) -r $(INSTALL_LOCAL)/requirements.txt
 
 mkdir-ddr-local:
 	@echo ""
@@ -441,11 +452,11 @@ runworker:
 	source $(VIRTUALENV)/bin/activate; \
 	python ddrlocal/manage.py celery worker --autoreload
 
-uninstall-ddr-local: install-virtualenv
+uninstall-ddr-local: install-setuptools
 	@echo ""
 	@echo "uninstall-ddr-local ----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
-	pip uninstall -y -r requirements.txt
+	pip3 uninstall -y -r requirements.txt
 
 clean-ddr-local:
 	-rm -Rf $(VIRTUALENV)
@@ -680,18 +691,18 @@ get-ddr-manual:
 	else git clone $(SRC_REPO_MANUAL); \
 	fi
 
-install-ddr-manual: install-virtualenv
+install-ddr-manual: install-setuptools
 	@echo ""
 	@echo "install-ddr-manual -----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
-	pip install -U sphinx
+	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) sphinx
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_MANUAL) && make html
 	rm -Rf $(MEDIA_ROOT)/manual
 	mv $(INSTALL_MANUAL)/build/html $(MEDIA_ROOT)/manual
 
 uninstall-ddr-manual:
-	pip uninstall -y sphinx
+	pip3 uninstall -y sphinx
 
 clean-ddr-manual:
 	-rm -Rf $(INSTALL_MANUAL)/build
