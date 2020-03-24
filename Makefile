@@ -26,8 +26,7 @@ SRC_REPO_CMDLN=https://github.com/densho/ddr-cmdln.git
 SRC_REPO_CMDLN_ASSETS=https://github.com/densho/ddr-cmdln-assets.git
 SRC_REPO_LOCAL=https://github.com/densho/ddr-local.git
 SRC_REPO_DEFS=https://github.com/densho/ddr-defs.git
-SRC_REPO_VOCAB=https://github.com/densho/ddr-vocab.git
-SRC_REPO_VOCAB2=https://github.com/densho/densho-vocab.git
+SRC_REPO_VOCAB=https://github.com/densho/densho-vocab.git
 SRC_REPO_MANUAL=https://github.com/densho/ddr-manual.git
 
 CWD := $(shell pwd)
@@ -36,8 +35,7 @@ INSTALL_STATIC=$(INSTALL_LOCAL)/static
 INSTALL_CMDLN=$(INSTALL_LOCAL)/ddr-cmdln
 INSTALL_CMDLN_ASSETS=$(INSTALL_LOCAL)/ddr-cmdln-assets
 INSTALL_DEFS=$(INSTALL_LOCAL)/ddr-defs
-INSTALL_VOCAB=$(INSTALL_LOCAL)/ddr-vocab
-INSTALL_VOCAB2=$(INSTALL_LOCAL)/densho-vocab
+INSTALL_VOCAB=$(INSTALL_LOCAL)/densho-vocab
 INSTALL_MANUAL=$(INSTALL_LOCAL)/ddr-manual
 
 COMMIT_LOCAL := $(shell git -C $(INSTALL_LOCAL) log --decorate --abbrev-commit --pretty=oneline -1)
@@ -110,7 +108,7 @@ debug:
 	@echo "ddr-local: $(COMMIT_LOCAL)"
 	@echo "ddr-cmdln: $(COMMIT_CMDLN)"
 	@echo "ddr-defs:  $(COMMIT_DEFS)"
-	@echo "ddr-vocab: $(COMMIT_VOCAB)"
+	@echo "densho-vocab: $(COMMIT_VOCAB)"
 
 
 .PHONY: help
@@ -132,7 +130,7 @@ help:
 	@echo "vbox-guest     - Installs VirtualBox Guest Additions"
 	@echo "network-config - Installs standard network conf (CHANGES IP TO 192.168.56.101!)"
 	@echo "get-ddr-defs   - Downloads ddr-defs to $(INSTALL_DEFS)."
-	@echo "get-ddr-vocab  - Downloads ddr-vocab to $(INSTALL_VOCAB)."
+	@echo "get-densho-vocab - Downloads densho-vocab to $(INSTALL_VOCAB)."
 	@echo "enable-bkgnd   - Enable background processes. (Run make reload on completion)"
 	@echo "disable-bkgnd  - Disablebackground processes. (Run make reload on completion)"
 	@echo "migrate        - Init/update Django app's database tables."
@@ -170,7 +168,7 @@ howto-install:
 	@echo "make restart"
 
 
-get: get-app get-ddr-defs get-ddr-vocab get-elasticsearch get-static
+get: get-app get-ddr-defs get-densho-vocab get-elasticsearch get-static
 
 install: install-prep install-daemons install-app install-static install-configs
 
@@ -464,18 +462,12 @@ get-ddr-defs:
 	fi
 
 
-get-ddr-vocab:
+get-densho-vocab:
 	@echo ""
-	@echo "get-ddr-vocab ----------------------------------------------------------"
-	git status | grep "On branch"
+	@echo "get-densho-vocab -------------------------------------------------------"
 	if test -d $(INSTALL_VOCAB); \
 	then cd $(INSTALL_VOCAB) && git pull; \
 	else git clone $(SRC_REPO_VOCAB) $(INSTALL_VOCAB); \
-	fi
-	@echo "get-densho-vocab -------------------------------------------------------"
-	if test -d $(INSTALL_VOCAB2); \
-	then cd $(INSTALL_VOCAB2) && git pull; \
-	else git clone $(SRC_REPO_VOCAB2) $(INSTALL_VOCAB2); \
 	fi
 
 
@@ -780,7 +772,6 @@ deb-stretch:
 	ddr-cmdln=$(DEB_BASE)   \
 	ddr-cmdln-assets=$(DEB_BASE)   \
 	ddr-defs=$(DEB_BASE)   \
-	ddr-vocab=$(DEB_BASE)   \
 	ddrlocal=$(DEB_BASE)   \
 	densho-vocab=$(DEB_BASE)   \
 	.git=$(DEB_BASE)   \
