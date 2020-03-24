@@ -154,7 +154,7 @@ class DDRForm(forms.Form):
         # decided which file to import.  We haven't calc'd the file hash
         # so we have no ID, no Identifier, and no module object.
         # Just give up. We'll validate later when they edit.
-        if 'id' not in cleaned_data_copy.keys():
+        if 'id' not in list(cleaned_data_copy.keys()):
             return
         
         try:
@@ -166,7 +166,7 @@ class DDRForm(forms.Form):
         
         if settings.UTF8_STRICT:
             # per-field errors if can't convert to UTF-8
-            for fieldname,value in cleaned_data_copy.iteritems():
+            for fieldname,value in cleaned_data_copy.items():
                 if isinstance(value, basestring):
                     try:
                         data = value.decode('utf-8', 'strict')
@@ -189,7 +189,7 @@ class DDRForm(forms.Form):
         module = obj.identifier.fields_module()
         # put per-field error tracebacks here
         self.tracebacks = {}
-        for fieldname,value in cleaned_data_copy.iteritems():
+        for fieldname,value in cleaned_data_copy.items():
             try:
                 data = modules.Module(module).function(
                     'formpost_%s' % fieldname,

@@ -69,13 +69,13 @@ def fs_detail(request, oid, format=None):
         # DDR object JSONs are lists of dicts
         if isinstance(d, list):
             for line in d:
-                if 'git_version' in line.keys():
+                if 'git_version' in list(line.keys()):
                     data['meta'] = line
                 else:
-                    data[line.keys()[0]] = line.values()[0]
+                    data[list(line.keys())[0]] = list(line.values())[0]
         # repository and organization JSON are just dicts
         elif isinstance(d, dict):
-            for key,val in d.iteritems():
+            for key,val in d.items():
                 data[key] = val
     # didn't have the data we need before
     data['links'] = make_links(oi, data, request, source='fs', is_detail=True)

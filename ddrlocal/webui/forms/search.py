@@ -60,7 +60,7 @@ class SearchForm(forms.Form):
         
         # fill in options and doc counts from aggregations
         if search_results and search_results.aggregations:
-            for fieldname in search_results.aggregations.keys():
+            for fieldname in list(search_results.aggregations.keys()):
                 choices = [
                     (
                         item['key'],

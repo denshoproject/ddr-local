@@ -175,7 +175,7 @@ def task_list( request ):
         if form.is_valid():
             for task in celery_tasks:
                 fieldname = 'dismiss_%s' % task['task_id']
-                if (fieldname in form.cleaned_data.keys()) and form.cleaned_data[fieldname]:
+                if (fieldname in list(form.cleaned_data.keys())) and form.cleaned_data[fieldname]:
                     common_tasks.dismiss_session_task(
                         request,
                         task['task_id']

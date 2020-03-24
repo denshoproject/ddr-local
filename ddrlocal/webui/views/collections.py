@@ -65,7 +65,7 @@ def collections( request ):
     for object_id in gitolite.get_repos_orgs():
         identifier = Identifier(object_id)
         # TODO Identifier: Organization object instead of repo and org
-        repo,org = identifier.parts.values()
+        repo,org = list(identifier.parts.values())
         collection_paths = Collection.collection_paths(settings.MEDIA_BASE, repo, org)
         colls = []
         for collection_path in collection_paths:

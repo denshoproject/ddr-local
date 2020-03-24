@@ -44,11 +44,11 @@ class WebSearchResults(SearchResults):
         data['page_size'] = self.page_size
         data['this_page'] = self.this_page
 
-        params = {key:val for key,val in request.GET.items()}
+        params = {key:val for key,val in list(request.GET.items())}
         if params.get('page'): params.pop('page')
         if params.get('limit'): params.pop('limit')
         if params.get('offset'): params.pop('offset')
-        qs = [key + '=' + val for key,val in params.items()]
+        qs = [key + '=' + val for key,val in list(params.items())]
         query_string = '&'.join(qs)
 
         data['prev_api'] = ''
@@ -117,7 +117,7 @@ class WebSearcher(Searcher):
         
         # whitelist params
         bad_fields = [
-            key for key in params.keys()
+            key for key in list(params.keys())
             if key not in SEARCH_PARAM_WHITELIST + ['page']
         ]
         for key in bad_fields:

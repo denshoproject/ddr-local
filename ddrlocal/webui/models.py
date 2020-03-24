@@ -60,7 +60,7 @@ def repo_models_valid(request):
     else:
         valid_modules = [
             modules.Module(module).is_valid()
-            for model,module in MODULES.iteritems()
+            for model,module in MODULES.items()
         ]
         if not (valid_modules):
             valid = False
@@ -139,7 +139,7 @@ def format_object(oi, d, request, is_detail=False):
     data['collection_id'] = collection_id
     data['links'] = make_links(oi, d, request, source='es', is_detail=is_detail)
     DETAIL_EXCLUDE = []
-    for key,val in d.items():
+    for key,val in list(d.items()):
         if key not in DETAIL_EXCLUDE:
             data[key] = val
     return data
@@ -579,7 +579,7 @@ class Entity( DDREntity ):
                 'active': role == active,
                 'count': count,
             }
-            for role,count in self.children_counts().iteritems()
+            for role,count in self.children_counts().items()
         ]
         tabs[0]['url'] = reverse('webui-entity-children', args=[self.id])
         return tabs

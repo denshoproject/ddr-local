@@ -16,7 +16,7 @@ from DDR.identifier import INHERITABLE_FIELDS
 
 # TODO this isn't too far removed from hard-coding...
 MODEL_CLASSES = {}
-for k,v in deepcopy(DDR_MODEL_CLASSES).iteritems():
+for k,v in deepcopy(DDR_MODEL_CLASSES).items():
     v['module'] = v['module'] = 'webui.models'
     MODEL_CLASSES[k] = v
 
@@ -93,7 +93,7 @@ class Identifier(DDRIdentifier):
         for i in lineage:
             crumb = {
                 'url': reverse('webui-%s' % i.model, args=[i.id]),
-                'label': i.parts.values()[-1],
+                'label': list(i.parts.values())[-1],
             }
             crumbs.append(crumb)
         if endpoint:

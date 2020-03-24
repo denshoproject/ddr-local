@@ -245,7 +245,7 @@ def make_choices_alt_index(choices_alt):
     """Make index from *_CHOICES_ALT dict
     """
     index = {}
-    for key,value in choices_alt.iteritems():
+    for key,value in choices_alt.items():
         for v in value:
             index[v] = key
     return index
@@ -387,7 +387,7 @@ def row_missing_required_fields( required_fields, row ):
     @returns False (nothing missing) or a list of fieldnames
     """
     present = []
-    for key in row.keys():
+    for key in list(row.keys()):
         if (key in required_fields) and row[key]:
             present.append(key)
     if len(present) == len(required_fields):
@@ -721,7 +721,7 @@ def import_entities( csv_path, collection_path, git_name, git_mail ):
             rowd['facility'] = prep_facility(rowd['facility'])
             
             # insert values from CSV
-            for key in rowd.keys():
+            for key in list(rowd.keys()):
                 setattr(entity, key, rowd[key])
             entity.record_created = datetime.now(settings.TZ)
             entity.record_lastmod = datetime.now(settings.TZ)
