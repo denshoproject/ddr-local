@@ -1,12 +1,12 @@
 import logging
 logger = logging.getLogger(__name__)
 import os
-import sys
 
 from django import forms
 from django.conf import settings
 
 from webui.forms import DDRForm
+
 
 def shared_folder_files():
     d = settings.VIRTUALBOX_SHARED_FOLDER

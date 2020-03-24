@@ -1,10 +1,8 @@
 from django.conf.urls import include, url
 from django.views.generic import TemplateView
 
-from webui import api
-from views import merge, search, supervisord
-from views import collections, entities, files
-from webui import views
+from . import api
+from . import views
 
 urlpatterns = [
     url(r'^login/$', views.login, name='webui-login'),

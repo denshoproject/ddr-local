@@ -7,7 +7,6 @@ logger = get_task_logger(__name__)
 
 from django.conf import settings
 
-from webui import GITOLITE_INFO_CACHE_KEY
 from webui import gitolite
 from webui import gitstatus
 

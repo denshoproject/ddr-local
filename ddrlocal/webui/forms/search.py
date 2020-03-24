@@ -1,13 +1,10 @@
 import logging
 logger = logging.getLogger(__name__)
-import os
 
 from django import forms
-from django.conf import settings
 
-from webui import docstore
 from webui import search
-from ..util import OrderedDict
+from webui.util import OrderedDict
 
 
 class SearchForm(forms.Form):

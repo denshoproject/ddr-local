@@ -52,7 +52,6 @@ import json
 import logging
 logger = logging.getLogger(__name__)
 import os
-import random
 import re
 
 from django.conf import settings
@@ -63,7 +62,6 @@ from DDR import dvcs
 from DDR.storage import is_writable
 from ddrlocal.models import DDRLocalCollection as Collection
 from webui import COLLECTION_STATUS_TIMEOUT
-from webui import gitolite
 from webui.identifier import Identifier
 
 COLLECTION_SYNC_STATUS_CACHE_KEY = 'webui:collection:%s:sync-status'

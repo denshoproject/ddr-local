@@ -5,10 +5,9 @@ import os
 
 from django.conf import settings
 from django.contrib import messages
-from django.template.context_processors import csrf
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import Http404, render
+from django.shortcuts import render
 
 from DDR import converters
 from DDR import idservice

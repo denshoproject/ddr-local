@@ -2,8 +2,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from django import forms
-
-from ..util import OrderedDict
+from webui.util import OrderedDict
 
 
 class MergeCommitForm(forms.Form):

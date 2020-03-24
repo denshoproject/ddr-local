@@ -1,9 +1,7 @@
 from collections import OrderedDict
-import json
 import logging
 logger = logging.getLogger(__name__)
 import os
-import sys
 
 from elasticsearch.exceptions import ConnectionError
 
@@ -11,7 +9,6 @@ from django.conf import settings
 from django.contrib import messages
 from django.core.cache import cache
 from django.core.urlresolvers import reverse, NoReverseMatch
-from django.db import models
 
 from rest_framework.reverse import reverse
 
@@ -22,9 +19,8 @@ from DDR import modules
 from DDR.models.common import from_json
 from DDR.models.common import Stub as DDRStub
 from DDR.models import Collection as DDRCollection
-from DDR.models import ListEntity, Entity as DDREntity
+from DDR.models import Entity as DDREntity
 from DDR.models import File as DDRFile
-from DDR.models import COLLECTION_FILES_PREFIX, ENTITY_FILES_PREFIX
 
 from webui import docstore
 from webui import gitstatus

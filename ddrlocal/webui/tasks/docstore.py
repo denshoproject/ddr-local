@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 import os
 
 from celery import task
@@ -10,8 +10,6 @@ from django.conf import settings
 
 from DDR import converters
 from DDR import models
-
-from webui import docstore
 
 
 class ElasticsearchTask(Task):

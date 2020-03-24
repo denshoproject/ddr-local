@@ -1,22 +1,13 @@
 from datetime import datetime
-import json
 import logging
 logger = logging.getLogger(__name__)
 import os
-import sys
-
-from bs4 import BeautifulSoup
 
 from django.conf import settings
 from django.contrib import messages
-from django.template.context_processors import csrf
-from django.core.files import File
-from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import Http404, render
 
-from DDR import converters
-from DDR.ingest import addfile_logger
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
 from webui.decorators import ddrview
@@ -24,12 +15,10 @@ from webui.forms import DDRForm
 from webui.forms.files import NewFileDDRForm, NewExternalFileForm, NewAccessFileForm
 from webui.forms.files import DeleteFileForm
 from webui.forms.files import shared_folder_files
-from webui.gitstatus import repository, annex_info, annex_whereis_file
-from webui.models import Stub, Collection, Entity, File
+from webui.gitstatus import repository, annex_whereis_file
+from webui.models import Stub, Entity, File
 from webui.models import MODULES
-from webui.identifier import Identifier, CHILDREN_ALL
-from webui.tasks import collection as collection_tasks
-from webui.tasks import entity as entity_tasks
+from webui.identifier import Identifier
 from webui.tasks import files as file_tasks
 from webui.views.decorators import login_required
 

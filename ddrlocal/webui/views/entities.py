@@ -1,18 +1,12 @@
-import json
 import logging
 logger = logging.getLogger(__name__)
-import os
 import re
-import sys
 
-from bs4 import BeautifulSoup
 from elasticsearch.exceptions import ConnectionError, RequestError
 
 from django.conf import settings
 from django.contrib import messages
 from django.core.cache import cache
-from django.template.context_processors import csrf
-from django.core.files import File
 from django.core.paginator import Paginator
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
@@ -20,18 +14,16 @@ from django.shortcuts import Http404, render
 
 from DDR import commands
 from DDR import converters
-from DDR import fileio
 from DDR.identifier import CHILDREN, NODES
 from DDR import idservice
 from DDR import vocab
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
-from webui import docstore
 from webui.decorators import ddrview
 from webui.forms import DDRForm
 from webui.forms import ObjectIDForm
-from webui.forms.entities import JSONForm, UpdateForm, DeleteEntityForm, RmDuplicatesForm
+from webui.forms.entities import DeleteEntityForm, RmDuplicatesForm
 from webui.gitstatus import repository, annex_info
 from webui.identifier import Identifier
 from webui.models import Stub, Collection, Entity

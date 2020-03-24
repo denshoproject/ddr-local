@@ -1,11 +1,3 @@
-from datetime import datetime, timedelta
-import json
-import os
-
-from elasticsearch.exceptions import ConnectionError
-
-from celery import task
-from celery import Task
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
@@ -15,23 +7,8 @@ from celery.utils.encoding import safe_repr
 from celery.utils import get_full_cls_name
 
 from django.conf import settings
-from django.contrib import messages
-from django.core.cache import cache
 from django.core.urlresolvers import reverse
 
-from DDR import batch
-from DDR import commands
-from DDR import converters
-from DDR import dvcs
-from DDR import models
-from DDR import signatures
-from DDR import util
-from DDR.ingest import addfile_logger
-
-from webui import docstore
-from webui import GITOLITE_INFO_CACHE_KEY
-from webui import gitolite
-from webui import gitstatus
 from webui import identifier
 
 

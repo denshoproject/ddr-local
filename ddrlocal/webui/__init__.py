@@ -1,10 +1,6 @@
 import logging
 logger = logging.getLogger(__name__)
 
-from django.conf import settings
-
-from webui import docstore
-
 
 COLLECTION_CHILDREN_CACHE_KEY = 'webui:collection:%s:children'
 COLLECTION_FETCH_CACHE_KEY = 'webui:collection:%s:fetch'

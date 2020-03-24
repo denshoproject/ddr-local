@@ -8,10 +8,8 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.reverse import reverse
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from django.conf import settings
-from django.core.urlresolvers import NoReverseMatch
 
 import elasticsearch_dsl
 
@@ -19,6 +17,7 @@ from webui import docstore
 from webui import identifier
 from webui.models import format_object, make_links
 from webui import search
+
 
 DOCSTORE = docstore.Docstore()
 

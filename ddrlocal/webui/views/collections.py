@@ -4,21 +4,13 @@ import logging
 logger = logging.getLogger(__name__)
 import os
 import random
-import sys
-
-from bs4 import BeautifulSoup
-from elasticsearch.exceptions import ConnectionError
 
 from django.conf import settings
 from django.contrib import messages
-from django.core.cache import cache
-from django.template.context_processors import csrf
-from django.core.files import File
 from django.core.paginator import Paginator
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import Http404, render
-from django.template.loader import get_template
 
 from DDR import batch
 from DDR import commands
@@ -28,17 +20,15 @@ from DDR import fileio
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
-from webui import docstore
 from webui.decorators import ddrview
 from webui.forms import DDRForm
-from webui.forms.collections import NewCollectionForm, UpdateForm, UploadFileForm
+from webui.forms.collections import NewCollectionForm, UploadFileForm
 from webui.forms.collections import SyncConfirmForm, SignaturesConfirmForm
 from webui import gitolite
 from webui.gitstatus import repository, annex_info
-from webui.models import Collection, COLLECTION_STATUS_CACHE_KEY, COLLECTION_STATUS_TIMEOUT
+from webui.models import Collection
 from webui.identifier import Identifier
 from webui.tasks import collection as collection_tasks
-from webui.tasks import dvcs as dvcs_tasks
 from webui.views.decorators import login_required
 
 

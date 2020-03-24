@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 import os
 
 from elasticsearch.exceptions import ConnectionError, RequestError
@@ -10,14 +10,12 @@ logger = get_task_logger(__name__)
 
 from django.conf import settings
 
-from DDR import commands
 from DDR import converters
-from DDR import models
 from DDR.ingest import addfile_logger
 
 from webui import docstore
 from webui import gitstatus
-from webui.models import Collection, Entity, File
+from webui.models import Collection, File
 from webui.identifier import Identifier
 from webui.tasks import dvcs as dvcs_tasks
 

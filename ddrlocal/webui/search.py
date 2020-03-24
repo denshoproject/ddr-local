@@ -4,8 +4,6 @@ from collections import OrderedDict
 import logging
 logger = logging.getLogger(__name__)
 
-from django.conf import settings
-
 from DDR.search import *
 from webui import identifier
 

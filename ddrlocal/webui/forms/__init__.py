@@ -11,7 +11,7 @@ from django.utils.encoding import force_text
 
 from DDR import modules
 from webui.identifier import Identifier, INHERITABLE_FIELDS
-from ..util import OrderedDict
+from webui.util import OrderedDict
 
 INTERVIEW_SIG_PATTERN = r'^denshovh-[a-z_0-9]{1,}-[0-9]{2,2}$'
 INTERVIEW_SIG_REGEX = re.compile(INTERVIEW_SIG_PATTERN)

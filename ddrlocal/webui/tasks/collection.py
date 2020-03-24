@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 import os
 
 from elasticsearch.exceptions import ConnectionError, RequestError
@@ -15,12 +15,11 @@ from DDR import batch
 from DDR import commands
 from DDR import converters
 from DDR import idservice
-from DDR import models
 from DDR import signatures
 from DDR import util
 
 from webui import gitstatus
-from webui.models import Collection, Entity, File
+from webui.models import Collection
 from webui.identifier import Identifier
 from webui.tasks import dvcs as dvcs_tasks
 
