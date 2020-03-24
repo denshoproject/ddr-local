@@ -2,6 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 import logging
 logger = logging.getLogger(__name__)
+from urllib.parse import urlparse, urlunparse
 
 from django.conf import settings
 from django.contrib import messages
@@ -48,10 +49,8 @@ def massage_query_results( results, thispage, size ):
 
 # views ----------------------------------------------------------------
 
-import urlparse
-
 def _mkurl(request, path, query=None):
-    return urlparse.urlunparse((
+    return urlunparse((
         request.META['wsgi.url_scheme'],
         request.META['HTTP_HOST'],
         path, None, query, None

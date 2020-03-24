@@ -16,7 +16,6 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 DEBUG = True
 
-import ConfigParser
 from datetime import timedelta
 import logging
 import sys
