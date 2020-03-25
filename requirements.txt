@@ -9,20 +9,20 @@
 django>=1.11.0,<2.0           # MIT
 django-bootstrap-pagination==1.6.4 # MIT
 
-redis==2.10.6                 # MIT
-django-redis==4.9.0           # BSD
-django-redis-sessions==0.6.1  # BSD
+redis                 # MIT
+django-redis           # BSD
+django-redis-sessions  # BSD
 
 celery>=3.1.0,<4.0.0          # BSD
 git+https://github.com/densho/django-celery#egg=djcelery
 
 djangorestframework>=3.6.0,<3.7 # BSD
-coreapi==2.3.3                # BSD
-coreapi-cli==1.0.9            # BSD
+coreapi                # BSD
+coreapi-cli            # BSD
 
-envoy==0.0.3                  # MIT
-gunicorn==19.9.0              # MIT
-sorl-thumbnail==12.5.0        # BSD
+envoy                  # MIT
+gunicorn              # MIT
+sorl-thumbnail        # BSD
 
 # development
 
