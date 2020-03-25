@@ -207,7 +207,7 @@ DATABASES = {
 }
 
 REDIS_HOST = '127.0.0.1'
-REDIS_PORT = '6379'
+REDIS_PORT = 6379
 REDIS_DB_CACHE = 0
 REDIS_DB_CELERY_BROKER = 1
 REDIS_DB_CELERY_RESULT = 2
@@ -216,7 +216,9 @@ REDIS_DB_SORL = 3
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://%s:%s:%s" % (REDIS_HOST, REDIS_PORT, REDIS_DB_CACHE),
+        "LOCATION": "redis://{}:{}/{}".format(
+            REDIS_HOST, str(REDIS_PORT), str(REDIS_DB_CACHE)
+        ),
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         }
@@ -225,8 +227,12 @@ CACHES = {
 
 # celery
 CELERY_TASKS_SESSION_KEY = 'celery-tasks'
-CELERY_RESULT_BACKEND = 'redis://%s:%s/%s' % (REDIS_HOST, REDIS_PORT, REDIS_DB_CELERY_RESULT)
-BROKER_URL            = 'redis://%s:%s/%s' % (REDIS_HOST, REDIS_PORT, REDIS_DB_CELERY_BROKER)
+CELERY_RESULT_BACKEND = 'redis://{}:{}/{}'.format(
+    REDIS_HOST, str(REDIS_PORT), str(REDIS_DB_CELERY_RESULT)
+)
+BROKER_URL            = 'redis://{}:{}/{}'.format(
+    REDIS_HOST, str(REDIS_PORT), str(REDIS_DB_CELERY_BROKER)
+)
 BROKER_TRANSPORT_OPTIONS = {'visibility_timeout': 60 * 60}  # 1 hour
 CELERYD_HIJACK_ROOT_LOGGER = False
 CELERY_ACCEPT_CONTENT = ['pickle', 'json', 'msgpack', 'yaml']
