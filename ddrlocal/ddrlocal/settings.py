@@ -14,8 +14,6 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 # ----------------------------------------------------------------------
 
-DEBUG = True
-
 from datetime import timedelta
 import logging
 import sys
@@ -25,6 +23,10 @@ import pytz
 # import all settings from ddr-cmdln DDR/config.py
 # including the ConfigParser object CONFIG
 from DDR.config import *
+
+DEBUG = CONFIG.getboolean('debug', 'debug')
+GITPKG_DEBUG = CONFIG.getboolean('debug', 'gitpkg_debug')
+THUMBNAIL_DEBUG = CONFIG.getboolean('debug', 'thumbnail')
 
 os.environ['USER'] = 'ddr'
 
@@ -253,8 +255,6 @@ if GITSTATUS_BACKGROUND_ACTIVE:
     }
 
 # sorl-thumbnail
-THUMBNAIL_DEBUG = DEBUG
-#THUMBNAIL_DEBUG = False
 THUMBNAIL_KVSTORE = 'sorl.thumbnail.kvstores.dbm_kvstore.KVStore'
 THUMBNAIL_DBM_FILE = CONFIG.get('local', 'thumbnail_dbm_file')
 THUMBNAIL_ENGINE = 'sorl.thumbnail.engines.convert_engine.Engine'
