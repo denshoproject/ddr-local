@@ -24,7 +24,7 @@ def gitolite_info_refresh():
     If it is stale (e.g. timestamp is older than cutoff)
     then hit the Gitolite server for an update and re-cache.
     """
-    return gitolite.refresh()
+    return gitolite.get_repos_orgs()
 
 
 # ----------------------------------------------------------------------

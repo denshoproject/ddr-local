@@ -6,7 +6,6 @@ COLLECTION_CHILDREN_CACHE_KEY = 'webui:collection:%s:children'
 COLLECTION_FETCH_CACHE_KEY = 'webui:collection:%s:fetch'
 COLLECTION_STATUS_CACHE_KEY = 'webui:collection:%s:status'
 COLLECTION_ANNEX_STATUS_CACHE_KEY = 'webui:collection:%s:annex_status'
-GITOLITE_INFO_CACHE_KEY = 'ddrlocal:gitolite_info'
 
 COLLECTION_FETCH_TIMEOUT = 0
 COLLECTION_STATUS_TIMEOUT = 60 * 10
