@@ -163,9 +163,6 @@ MANUAL_URL = os.path.join(MEDIA_URL, 'manual')
 
 # ----------------------------------------------------------------------
 
-import djcelery
-djcelery.setup_loader()
-
 ADMINS = (
     ('geoffrey jost', 'geoffrey.jost@densho.org'),
     #('Geoff Froh', 'geoff.froh@densho.org'),
@@ -184,7 +181,6 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     #
     'bootstrap_pagination',
-    'djcelery',
     'gunicorn',
     'rest_framework',
     'sorl.thumbnail',
@@ -247,7 +243,7 @@ CELERYBEAT_SCHEDULE = {
     }
 }
 if GITSTATUS_BACKGROUND_ACTIVE:
-    CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
+    #CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
     CELERYBEAT_PIDFILE = '/tmp/celerybeat.pid'
     CELERYBEAT_SCHEDULE['webui-git-status-update-store'] = {
         'task': 'webui.tasks.gitstatus_update_store',
