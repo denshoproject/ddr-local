@@ -459,8 +459,8 @@ runserver:
 	python ddrlocal/manage.py runserver 0.0.0.0:8000
 
 runworker:
-	source $(VIRTUALENV)/bin/activate; \
-	python ddrlocal/manage.py celery worker --autoreload
+	source $(VIRTUALENV)/bin/activate; cd $(INSTALL_LOCAL)/ddrlocal; \
+	celery -A ddrlocal worker -l INFO #-f /var/log/ddr/localcel.log
 
 uninstall-ddr-local: install-setuptools
 	@echo ""

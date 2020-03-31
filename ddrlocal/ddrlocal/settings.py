@@ -228,7 +228,7 @@ CELERY_TASKS_SESSION_KEY = 'celery-tasks'
 CELERY_RESULT_BACKEND = 'redis://{}:{}/{}'.format(
     REDIS_HOST, str(REDIS_PORT), str(REDIS_DB_CELERY_RESULT)
 )
-BROKER_URL            = 'redis://{}:{}/{}'.format(
+CELERY_BROKER_URL     = 'redis://{}:{}/{}'.format(
     REDIS_HOST, str(REDIS_PORT), str(REDIS_DB_CELERY_BROKER)
 )
 BROKER_TRANSPORT_OPTIONS = {'visibility_timeout': 60 * 60}  # 1 hour
@@ -243,7 +243,7 @@ CELERYBEAT_SCHEDULE = {
     }
 }
 if GITSTATUS_BACKGROUND_ACTIVE:
-    #CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
+    CELERYBEAT_SCHEDULER = 'celery.beat.PersistentScheduler'
     CELERYBEAT_PIDFILE = '/tmp/celerybeat.pid'
     CELERYBEAT_SCHEDULE['webui-git-status-update-store'] = {
         'task': 'webui.tasks.gitstatus_update_store',
