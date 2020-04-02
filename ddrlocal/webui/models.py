@@ -278,7 +278,7 @@ class Collection( DDRCollection ):
     def parent(self):
         return None
     
-    def children(self):
+    def children(self, quick=True):
         """Returns list of the Collection's Entity objects.
         """
         key = COLLECTION_CHILDREN_CACHE_KEY % self.id
@@ -288,7 +288,7 @@ class Collection( DDRCollection ):
             return cached
         else:
             # note: these are AttrDicts
-            kids = super(Collection, self).children(quick=True)
+            kids = super(Collection, self).children(quick=quick)
             for o in kids:
                 o.absolute_url = reverse('webui-entity', args=[o.id])
             cache.set(key, kids, timeout)
