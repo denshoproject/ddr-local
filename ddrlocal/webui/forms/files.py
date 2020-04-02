@@ -21,7 +21,7 @@ class NewFileDDRForm(DDRForm):
     
     def __init__(self, *args, **kwargs):
         path_choices = None
-        if kwargs.has_key('path_choices'):
+        if 'path_choices' in kwargs:
             path_choices = kwargs.pop('path_choices')
         super(NewFileDDRForm, self).__init__(*args, **kwargs)
         if path_choices:

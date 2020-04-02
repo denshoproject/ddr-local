@@ -17,7 +17,7 @@ class MergeJSONForm(forms.Form):
     filename = forms.CharField(max_length=255, widget=forms.HiddenInput)
     
     def __init__(self, *args, **kwargs):
-        if kwargs.has_key('fields'):
+        if 'fields' in kwargs:
             field_kwargs = kwargs.pop('fields')
         else:
             field_kwargs = []
