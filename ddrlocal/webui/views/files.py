@@ -76,13 +76,19 @@ def check_parents(entity, collection, check_locks=True, fetch=True):
         messages.error(request, WEBUI_MESSAGES['VIEWS_ENT_LOCKED'])
         return HttpResponseRedirect(entity.absolute_url())
     if check_locks and collection.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
+        messages.error(
+            request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id)
+        )
         return HttpResponseRedirect(entity.absolute_url())
-    if fetch:
-        collection.repo_fetch()
-    if collection.repo_behind():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
-        return HttpResponseRedirect(entity.absolute_url())
+    if not settings.OFFLINE:
+        if fetch:
+            collection.repo_fetch()
+        if collection.repo_behind():
+            messages.error(
+                request,
+                WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id)
+            )
+            return HttpResponseRedirect(entity.absolute_url())
 
 
 

@@ -2,7 +2,7 @@ from django.conf.urls import include, url
 from django.views.generic import TemplateView
 
 from webui import api
-from webui.views import login, logout
+from webui.views import LoginOffline, login, logout
 from webui.views import task_status, task_dismiss, task_list
 from webui.views import gitstatus_queue, gitstatus_toggle
 from webui.views import repository, organization, collections, entities, files
@@ -10,6 +10,7 @@ from webui.views import detail, merge, search
 
 
 urlpatterns = [
+    url(r'^login/offline$', LoginOffline.as_view(), name='webui-login-offline'),
     url(r'^login/$', login, name='webui-login'),
     url(r'^logout/$', logout, name='webui-logout'),
     

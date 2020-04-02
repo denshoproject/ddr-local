@@ -188,13 +188,18 @@ def check_parent(collection, check_locks=True, fetch=True):
     if not collection:
         raise Exception('No parent collection!')
     if check_locks and collection.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
+        messages.error(
+            request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id)
+        )
         return HttpResponseRedirect(collection.absolute_url())
-    if fetch:
-        collection.repo_fetch()
-    if collection.repo_behind():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
-        return HttpResponseRedirect(collection.absolute_url())
+    if not settings.OFFLINE:
+        if fetch:
+            collection.repo_fetch()
+        if collection.repo_behind():
+            messages.error(
+                request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id)
+            )
+            return HttpResponseRedirect(collection.absolute_url())
 
 
 # views ----------------------------------------------------------------

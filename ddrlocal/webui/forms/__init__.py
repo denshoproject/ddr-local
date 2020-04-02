@@ -23,6 +23,17 @@ class LoginForm(forms.Form):
     next = forms.CharField(max_length=255, required=False, widget=forms.HiddenInput)
 
 
+class LoginOfflineForm(forms.Form):
+    username = forms.CharField(max_length=100)
+    email = forms.EmailField()
+    git_name = forms.CharField(
+        max_length=100, help_text='First name, last name'
+    )
+    next = forms.CharField(
+        max_length=255, required=False, widget=forms.HiddenInput
+    )
+
+
 class TaskDismissForm( forms.Form ):
     next = forms.CharField(max_length=255, required=False, widget=forms.HiddenInput)
     

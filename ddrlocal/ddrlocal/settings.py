@@ -27,6 +27,7 @@ from DDR.config import *
 DEBUG = CONFIG.getboolean('debug', 'debug')
 GITPKG_DEBUG = CONFIG.getboolean('debug', 'gitpkg_debug')
 THUMBNAIL_DEBUG = CONFIG.getboolean('debug', 'thumbnail')
+OFFLINE = CONFIG.getboolean('debug', 'offline')
 
 os.environ['USER'] = 'ddr'
 

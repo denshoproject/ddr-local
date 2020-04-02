@@ -300,12 +300,18 @@ def edit( request, cid ):
     collection.model_def_commits()
     collection.model_def_fields()
     if collection.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
+        messages.error(
+            request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id)
+        )
         return HttpResponseRedirect(collection.absolute_url())
-    collection.repo_fetch()
-    if collection.repo_behind():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
-        return HttpResponseRedirect(collection.absolute_url())
+    if not settings.OFFLINE:
+        collection.repo_fetch()
+        if collection.repo_behind():
+            messages.error(
+                request,
+                WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id)
+            )
+            return HttpResponseRedirect(collection.absolute_url())
     if request.method == 'POST':
         form = DDRForm(request.POST, fields=module.FIELDS)
         if form.is_valid():
