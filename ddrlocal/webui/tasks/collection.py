@@ -114,10 +114,10 @@ class CollectionNewTask(Task):
         logger.debug('CollectionNewTask.after_return(%s, %s, %s, %s, %s)' % (
             status, retval, task_id, args, kwargs
         ))
-        collection_path = args[0]
-        collection = Collection.from_identifier(Identifier(path=collection_path))
+        collection_id = retval['collection_id']
+        collection = Collection.from_identifier(Identifier(id=collection_id))
         lockstatus = collection.unlock(task_id)
-        gitstatus.update(settings.MEDIA_BASE, collection_path)
+        gitstatus.update(settings.MEDIA_BASE, collection.path)
         # locking uses common name
         gitstatus.unlock(settings.MEDIA_BASE, TASK_COLLECTION_NEW_NAME)
 
@@ -174,10 +174,14 @@ def collection_new_idservice(organization_id, idservice_token, git_name, git_mai
     oidentifier = Identifier(id=organization_id)
     # locking uses common name
     gitstatus.lock(settings.MEDIA_BASE, TASK_COLLECTION_NEW_NAME)
-    
+
     ic = idservice.IDServiceClient()
     # resume session
     auth_status,auth_reason = ic.resume(idservice_token)
+    if auth_status not in [200,201]:
+        raise Exception('Could not authorize with ID service: {} {}' % (
+            auth_status,auth_reason,
+        ))
     # get new collection ID
     http_status,http_reason,collection_id = ic.next_object_id(
         oidentifier,
@@ -197,6 +201,9 @@ def collection_new_idservice(organization_id, idservice_token, git_name, git_mai
         exit = 1; status = {'error': err}
     except RequestError as err:
         logger.error("RequestError: {0}".format(err))
+        exit = 1; status = {'error': err}
+    except OSError as err:
+        logger.error("OSError: {0}".format(err))
         exit = 1; status = {'error': err}
     collection = Collection.from_identifier(cidentifier)
     
@@ -244,11 +251,13 @@ class CollectionEditTask(Task):
     abstract = True
     
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
-        logger.debug('CollectionEditTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
+        logger.debug('CollectionEditTask.after_return(%s, %s, %s, %s, %s)' % (
+            status, retval, task_id, args, kwargs)
+        )
         collection_path = args[0]
         collection = Collection.from_identifier(Identifier(path=collection_path))
         lockstatus = collection.unlock(task_id)
-        gitstatus.update(settings.MEDIA_BASE, collection_path)
+        gitstatus.update(settings.MEDIA_BASE, collection.path)
         gitstatus.unlock(settings.MEDIA_BASE, 'collection_edit')
 
 @task(base=CollectionEditTask, name='collection-edit')
