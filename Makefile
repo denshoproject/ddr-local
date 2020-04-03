@@ -327,7 +327,7 @@ pip-download: pip-download-cmdln pip-download-local
 
 install-app: install-dependencies install-setuptools install-ddr-cmdln install-ddr-local install-configs install-daemon-configs
 
-test-app: test-ddr-cmdln
+test-app: test-ddr-cmdln test-ddr-local
 
 coverage-app: coverage-ddr-cmdln
 
