@@ -229,11 +229,10 @@ def docstore_url(oidentifier):
     
     >>> c = DDRLocalCollection('/tmp/ddr-testing-123')
     >>> c.docstore_url()
-    'http://DOCSTORE_HOSTS/_docs/ddrcollection/ddr-testing-123/'
+    'http://DOCSTORE_HOST/_docs/ddrcollection/ddr-testing-123/'
     """
-    return 'http://{}:{}/_doc/{}/{}'.format(
-        settings.DOCSTORE_HOSTS[0]['host'], settings.DOCSTORE_HOSTS[0]['port'],
-        oidentifier.model, oidentifier.id
+    return 'http://{}/_doc/{}/{}'.format(
+        settings.DOCSTORE_HOST, oidentifier.model, oidentifier.id
     )
 
 

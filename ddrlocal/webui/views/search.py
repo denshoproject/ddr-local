@@ -50,9 +50,9 @@ def test_elasticsearch(request):
     try:
         health = search.DOCSTORE.health()
     except ConnectionError:
-        return 'Could not connect to search engine: "%s"' % settings.DOCSTORE_HOSTS
+        return 'Could not connect to search engine: "%s"' % settings.DOCSTORE_HOST
     except ConnectionTimeout:
-        return 'Connection to search engine timed out: "%s"' % settings.DOCSTORE_HOSTS
+        return 'Connection to search engine timed out: "%s"' % settings.DOCSTORE_HOST
     return
     
 def search_ui(request):

@@ -7,7 +7,7 @@ from DDR import docstore
 
 class Docstore(docstore.Docstore):
 
-    def __init__(self, hosts=settings.DOCSTORE_HOSTS, connection=None):
+    def __init__(self, hosts=settings.DOCSTORE_HOST, connection=None):
         self.hosts = hosts
         if connection:
             self.es = connection
