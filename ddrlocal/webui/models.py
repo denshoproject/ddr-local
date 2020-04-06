@@ -368,9 +368,16 @@ class Collection( DDRCollection ):
         """
         return '%s/?p=%s/.git;a=tree' % (settings.GITWEB_URL, self.id)
     
-    def unlock_url(self, unlock_task_id):
-        if unlock_task_id:
-            return reverse('webui-collection-unlock', args=[self.id, unlock_task_id])
+    def unlock_url(self):
+        """Generate unlock URL if a lockfile is present.
+        
+        See DDR.models.collection.Collection.locked.
+        """
+        if self.locked():
+            unlock_task_id = self.locked()
+            return reverse(
+                'webui-collection-unlock', args=[self.id, unlock_task_id]
+            )
         return None
         
     def cache_delete( self ):
@@ -643,9 +650,16 @@ class Entity( DDREntity ):
             os.path.dirname(self.json_path_rel)
         )
     
-    def unlock_url(self, unlock_task_id):
-        if unlock_task_id:
-            return reverse('webui-entity-unlock', args=[self.id, unlock_task_id])
+    def unlock_url(self):
+        """Generate unlock URL if a lockfile is present.
+        
+        See DDR.models.entity.Entity.locked.
+        """
+        if self.locked():
+            unlock_task_id = self.locked()
+            return reverse(
+                'webui-entity-unlock', args=[self.id, unlock_task_id]
+            )
         return None
     
     def model_def_commits(self):

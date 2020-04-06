@@ -107,10 +107,14 @@
 <script>
   $(function () {
 
-  {% if unlock_task_id %}
+  {% if collection_unlock_url %}
     /* unlock link */
     $('a#unlock-unlock').click(function() {
       $('span#unlock-confirm').show(); return false;
+    });
+    /* unlock dismiss */
+    $('a#unlock-confirm-no').click(function() {
+      $('span#unlock-confirm').hide(); return false;
     });
   {% endif %}
 

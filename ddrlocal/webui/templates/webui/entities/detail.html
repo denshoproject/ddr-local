@@ -126,6 +126,10 @@
     $('a#unlock-unlock').click(function() {
       $('span#unlock-confirm').show(); return false;
     });
+    /* unlock dismiss */
+    $('a#unlock-confirm-no').click(function() {
+      $('span#unlock-confirm').hide(); return false;
+    });
   {% endif %}
 
   })

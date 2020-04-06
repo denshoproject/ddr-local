@@ -84,7 +84,7 @@ def detail( request, cid ):
     alert_if_conflicted(request, collection)
     return render(request, 'webui/collections/detail.html', {
         'collection': collection,
-        'collection_unlock_url': collection.unlock_url(collection.locked()),
+        'collection_unlock_url': collection.unlock_url(),
         # cache this for later
         'annex_info': annex_info(repository(collection.path_abs)),
     })

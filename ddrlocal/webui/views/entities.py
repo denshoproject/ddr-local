@@ -217,7 +217,7 @@ def detail( request, eid ):
         'entity': entity,
         'children_urls': entity.children_urls(),
         'tasks': tasks,
-        'entity_unlock_url': entity.unlock_url(entity.locked()),
+        'entity_unlock_url': entity.unlock_url(),
         # cache this for later
         'annex_info': annex_info(repository(collection.path_abs)),
     })
