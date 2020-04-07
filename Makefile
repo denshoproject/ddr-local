@@ -65,12 +65,20 @@ MEDIA_BASE=/var/www
 MEDIA_ROOT=$(MEDIA_BASE)/media
 STATIC_ROOT=$(MEDIA_BASE)/static
 
-OPENJDK_PKG=
-ifeq ($(DEBIAN_RELEASE), jessie)
-	OPENJDK_PKG=openjdk-7-jre
+LIBEXEMPI3_PKG=
+ifeq ($(DEBIAN_CODENAME), stretch)
+	LIBEXEMPI3_PKG=libexempi3
 endif
+ifeq ($(DEBIAN_CODENAME), buster)
+	LIBEXEMPI3_PKG=libexempi8
+endif
+
+OPENJDK_PKG=
 ifeq ($(DEBIAN_CODENAME), stretch)
 	OPENJDK_PKG=openjdk-8-jre
+endif
+ifeq ($(DEBIAN_CODENAME), buster)
+	OPENJDK_PKG=openjdk-11-jre
 endif
 
 ELASTICSEARCH=elasticsearch-7.3.1-amd64.deb
@@ -316,7 +324,8 @@ install-dependencies: install-core install-misc-tools install-daemons
 	@echo "install-dependencies ---------------------------------------------------"
 	apt-get --assume-yes install python3-pip python3-virtualenv python3-dev
 	apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev libz-dev pmount udisks2
-	apt-get --assume-yes install imagemagick libexempi3 libssl-dev python-dev libxml2 libxml2-dev libxslt1-dev supervisor
+	apt-get --assume-yes install imagemagick libssl-dev libxml2 libxml2-dev libxslt1-dev
+	apt-get --assume-yes install $(LIBEXEMPI3_PKG)
 
 mkdirs: mkdir-ddr-cmdln mkdir-ddr-local
 
