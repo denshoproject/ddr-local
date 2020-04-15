@@ -49,6 +49,11 @@ def get_repos_orgs(force=False):
         return _refresh()
     return _read()
 
+def tmp_dir(base_dir=settings.MEDIA_BASE):
+    """Path to tmp dir
+    """
+    return Path(settings.MEDIA_BASE) / 'tmp'
+
 def cache_path(base_dir=settings.MEDIA_BASE):
     """Path to gitolite repos-orgs cache file
     """
@@ -87,6 +92,8 @@ def _refresh():
     gitolite.initialize()
     repos_orgs = gitolite.orgs()
     if repos_orgs:
+        if not os.path.exists(tmp_dir()):
+            os.makedirs(tmp_dir())
         with cache_path().open('w') as f:
             f.write(json.dumps(repos_orgs))
         return repos_orgs
