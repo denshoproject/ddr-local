@@ -8,10 +8,8 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.reverse import reverse
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from django.conf import settings
-from django.core.urlresolvers import NoReverseMatch
 
 import elasticsearch_dsl
 
@@ -19,6 +17,7 @@ from webui import docstore
 from webui import identifier
 from webui.models import format_object, make_links
 from webui import search
+
 
 DOCSTORE = docstore.Docstore()
 
@@ -69,13 +68,13 @@ def fs_detail(request, oid, format=None):
         # DDR object JSONs are lists of dicts
         if isinstance(d, list):
             for line in d:
-                if 'git_version' in line.keys():
+                if 'git_version' in list(line.keys()):
                     data['meta'] = line
                 else:
-                    data[line.keys()[0]] = line.values()[0]
+                    data[list(line.keys())[0]] = list(line.values())[0]
         # repository and organization JSON are just dicts
         elif isinstance(d, dict):
-            for key,val in d.iteritems():
+            for key,val in d.items():
                 data[key] = val
     # didn't have the data we need before
     data['links'] = make_links(oi, data, request, source='fs', is_detail=True)

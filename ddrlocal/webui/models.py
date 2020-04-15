@@ -1,9 +1,7 @@
 from collections import OrderedDict
-import json
 import logging
 logger = logging.getLogger(__name__)
 import os
-import sys
 
 from elasticsearch.exceptions import ConnectionError
 
@@ -11,7 +9,6 @@ from django.conf import settings
 from django.contrib import messages
 from django.core.cache import cache
 from django.core.urlresolvers import reverse, NoReverseMatch
-from django.db import models
 
 from rest_framework.reverse import reverse
 
@@ -22,9 +19,8 @@ from DDR import modules
 from DDR.models.common import from_json
 from DDR.models.common import Stub as DDRStub
 from DDR.models import Collection as DDRCollection
-from DDR.models import ListEntity, Entity as DDREntity
+from DDR.models import Entity as DDREntity
 from DDR.models import File as DDRFile
-from DDR.models import COLLECTION_FILES_PREFIX, ENTITY_FILES_PREFIX
 
 from webui import docstore
 from webui import gitstatus
@@ -60,7 +56,7 @@ def repo_models_valid(request):
     else:
         valid_modules = [
             modules.Module(module).is_valid()
-            for model,module in MODULES.iteritems()
+            for model,module in MODULES.items()
         ]
         if not (valid_modules):
             valid = False
@@ -139,7 +135,7 @@ def format_object(oi, d, request, is_detail=False):
     data['collection_id'] = collection_id
     data['links'] = make_links(oi, d, request, source='es', is_detail=is_detail)
     DETAIL_EXCLUDE = []
-    for key,val in d.items():
+    for key,val in list(d.items()):
         if key not in DETAIL_EXCLUDE:
             data[key] = val
     return data
@@ -233,11 +229,10 @@ def docstore_url(oidentifier):
     
     >>> c = DDRLocalCollection('/tmp/ddr-testing-123')
     >>> c.docstore_url()
-    'http://DOCSTORE_HOSTS/_docs/ddrcollection/ddr-testing-123/'
+    'http://DOCSTORE_HOST/_docs/ddrcollection/ddr-testing-123/'
     """
-    return 'http://{}:{}/_doc/{}/{}'.format(
-        settings.DOCSTORE_HOSTS[0]['host'], settings.DOCSTORE_HOSTS[0]['port'],
-        oidentifier.model, oidentifier.id
+    return 'http://{}/_doc/{}/{}'.format(
+        settings.DOCSTORE_HOST, oidentifier.model, oidentifier.id
     )
 
 
@@ -282,7 +277,7 @@ class Collection( DDRCollection ):
     def parent(self):
         return None
     
-    def children(self):
+    def children(self, quick=True):
         """Returns list of the Collection's Entity objects.
         """
         key = COLLECTION_CHILDREN_CACHE_KEY % self.id
@@ -292,7 +287,7 @@ class Collection( DDRCollection ):
             return cached
         else:
             # note: these are AttrDicts
-            kids = super(Collection, self).children(quick=True)
+            kids = super(Collection, self).children(quick=quick)
             for o in kids:
                 o.absolute_url = reverse('webui-entity', args=[o.id])
             cache.set(key, kids, timeout)
@@ -373,9 +368,16 @@ class Collection( DDRCollection ):
         """
         return '%s/?p=%s/.git;a=tree' % (settings.GITWEB_URL, self.id)
     
-    def unlock_url(self, unlock_task_id):
-        if unlock_task_id:
-            return reverse('webui-collection-unlock', args=[self.id, unlock_task_id])
+    def unlock_url(self):
+        """Generate unlock URL if a lockfile is present.
+        
+        See DDR.models.collection.Collection.locked.
+        """
+        if self.locked():
+            unlock_task_id = self.locked()
+            return reverse(
+                'webui-collection-unlock', args=[self.id, unlock_task_id]
+            )
         return None
         
     def cache_delete( self ):
@@ -579,7 +581,7 @@ class Entity( DDREntity ):
                 'active': role == active,
                 'count': count,
             }
-            for role,count in self.children_counts().iteritems()
+            for role,count in self.children_counts().items()
         ]
         tabs[0]['url'] = reverse('webui-entity-children', args=[self.id])
         return tabs
@@ -648,9 +650,16 @@ class Entity( DDREntity ):
             os.path.dirname(self.json_path_rel)
         )
     
-    def unlock_url(self, unlock_task_id):
-        if unlock_task_id:
-            return reverse('webui-entity-unlock', args=[self.id, unlock_task_id])
+    def unlock_url(self):
+        """Generate unlock URL if a lockfile is present.
+        
+        See DDR.models.entity.Entity.locked.
+        """
+        if self.locked():
+            unlock_task_id = self.locked()
+            return reverse(
+                'webui-entity-unlock', args=[self.id, unlock_task_id]
+            )
         return None
     
     def model_def_commits(self):

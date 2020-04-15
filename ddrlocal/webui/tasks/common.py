@@ -1,11 +1,3 @@
-from datetime import datetime, timedelta
-import json
-import os
-
-from elasticsearch.exceptions import ConnectionError
-
-from celery import task
-from celery import Task
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
@@ -15,23 +7,8 @@ from celery.utils.encoding import safe_repr
 from celery.utils import get_full_cls_name
 
 from django.conf import settings
-from django.contrib import messages
-from django.core.cache import cache
 from django.core.urlresolvers import reverse
 
-from DDR import batch
-from DDR import commands
-from DDR import converters
-from DDR import dvcs
-from DDR import models
-from DDR import signatures
-from DDR import util
-from DDR.ingest import addfile_logger
-
-from webui import docstore
-from webui import GITOLITE_INFO_CACHE_KEY
-from webui import gitolite
-from webui import gitstatus
 from webui import identifier
 
 
@@ -207,7 +184,7 @@ def session_tasks( request ):
     # task_id, action ('name' argument of @task), start time, args
     tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
     # add entity URLs
-    for task_id in tasks.keys():
+    for task_id in list(tasks.keys()):
         task = tasks.get(task_id, None)
         if task and task['action'] in ['webui-file-new-local',
                                        'webui-file-new-external',
@@ -218,7 +195,7 @@ def session_tasks( request ):
     # get status, retval from celery
     # TODO Don't create a new ctask/task dict here!!! >:-O
     traceback = None
-    for task_id in tasks.keys():
+    for task_id in list(tasks.keys()):
         # Skip the HTTP and get directly from Celery API
         # djcelery.views.task_status
         result = AsyncResult(task_id)
@@ -246,7 +223,7 @@ def session_tasks( request ):
                         ctask['%s_url' % oid.model] = object_url
             tasks[task['id']] = ctask
     # pretty status messages
-    for task_id in tasks.keys():
+    for task_id in list(tasks.keys()):
         task = tasks[task_id]
         action = task.get('action', None)
         if action:
@@ -259,7 +236,7 @@ def session_tasks( request ):
             msg = template.format(**task)
             task['message'] = msg
     # indicate if task is dismiss or not
-    for task_id in tasks.keys():
+    for task_id in list(tasks.keys()):
         task = tasks[task_id]
         if task.get('status', None):
             task['dismissable'] = (task['status'] in TASK_STATUSES_DISMISSABLE)
@@ -277,7 +254,7 @@ def session_tasks_list( request ):
     @param request: A Django request object
     @return tasks: A list of task dicts.
     """
-    return sorted(session_tasks(request).values(),
+    return sorted(list(session_tasks(request).values()),
                   key=lambda t: t['start'],
                   reverse=True)
 
@@ -288,7 +265,7 @@ def dismiss_session_task( request, task_id ):
     """
     newtasks = {}
     tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
-    for tid in tasks.keys():
+    for tid in list(tasks.keys()):
         if tid != task_id:
             task = tasks[tid]
             if task.get('startd',None):

@@ -19,9 +19,7 @@ def sitewide(request):
     elif logout_next.find('new') > -1:   logout_next = logout_next.split('new')[0]
     elif logout_next.find('batch') > -1: logout_next = logout_next.split('batch')[0]
     
-    elasticsearch_url = 'http://%s:%s' % (
-        request.META.get('HTTP_HOST'), settings.DOCSTORE_HOSTS[0]['port']
-    )
+    elasticsearch_url = 'http://%s' % (settings.DOCSTORE_HOST)
     return {
         'request': request,
         # ddr-local info

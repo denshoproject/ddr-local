@@ -4,21 +4,13 @@ import logging
 logger = logging.getLogger(__name__)
 import os
 import random
-import sys
-
-from bs4 import BeautifulSoup
-from elasticsearch.exceptions import ConnectionError
 
 from django.conf import settings
 from django.contrib import messages
-from django.core.cache import cache
-from django.template.context_processors import csrf
-from django.core.files import File
 from django.core.paginator import Paginator
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import Http404, render
-from django.template.loader import get_template
 
 from DDR import batch
 from DDR import commands
@@ -28,17 +20,15 @@ from DDR import fileio
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
-from webui import docstore
 from webui.decorators import ddrview
 from webui.forms import DDRForm
-from webui.forms.collections import NewCollectionForm, UpdateForm, UploadFileForm
+from webui.forms.collections import NewCollectionForm, UploadFileForm
 from webui.forms.collections import SyncConfirmForm, SignaturesConfirmForm
 from webui import gitolite
 from webui.gitstatus import repository, annex_info
-from webui.models import Collection, COLLECTION_STATUS_CACHE_KEY, COLLECTION_STATUS_TIMEOUT
+from webui.models import Collection
 from webui.identifier import Identifier
 from webui.tasks import collection as collection_tasks
-from webui.tasks import dvcs as dvcs_tasks
 from webui.views.decorators import login_required
 
 
@@ -65,7 +55,7 @@ def collections( request ):
     for object_id in gitolite.get_repos_orgs():
         identifier = Identifier(object_id)
         # TODO Identifier: Organization object instead of repo and org
-        repo,org = identifier.parts.values()
+        repo,org = list(identifier.parts.values())
         collection_paths = Collection.collection_paths(settings.MEDIA_BASE, repo, org)
         colls = []
         for collection_path in collection_paths:
@@ -94,7 +84,7 @@ def detail( request, cid ):
     alert_if_conflicted(request, collection)
     return render(request, 'webui/collections/detail.html', {
         'collection': collection,
-        'collection_unlock_url': collection.unlock_url(collection.locked()),
+        'collection_unlock_url': collection.unlock_url(),
         # cache this for later
         'annex_info': annex_info(repository(collection.path_abs)),
     })
@@ -310,12 +300,18 @@ def edit( request, cid ):
     collection.model_def_commits()
     collection.model_def_fields()
     if collection.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
+        messages.error(
+            request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id)
+        )
         return HttpResponseRedirect(collection.absolute_url())
-    collection.repo_fetch()
-    if collection.repo_behind():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
-        return HttpResponseRedirect(collection.absolute_url())
+    if not settings.OFFLINE:
+        collection.repo_fetch()
+        if collection.repo_behind():
+            messages.error(
+                request,
+                WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id)
+            )
+            return HttpResponseRedirect(collection.absolute_url())
     if request.method == 'POST':
         form = DDRForm(request.POST, fields=module.FIELDS)
         if form.is_valid():

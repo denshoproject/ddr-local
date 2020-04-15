@@ -1,5 +1,4 @@
-from datetime import datetime, timedelta
-import os
+from datetime import datetime
 
 from elasticsearch.exceptions import ConnectionError, RequestError
 
@@ -9,14 +8,12 @@ from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
 from django.conf import settings
-from django.contrib import messages
 
-from DDR import commands
 from DDR import converters
 
 from webui import docstore
 from webui import gitstatus
-from webui.models import Collection, Entity, File
+from webui.models import Collection, Entity
 from webui.identifier import Identifier
 from webui.tasks import dvcs as dvcs_tasks
 

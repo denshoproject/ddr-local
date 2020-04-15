@@ -2,27 +2,31 @@ from django.conf.urls import include, url
 from django.views.generic import TemplateView
 
 from webui import api
-from views import merge, search, supervisord
-from views import collections, entities, files
-from webui import views
+from webui.views import LoginOffline, login, logout
+from webui.views import task_status, task_dismiss, task_list
+from webui.views import gitstatus_queue, gitstatus_toggle
+from webui.views import repository, organization, collections, entities, files
+from webui.views import detail, merge, search
+
 
 urlpatterns = [
-    url(r'^login/$', views.login, name='webui-login'),
-    url(r'^logout/$', views.logout, name='webui-logout'),
+    url(r'^login/offline$', LoginOffline.as_view(), name='webui-login-offline'),
+    url(r'^login/$', login, name='webui-login'),
+    url(r'^logout/$', logout, name='webui-logout'),
     
     # admin
 
-    url(r'^task-status/$', views.task_status, name='webui-task-status'),
-    url(r'^tasks/(?P<task_id>[-\w]+)/dismiss/$', views.task_dismiss, name='webui-tasks-dismiss'),
-    url(r'^tasks/$', views.task_list, name='webui-tasks'),
+    url(r'^task-status/$', task_status, name='webui-task-status'),
+    url(r'^tasks/(?P<task_id>[-\w]+)/dismiss/$', task_dismiss, name='webui-tasks-dismiss'),
+    url(r'^tasks/$', task_list, name='webui-tasks'),
     
-    url(r'^gitstatus-queue/$', views.gitstatus_queue, name='webui-gitstatus-queue'),
-    url(r'^gitstatus-toggle/$', views.gitstatus_toggle, name='webui-gitstatus-toggle'),
+    url(r'^gitstatus-queue/$', gitstatus_queue, name='webui-gitstatus-queue'),
+    url(r'^gitstatus-toggle/$', gitstatus_toggle, name='webui-gitstatus-toggle'),
     
     url(r'^restart/$', TemplateView.as_view(template_name="webui/restart-park.html"), name='webui-restart'),
-    url(r'^supervisord/procinfo.html$', supervisord.procinfo_html, name='webui-supervisord-procinfo-html'),
-    url(r'^supervisord/procinfo.json$', supervisord.procinfo_json, name='webui-supervisord-procinfo-json'),
-    url(r'^supervisord/restart/$', supervisord.restart, name='webui-supervisord-restart'),
+    #url(r'^supervisord/procinfo.html$', supervisord.procinfo_html, name='webui-supervisord-procinfo-html'),
+    #url(r'^supervisord/procinfo.json$', supervisord.procinfo_json, name='webui-supervisord-procinfo-json'),
+    #url(r'^supervisord/restart/$', supervisord.restart, name='webui-supervisord-restart'),
 
     # REST API
     
@@ -37,22 +41,22 @@ urlpatterns = [
 
     #url(r'^search/(?P<field>[\w]+):(?P<term>[\w ,]+)/$', search.term_query, name='webui-search-term-query'),
     url(r'^search/$', search.search_ui, name='webui-search'),
-
+ 
     # merge
-
+ 
     url(r'^collection/(?P<cid>[\w\d-]+)/merge/auto/$', merge.edit_auto, name='webui-merge-auto'),
     url(r'^collection/(?P<cid>[\w\d-]+)/merge/json/$', merge.edit_json, name='webui-merge-json'),
     url(r'^collection/(?P<cid>[\w\d-]+)/merge/raw/$', merge.edit_raw, name='webui-merge-raw'),
     url(r'^collection/(?P<cid>[\w\d-]+)/merge/$', merge.merge, name='webui-merge'),
-
+ 
     # repository, organization
-    url(r'^repository/(?P<cid>[\w\d-]+)/$', views.repository, name='webui-repository'),
-    url(r'^organization/(?P<cid>[\w\d-]+)/$', views.organization, name='webui-organization'),
+    url(r'^repository/(?P<cid>[\w\d-]+)/$', repository, name='webui-repository'),
+    url(r'^organization/(?P<cid>[\w\d-]+)/$', organization, name='webui-organization'),
     
     # collections
-
+ 
     url(r'^collections/$', collections.collections, name='webui-collections'),
-
+ 
     url(r'^collection/(?P<cid>[\w\d-]+)/edit/$', collections.edit, name='webui-collection-edit'),
     url(r'^collection/(?P<cid>[\w\d-]+)/sync/$', collections.sync, name='webui-collection-sync'),
     url(r'^collection/(?P<cid>[\w\d-]+)/check/$', collections.check, name='webui-collection-check'),
@@ -110,12 +114,12 @@ urlpatterns = [
     url(r'^file/(?P<rid>[\w\d-]+)/new-external/$', files.new_external, name='webui-file-new-external'),
     #url(r'^file/(?P<rid>[\w\d-]+)/new-meta/$', files.new_meta, name='webui-file-new-meta'),
     url(r'^file/(?P<rid>[\w\d-]+)/new/$', files.new, name='webui-file-new'),
-    url(r'^file-role/(?P<rid>[\w\d-]+)/$', views.entities.file_role, name='webui-file-role'),
+    url(r'^file-role/(?P<rid>[\w\d-]+)/$', entities.file_role, name='webui-file-role'),
     url(r'^file/(?P<eid>[\w\d-]+)-master/new/$', files.new, kwargs={'role':'master'}, name='webui-file-new-master'),
     url(r'^file/(?P<eid>[\w\d-]+)-mezzanine/new/$', files.new, kwargs={'role':'mezzanine'}, name='webui-file-new-mezzanine'),
     url(r'^file/(?P<eid>[\w\d-]+)/new/$', files.new, name='webui-file-new'),
-
+ 
     #
-    url(r'^(?P<oid>[\w\d-]+)/$', views.detail, name='webui-detail'),
+    url(r'^(?P<oid>[\w\d-]+)/$', detail, name='webui-detail'),
     url(r'^$', TemplateView.as_view(template_name="webui/index.html"), name='webui-index'),
 ]

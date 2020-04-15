@@ -1,29 +1,20 @@
-from datetime import datetime
-from decimal import Decimal
 import logging
 logger = logging.getLogger(__name__)
+from urllib.parse import urlunparse
 
 from django.conf import settings
-from django.contrib import messages
-from django.core.cache import cache
 from django.core.paginator import Paginator
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import Http404, render
-from django.utils.http import urlquote  as django_urlquote
+from django.shortcuts import render
 
-from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import ConnectionError, ConnectionTimeout
 
-from DDR import converters
-from webui import api
 from webui import docstore
-from webui import forms
+from webui.forms.search import SearchForm
 from webui import identifier
 from webui import models
 from webui import search
-from webui.tasks import docstore as docstore_tasks
-from webui.forms.search import SearchForm
 from webui.identifier import Identifier
 
 BAD_CHARS = ('{', '}', '[', ']')
@@ -48,10 +39,8 @@ def massage_query_results( results, thispage, size ):
 
 # views ----------------------------------------------------------------
 
-import urlparse
-
 def _mkurl(request, path, query=None):
-    return urlparse.urlunparse((
+    return urlunparse((
         request.META['wsgi.url_scheme'],
         request.META['HTTP_HOST'],
         path, None, query, None
@@ -61,9 +50,9 @@ def test_elasticsearch(request):
     try:
         health = search.DOCSTORE.health()
     except ConnectionError:
-        return 'Could not connect to search engine: "%s"' % settings.DOCSTORE_HOSTS
+        return 'Could not connect to search engine: "%s"' % settings.DOCSTORE_HOST
     except ConnectionTimeout:
-        return 'Connection to search engine timed out: "%s"' % settings.DOCSTORE_HOSTS
+        return 'Connection to search engine timed out: "%s"' % settings.DOCSTORE_HOST
     return
     
 def search_ui(request):
@@ -116,7 +105,7 @@ def search_ui(request):
         searcher.prepare(request)
         results = searcher.execute(limit, offset)
         context['results'] = results
-        context['search_form'] = forms.search.SearchForm(
+        context['search_form'] = SearchForm(
             search_results=results,
             data=request.GET
         )
@@ -132,6 +121,6 @@ def search_ui(request):
             context['page'] = paginator.page(results.this_page)
 
     else:
-        context['search_form'] = forms.search.SearchForm()
+        context['search_form'] = SearchForm()
     
     return render(request, 'webui/search/search.html', context)

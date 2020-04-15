@@ -22,7 +22,7 @@ class SuppressCeleryNewConnections(logging.Filter):
         mod_connectionpool = (record.module == 'connectionpool')
         msg_starting_http = None
         msg_celery_status = None
-        if isinstance(record.msg, basestring):
+        if isinstance(record.msg, str):
             msg_starting_http = RE_STARTING_HTTP.search(record.msg)
             msg_celery_status = RE_CELERY_STATUS.search(record.msg)
         if mod_connectionpool and (msg_starting_http or msg_celery_status):

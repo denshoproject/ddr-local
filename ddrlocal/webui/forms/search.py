@@ -1,13 +1,10 @@
 import logging
 logger = logging.getLogger(__name__)
-import os
 
 from django import forms
-from django.conf import settings
 
-from webui import docstore
 from webui import search
-from ..util import OrderedDict
+from webui.util import OrderedDict
 
 
 class SearchForm(forms.Form):
@@ -60,7 +57,7 @@ class SearchForm(forms.Form):
         
         # fill in options and doc counts from aggregations
         if search_results and search_results.aggregations:
-            for fieldname in search_results.aggregations.keys():
+            for fieldname in list(search_results.aggregations.keys()):
                 choices = [
                     (
                         item['key'],

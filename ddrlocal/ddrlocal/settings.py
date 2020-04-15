@@ -14,9 +14,6 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 # ----------------------------------------------------------------------
 
-DEBUG = True
-
-import ConfigParser
 from datetime import timedelta
 import logging
 import sys
@@ -26,6 +23,11 @@ import pytz
 # import all settings from ddr-cmdln DDR/config.py
 # including the ConfigParser object CONFIG
 from DDR.config import *
+
+DEBUG = CONFIG.getboolean('debug', 'debug')
+GITPKG_DEBUG = CONFIG.getboolean('debug', 'gitpkg_debug')
+THUMBNAIL_DEBUG = CONFIG.getboolean('debug', 'thumbnail')
+OFFLINE = CONFIG.getboolean('debug', 'offline')
 
 os.environ['USER'] = 'ddr'
 
@@ -85,10 +87,7 @@ GIT_ANNEX_WHEREIS = CONFIG.getboolean('local','git_annex_whereis')
 
 # ElasticSearch
 DOCSTORE_ENABLED     = CONFIG.getboolean('local','docstore_enabled')
-ds_host,ds_port      = CONFIG.get('local', 'docstore_host').split(':')
-DOCSTORE_HOSTS = [
-    {'host':ds_host, 'port':ds_port}
-]
+DOCSTORE_HOST = CONFIG.get('local','docstore_host')
 DOCSTORE_TIMEOUT     = int(CONFIG.get('local', 'docstore_timeout'))
 RESULTS_PER_PAGE = 25
 ELASTICSEARCH_MAX_SIZE = 10000
@@ -162,9 +161,6 @@ MANUAL_URL = os.path.join(MEDIA_URL, 'manual')
 
 # ----------------------------------------------------------------------
 
-import djcelery
-djcelery.setup_loader()
-
 ADMINS = (
     ('geoffrey jost', 'geoffrey.jost@densho.org'),
     #('Geoff Froh', 'geoff.froh@densho.org'),
@@ -183,7 +179,6 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     #
     'bootstrap_pagination',
-    'djcelery',
     'gunicorn',
     'rest_framework',
     'sorl.thumbnail',
@@ -208,7 +203,7 @@ DATABASES = {
 }
 
 REDIS_HOST = '127.0.0.1'
-REDIS_PORT = '6379'
+REDIS_PORT = 6379
 REDIS_DB_CACHE = 0
 REDIS_DB_CELERY_BROKER = 1
 REDIS_DB_CELERY_RESULT = 2
@@ -217,7 +212,9 @@ REDIS_DB_SORL = 3
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://%s:%s:%s" % (REDIS_HOST, REDIS_PORT, REDIS_DB_CACHE),
+        "LOCATION": "redis://{}:{}/{}".format(
+            REDIS_HOST, str(REDIS_PORT), str(REDIS_DB_CACHE)
+        ),
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         }
@@ -226,8 +223,12 @@ CACHES = {
 
 # celery
 CELERY_TASKS_SESSION_KEY = 'celery-tasks'
-CELERY_RESULT_BACKEND = 'redis://%s:%s/%s' % (REDIS_HOST, REDIS_PORT, REDIS_DB_CELERY_RESULT)
-BROKER_URL            = 'redis://%s:%s/%s' % (REDIS_HOST, REDIS_PORT, REDIS_DB_CELERY_BROKER)
+CELERY_RESULT_BACKEND = 'redis://{}:{}/{}'.format(
+    REDIS_HOST, str(REDIS_PORT), str(REDIS_DB_CELERY_RESULT)
+)
+CELERY_BROKER_URL     = 'redis://{}:{}/{}'.format(
+    REDIS_HOST, str(REDIS_PORT), str(REDIS_DB_CELERY_BROKER)
+)
 BROKER_TRANSPORT_OPTIONS = {'visibility_timeout': 60 * 60}  # 1 hour
 CELERYD_HIJACK_ROOT_LOGGER = False
 CELERY_ACCEPT_CONTENT = ['pickle', 'json', 'msgpack', 'yaml']
@@ -240,7 +241,7 @@ CELERYBEAT_SCHEDULE = {
     }
 }
 if GITSTATUS_BACKGROUND_ACTIVE:
-    CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
+    CELERYBEAT_SCHEDULER = 'celery.beat.PersistentScheduler'
     CELERYBEAT_PIDFILE = '/tmp/celerybeat.pid'
     CELERYBEAT_SCHEDULE['webui-git-status-update-store'] = {
         'task': 'webui.tasks.gitstatus_update_store',
@@ -248,8 +249,6 @@ if GITSTATUS_BACKGROUND_ACTIVE:
     }
 
 # sorl-thumbnail
-THUMBNAIL_DEBUG = DEBUG
-#THUMBNAIL_DEBUG = False
 THUMBNAIL_KVSTORE = 'sorl.thumbnail.kvstores.dbm_kvstore.KVStore'
 THUMBNAIL_DBM_FILE = CONFIG.get('local', 'thumbnail_dbm_file')
 THUMBNAIL_ENGINE = 'sorl.thumbnail.engines.convert_engine.Engine'

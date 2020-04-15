@@ -11,7 +11,7 @@ from django.utils.encoding import force_text
 
 from DDR import modules
 from webui.identifier import Identifier, INHERITABLE_FIELDS
-from ..util import OrderedDict
+from webui.util import OrderedDict
 
 INTERVIEW_SIG_PATTERN = r'^denshovh-[a-z_0-9]{1,}-[0-9]{2,2}$'
 INTERVIEW_SIG_REGEX = re.compile(INTERVIEW_SIG_PATTERN)
@@ -21,6 +21,17 @@ class LoginForm(forms.Form):
     username = forms.CharField(max_length=100)
     password = forms.CharField(widget=forms.PasswordInput)
     next = forms.CharField(max_length=255, required=False, widget=forms.HiddenInput)
+
+
+class LoginOfflineForm(forms.Form):
+    username = forms.CharField(max_length=100)
+    email = forms.EmailField()
+    git_name = forms.CharField(
+        max_length=100, help_text='First name, last name'
+    )
+    next = forms.CharField(
+        max_length=255, required=False, widget=forms.HiddenInput
+    )
 
 
 class TaskDismissForm( forms.Form ):
@@ -154,7 +165,7 @@ class DDRForm(forms.Form):
         # decided which file to import.  We haven't calc'd the file hash
         # so we have no ID, no Identifier, and no module object.
         # Just give up. We'll validate later when they edit.
-        if 'id' not in cleaned_data_copy.keys():
+        if 'id' not in list(cleaned_data_copy.keys()):
             return
         
         try:
@@ -166,8 +177,8 @@ class DDRForm(forms.Form):
         
         if settings.UTF8_STRICT:
             # per-field errors if can't convert to UTF-8
-            for fieldname,value in cleaned_data_copy.iteritems():
-                if isinstance(value, basestring):
+            for fieldname,value in cleaned_data_copy.items():
+                if isinstance(value, str):
                     try:
                         data = value.decode('utf-8', 'strict')
                     except UnicodeError as err:
@@ -189,7 +200,7 @@ class DDRForm(forms.Form):
         module = obj.identifier.fields_module()
         # put per-field error tracebacks here
         self.tracebacks = {}
-        for fieldname,value in cleaned_data_copy.iteritems():
+        for fieldname,value in cleaned_data_copy.items():
             try:
                 data = modules.Module(module).function(
                     'formpost_%s' % fieldname,

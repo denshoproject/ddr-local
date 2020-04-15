@@ -245,7 +245,7 @@ def make_choices_alt_index(choices_alt):
     """Make index from *_CHOICES_ALT dict
     """
     index = {}
-    for key,value in choices_alt.iteritems():
+    for key,value in choices_alt.items():
         for v in value:
             index[v] = key
     return index
@@ -387,7 +387,7 @@ def row_missing_required_fields( required_fields, row ):
     @returns False (nothing missing) or a list of fieldnames
     """
     present = []
-    for key in row.keys():
+    for key in list(row.keys()):
         if (key in required_fields) and row[key]:
             present.append(key)
     if len(present) == len(required_fields):
@@ -721,7 +721,7 @@ def import_entities( csv_path, collection_path, git_name, git_mail ):
             rowd['facility'] = prep_facility(rowd['facility'])
             
             # insert values from CSV
-            for key in rowd.keys():
+            for key in list(rowd.keys()):
                 setattr(entity, key, rowd[key])
             entity.record_created = datetime.now(settings.TZ)
             entity.record_lastmod = datetime.now(settings.TZ)
@@ -877,10 +877,8 @@ def export_entities( collection_path, csv_path ):
                         'csvexport_%s' % key,
                         getattr(entity, f['name'])
                     )
-                    if not (isinstance(val, str) or isinstance(val, unicode)):
-                        val = unicode(val)
-                    if val:
-                        value = val.encode('utf-8')
+                    if not (isinstance(val, str) or isinstance(val, str)):
+                        val = str(val)
                 values.append(value)
             writer.writerow(values)
             
@@ -938,10 +936,8 @@ def export_files( collection_path, csv_path ):
                             'csvexport_%s' % key,
                             getattr(file_, f['name'])
                         )
-                        if not (isinstance(val, str) or isinstance(val, unicode)):
-                            val = unicode(val)
-                        if val:
-                            value = val.encode('utf-8')
+                        if not (isinstance(val, str) or isinstance(val, str)):
+                            val = str(val)
                     values.append(value)
                 writer.writerow(values)
             

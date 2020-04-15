@@ -2,11 +2,6 @@ from functools import wraps
 import logging
 logger = logging.getLogger(__name__)
 
-from django.contrib import messages
-from django.utils.decorators import available_attrs
-
-from DDR.docstore import TransportError
-
 
 def ddrview(f):
     """Clearly indicate in the logs that a view has started.
