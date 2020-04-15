@@ -20,7 +20,6 @@ urlpatterns = [
     url(r'^404/', TemplateView.as_view(template_name="ddrlocal/404.html")),
     url(r'^500/', TemplateView.as_view(template_name="ddrlocal/500.html")),
     url(r'^debug/', debug, name='debug'),
-    url(r'^celery/', include('djcelery.urls')),
     url(r'^storage/', include('storage.urls')),
     url(r'^ui/', include('webui.urls')),
     url(r'^$', TemplateView.as_view(template_name="webui/index.html"), name='index'),
