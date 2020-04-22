@@ -76,7 +76,7 @@ DEFAULT_PERMISSION_ENTITY     = CONFIG.get('local','default_permission_entity')
 DEFAULT_PERMISSION_FILE       = CONFIG.get('local','default_permission_file')
 LOG_DIR              = CONFIG.get('local', 'log_dir')
 LOG_FILE             = CONFIG.get('local', 'log_file')
-LOG_LEVEL            = CONFIG.get('local', 'log_level')
+LOG_LEVEL            = CONFIG.get('debug', 'log_level')
 CSV_EXPORT_PATH = {
     'entity': '/tmp/ddr/csv/%s-objects.csv',
     'file': '/tmp/ddr/csv/%s-files.csv',
