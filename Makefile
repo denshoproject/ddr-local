@@ -782,9 +782,8 @@ deb-stretch:
 	--depends "munin"   \
 	--depends "munin-node"   \
 	--depends "pmount"   \
-	--depends "python-dev"   \
-	--depends "python-pip"   \
-	--depends "python-six"   \
+	--depends "python3-dev"   \
+	--depends "python3-pip"   \
 	--depends "python-virtualenv"   \
 	--depends "redis-server"   \
 	--depends "supervisor"   \
