@@ -121,6 +121,15 @@ actual installation.  GitHub may ask you for passwords.
     $ cd /opt/ddr-local/
     $ sudo make get
 
+If you want to work on this application or if you just want to try the
+latest in-development code, switch to the `develop` branch of each
+repository. Do this before running `make install`.
+::
+    $ cd /opt/ddr-local/ddr-cmdln; git checkout develop
+    $ cd /opt/ddr-local/ddr-defs; git checkout develop
+    $ cd /opt/ddr-local/densho-vocab; git checkout develop
+    $ cd /opt/ddr-local; git checkout develop
+
 This step installs dependencies from Debian packages, installs Python
 dependencies in a virtualenv, and places static assets and config
 files in their places.
