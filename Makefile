@@ -313,7 +313,7 @@ remove-elasticsearch:
 install-virtualenv:
 	@echo ""
 	@echo "install-virtualenv -----------------------------------------------------"
-	apt-get --assume-yes install python3-pip python3-virtualenv
+	apt-get --assume-yes install python3-pip python-virtualenv
 	test -d $(VIRTUALENV) || virtualenv --python=python3 --distribute --setuptools $(VIRTUALENV)
 
 install-setuptools: install-virtualenv
@@ -327,7 +327,7 @@ install-setuptools: install-virtualenv
 install-dependencies: install-core install-misc-tools install-daemons
 	@echo ""
 	@echo "install-dependencies ---------------------------------------------------"
-	apt-get --assume-yes install python3-pip python3-virtualenv python3-dev
+	apt-get --assume-yes install python3-dev python3-pip python-virtualenv
 	apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev libz-dev pmount udisks2
 	apt-get --assume-yes install imagemagick libssl-dev libxml2 libxml2-dev libxslt1-dev
 	apt-get --assume-yes install $(LIBEXEMPI3_PKG)
@@ -782,9 +782,8 @@ deb-stretch:
 	--depends "munin"   \
 	--depends "munin-node"   \
 	--depends "pmount"   \
-	--depends "python-dev"   \
-	--depends "python-pip"   \
-	--depends "python-six"   \
+	--depends "python3-dev"   \
+	--depends "python3-pip"   \
 	--depends "python-virtualenv"   \
 	--depends "redis-server"   \
 	--depends "supervisor"   \
