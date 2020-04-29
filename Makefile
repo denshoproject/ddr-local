@@ -273,10 +273,10 @@ install-nginx:
 	@echo ""
 	@echo "Nginx ------------------------------------------------------------------"
 	apt-get --assume-yes remove apache2
-	apt-get --assume-yes install nginx
+	apt-get --assume-yes install nginx-light
 
 remove-nginx:
-	apt-get --assume-yes remove nginx
+	apt-get --assume-yes remove nginx-light
 
 install-redis:
 	@echo ""
@@ -765,22 +765,18 @@ deb-stretch:
 	--vendor "$(DEB_VENDOR)"   \
 	--maintainer "$(DEB_MAINTAINER)"   \
 	--description "$(DEB_DESCRIPTION)"   \
-	--depends "nginx-light"   \
 	--depends "cgit"   \
 	--depends "fcgiwrap"   \
-	--depends "gdebi-core"   \
 	--depends "git-annex"   \
 	--depends "git-core"   \
 	--depends "imagemagick"   \
 	--depends "libexempi3"   \
 	--depends "libssl-dev"   \
-	--depends "libwww-perl"   \
 	--depends "libxml2"   \
 	--depends "libxml2-dev"   \
 	--depends "libxslt1-dev"   \
 	--depends "libz-dev"   \
-	--depends "munin"   \
-	--depends "munin-node"   \
+	--depends "nginx-light"   \
 	--depends "pmount"   \
 	--depends "python3-dev"   \
 	--depends "python3-pip"   \
@@ -842,20 +838,18 @@ deb-buster:
 	--vendor "$(DEB_VENDOR)"   \
 	--maintainer "$(DEB_MAINTAINER)"   \
 	--description "$(DEB_DESCRIPTION)"   \
-	--depends "nginx-light"   \
 	--depends "cgit"   \
 	--depends "fcgiwrap"   \
-	--depends "gdebi-core"   \
 	--depends "git-annex"   \
 	--depends "git-core"   \
 	--depends "imagemagick"   \
 	--depends "libexempi8"   \
 	--depends "libssl-dev"   \
-	--depends "libwww-perl"   \
 	--depends "libxml2"   \
 	--depends "libxml2-dev"   \
 	--depends "libxslt1-dev"   \
 	--depends "libz-dev"   \
+	--depends "nginx-light"   \
 	--depends "pmount"   \
 	--depends "python3-dev"   \
 	--depends "python3-pip"   \
