@@ -158,7 +158,7 @@ POST-INSTALL
 The DDR user
 ------------
 
-IMPORTANT: The editor run as the `ddr` user, which is installed as part of the package install.  In the Densho HQ environment, it is *critical* that the `ddr` user has the uid and gid set to `1001`.
+IMPORTANT: The editor run as the `ddr` user, which is installed as part of the package install.  In the Densho HQ environment, it is *critical* that the `ddr` user has the uid and gid set to `1001`.  The `ddr` user should be installed automatically.
 ::
     $ cd /opt/ddr-local/
     $ sudo make ddr-user
@@ -186,25 +186,29 @@ is beyond this INSTALL so please see `ddr-manual`.
 Repository Directory
 --------------------
 
-Once your `ddr` user has its gitolite keys (see "Gitolite keys" step) you can create a directory for repositories.
+Once your `ddr` user has its gitolite keys (see "Gitolite keys" step) you can create a directory for collections.  If your install does not use `/var/www/media/ddr` please update the following values in `/etc/ddr/ddrlocal-local.cfg`.
+::
+    [local] base_path
+    [local] media_root
+    [cmdln] media_base
 
 Create the repository directory.
 ::
-   sudo mkdir -p /var/www/media/ddr
-   sudo chown -R ddr.ddr /var/www/media/ddr
+    sudo mkdir -p /var/www/media/ddr
+    sudo chown -R ddr.ddr /var/www/media/ddr
 
 Clone the `ddr` repository repo, the `ddr-testing` and `ddr-densho` organization repos, and the `ddr-densho-10` collection repo which is used for running unit tests.
 ::
-   sudo -u ddr git clone git@mits.densho.org:ddr.git           /var/www/media/ddr/ddr
-   sudo -u ddr git clone git@mits.densho.org:ddr-testing.git   /var/www/media/ddr/ddr-testing
-   sudo -u ddr git clone git@mits.densho.org:ddr-densho.git    /var/www/media/ddr/ddr-densho
-   sudo -u ddr git clone git@mits.densho.org:ddr-densho-10.git /var/www/media/ddr/ddr-densho-10
+    sudo -u ddr git clone git@mits.densho.org:ddr.git           /var/www/media/ddr/ddr
+    sudo -u ddr git clone git@mits.densho.org:ddr-testing.git   /var/www/media/ddr/ddr-testing
+    sudo -u ddr git clone git@mits.densho.org:ddr-densho.git    /var/www/media/ddr/ddr-densho
+    sudo -u ddr git clone git@mits.densho.org:ddr-densho-10.git /var/www/media/ddr/ddr-densho-10
 
 
 Unit Tests
 ----------
 
-Run unit tests.
+In order for unit tests to work, you must have 1) installed ddr-local using one of the above methods, 2) created a `ddr` user, 3) installed Gitolite keys, and 4) created the repository directory and test repos.
 ::
     $ cd /opt/ddr-local/
     $ sudo su ddr
