@@ -316,8 +316,8 @@ remove-elasticsearch:
 install-virtualenv:
 	@echo ""
 	@echo "install-virtualenv -----------------------------------------------------"
-	apt-get --assume-yes install python3-pip python-virtualenv
-	test -d $(VIRTUALENV) || virtualenv --python=python3 --distribute --setuptools $(VIRTUALENV)
+	apt-get --assume-yes install python3-pip python3-venv
+	python3 -m venv $(VIRTUALENV)
 
 install-setuptools: install-virtualenv
 	@echo ""
@@ -330,7 +330,7 @@ install-setuptools: install-virtualenv
 install-dependencies: install-core install-misc-tools install-daemons
 	@echo ""
 	@echo "install-dependencies ---------------------------------------------------"
-	apt-get --assume-yes install python3-dev python3-pip python-virtualenv
+	apt-get --assume-yes install python3-dev python3-pip python3-venv
 	apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev libz-dev pmount udisks2
 	apt-get --assume-yes install imagemagick libssl-dev libxml2 libxml2-dev libxslt1-dev
 	apt-get --assume-yes install $(LIBEXEMPI3_PKG)
@@ -751,8 +751,6 @@ deb-stretch:
 	-rm -Rf $(DEB_FILE_STRETCH)
 # Copy .git/ dir from master worktree
 	python bin/deb-prep-post.py before
-# Make venv relocatable
-	virtualenv --relocatable $(VIRTUALENV)
 # Make package
 	fpm   \
 	--verbose   \
@@ -780,7 +778,7 @@ deb-stretch:
 	--depends "pmount"   \
 	--depends "python3-dev"   \
 	--depends "python3-pip"   \
-	--depends "python-virtualenv"   \
+	--depends "python3-venv"   \
 	--depends "redis-server"   \
 	--depends "supervisor"   \
 	--depends "udisks2"   \
@@ -824,8 +822,6 @@ deb-buster:
 	-rm -Rf $(DEB_FILE_BUSTER)
 # Copy .git/ dir from master worktree
 	python bin/deb-prep-post.py before
-# Make venv relocatable
-	virtualenv --relocatable $(VIRTUALENV)
 # Make package
 	fpm   \
 	--verbose   \
@@ -853,7 +849,7 @@ deb-buster:
 	--depends "pmount"   \
 	--depends "python3-dev"   \
 	--depends "python3-pip"   \
-	--depends "python-virtualenv"   \
+	--depends "python3-venv"   \
 	--depends "redis-server"   \
 	--depends "supervisor"   \
 	--depends "udisks2"   \
