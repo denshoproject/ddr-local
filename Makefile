@@ -691,7 +691,7 @@ install-fpm:
 
 # https://stackoverflow.com/questions/32094205/set-a-custom-install-directory-when-making-a-deb-package-with-fpm
 # https://brejoc.com/tag/fpm/
-deb: deb-stretch
+deb: deb-buster
 
 deb-stretch:
 	@echo ""
