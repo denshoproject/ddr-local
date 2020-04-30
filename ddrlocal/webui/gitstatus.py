@@ -52,7 +52,6 @@ import json
 import logging
 logger = logging.getLogger(__name__)
 import os
-import random
 import re
 
 from django.conf import settings
@@ -63,7 +62,6 @@ from DDR import dvcs
 from DDR.storage import is_writable
 from ddrlocal.models import DDRLocalCollection as Collection
 from webui import COLLECTION_STATUS_TIMEOUT
-from webui import gitolite
 from webui.identifier import Identifier
 
 COLLECTION_SYNC_STATUS_CACHE_KEY = 'webui:collection:%s:sync-status'
@@ -599,7 +597,7 @@ def update_store( base_dir, delta, minimum, local=False ):
                 response = next_repo(queue, local=local)
                 if isinstance(response, list) or isinstance(response, tuple):
                     messages.append('next_repo %s' % str(response))
-                elif isinstance(response, basestring) and os.path.exists(response):
+                elif isinstance(response, str) and os.path.exists(response):
                     collection_path = response
                 if collection_path:
                     timestamp,elapsed,status,annex_status,syncstatus = update(base_dir, collection_path)

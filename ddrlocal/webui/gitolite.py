@@ -4,22 +4,28 @@ gitolite
 Local systems connect to settings.GITOLITE to list the repositories
 to which they have access.  On systems with slow network connections
 this takes too long to do during a page request.
+
+To support systems with no internet access for extended periods of
+time, responses from settings.GITOLITE are cached to a file in the
+same tmp dir as gitstatus files, queue, and lockfiles.
 """
 
 from datetime import datetime, timedelta
+import json
 import logging
 logger = logging.getLogger(__name__)
+from pathlib import Path
+import os
 
 from django.conf import settings
-from django.core.cache import cache
 
-from DDR import converters
 from DDR import dvcs
 
-from webui import GITOLITE_INFO_CACHE_KEY
+# TODO hard-coded
+DEFAULT_REPOS_ORGS = ['ddr-testing']
 
 
-def get_repos_orgs():
+def get_repos_orgs(force=False):
     """Returns list of repo-orgs that the current SSH key gives access to.
     
     This function helps to manage 
@@ -29,132 +35,84 @@ def get_repos_orgs():
 
     This function often runs in the context of a page request/reponse,
     but we don't want to have to wait for the Gitolite server.
-    Cached value is kept up to date by a periodic background task.
-    
-    Cached gitolite info is prepended with a timestamp:
-        hello ddr, this is git@mits running gitolite3 v3.2-19-gb9bbb78 on git 1.7.2.5
-        
-         R W C ddr-test-[0-9]+
-         R W C ddr-test-[0-9]+-[0-9]+
-         R W   ddr-test
-         R W   ddr-test-1
-    
-    The cached value expires after GITOLITE_INFO_CACHE_TIMEOUT seconds.
-    A background process checks every GITOLITE_INFO_CHECK_PERIOD seconds.
-    If the timestamp is more than GITOLITE_INFO_CACHE_CUTOFF seconds old
-    the cached value is refreshed.
 
     It is refreshed after GITOLITE_INFO_CACHE_CUTOFF seconds.
     The gitolite info should (almost) always be available to the webapp
     even if it's a bit stale.
     
-    IMPORTANT: cached value of gitolite_info is in the following format:
-        timestamp + '\n' + gitolite_info
-
+    @param force: bool
     @returns: list of org IDs (e.g. ['ddr-densho', 'ddr-janm']).
     """
+    state = _get_state()
+    action = DECISION_TABLE[state]
+    if force or (action == 'refresh'):
+        return _refresh()
+    return _read()
+
+def tmp_dir(base_dir=settings.MEDIA_BASE):
+    """Path to tmp dir
+    """
+    return Path(settings.MEDIA_BASE) / 'tmp'
+
+def cache_path(base_dir=settings.MEDIA_BASE):
+    """Path to gitolite repos-orgs cache file
+    """
+    return Path(settings.MEDIA_BASE) / 'tmp' / 'gitolite-repos-orgs'
+
+DECISION_TABLE = {
+    'missing:missing': 'refresh',
+    'present:stale': 'refresh',
+    'present:fresh': 'read',
+}
+
+def _get_state():
+    """Check cache file and decide what to do. See DECISION_TABLE.
+    """
+    states = ['missing','missing']
+    path = cache_path()
+    if path.exists():
+        states = ['present']
+        cutoff = timedelta(seconds=settings.GITOLITE_INFO_CACHE_CUTOFF)
+        age = None
+        if path.exists():
+            mtime = datetime.fromtimestamp(path.stat().st_mtime)
+            age = datetime.now() - mtime
+        if age and (age < cutoff):
+            states.append('fresh')
+        else:
+            states.append('stale')
+    return ':'.join(states)
+
+def _refresh():
+    """Try to contact Gitolite server, write file only if successful.
+    
+    @return: list of repo-org strs
+    """
     gitolite = dvcs.Gitolite()
-    repos_orgs = []
-    cached = cache.get(GITOLITE_INFO_CACHE_KEY)
-    if not cached:
-        # cache miss!  This should not happen very often
-        # Same code as webui.tasks.gitolite_info_refresh(),
-        # but copied to prevent import loop.
-        gitolite.initialize()
-        info = gitolite.info
-        cached = dumps(info, settings.GITOLITE)
-        cache.set(
-            GITOLITE_INFO_CACHE_KEY,
-            cached,
-            settings.GITOLITE_INFO_CACHE_TIMEOUT
-        )
-    if cached:
-        try:
-            timestamp,source,info = loads(cached)
-        except ValueError:
-            timestamp,source,info = None,None,None
-        if info:
-            gitolite.info = info
-            repos_orgs = gitolite.orgs()
+    gitolite.initialize()
+    repos_orgs = gitolite.orgs()
+    if repos_orgs:
+        if not os.path.exists(tmp_dir()):
+            os.makedirs(tmp_dir())
+        with cache_path().open('w') as f:
+            f.write(json.dumps(repos_orgs))
+        return repos_orgs
+    else:
+        repos_orgs = _read()
+        if repos_orgs:
+            return repos_orgs
+    return DEFAULT_REPOS_ORGS
+
+def _read():
+    """Read file. If missing use DEFAULT, if JSON error try refresh.
+    """
+    try:
+        with cache_path().open('r') as f:
+            raw = f.read()
+    except FileNotFoundError:
+        raw = str(DEFAULT_REPOS_ORGS)
+    try:
+        repos_orgs = json.loads(raw)
+    except json.decoder.JSONDecodeError:
+        repos_orgs = _refresh()
     return repos_orgs
-
-def refresh():
-    """
-    Check the cached value of DDR.dvcs.gitolite_info().
-    If it is stale (e.g. timestamp is older than cutoff)
-    then hit the Gitolite server for an update and re-cache.
-    """
-    logger.debug('gitolite_info_check')
-    gitolite = dvcs.Gitolite()
-    feedback = []
-    needs_update = None
-    cached = cache.get(GITOLITE_INFO_CACHE_KEY)
-    if cached:
-        feedback.append('cached')
-        try:
-            timestamp,source,info = loads(cached)
-            feedback.append(converters.datetime_to_text(timestamp))
-            feedback.append(source)
-        except ValueError:
-            timestamp,source,info = None,None,None
-            feedback.append('malformed')
-            needs_update = True
-        if timestamp:
-            elapsed = datetime.now(settings.TZ) - timestamp
-            cutoff = timedelta(seconds=settings.GITOLITE_INFO_CACHE_CUTOFF)
-            if elapsed > cutoff:
-                needs_update = True
-                feedback.append('stale')
-    else:
-        needs_update = True
-        feedback.append('missing')
-    if needs_update:
-        gitolite.initialize()
-        if gitolite.info:
-            cached = dumps(gitolite.info, settings.GITOLITE)
-            cache.set(
-                GITOLITE_INFO_CACHE_KEY,
-                cached,
-                settings.GITOLITE_INFO_CACHE_TIMEOUT
-            )
-            feedback.append('refreshed')
-    else:
-        feedback.append('ok')
-    return ' '.join(feedback)
-
-def dumps(info, source):
-    """Dump raw gitolite info and source to cache value with timestamp
-    Response from Gitolite looks like this:
-        hello ddr, this is git@mits running gitolite3 v3.2-19-gb9bbb78 on git 1.7.2.5
-        
-         R W C ddr-test-[0-9]+
-         R W C ddr-test-[0-9]+-[0-9]+
-         R W   ddr-test
-         R W   ddr-test-1
-        ...
-    
-    Timestamp and source are prepended to the cached value:
-        2014-08-20T09:39:28:386187 git@mits.densho.org
-        hello ddr, this is git@mits running gitolite3 v3.2-19-gb9bbb78 on git 1.7.2.5
-        
-         R W C ddr-test-[0-9]+
-        ...
-    
-    @param info: str
-    @param source: str
-    @returns: str
-    """
-    timestamp = converters.datetime_to_text(datetime.now(settings.TZ))
-    text = '%s %s\n%s' % (timestamp, source, info)
-    return text
-
-def loads(text):
-    """Load timestamp, source, and raw gitolite info from cached value
-    
-    @param text
-    @returns: timestamp,source,info (datetime,str,str)
-    """
-    line0,info = text.split('\n', 1)
-    ts,source = line0.split(' ')
-    timestamp = converters.text_to_datetime(ts)
-    return timestamp,source,info

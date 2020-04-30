@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+
+{% block title %}Log in (offline){% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+<li class="active">Log in (offline)</li>
+{% endblock breadcrumbs %}
+
+
+{% block content %}
+
+  <div class="row-fluid">
+    <div class="span12">
+
+<h1>Log in (offline)</h1>
+
+<table>
+<form name="login" action="" method="POST">{% csrf_token %}
+  {{ form.as_table }}
+  <tr>
+    <th></th>
+    <td><button name="submit" type="submit" value="Login" class="btn btn-mini btn-primary">Login</button></td>
+  </tr>
+</form>
+</table>
+
+    </div><!-- .span12 -->
+  </div><!-- .row-fluid -->
+
+{% endblock content %}
+
+
+{% block javascript %}
+<script type="text/javascript">
+  $(function() {
+    $("#id_username").focus();
+  });
+</script>
+{% endblock javascript %}

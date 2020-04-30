@@ -1,21 +1,25 @@
-# reference: http://docs.celeryproject.org/en/latest/django/first-steps-with-django.html
+# reference: https://docs.celeryproject.org/en/stable/django/first-steps-with-django.html
 
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
+
 import os
-from celery import Celery
-from django.conf import settings
 
-PROJECT = 'ddrlocal'
+from celery import Celery
 
 # set the default Django settings module for the 'celery' program.
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', '%s.settings' % PROJECT)
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ddrlocal.settings')
 
-app = Celery(PROJECT)
+app = Celery('ddrlocal')
 
-app.config_from_object(settings)
-# Using a string here means the worker will not have to
-# pickle the object when using Windows.
-#app.config_from_object('django.conf:settings')
+# Using a string here means the worker doesn't have to serialize
+# the configuration object to child processes.
+# - namespace='CELERY' means all celery-related configuration keys
+#   should have a `CELERY_` prefix.
+app.config_from_object('django.conf:settings', namespace='CELERY')
 
-# This tells Celery to autodiscover tasks.py in reusable Django apps.
-app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)
+# Load task modules from all registered Django app configs.
+app.autodiscover_tasks()
+
+@app.task(bind=True)
+def debug_task(self):
+    print('Request: {0!r}'.format(self.request))

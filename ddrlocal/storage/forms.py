@@ -16,7 +16,7 @@ class MountForm(forms.Form):
         """Initializes form object; adds list of devices to form.
         @param devices
         """
-        if kwargs.has_key('devices'):
+        if 'devices' in kwargs:
             devices = kwargs.pop('devices')
         else:
             devices = []
@@ -36,7 +36,7 @@ class UmountForm(forms.Form):
         """Initializes form object; adds list of devices to form.
         @param devices
         """
-        if kwargs.has_key('devices'):
+        if 'devices' in kwargs:
             devices = kwargs.pop('devices')
         else:
             devices = []
@@ -60,7 +60,7 @@ class ActiveForm(forms.Form):
         """Initializes form object; adds list of devices to form.
         @param devices
         """
-        if kwargs.has_key('devices'):
+        if 'devices' in kwargs:
             devices = kwargs.pop('devices')
         else:
             devices = []

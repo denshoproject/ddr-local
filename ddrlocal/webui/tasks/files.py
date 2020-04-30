@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 import os
 
 from elasticsearch.exceptions import ConnectionError, RequestError
@@ -10,9 +10,7 @@ logger = get_task_logger(__name__)
 
 from django.conf import settings
 
-from DDR import commands
 from DDR import converters
-from DDR import models
 from DDR.ingest import addfile_logger
 
 from webui import docstore
@@ -32,7 +30,7 @@ def add_local(request, form_data, entity, role, src_path, git_name, git_mail):
     collection = entity.collection()
     # start tasks
     result = file_add_local.apply_async(
-        (entity, src_path, role, form_data, git_name, git_mail),
+        (entity.path, src_path, role, form_data, git_name, git_mail),
         countdown=2
     )
     log = addfile_logger(entity.identifier)
@@ -78,7 +76,7 @@ def add_external(request, form_data, entity, file_role, git_name, git_mail):
     }
     # start tasks
     result = file_add_external.apply_async(
-        (entity, data, git_name, git_mail),
+        (entity.path, data, git_name, git_mail),
         countdown=2
     )
     log = addfile_logger(entity.identifier)
@@ -109,7 +107,7 @@ def add_access(request, form_data, entity, file_, git_name, git_mail):
     src_path = form_data['path']
     # start tasks
     result = file_add_access.apply_async(
-        (entity, file_, src_path, git_name, git_mail),
+        (entity.path, file_, src_path, git_name, git_mail),
         countdown=2
     )
     log = addfile_logger(entity.identifier)
@@ -140,20 +138,23 @@ class FileAddDebugTask(Task):
     abstract = True
         
     def on_failure(self, exc, task_id, args, kwargs, einfo):
-        entity = args[0]
-        log = addfile_logger(entity.identifier)
+        entity_path = args[0]
+        eid = Identifier(path=entity_path)
+        log = addfile_logger(eid)
         log.not_ok('DDRTask.ON_FAILURE')
         log.not_ok('exc %s' % exc)
         log.not_ok('einfo %s' % einfo)
     
     def on_success(self, retval, task_id, args, kwargs):
-        entity = args[0]
-        log = addfile_logger(entity.identifier)
+        entity_path = args[0]
+        eid = Identifier(path=entity_path)
+        log = addfile_logger(eid)
         log.ok('DDRTask.ON_SUCCESS')
         log.ok('retval %s' % retval)
     
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
-        entity = args[0]
+        entity_path = args[0]
+        entity = Entity.from_identifier(Identifier(path=entity_path))
         collection = entity.collection()
         log = addfile_logger(entity.identifier)
         log.ok('FileAddDebugTask.AFTER_RETURN')
@@ -171,9 +172,9 @@ class FileAddDebugTask(Task):
         gitstatus.unlock(settings.MEDIA_BASE, 'file-add-*')
 
 @task(base=FileAddDebugTask, name=TASK_FILE_ADD_LOCAL_NAME)
-def file_add_local(entity, src_path, role, data, git_name, git_mail):
+def file_add_local(entity_path, src_path, role, data, git_name, git_mail):
     """
-    @param entity: Entity
+    @param entity_path: str
     @param src_path: Absolute path to an uploadable file.
     @param role: Keyword of a file role.
     @param data: Dict containing form data.
@@ -182,6 +183,7 @@ def file_add_local(entity, src_path, role, data, git_name, git_mail):
     """
     gitstatus.lock(settings.MEDIA_BASE, 'file-add-*')
     # TODO move this code to webui.models.Entity or .File
+    entity = Entity.from_identifier(Identifier(path=entity_path))
     file_,repo,log = entity.add_local_file(
         src_path, role, data,
         git_name, git_mail, agent=settings.AGENT
@@ -206,14 +208,15 @@ def file_add_local(entity, src_path, role, data, git_name, git_mail):
     }
 
 @task(base=FileAddDebugTask, name=TASK_FILE_ADD_EXTERNAL_NAME)
-def file_add_external(entity, data, git_name, git_mail):
+def file_add_external(entity_path, data, git_name, git_mail):
     """
-    @param entity: Entity
+    @param entity_path: str
     @param data: Dict containing form data.
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
     """
     gitstatus.lock(settings.MEDIA_BASE, 'file-add-*')
+    entity = Entity.from_identifier(Identifier(path=entity_path))
     file_,repo,log = entity.add_external_file(
         data,
         git_name, git_mail, agent=settings.AGENT
@@ -238,15 +241,16 @@ def file_add_external(entity, data, git_name, git_mail):
     }
 
 @task(base=FileAddDebugTask, name=TASK_FILE_ADD_ACCESS_NAME)
-def file_add_access(entity, file_, src_path, git_name, git_mail):
+def file_add_access(entity_path, file_, src_path, git_name, git_mail):
     """
-    @param entity: Entity
+    @param entity_path: str
     @param file_: File
     @param src_path: Absolute path to an uploadable file.
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
     """
     gitstatus.lock(settings.MEDIA_BASE, 'file-add-*')
+    entity = Entity.from_identifier(Identifier(path=entity_path))
     file_,repo,log,op = entity.add_access(
         file_, file_.path_abs,
         git_name, git_mail, agent=settings.AGENT

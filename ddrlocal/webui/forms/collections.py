@@ -3,6 +3,7 @@ logger = logging.getLogger(__name__)
 
 from django import forms
 
+
 class NewCollectionForm(forms.Form):
     repo = forms.CharField(max_length=100)  # TODO should be disabled/non-editable
     org = forms.CharField(max_length=100)  # TODO should be disabled/non-editable

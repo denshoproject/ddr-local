@@ -1,17 +1,11 @@
-import json
 import logging
 logger = logging.getLogger(__name__)
 import os
 
-import git
-
-from django.conf import settings
 from django.contrib import messages
-from django.template.context_processors import csrf
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import Http404, render
-from django.template.loader import get_template
+from django.shortcuts import render
 
 from DDR import commands
 from DDR import dvcs

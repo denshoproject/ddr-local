@@ -110,7 +110,7 @@ Technically you can clone `ddr-local` anywhere you want but `make
 install` will attempt to install the app in `/opt/ddr-local` so you
 might as well just clone it to that location.
 ::
-    $ sudo apt-get update && apt-get upgrade
+    $ sudo apt-get update && sudo apt-get upgrade
     $ sudo apt-get install git make
     $ sudo git clone https://github.com/densho/ddr-local.git /opt/ddr-local
     $ cd /opt/ddr-local/
@@ -120,6 +120,15 @@ actual installation.  GitHub may ask you for passwords.
 ::
     $ cd /opt/ddr-local/
     $ sudo make get
+
+If you want to work on this application or if you just want to try the
+latest in-development code, switch to the `develop` branch of each
+repository. Do this before running `make install`.
+::
+    $ cd /opt/ddr-local/ddr-cmdln; git checkout develop
+    $ cd /opt/ddr-local/ddr-defs; git checkout develop
+    $ cd /opt/ddr-local/densho-vocab; git checkout develop
+    $ cd /opt/ddr-local; git checkout develop
 
 This step installs dependencies from Debian packages, installs Python
 dependencies in a virtualenv, and places static assets and config
@@ -132,9 +141,79 @@ Problems installing `lxml` may be due to memory constraints,
 especially if Elasticsearch is running, which it will be if you've
 done `make enable-bkgnd`.
 
+Install config files.
+::
+    $ cd /opt/ddr-local/
+    $ sudo make install-configs
+
+If you want to modify any of the files you must give yourself permissions.
+::
+   $ sudo chown -R USER.USER /opt/ddr-local
+
 
 POST-INSTALL
 ============
+
+
+The DDR user
+------------
+
+IMPORTANT: The editor run as the `ddr` user, which is installed as part of the package install.  In the Densho HQ environment, it is *critical* that the `ddr` user has the uid and gid set to `1001`.  The `ddr` user should be installed automatically.
+::
+    $ cd /opt/ddr-local/
+    $ sudo make ddr-user
+
+
+Usage
+-----
+
+In order to use `ddr-local` you must activate its `virtualenv` which
+is located in `/opt/ddr-local/venv/ddrcmdln`.
+::
+    USER@HOST:~$ su ddr
+    ddr@HOST:~$ source /opt/ddr-cmdln/venv/ddrcmdln/bin/activate
+    (ddrcmdln)ddr@HOST:~$
+
+
+Gitolite keys
+-------------
+
+The `ddr` user requires SSL keys in order to synchronize local
+collection repositories with those on the main Gitolite server.  Setup
+is beyond this INSTALL so please see `ddr-manual`.
+
+
+Repository Directory
+--------------------
+
+Once your `ddr` user has its gitolite keys (see "Gitolite keys" step) you can create a directory for collections.  If your install does not use `/var/www/media/ddr` please update the following values in `/etc/ddr/ddrlocal-local.cfg`.
+::
+    [local] base_path
+    [local] media_root
+    [cmdln] media_base
+
+Create the repository directory.
+::
+    sudo mkdir -p /var/www/media/ddr
+    sudo chown -R ddr.ddr /var/www/media/ddr
+
+Clone the `ddr` repository repo, the `ddr-testing` and `ddr-densho` organization repos, and the `ddr-densho-10` collection repo which is used for running unit tests.
+::
+    sudo -u ddr git clone git@mits.densho.org:ddr.git           /var/www/media/ddr/ddr
+    sudo -u ddr git clone git@mits.densho.org:ddr-testing.git   /var/www/media/ddr/ddr-testing
+    sudo -u ddr git clone git@mits.densho.org:ddr-densho.git    /var/www/media/ddr/ddr-densho
+    sudo -u ddr git clone git@mits.densho.org:ddr-densho-10.git /var/www/media/ddr/ddr-densho-10
+
+
+Unit Tests
+----------
+
+In order for unit tests to work, you must have 1) installed ddr-local using one of the above methods, 2) created a `ddr` user, 3) installed Gitolite keys, and 4) created the repository directory and test repos.
+::
+    $ cd /opt/ddr-local/
+    $ sudo su ddr
+    $ source /opt/ddr-local/venv/ddrlocal/bin/activate
+    $ make test
 
 
 Makefile
@@ -147,41 +226,6 @@ with parts of the editor.  Run `make` with no arguments for a list or
 ::
     $ cd /opt/ddr-local/
     $ make
-
-
-The DDR user
-------------
-
-IMPORTANT: The editor run as the `ddr` user, which is installed as part of the package install.  In the Densho HQ environment, it is *critical* that the `ddr` user has the uid and gid set to `1001`.
-::
-    $ cd /opt/ddr-local/
-    $ sudo make ddr-user
-
-
-Network Config
---------------
-
-The Makefile can install a networking config file which sets the VM
-to use a standard IP address (192.168.56.101).
-::
-    $ cd /opt/ddr-local/
-    $ sudo make network-config
-    $ sudo reboot
-
-Network config will take effect after the next reboot.
-
-
-VirtualBox Guest Additions
---------------------------
-
-The Makefile can install VirtualBox Guest Additions, which is required
-for accessing shared directories on the host system.
-::
-    $ cd /opt/ddr-local/
-    $ sudo make vbox-guest
-
-This step requires you to click "Devices > Insert Guest Additions CD
-Image" in the device window.
 
 
 Settings Files
@@ -212,6 +256,19 @@ location, you can clone them:
     $ sudo git clone https://github.com/densho/ddr-defs.git /PATH/TO/ddr-defs/
 
 
+Network Config
+--------------
+
+The Makefile can install a networking config file which sets the VM
+to use a standard IP address (192.168.56.101).
+::
+    $ cd /opt/ddr-local/
+    $ sudo make network-config
+    $ sudo reboot
+
+Network config will take effect after the next reboot.
+
+
 Firewall Rules
 --------------
 
@@ -222,12 +279,17 @@ open ports in the firewall.
     $ sudo ufw allow 9200/tcp  # elasticsearch
 
 
-Gitolite keys
--------------
+VirtualBox Guest Additions
+--------------------------
 
-The `ddr` user requires SSL keys in order to synchronize local
-collection repositories with those on the main Gitolite server.  Setup
-is beyond this INSTALL so please see `ddr-manual`.
+The Makefile can install VirtualBox Guest Additions, which is required
+for accessing shared directories on the host system.
+::
+    $ cd /opt/ddr-local/
+    $ sudo make vbox-guest
+
+This step requires you to click "Devices > Insert Guest Additions CD
+Image" in the device window.
 
 
 Switching Branches

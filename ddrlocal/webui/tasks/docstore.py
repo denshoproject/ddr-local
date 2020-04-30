@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 import os
 
 from celery import task
@@ -10,8 +10,6 @@ from django.conf import settings
 
 from DDR import converters
 from DDR import models
-
-from webui import docstore
 
 
 class ElasticsearchTask(Task):
@@ -41,7 +39,7 @@ def reindex( index ):
     if not os.path.exists(settings.MEDIA_BASE):
         raise NameError('MEDIA_BASE does not exist - you need to remount!')
     logger.debug('webui.tasks.reindex(%s)' % index)
-    logger.debug('DOCSTORE_HOSTS: %s' % settings.DOCSTORE_HOSTS)
+    logger.debug('DOCSTORE_HOST: %s' % settings.DOCSTORE_HOST)
     ds = docstore.Docstore(index=index)
     logger.debug('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ')
     logger.debug('deleting existing index: %s' % index)

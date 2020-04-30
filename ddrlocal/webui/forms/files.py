@@ -1,12 +1,12 @@
 import logging
 logger = logging.getLogger(__name__)
 import os
-import sys
 
 from django import forms
 from django.conf import settings
 
 from webui.forms import DDRForm
+
 
 def shared_folder_files():
     d = settings.VIRTUALBOX_SHARED_FOLDER
@@ -21,7 +21,7 @@ class NewFileDDRForm(DDRForm):
     
     def __init__(self, *args, **kwargs):
         path_choices = None
-        if kwargs.has_key('path_choices'):
+        if 'path_choices' in kwargs:
             path_choices = kwargs.pop('path_choices')
         super(NewFileDDRForm, self).__init__(*args, **kwargs)
         if path_choices:

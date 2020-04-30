@@ -1,18 +1,12 @@
-import json
 import logging
 logger = logging.getLogger(__name__)
-import os
 import re
-import sys
 
-from bs4 import BeautifulSoup
 from elasticsearch.exceptions import ConnectionError, RequestError
 
 from django.conf import settings
 from django.contrib import messages
 from django.core.cache import cache
-from django.template.context_processors import csrf
-from django.core.files import File
 from django.core.paginator import Paginator
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
@@ -20,18 +14,16 @@ from django.shortcuts import Http404, render
 
 from DDR import commands
 from DDR import converters
-from DDR import fileio
 from DDR.identifier import CHILDREN, NODES
 from DDR import idservice
 from DDR import vocab
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
-from webui import docstore
 from webui.decorators import ddrview
 from webui.forms import DDRForm
 from webui.forms import ObjectIDForm
-from webui.forms.entities import JSONForm, UpdateForm, DeleteEntityForm, RmDuplicatesForm
+from webui.forms.entities import DeleteEntityForm, RmDuplicatesForm
 from webui.gitstatus import repository, annex_info
 from webui.identifier import Identifier
 from webui.models import Stub, Collection, Entity
@@ -196,13 +188,18 @@ def check_parent(collection, check_locks=True, fetch=True):
     if not collection:
         raise Exception('No parent collection!')
     if check_locks and collection.locked():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id))
+        messages.error(
+            request, WEBUI_MESSAGES['VIEWS_COLL_LOCKED'].format(collection.id)
+        )
         return HttpResponseRedirect(collection.absolute_url())
-    if fetch:
-        collection.repo_fetch()
-    if collection.repo_behind():
-        messages.error(request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id))
-        return HttpResponseRedirect(collection.absolute_url())
+    if not settings.OFFLINE:
+        if fetch:
+            collection.repo_fetch()
+        if collection.repo_behind():
+            messages.error(
+                request, WEBUI_MESSAGES['VIEWS_COLL_BEHIND'].format(collection.id)
+            )
+            return HttpResponseRedirect(collection.absolute_url())
 
 
 # views ----------------------------------------------------------------
@@ -220,7 +217,7 @@ def detail( request, eid ):
         'entity': entity,
         'children_urls': entity.children_urls(),
         'tasks': tasks,
-        'entity_unlock_url': entity.unlock_url(entity.locked()),
+        'entity_unlock_url': entity.unlock_url(),
         # cache this for later
         'annex_info': annex_info(repository(collection.path_abs)),
     })

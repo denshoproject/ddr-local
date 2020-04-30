@@ -52,7 +52,7 @@ def sitewide(request):
     # space
     space = storage.disk_space(mount_path)
     if space:
-        for key,val in space.iteritems():
+        for key,val in space.items():
             device[key] = val
         # color of disk space pill
         percent = int(space.get('percent', 0))

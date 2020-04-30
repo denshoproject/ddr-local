@@ -13,6 +13,13 @@ DEBIAN_RELEASE := $(shell lsb_release -sr)
 # Sortable major version tag e.g. deb8
 DEBIAN_RELEASE_TAG = deb$(shell lsb_release -sr | cut -c1)
 
+ifeq ($(DEBIAN_CODENAME), stretch)
+	PYTHON_VERSION=3.5
+endif
+ifeq ($(DEBIAN_CODENAME), buster)
+	PYTHON_VERSION=3.7
+endif
+
 # current branch name minus dashes or underscores
 PACKAGE_BRANCH := $(shell git rev-parse --abbrev-ref HEAD | tr -d _ | tr -d -)
 # current commit hash
@@ -26,18 +33,21 @@ SRC_REPO_CMDLN=https://github.com/densho/ddr-cmdln.git
 SRC_REPO_CMDLN_ASSETS=https://github.com/densho/ddr-cmdln-assets.git
 SRC_REPO_LOCAL=https://github.com/densho/ddr-local.git
 SRC_REPO_DEFS=https://github.com/densho/ddr-defs.git
-SRC_REPO_VOCAB=https://github.com/densho/ddr-vocab.git
-SRC_REPO_VOCAB2=https://github.com/densho/densho-vocab.git
+SRC_REPO_VOCAB=https://github.com/densho/densho-vocab.git
 SRC_REPO_MANUAL=https://github.com/densho/ddr-manual.git
+
+INSTALL_BASE=/opt
+INSTALLDIR=$(INSTALL_BASE)/ddr-cmdln
+REQUIREMENTS=$(INSTALLDIR)/requirements.txt
+PIP_CACHE_DIR=$(INSTALL_BASE)/pip-cache
 
 CWD := $(shell pwd)
 INSTALL_LOCAL=$(CWD)
 INSTALL_STATIC=$(INSTALL_LOCAL)/static
 INSTALL_CMDLN=$(INSTALL_LOCAL)/ddr-cmdln
-INSTALL_CMDLN_ASSETS=$(INSTALL_LOCAL)/ddr-cmdln-assets
+INSTALL_CMDLN_ASSETS=$(INSTALL_CMDLN)/ddr-cmdln-assets
 INSTALL_DEFS=$(INSTALL_LOCAL)/ddr-defs
-INSTALL_VOCAB=$(INSTALL_LOCAL)/ddr-vocab
-INSTALL_VOCAB2=$(INSTALL_LOCAL)/densho-vocab
+INSTALL_VOCAB=$(INSTALL_LOCAL)/densho-vocab
 INSTALL_MANUAL=$(INSTALL_LOCAL)/ddr-manual
 
 COMMIT_LOCAL := $(shell git -C $(INSTALL_LOCAL) log --decorate --abbrev-commit --pretty=oneline -1)
@@ -60,12 +70,20 @@ MEDIA_BASE=/var/www
 MEDIA_ROOT=$(MEDIA_BASE)/media
 STATIC_ROOT=$(MEDIA_BASE)/static
 
-OPENJDK_PKG=
-ifeq ($(DEBIAN_RELEASE), jessie)
-	OPENJDK_PKG=openjdk-7-jre
+LIBEXEMPI3_PKG=
+ifeq ($(DEBIAN_CODENAME), stretch)
+	LIBEXEMPI3_PKG=libexempi3
 endif
+ifeq ($(DEBIAN_CODENAME), buster)
+	LIBEXEMPI3_PKG=libexempi8
+endif
+
+OPENJDK_PKG=
 ifeq ($(DEBIAN_CODENAME), stretch)
 	OPENJDK_PKG=openjdk-8-jre
+endif
+ifeq ($(DEBIAN_CODENAME), buster)
+	OPENJDK_PKG=openjdk-11-jre
 endif
 
 ELASTICSEARCH=elasticsearch-7.3.1-amd64.deb
@@ -88,18 +106,31 @@ NGINX_CONF=/etc/nginx/sites-available/ddrlocal.conf
 NGINX_CONF_LINK=/etc/nginx/sites-enabled/ddrlocal.conf
 CGIT_CONF=/etc/cgitrc
 
+TGZ_BRANCH := $(shell python3 bin/package-branch.py)
+TGZ_FILE=$(APP)_$(APP_VERSION)
+TGZ_DIR=$(INSTALL_LOCAL)/$(TGZ_FILE)
+TGZ_CMDLN=$(TGZ_DIR)/ddr-cmdln
+TGZ_CMDLN_ASSETS=$(TGZ_DIR)/ddr-cmdln/ddr-cmdln-assets
+TGZ_DEFS=$(TGZ_DIR)/ddr-defs
+TGZ_VOCAB=$(TGZ_DIR)/densho-vocab
+TGZ_MANUAL=$(TGZ_DIR)/ddr-manual
+TGZ_STATIC=$(TGZ_DIR)/static
+
 # Adding '-rcN' to VERSION will name the package "ddrlocal-release"
 # instead of "ddrlocal-BRANCH"
-DEB_BRANCH := $(shell python bin/package-branch.py)
+DEB_BRANCH := $(shell python3 bin/package-branch.py)
 DEB_ARCH=amd64
 DEB_NAME_JESSIE=$(APP)-$(DEB_BRANCH)
 DEB_NAME_STRETCH=$(APP)-$(DEB_BRANCH)
+DEB_NAME_BUSTER=$(APP)-$(DEB_BRANCH)
 # Application version, separator (~), Debian release tag e.g. deb8
 # Release tag used because sortable and follows Debian project usage.
 DEB_VERSION_JESSIE=$(APP_VERSION)~deb8
 DEB_VERSION_STRETCH=$(APP_VERSION)~deb9
+DEB_VERSION_BUSTER=$(APP_VERSION)~deb10
 DEB_FILE_JESSIE=$(DEB_NAME_JESSIE)_$(DEB_VERSION_JESSIE)_$(DEB_ARCH).deb
 DEB_FILE_STRETCH=$(DEB_NAME_STRETCH)_$(DEB_VERSION_STRETCH)_$(DEB_ARCH).deb
+DEB_FILE_BUSTER=$(DEB_NAME_BUSTER)_$(DEB_VERSION_BUSTER)_$(DEB_ARCH).deb
 DEB_VENDOR=Densho.org
 DEB_MAINTAINER=<geoffrey.jost@densho.org>
 DEB_DESCRIPTION=Densho Digital Repository editor
@@ -110,7 +141,7 @@ debug:
 	@echo "ddr-local: $(COMMIT_LOCAL)"
 	@echo "ddr-cmdln: $(COMMIT_CMDLN)"
 	@echo "ddr-defs:  $(COMMIT_DEFS)"
-	@echo "ddr-vocab: $(COMMIT_VOCAB)"
+	@echo "densho-vocab: $(COMMIT_VOCAB)"
 
 
 .PHONY: help
@@ -125,14 +156,11 @@ help:
 	@echo "get     - Clones ddr-local, ddr-cmdln, ddr-defs, wgets static files & ES pkg."
 	@echo "install - Performs complete install. See also: make howto-install"
 	@echo "test    - Run unit tests"
-	@echo "reload  - Reloads supervisord and nginx configs"
-	@echo "restart - Restarts all daemons"
-	@echo "status  - Server status"
 	@echo ""
 	@echo "vbox-guest     - Installs VirtualBox Guest Additions"
 	@echo "network-config - Installs standard network conf (CHANGES IP TO 192.168.56.101!)"
 	@echo "get-ddr-defs   - Downloads ddr-defs to $(INSTALL_DEFS)."
-	@echo "get-ddr-vocab  - Downloads ddr-vocab to $(INSTALL_VOCAB)."
+	@echo "get-densho-vocab - Downloads densho-vocab to $(INSTALL_VOCAB)."
 	@echo "enable-bkgnd   - Enable background processes. (Run make reload on completion)"
 	@echo "disable-bkgnd  - Disablebackground processes. (Run make reload on completion)"
 	@echo "migrate        - Init/update Django app's database tables."
@@ -170,7 +198,7 @@ howto-install:
 	@echo "make restart"
 
 
-get: get-app get-ddr-defs get-ddr-vocab get-elasticsearch get-static
+get: get-app get-ddr-defs get-densho-vocab get-elasticsearch get-static
 
 install: install-prep install-daemons install-app install-static install-configs
 
@@ -252,10 +280,10 @@ install-nginx:
 	@echo ""
 	@echo "Nginx ------------------------------------------------------------------"
 	apt-get --assume-yes remove apache2
-	apt-get --assume-yes install nginx
+	apt-get --assume-yes install nginx-light
 
 remove-nginx:
-	apt-get --assume-yes remove nginx
+	apt-get --assume-yes remove nginx-light
 
 install-redis:
 	@echo ""
@@ -295,31 +323,35 @@ remove-elasticsearch:
 install-virtualenv:
 	@echo ""
 	@echo "install-virtualenv -----------------------------------------------------"
-	apt-get --assume-yes install python-six python-pip python-virtualenv python-dev
-	test -d $(VIRTUALENV) || virtualenv --distribute --setuptools $(VIRTUALENV)
+	apt-get --assume-yes install python3-pip python3-venv
+	python3 -m venv $(VIRTUALENV)
+
+install-setuptools: install-virtualenv
+	@echo ""
+	@echo "install-setuptools -----------------------------------------------------"
+	apt-get --assume-yes install python3-dev
 	source $(VIRTUALENV)/bin/activate; \
-	pip install -U pip
-	source $(VIRTUALENV)/bin/activate; \
-	pip install -U bpython appdirs blessings curtsies greenlet packaging pygments pyparsing setuptools wcwidth
-#	virtualenv --relocatable $(VIRTUALENV)  # Make venv relocatable
+	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) setuptools
 
 
 install-dependencies: install-core install-misc-tools install-daemons
 	@echo ""
 	@echo "install-dependencies ---------------------------------------------------"
-	apt-get --assume-yes install python-pip python-virtualenv
-	apt-get --assume-yes install python-dev
+	apt-get --assume-yes install python3-dev python3-pip python3-venv
 	apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev libz-dev pmount udisks2
-	apt-get --assume-yes install imagemagick libexempi3 libssl-dev python-dev libxml2 libxml2-dev libxslt1-dev supervisor
+	apt-get --assume-yes install imagemagick libssl-dev libxml2 libxml2-dev libxslt1-dev
+	apt-get --assume-yes install $(LIBEXEMPI3_PKG)
 
 mkdirs: mkdir-ddr-cmdln mkdir-ddr-local
 
 
 get-app: get-ddr-cmdln get-ddr-local get-ddr-manual
 
-install-app: install-dependencies install-virtualenv install-ddr-cmdln install-ddr-local install-configs install-daemon-configs
+pip-download: pip-download-cmdln pip-download-local
 
-test-app: test-ddr-cmdln
+install-app: install-dependencies install-setuptools install-ddr-cmdln install-ddr-local install-configs install-daemon-configs
+
+test-app: test-ddr-cmdln test-ddr-local
 
 coverage-app: coverage-ddr-cmdln
 
@@ -336,7 +368,10 @@ get-ddr-cmdln:
 	then cd $(INSTALL_CMDLN) && git pull; \
 	else git clone $(SRC_REPO_CMDLN); \
 	fi
-	@echo "get-ddr-cmdln-assets"
+
+get-ddr-cmdln-assets:
+	@echo ""
+	@echo "get-ddr-cmdln-assets ---------------------------------------------------"
 	if test -d $(INSTALL_CMDLN_ASSETS); \
 	then cd $(INSTALL_CMDLN_ASSETS) && git pull; \
 	else git clone $(SRC_REPO_CMDLN_ASSETS); \
@@ -347,14 +382,18 @@ setup-ddr-cmdln:
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_CMDLN)/ddr; python setup.py install
 
-install-ddr-cmdln: install-virtualenv mkdir-ddr-cmdln
+pip-download-cmdln:
+	source $(VIRTUALENV)/bin/activate; \
+	pip download --no-binary=:all: --destination-directory=$(INSTALL_CMDLN)/vendor -r $(INSTALL_CMDLN)/requirements.txt
+
+install-ddr-cmdln: install-setuptools
 	@echo ""
 	@echo "install-ddr-cmdln ------------------------------------------------------"
 	git status | grep "On branch"
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_CMDLN)/ddr; python setup.py install
 	source $(VIRTUALENV)/bin/activate; \
-	pip install -U -r $(INSTALL_CMDLN)/requirements.txt
+	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) -r $(INSTALL_CMDLN)/requirements.txt
 	-mkdir -p /etc/ImageMagick-6/
 	cp $(INSTALL_CMDLN)/conf/imagemagick-policy.xml /etc/ImageMagick-6/policy.xml
 
@@ -372,19 +411,19 @@ test-ddr-cmdln:
 	@echo ""
 	@echo "test-ddr-cmdln ---------------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_LOCAL)/; pytest ddr-cmdln/ddr/tests/
+	cd $(INSTALL_CMDLN)/; pytest --disable-warnings ddr/tests/
 
 coverage-ddr-cmdln:
 	@echo ""
 	@echo "coverage-ddr-cmdln -----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_LOCAL)/; pytest --cov-config=ddr-cmdln/.coveragerc --cov-report=html --cov=DDR ddr-cmdln/ddr/tests/
+	cd $(INSTALL_CMDLN)/; pytest --cov-config=ddr-cmdln/.coveragerc --cov-report=html --cov=DDR ddr-cmdln/ddr/tests/
 
-uninstall-ddr-cmdln: install-virtualenv
+uninstall-ddr-cmdln: install-setuptools
 	@echo ""
 	@echo "uninstall-ddr-cmdln ----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_CMDLN)/ddr && pip uninstall -y -r requirements.txt
+	cd $(INSTALL_CMDLN)/ddr && pip3 uninstall -y -r requirements.txt
 
 clean-ddr-cmdln:
 	-rm -Rf $(INSTALL_CMDLN)/ddr/build
@@ -398,12 +437,16 @@ get-ddr-local:
 	git status | grep "On branch"
 	git pull
 
-install-ddr-local: install-virtualenv mkdir-ddr-local
+pip-download-local:
+	source $(VIRTUALENV)/bin/activate; \
+	pip download --no-binary=:all: --destination-directory=$(INSTALL_LOCAL)/vendor -r $(INSTALL_LOCAL)/requirements.txt
+
+install-ddr-local: install-setuptools mkdir-ddr-local
 	@echo ""
 	@echo "install-ddr-local ------------------------------------------------------"
 	git status | grep "On branch"
 	source $(VIRTUALENV)/bin/activate; \
-	pip install -U -r $(INSTALL_LOCAL)/requirements.txt
+	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) -r $(INSTALL_LOCAL)/requirements.txt
 
 mkdir-ddr-local:
 	@echo ""
@@ -440,14 +483,14 @@ runserver:
 	python ddrlocal/manage.py runserver 0.0.0.0:8000
 
 runworker:
-	source $(VIRTUALENV)/bin/activate; \
-	python ddrlocal/manage.py celery worker --autoreload
+	source $(VIRTUALENV)/bin/activate; cd $(INSTALL_LOCAL)/ddrlocal; \
+	celery -A ddrlocal worker -l INFO #-f /var/log/ddr/localcel.log
 
-uninstall-ddr-local: install-virtualenv
+uninstall-ddr-local: install-setuptools
 	@echo ""
 	@echo "uninstall-ddr-local ----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
-	pip uninstall -y -r requirements.txt
+	pip3 uninstall -y -r requirements.txt
 
 clean-ddr-local:
 	-rm -Rf $(VIRTUALENV)
@@ -464,18 +507,12 @@ get-ddr-defs:
 	fi
 
 
-get-ddr-vocab:
+get-densho-vocab:
 	@echo ""
-	@echo "get-ddr-vocab ----------------------------------------------------------"
-	git status | grep "On branch"
+	@echo "get-densho-vocab -------------------------------------------------------"
 	if test -d $(INSTALL_VOCAB); \
 	then cd $(INSTALL_VOCAB) && git pull; \
 	else git clone $(SRC_REPO_VOCAB) $(INSTALL_VOCAB); \
-	fi
-	@echo "get-densho-vocab -------------------------------------------------------"
-	if test -d $(INSTALL_VOCAB2); \
-	then cd $(INSTALL_VOCAB2) && git pull; \
-	else git clone $(SRC_REPO_VOCAB2) $(INSTALL_VOCAB2); \
 	fi
 
 
@@ -600,85 +637,6 @@ disable-bkgnd:
 	-rm $(SUPERVISOR_CELERYBEAT_CONF)
 
 
-reload: reload-nginx reload-supervisor
-
-reload-nginx:
-	sudo service nginx reload
-
-reload-supervisor:
-	supervisorctl reload
-
-reload-app: reload-supervisor
-
-
-stop: stop-elasticsearch stop-redis stop-cgit stop-nginx stop-supervisor
-
-stop-elasticsearch:
-	-service elasticsearch stop
-
-stop-redis:
-	-service redis-server stop
-
-stop-cgit:
-	-service fcgiwrap stop
-
-stop-nginx:
-	-service nginx stop
-
-stop-supervisor:
-	-service supervisor stop
-
-stop-app: stop-supervisor
-
-
-restart: restart-supervisor restart-redis restart-cgit restart-nginx
-
-restart-elasticsearch:
-	-service elasticsearch restart
-
-restart-redis:
-	-service redis-server restart
-
-restart-cgit:
-	-service fcgiwrap restart
-
-restart-nginx:
-	-service nginx restart
-
-restart-supervisor:
-	-service supervisor stop
-	-service supervisor start
-
-restart-app: restart-supervisor
-
-
-# just Redis and Supervisor
-restart-minimal: stop-elasticsearch restart-redis stop-nginx restart-supervisor
-
-
-status:
-	@echo "------------------------------------------------------------------------"
-	-systemctl status elasticsearch
-	@echo " - - - - -"
-	-systemctl status redis-server
-	@echo " - - - - -"
-	-systemctl status nginx
-	@echo " - - - - -"
-	-systemctl status supervisor
-	-supervisorctl status
-	@echo " - - - - -"
-	-git annex version | grep version
-	@echo " - - - - -"
-	-uptime
-	@echo ""
-
-git-status:
-	@echo "------------------------------------------------------------------------"
-	cd $(INSTALL_CMDLN) && git status
-	@echo "------------------------------------------------------------------------"
-	git status
-
-
 get-ddr-manual:
 	@echo ""
 	@echo "get-ddr-manual ---------------------------------------------------------"
@@ -688,21 +646,41 @@ get-ddr-manual:
 	else git clone $(SRC_REPO_MANUAL); \
 	fi
 
-install-ddr-manual: install-virtualenv
+install-ddr-manual: install-setuptools
 	@echo ""
 	@echo "install-ddr-manual -----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
-	pip install -U sphinx
+	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) sphinx
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_MANUAL) && make html
 	rm -Rf $(MEDIA_ROOT)/manual
 	mv $(INSTALL_MANUAL)/build/html $(MEDIA_ROOT)/manual
 
 uninstall-ddr-manual:
-	pip uninstall -y sphinx
+	pip3 uninstall -y sphinx
 
 clean-ddr-manual:
 	-rm -Rf $(INSTALL_MANUAL)/build
+
+
+tgz:
+	rm -Rf $(TGZ_DIR)
+	git clone $(INSTALL_LOCAL) $(TGZ_DIR)
+	git clone $(INSTALL_CMDLN) $(TGZ_CMDLN)
+	git clone $(INSTALL_CMDLN_ASSETS) $(TGZ_CMDLN_ASSETS)
+	git clone $(INSTALL_DEFS) $(TGZ_DEFS)
+	git clone $(INSTALL_VOCAB) $(TGZ_VOCAB)
+	git clone $(INSTALL_MANUAL) $(TGZ_MANUAL)
+#	git clone $(INSTALL_STATIC) $(TGZ_STATIC)
+	cd $(TGZ_DIR); git checkout develop; git checkout master
+	cd $(TGZ_CMDLN); git checkout develop; git checkout master
+	cd $(TGZ_CMDLN_ASSETS); git checkout develop; git checkout master
+	cd $(TGZ_DEFS); git checkout develop; git checkout master
+	cd $(TGZ_VOCAB); git checkout develop; git checkout master
+	cd $(TGZ_MANUAL); git checkout develop; git checkout master
+#	cd $(TGZ_STATIC); git checkout develop; git checkout master
+	tar czf $(TGZ_FILE).tgz $(TGZ_FILE)
+	rm -Rf $(TGZ_DIR)
 
 
 # http://fpm.readthedocs.io/en/latest/
@@ -713,19 +691,14 @@ install-fpm:
 
 # https://stackoverflow.com/questions/32094205/set-a-custom-install-directory-when-making-a-deb-package-with-fpm
 # https://brejoc.com/tag/fpm/
-deb: deb-stretch
+deb: deb-buster
 
-# deb-jessie and deb-stretch are identical EXCEPT:
-# jessie: --depends openjdk-7-jre
-# stretch: --depends openjdk-7-jre
 deb-stretch:
 	@echo ""
 	@echo "FPM packaging (stretch) ------------------------------------------------"
 	-rm -Rf $(DEB_FILE_STRETCH)
 # Copy .git/ dir from master worktree
 	python bin/deb-prep-post.py before
-# Make venv relocatable
-	virtualenv --relocatable $(VIRTUALENV)
 # Make package
 	fpm   \
 	--verbose   \
@@ -738,27 +711,22 @@ deb-stretch:
 	--vendor "$(DEB_VENDOR)"   \
 	--maintainer "$(DEB_MAINTAINER)"   \
 	--description "$(DEB_DESCRIPTION)"   \
-	--depends "nginx-light"   \
 	--depends "cgit"   \
 	--depends "fcgiwrap"   \
-	--depends "gdebi-core"   \
 	--depends "git-annex"   \
 	--depends "git-core"   \
 	--depends "imagemagick"   \
 	--depends "libexempi3"   \
 	--depends "libssl-dev"   \
-	--depends "libwww-perl"   \
 	--depends "libxml2"   \
 	--depends "libxml2-dev"   \
 	--depends "libxslt1-dev"   \
 	--depends "libz-dev"   \
-	--depends "munin"   \
-	--depends "munin-node"   \
+	--depends "nginx-light"   \
 	--depends "pmount"   \
-	--depends "python-dev"   \
-	--depends "python-pip"   \
-	--depends "python-six"   \
-	--depends "python-virtualenv"   \
+	--depends "python3-dev"   \
+	--depends "python3-pip"   \
+	--depends "python3-venv"   \
 	--depends "redis-server"   \
 	--depends "supervisor"   \
 	--depends "udisks2"   \
@@ -780,7 +748,76 @@ deb-stretch:
 	ddr-cmdln=$(DEB_BASE)   \
 	ddr-cmdln-assets=$(DEB_BASE)   \
 	ddr-defs=$(DEB_BASE)   \
-	ddr-vocab=$(DEB_BASE)   \
+	ddrlocal=$(DEB_BASE)   \
+	densho-vocab=$(DEB_BASE)   \
+	.git=$(DEB_BASE)   \
+	.gitignore=$(DEB_BASE)   \
+	INSTALL.rst=$(DEB_BASE)   \
+	LICENSE=$(DEB_BASE)   \
+	Makefile=$(DEB_BASE)   \
+	README.rst=$(DEB_BASE)   \
+	requirements.txt=$(DEB_BASE)   \
+	setup-workstation.sh=$(DEB_BASE)   \
+	static=$(DEB_BASE)   \
+	venv=$(DEB_BASE)   \
+	VERSION=$(DEB_BASE)
+# Put worktree pointer file back in place
+	python bin/deb-prep-post.py after
+
+deb-buster:
+	@echo ""
+	@echo "FPM packaging (buster) -------------------------------------------------"
+	-rm -Rf $(DEB_FILE_BUSTER)
+# Copy .git/ dir from master worktree
+	python bin/deb-prep-post.py before
+# Make package
+	fpm   \
+	--verbose   \
+	--input-type dir   \
+	--output-type deb   \
+	--name $(DEB_NAME_BUSTER)   \
+	--version $(DEB_VERSION_BUSTER)   \
+	--package $(DEB_FILE_BUSTER)   \
+	--url "$(GIT_SOURCE_URL)"   \
+	--vendor "$(DEB_VENDOR)"   \
+	--maintainer "$(DEB_MAINTAINER)"   \
+	--description "$(DEB_DESCRIPTION)"   \
+	--depends "cgit"   \
+	--depends "fcgiwrap"   \
+	--depends "git-annex"   \
+	--depends "git-core"   \
+	--depends "imagemagick"   \
+	--depends "libexempi8"   \
+	--depends "libssl-dev"   \
+	--depends "libxml2"   \
+	--depends "libxml2-dev"   \
+	--depends "libxslt1-dev"   \
+	--depends "libz-dev"   \
+	--depends "nginx-light"   \
+	--depends "pmount"   \
+	--depends "python3-dev"   \
+	--depends "python3-pip"   \
+	--depends "python3-venv"   \
+	--depends "redis-server"   \
+	--depends "supervisor"   \
+	--depends "udisks2"   \
+	--after-install "bin/after-install.sh"   \
+	--chdir $(INSTALL_LOCAL)   \
+	conf/ddrlocal.cfg=etc/ddr/ddrlocal.cfg   \
+	conf/celeryd.conf=etc/supervisor/conf.d/celeryd.conf   \
+	conf/supervisor.conf=etc/supervisor/conf.d/ddrlocal.conf   \
+	conf/nginx.conf=etc/nginx/sites-available/ddrlocal.conf   \
+	conf/logrotate=etc/logrotate.d/ddr   \
+	conf/README-logs=$(LOG_BASE)/README  \
+	conf/README-sqlite=$(SQLITE_BASE)/README  \
+	conf/README-media=$(MEDIA_ROOT)/README  \
+	conf/README-static=$(STATIC_ROOT)/README  \
+	static=var/www   \
+	bin=$(DEB_BASE)   \
+	conf=$(DEB_BASE)   \
+	COPYRIGHT=$(DEB_BASE)   \
+	ddr-cmdln=$(DEB_BASE)   \
+	ddr-defs=$(DEB_BASE)   \
 	ddrlocal=$(DEB_BASE)   \
 	densho-vocab=$(DEB_BASE)   \
 	.git=$(DEB_BASE)   \
