@@ -106,7 +106,7 @@ NGINX_CONF=/etc/nginx/sites-available/ddrlocal.conf
 NGINX_CONF_LINK=/etc/nginx/sites-enabled/ddrlocal.conf
 CGIT_CONF=/etc/cgitrc
 
-TGZ_BRANCH := $(shell python bin/package-branch.py)
+TGZ_BRANCH := $(shell python3 bin/package-branch.py)
 TGZ_FILE=$(APP)_$(APP_VERSION)
 TGZ_DIR=$(INSTALL_LOCAL)/$(TGZ_FILE)
 TGZ_CMDLN=$(TGZ_DIR)/ddr-cmdln
@@ -118,7 +118,7 @@ TGZ_STATIC=$(TGZ_DIR)/static
 
 # Adding '-rcN' to VERSION will name the package "ddrlocal-release"
 # instead of "ddrlocal-BRANCH"
-DEB_BRANCH := $(shell python bin/package-branch.py)
+DEB_BRANCH := $(shell python3 bin/package-branch.py)
 DEB_ARCH=amd64
 DEB_NAME_JESSIE=$(APP)-$(DEB_BRANCH)
 DEB_NAME_STRETCH=$(APP)-$(DEB_BRANCH)
