@@ -146,9 +146,6 @@ help:
 	@echo "get     - Clones ddr-local, ddr-cmdln, ddr-defs, wgets static files & ES pkg."
 	@echo "install - Performs complete install. See also: make howto-install"
 	@echo "test    - Run unit tests"
-	@echo "reload  - Reloads supervisord and nginx configs"
-	@echo "restart - Restarts all daemons"
-	@echo "status  - Server status"
 	@echo ""
 	@echo "vbox-guest     - Installs VirtualBox Guest Additions"
 	@echo "network-config - Installs standard network conf (CHANGES IP TO 192.168.56.101!)"
@@ -628,85 +625,6 @@ enable-bkgnd:
 
 disable-bkgnd:
 	-rm $(SUPERVISOR_CELERYBEAT_CONF)
-
-
-reload: reload-nginx reload-supervisor
-
-reload-nginx:
-	sudo service nginx reload
-
-reload-supervisor:
-	supervisorctl reload
-
-reload-app: reload-supervisor
-
-
-stop: stop-elasticsearch stop-redis stop-cgit stop-nginx stop-supervisor
-
-stop-elasticsearch:
-	-service elasticsearch stop
-
-stop-redis:
-	-service redis-server stop
-
-stop-cgit:
-	-service fcgiwrap stop
-
-stop-nginx:
-	-service nginx stop
-
-stop-supervisor:
-	-service supervisor stop
-
-stop-app: stop-supervisor
-
-
-restart: restart-supervisor restart-redis restart-cgit restart-nginx
-
-restart-elasticsearch:
-	-service elasticsearch restart
-
-restart-redis:
-	-service redis-server restart
-
-restart-cgit:
-	-service fcgiwrap restart
-
-restart-nginx:
-	-service nginx restart
-
-restart-supervisor:
-	-service supervisor stop
-	-service supervisor start
-
-restart-app: restart-supervisor
-
-
-# just Redis and Supervisor
-restart-minimal: stop-elasticsearch restart-redis stop-nginx restart-supervisor
-
-
-status:
-	@echo "------------------------------------------------------------------------"
-	-systemctl status elasticsearch
-	@echo " - - - - -"
-	-systemctl status redis-server
-	@echo " - - - - -"
-	-systemctl status nginx
-	@echo " - - - - -"
-	-systemctl status supervisor
-	-supervisorctl status
-	@echo " - - - - -"
-	-git annex version | grep version
-	@echo " - - - - -"
-	-uptime
-	@echo ""
-
-git-status:
-	@echo "------------------------------------------------------------------------"
-	cd $(INSTALL_CMDLN) && git status
-	@echo "------------------------------------------------------------------------"
-	git status
 
 
 get-ddr-manual:
