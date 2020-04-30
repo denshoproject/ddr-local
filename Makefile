@@ -106,6 +106,16 @@ NGINX_CONF=/etc/nginx/sites-available/ddrlocal.conf
 NGINX_CONF_LINK=/etc/nginx/sites-enabled/ddrlocal.conf
 CGIT_CONF=/etc/cgitrc
 
+TGZ_BRANCH := $(shell python bin/package-branch.py)
+TGZ_FILE=$(APP)_$(APP_VERSION)
+TGZ_DIR=$(INSTALL_LOCAL)/$(TGZ_FILE)
+TGZ_CMDLN=$(TGZ_DIR)/ddr-cmdln
+TGZ_CMDLN_ASSETS=$(TGZ_DIR)/ddr-cmdln/ddr-cmdln-assets
+TGZ_DEFS=$(TGZ_DIR)/ddr-defs
+TGZ_VOCAB=$(TGZ_DIR)/densho-vocab
+TGZ_MANUAL=$(TGZ_DIR)/ddr-manual
+TGZ_STATIC=$(TGZ_DIR)/static
+
 # Adding '-rcN' to VERSION will name the package "ddrlocal-release"
 # instead of "ddrlocal-BRANCH"
 DEB_BRANCH := $(shell python bin/package-branch.py)
@@ -651,6 +661,26 @@ uninstall-ddr-manual:
 
 clean-ddr-manual:
 	-rm -Rf $(INSTALL_MANUAL)/build
+
+
+tgz:
+	rm -Rf $(TGZ_DIR)
+	git clone $(INSTALL_LOCAL) $(TGZ_DIR)
+	git clone $(INSTALL_CMDLN) $(TGZ_CMDLN)
+	git clone $(INSTALL_CMDLN_ASSETS) $(TGZ_CMDLN_ASSETS)
+	git clone $(INSTALL_DEFS) $(TGZ_DEFS)
+	git clone $(INSTALL_VOCAB) $(TGZ_VOCAB)
+	git clone $(INSTALL_MANUAL) $(TGZ_MANUAL)
+#	git clone $(INSTALL_STATIC) $(TGZ_STATIC)
+	cd $(TGZ_DIR); git checkout develop; git checkout master
+	cd $(TGZ_CMDLN); git checkout develop; git checkout master
+	cd $(TGZ_CMDLN_ASSETS); git checkout develop; git checkout master
+	cd $(TGZ_DEFS); git checkout develop; git checkout master
+	cd $(TGZ_VOCAB); git checkout develop; git checkout master
+	cd $(TGZ_MANUAL); git checkout develop; git checkout master
+#	cd $(TGZ_STATIC); git checkout develop; git checkout master
+	tar czf $(TGZ_FILE).tgz $(TGZ_FILE)
+	rm -Rf $(TGZ_DIR)
 
 
 # http://fpm.readthedocs.io/en/latest/
