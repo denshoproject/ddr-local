@@ -30,11 +30,17 @@ urlpatterns = [
 
     # REST API
     
-    url(r'^api/1.0/search$', api.search_form, name='api-search'),
+    url(r'^api/1.0/search$', api.Search.as_view(), name='api-search'),
+    
     url(r'^api/1.0/es/(?P<oid>[\w\d-]+)/children/$', api.es_children, name='api-es-children'),
     url(r'^api/1.0/es/(?P<oid>[\w\d-]+)/$', api.es_detail, name='api-es-detail'),
     url(r'^api/1.0/(?P<oid>[\w\d-]+)/children/$', api.fs_children, name='api-fs-children'),
     url(r'^api/1.0/(?P<oid>[\w\d-]+)/$', api.fs_detail, name='api-fs-detail'),
+    
+    url(r'^api/0.2/(?P<object_id>[\w\d-]+)/children/$', api.object_children, name='api-object-children'),
+    url(r'^api/0.2/(?P<object_id>[\w\d-]+)/files/$', api.object_nodes, name='api-object-nodes'),
+    url(r'^api/0.2/(?P<object_id>[\w\d-]+)/$', api.object_detail, name='api-object'),
+    
     url(r'^api/1.0/$', api.index, name='api-index'),
     
     # search
@@ -57,6 +63,8 @@ urlpatterns = [
  
     url(r'^collections/$', collections.collections, name='webui-collections'),
  
+    url(r'^(?P<oid>[\w\d-]+)/search/$', search.collection, name='webui-search-collection'),
+    
     url(r'^collection/(?P<cid>[\w\d-]+)/edit/$', collections.edit, name='webui-collection-edit'),
     url(r'^collection/(?P<cid>[\w\d-]+)/sync/$', collections.sync, name='webui-collection-sync'),
     url(r'^collection/(?P<cid>[\w\d-]+)/check/$', collections.check, name='webui-collection-check'),
