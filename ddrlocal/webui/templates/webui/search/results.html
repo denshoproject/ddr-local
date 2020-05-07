@@ -6,21 +6,9 @@
 
 
 {% block breadcrumbs %}{{ block.super }}
-{% if object %}
-
-{% breadcrumbs object.breadcrumbs True %}
-<li>Search Results</li>
-
-{% else %}{# object #}
-
-<li>
-  <a href="{{ object.links.html }}">
-    {{ object.title }}
-  </a>
-</li>
-<li>Search Results</li>
-
-{% endif %}
+  {% if object %}
+    {% breadcrumbs object %}
+  {% endif %}
 {% endblock breadcrumbs %}
 
 
@@ -43,9 +31,9 @@
   <small>{{ object.id }}</small>
 </h2>
 <p>
-  <a class="btn btn-primary btn-sm" href="{{ object.links.html }}">
+  <a class="btn btn-primary btn-sm" href="{{ object.absolute_url }}">
     <i class="fa fa-arrow-circle-left"></i>
-    Back to {{ object.model }} detail
+    Back to {{ object.identifier.model }} detail
   </a>
 </p>
 {% endif %}{# object #}

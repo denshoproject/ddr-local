@@ -14,6 +14,7 @@ from elasticsearch.exceptions import ConnectionError, ConnectionTimeout
 
 from .. import api
 from ..forms import search as forms
+from .. import identifier
 from .. import models
 from .. import search
 from ..decorators import ui_state
@@ -143,7 +144,7 @@ def search_ui(request):
 
 def collection(request, oid):
     #filter_if_branded(request, i)
-    collection = models.Collection.get(oid, request)
+    collection = models.Collection.from_identifier(identifier.Identifier(oid))
     if not collection:
         raise Http404
     return parent_search(request, collection)
@@ -169,7 +170,7 @@ def parent_search(request, obj):
         _mkurl(request, reverse('api-search')),
         request.META['QUERY_STRING']
     )
-    this_url = reverse('ui-search-results')
+    this_url = reverse('webui-search')
     template = 'webui/search/results.html'
     template_extends = "ui/search/base.html"
     context = {
@@ -181,30 +182,30 @@ def parent_search(request, obj):
 
     params = request.GET.copy()
     limit,offset = limit_offset(request)
-    params['parent'] = obj['id']
+    params['parent'] = obj.id
     search_models = search.SEARCH_MODELS
     
     # search collection
-    if obj['model'] == 'collection':
+    if hasattr(obj, 'identifier') and obj.identifier.model == 'collection':
         search_models = ['ddrentity', 'ddrsegment']
-        this_url = reverse('ui-search-collection', args=[obj['id']])
-        template_extends = "ui/collections/base.html"
+        this_url = reverse('webui-search-collection', args=[obj.id])
+        template_extends = "webui/collections/base.html"
     # search topic
-    elif (obj['model'] == 'ddrfacetterm') and (obj['facet'] == 'topics'):
-        this_url = reverse('ui-search-facetterm', args=[obj['facet'], obj['term_id']])
+    elif (obj.model == 'ddrfacetterm') and (obj['facet'] == 'topics'):
+        this_url = reverse('ui-search-facetterm', args=[obj.facet, obj.term_id])
         template_extends = "ui/facets/base-topics.html"
         obj['model'] = 'topics'
     # search facility
     elif (obj['model'] == 'ddrfacetterm') and (obj['facet'] == 'facility'):
-        this_url = reverse('ui-search-facetterm', args=[obj['facet'], obj['term_id']])
+        this_url = reverse('ui-search-facetterm', args=[obj.facet, obj.term_id])
         template_extends = "ui/facets/base-facility.html"
-        obj['model'] = 'facilities'
+        obj.model = 'facilities'
     # search narrator
-    elif obj['model'] == 'narrator':
+    elif obj.model == 'narrator':
         search_models = ['ddrentity', 'ddrsegment']
-        this_url = reverse('ui-search-narrator', args=[obj['id']])
+        this_url = reverse('ui-search-narrator', args=[obj.id])
         template_extends = "ui/narrators/base.html"
-        obj['title'] = obj['display_name']
+        obj.title = obj.display_name
     context['template_extends'] = template_extends
     context['object'] = obj
 
