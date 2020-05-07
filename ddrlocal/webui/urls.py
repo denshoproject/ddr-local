@@ -30,6 +30,8 @@ urlpatterns = [
 
     # REST API
     
+    url(r'^api/1.0/ui-state/$', api.ui_state, name='api-state'),
+    
     url(r'^api/1.0/search$', api.Search.as_view(), name='api-search'),
     
     url(r'^api/1.0/es/(?P<oid>[\w\d-]+)/children/$', api.es_children, name='api-es-children'),

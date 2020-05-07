@@ -11,9 +11,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from django.conf import settings
+from django.http import HttpResponse
 
 import elasticsearch_dsl
 
+from webui import decorators
 from webui import docstore
 from webui import identifier
 from webui import models
@@ -44,6 +46,20 @@ def index(request, format=None):
     data['browse (elasticsearch)'] = reverse('api-es-detail', args=(['ddr']), request=request)
     data['search (elasticsearch)'] = reverse('api-search', args=(), request=request)
     return Response(data)
+
+
+def ui_state(request):
+    """Track state of UI. seealso webui.decorators.ui_state.
+    """
+    for key,choices in decorators.UI_STATE.items():
+        if request.GET.get(key) and (request.GET[key] in choices):
+            request.session[key] = request.GET[key]
+            request.session.modified = True
+            return HttpResponse(
+                json.dumps({'selected': request.GET[key]}),
+                content_type="application/json"
+            )
+    return Http404()
 
 
 @api_view(['GET'])
