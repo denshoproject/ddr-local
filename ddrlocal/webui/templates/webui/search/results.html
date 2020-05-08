@@ -7,12 +7,16 @@
 
 {% block breadcrumbs %}{{ block.super }}
   {% if object %}
-    {% breadcrumbs object %}
+<li><a href="{{ object.absolute_url }}">{{ object.identifier.id }}</a></li>
+<li class="active">Search</li>
   {% endif %}
 {% endblock breadcrumbs %}
 
 
 {% block content %}
+
+  <div class="row-fluid">
+    <div class="span12">
 
 <!-- query
 
@@ -20,22 +24,18 @@
 
 -->
 
-<section class="container" id="portfolio">
-  <div class="row">
-    <div class="col-sm-12 col-md-12">
-
 {% if object %}
-<h2>
-  Search:
-  {{ object.title }}
-  <small>{{ object.id }}</small>
-</h2>
-<p>
-  <a class="btn btn-primary btn-sm" href="{{ object.absolute_url }}">
-    <i class="fa fa-arrow-circle-left"></i>
-    Back to {{ object.identifier.model }} detail
+<h1>
+  <a href="{{ object.absolute_url }}">
+   {{ object.id }}
+   &mdash;
+   {{ object.title }}
   </a>
-</p>
+</h1>
+{% else %}
+<h1>
+  Search
+</h1>
 {% endif %}{# object #}
       
 {% if error_message %}
@@ -198,9 +198,6 @@
   </tr>
 </table>
 
-    </div><!-- .col-sm-12 col-md-12 -->
-  </div><!-- .row -->
-
   <!-- query
 
 {{ query_json|safe }}
@@ -213,5 +210,7 @@
 
   </div><!-- .row -->
 
-</section><!-- .container-fluid -->
+    </div><!-- .span12 -->
+  </div><!-- .row-fluid -->
+
 {% endblock content %}
