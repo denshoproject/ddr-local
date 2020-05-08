@@ -27,7 +27,8 @@
 
 <div id="overview">
 
-
+<a href="{{ collection.search_url }}" style="float:right;">Search Collection</a>
+  
 {% if username and models_valid %}
 {% if collection.locked or collection.repo_behind or collection.repo_conflicted %}
 <p>

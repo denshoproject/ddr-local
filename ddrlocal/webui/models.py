@@ -339,6 +339,7 @@ class Collection( DDRCollection ):
     def new_entity_url(self): return reverse('webui-entity-new', args=[self.id])
     def sync_url(self): return reverse('webui-collection-sync', args=[self.id])
     def signatures_url(self): return reverse('webui-collection-signatures', args=[self.id])
+    def search_url(self): return reverse('webui-collection-search', args=[self.id])
     
     def cgit_url( self ):
         """Returns cgit URL for collection.

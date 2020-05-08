@@ -65,7 +65,7 @@ urlpatterns = [
  
     url(r'^collections/$', collections.collections, name='webui-collections'),
  
-    url(r'^collection/(?P<oid>[\w\d-]+)/search/$', search.collection, name='webui-search-collection'),
+    url(r'^collection/(?P<oid>[\w\d-]+)/search/$', search.collection, name='webui-collection-search'),
     
     url(r'^collection/(?P<cid>[\w\d-]+)/edit/$', collections.edit, name='webui-collection-edit'),
     url(r'^collection/(?P<cid>[\w\d-]+)/sync/$', collections.sync, name='webui-collection-sync'),

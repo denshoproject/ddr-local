@@ -79,18 +79,38 @@ def limit_offset(request):
 # views ----------------------------------------------------
 
 @ui_state
-def search_ui(request):
+def search_ui(request, obj=None):
+    """Search entire repository or under parent object if specified
+    
+    @param request: HttpRequest
+    @param obj: DDRObject or OrderedDict (facetterm or narrator)
+    @returns: HttpResponse
+    """
     api_url = '%s?%s' % (
         _mkurl(request, reverse('api-search')),
         request.META['QUERY_STRING']
     )
     context = {
+        'object': obj,
         'template_extends': 'webui/search/base.html',
         'hide_header_search': True,
         'searching': False,
         'filters': True,
         'api_url': api_url,
     }
+    
+    if obj:
+        if hasattr(obj, 'identifier') and obj.identifier.model == 'collection':
+            context['template_extends'] = "webui/collections/base.html"
+        # search topic
+        elif (obj.model == 'ddrfacetterm') and (obj['facet'] == 'topics'):
+            context['template_extends'] = "ui/facets/base-topics.html"
+        # search facility
+        elif (obj['model'] == 'ddrfacetterm') and (obj['facet'] == 'facility'):
+            context['template_extends'] = "ui/facets/base-facility.html"
+        # search narrator
+        elif obj.model == 'narrator':
+            context['template_extends'] = "ui/narrators/base.html"
     
     searcher = search.Searcher()
     if request.GET.get('fulltext'):
@@ -100,11 +120,32 @@ def search_ui(request):
                 reverse('webui-detail', args=[
                     request.GET.get('fulltext')
             ]))
+        
         params = request.GET.copy()
+        if obj:
+            params['parent'] = obj.id
+        
+        # search collection
+        if obj:
+            if hasattr(obj, 'identifier') and obj.identifier.model == 'collection':
+                search_models = ['ddrentity', 'ddrsegment']
+            # search topic
+            elif (obj.model == 'ddrfacetterm') and (obj['facet'] == 'topics'):
+                obj['model'] = 'topics'
+            # search facility
+            elif (obj['model'] == 'ddrfacetterm') and (obj['facet'] == 'facility'):
+                obj.model = 'facilities'
+            # search narrator
+            elif obj.model == 'narrator':
+                search_models = ['ddrentity', 'ddrsegment']
+                obj.title = obj.display_name
+        else:
+            search_models = search.SEARCH_MODELS
+        
         searcher.prepare(
             params=params,
             params_whitelist=search.SEARCH_PARAM_WHITELIST,
-            search_models=search.SEARCH_MODELS,
+            search_models=search_models,
             fields=search.SEARCH_INCLUDE_FIELDS,
             fields_nested=search.SEARCH_NESTED_FIELDS,
             fields_agg=search.SEARCH_AGG_FIELDS,
@@ -133,13 +174,13 @@ def search_ui(request):
         context['paginator'] = paginator
         context['page'] = page
         context['search_form'] = form
-
+    
     else:
         form = forms.SearchForm(
             data=request.GET.copy(),
         )
         context['search_form'] = forms.SearchForm()
-
+    
     return render(request, 'webui/search/results.html', context)
 
 def collection(request, oid):
@@ -147,94 +188,17 @@ def collection(request, oid):
     collection = models.Collection.from_identifier(identifier.Identifier(oid))
     if not collection:
         raise Http404
-    return parent_search(request, collection)
+    return search_ui(request, obj=collection)
 
 def facetterm(request, facet_id, term_id):
     oid = '-'.join([facet_id, term_id])
     term = models.Term.get(oid, request)
     if not term:
         raise Http404
-    return parent_search(request, term)
+    return search_ui(request, obj=term)
 
 def narrator(request, oid):
     narrator = models.Narrator.get(oid, request)
     if not narrator:
         raise Http404
-    return parent_search(request, narrator)
-
-@ui_state
-def parent_search(request, obj):
-    """search within collection/facetterm/narrator
-    """
-    api_url = '%s?%s' % (
-        _mkurl(request, reverse('api-search')),
-        request.META['QUERY_STRING']
-    )
-    this_url = reverse('webui-search')
-    template = 'webui/search/results.html'
-    template_extends = "ui/search/base.html"
-    context = {
-        'hide_header_search': True,
-        'searching': False,
-        'filters': True,
-        'api_url': api_url,
-    }
-
-    params = request.GET.copy()
-    limit,offset = limit_offset(request)
-    params['parent'] = obj.id
-    search_models = search.SEARCH_MODELS
-    
-    # search collection
-    if hasattr(obj, 'identifier') and obj.identifier.model == 'collection':
-        search_models = ['ddrentity', 'ddrsegment']
-        this_url = reverse('webui-search-collection', args=[obj.id])
-        template_extends = "webui/collections/base.html"
-    # search topic
-    elif (obj.model == 'ddrfacetterm') and (obj['facet'] == 'topics'):
-        this_url = reverse('ui-search-facetterm', args=[obj.facet, obj.term_id])
-        template_extends = "ui/facets/base-topics.html"
-        obj['model'] = 'topics'
-    # search facility
-    elif (obj['model'] == 'ddrfacetterm') and (obj['facet'] == 'facility'):
-        this_url = reverse('ui-search-facetterm', args=[obj.facet, obj.term_id])
-        template_extends = "ui/facets/base-facility.html"
-        obj.model = 'facilities'
-    # search narrator
-    elif obj.model == 'narrator':
-        search_models = ['ddrentity', 'ddrsegment']
-        this_url = reverse('ui-search-narrator', args=[obj.id])
-        template_extends = "ui/narrators/base.html"
-        obj.title = obj.display_name
-    context['template_extends'] = template_extends
-    context['object'] = obj
-
-    searcher = search.Searcher()
-    searcher.prepare(
-        params=params,
-        params_whitelist=search.SEARCH_PARAM_WHITELIST,
-        search_models=search_models,
-        fields=search.SEARCH_INCLUDE_FIELDS,
-        fields_nested=search.SEARCH_NESTED_FIELDS,
-        fields_agg=search.SEARCH_AGG_FIELDS,
-    )
-    results = searcher.execute(limit, offset)
-    paginator = Paginator(
-        results.ordered_dict(
-            request=request,
-            format_functions=models.FORMATTERS,
-            pad=True,
-        )['objects'],
-        results.page_size,
-    )
-    page = paginator.page(results.this_page)
-    form = forms.SearchForm(
-        data=params,
-        search_results=results,
-    )
-    context['results'] = results
-    context['search_form'] = form
-    context['paginator'] = paginator
-    context['page'] = page
-
-    return render(request, 'webui/search/results.html', context)
+    return search_ui(request, obj=narrator)
