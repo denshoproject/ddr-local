@@ -34,6 +34,19 @@ from webui import COLLECTION_STATUS_TIMEOUT
 from webui import COLLECTION_ANNEX_STATUS_TIMEOUT
 from webui.identifier import Identifier, MODULES, VALID_COMPONENTS
 
+# TODO Hard-coded! Get this data from Elasticsearch or something
+MODEL_PLURALS = {
+    'file':         'files',
+    'segment':      'entities',
+    'entity':       'entities',
+    'collection':   'collections',
+    'organization': 'organizations',
+    'repository':   'Repositories',
+    'narrator':     'narrators',
+    'facet':        'facet',
+    'facetterm':    'facetterm',
+}
+
 
 def repo_models_valid(request):
     """Displays alerts if repo_models are absent or undefined
