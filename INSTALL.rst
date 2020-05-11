@@ -34,8 +34,8 @@ The result is the same as a manual install but is faster since you
 don't have to build the virtualenv and lets you completely remove the
 install if you so choose.
 
-After the install completes you can use `make` commands to manage the
-installation.
+You are not done when the install completes!  See the Post-Install
+section below for instructions on configuration.
 
 NOTE: you will **not** receive automatic updates from the repository!
 
@@ -78,6 +78,9 @@ remove `ddrlocal-master` and install `ddrlocal-develop`.  Switching
 branches in a package install is not recommended, as updates will
 probably damage your install.  If you want to switch branches you
 should consider a source install.
+
+You are not done when the install completes!  See the Post-Install
+section below for instructions on configuration.
 
 **Uninstalling**
 
