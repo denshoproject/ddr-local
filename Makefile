@@ -680,14 +680,13 @@ tgz-local:
 	git clone $(INSTALL_DEFS) $(TGZ_DEFS)
 	git clone $(INSTALL_VOCAB) $(TGZ_VOCAB)
 	git clone $(INSTALL_MANUAL) $(TGZ_MANUAL)
-#	git clone $(INSTALL_STATIC) $(TGZ_STATIC)
 	cd $(TGZ_DIR); git checkout develop; git checkout master
 	cd $(TGZ_CMDLN); git checkout develop; git checkout master
 	cd $(TGZ_CMDLN_ASSETS); git checkout develop; git checkout master
 	cd $(TGZ_DEFS); git checkout develop; git checkout master
 	cd $(TGZ_VOCAB); git checkout develop; git checkout master
 	cd $(TGZ_MANUAL); git checkout develop; git checkout master
-#	cd $(TGZ_STATIC); git checkout develop; git checkout master
+	cd $(TGZ_DIR); cp -R $(INSTALL_STATIC) .
 	tar czf $(TGZ_FILE).tgz $(TGZ_FILE)
 	rm -Rf $(TGZ_DIR)
 
@@ -700,14 +699,13 @@ tgz:
 	git clone $(SRC_REPO_DEFS) $(TGZ_DEFS)
 	git clone $(SRC_REPO_VOCAB) $(TGZ_VOCAB)
 	git clone $(SRC_REPO_MANUAL) $(TGZ_MANUAL)
-	git clone $(SRC_REPO_STATIC) $(TGZ_STATIC)
 	cd $(TGZ_DIR); git checkout develop; git checkout master
 	cd $(TGZ_CMDLN); git checkout develop; git checkout master
 	cd $(TGZ_CMDLN_ASSETS); git checkout develop; git checkout master
 	cd $(TGZ_DEFS); git checkout develop; git checkout master
 	cd $(TGZ_VOCAB); git checkout develop; git checkout master
 	cd $(TGZ_MANUAL); git checkout develop; git checkout master
-	cd $(TGZ_STATIC); git checkout develop; git checkout master
+	cd $(TGZ_DIR); cp -R $(INSTALL_STATIC) .
 	tar czf $(TGZ_FILE).tgz $(TGZ_FILE)
 	rm -Rf $(TGZ_DIR)
 
