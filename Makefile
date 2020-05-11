@@ -257,9 +257,18 @@ vbox-guest:
 	-addgroup ddr vboxsf
 
 
-install-daemons: install-elasticsearch install-redis install-cgit install-nginx
+install-daemons: install-supervisor install-redis install-nginx install-cgit install-elasticsearch
 
-remove-daemons: remove-elasticsearch remove-redis remove-cgit remove-nginx
+remove-daemons: remove-supervisor remove-redis remove-nginx remove-cgit remove-elasticsearch
+
+
+install-supervisor:
+	@echo ""
+	@echo "Supervisord ------------------------------------------------------------"
+	apt-get --assume-yes install supervisor
+
+remove-supervisor:
+	apt-get --assume-yes remove supervisor
 
 
 install-cgit:
@@ -349,13 +358,13 @@ get-app: get-ddr-cmdln get-ddr-local get-ddr-manual
 
 pip-download: pip-download-cmdln pip-download-local
 
-install-app: install-dependencies install-setuptools install-ddr-cmdln install-ddr-local install-configs install-daemon-configs
+install-app: install-dependencies install-setuptools install-ddr-cmdln install-ddr-local install-configs install-daemons-configs
 
 test-app: test-ddr-cmdln test-ddr-local
 
 coverage-app: coverage-ddr-cmdln
 
-uninstall-app: uninstall-ddr-cmdln uninstall-ddr-local uninstall-ddr-manual uninstall-configs uninstall-daemon-configs
+uninstall-app: uninstall-ddr-cmdln uninstall-ddr-local uninstall-ddr-manual uninstall-configs uninstall-daemons-configs
 
 clean-app: clean-ddr-cmdln clean-ddr-local clean-ddr-manual
 
@@ -484,7 +493,7 @@ runserver:
 
 runworker:
 	source $(VIRTUALENV)/bin/activate; cd $(INSTALL_LOCAL)/ddrlocal; \
-	celery -A ddrlocal worker -l INFO #-f /var/log/ddr/localcel.log
+	celery -A ddrlocal worker -l INFO -f /var/log/ddr/worker.log
 
 uninstall-ddr-local: install-setuptools
 	@echo ""
@@ -599,9 +608,9 @@ uninstall-configs:
 	-rm $(CONF_PRODUCTION)
 
 
-install-daemon-configs:
+install-daemons-configs:
 	@echo ""
-	@echo "install-daemon-configs -------------------------------------------------"
+	@echo "install-daemons-configs ------------------------------------------------"
 # nginx settings
 	cp $(INSTALL_LOCAL)/conf/nginx.conf $(NGINX_CONF)
 	chown root.root $(NGINX_CONF)
@@ -621,7 +630,7 @@ install-daemon-configs:
 # cgitrc
 	cp $(INSTALL_LOCAL)/conf/cgitrc $(CGIT_CONF)
 
-uninstall-daemon-configs:
+uninstall-daemons-configs:
 	-rm $(NGINX_CONF)
 	-rm $(NGINX_CONF_LINK)
 	-rm $(SUPERVISOR_CELERY_CONF)
@@ -663,7 +672,7 @@ clean-ddr-manual:
 	-rm -Rf $(INSTALL_MANUAL)/build
 
 
-tgz:
+tgz-local:
 	rm -Rf $(TGZ_DIR)
 	git clone $(INSTALL_LOCAL) $(TGZ_DIR)
 	git clone $(INSTALL_CMDLN) $(TGZ_CMDLN)
@@ -679,6 +688,26 @@ tgz:
 	cd $(TGZ_VOCAB); git checkout develop; git checkout master
 	cd $(TGZ_MANUAL); git checkout develop; git checkout master
 #	cd $(TGZ_STATIC); git checkout develop; git checkout master
+	tar czf $(TGZ_FILE).tgz $(TGZ_FILE)
+	rm -Rf $(TGZ_DIR)
+
+
+tgz:
+	rm -Rf $(TGZ_DIR)
+	git clone $(SRC_REPO_LOCAL) $(TGZ_DIR)
+	git clone $(SRC_REPO_CMDLN) $(TGZ_CMDLN)
+	git clone $(SRC_REPO_CMDLN_ASSETS) $(TGZ_CMDLN_ASSETS)
+	git clone $(SRC_REPO_DEFS) $(TGZ_DEFS)
+	git clone $(SRC_REPO_VOCAB) $(TGZ_VOCAB)
+	git clone $(SRC_REPO_MANUAL) $(TGZ_MANUAL)
+	git clone $(SRC_REPO_STATIC) $(TGZ_STATIC)
+	cd $(TGZ_DIR); git checkout develop; git checkout master
+	cd $(TGZ_CMDLN); git checkout develop; git checkout master
+	cd $(TGZ_CMDLN_ASSETS); git checkout develop; git checkout master
+	cd $(TGZ_DEFS); git checkout develop; git checkout master
+	cd $(TGZ_VOCAB); git checkout develop; git checkout master
+	cd $(TGZ_MANUAL); git checkout develop; git checkout master
+	cd $(TGZ_STATIC); git checkout develop; git checkout master
 	tar czf $(TGZ_FILE).tgz $(TGZ_FILE)
 	rm -Rf $(TGZ_DIR)
 
