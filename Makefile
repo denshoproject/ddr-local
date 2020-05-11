@@ -484,7 +484,7 @@ runserver:
 
 runworker:
 	source $(VIRTUALENV)/bin/activate; cd $(INSTALL_LOCAL)/ddrlocal; \
-	celery -A ddrlocal worker -l INFO #-f /var/log/ddr/localcel.log
+	celery -A ddrlocal worker -l INFO -f /var/log/ddr/worker.log
 
 uninstall-ddr-local: install-setuptools
 	@echo ""
