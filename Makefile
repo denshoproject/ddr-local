@@ -358,13 +358,13 @@ get-app: get-ddr-cmdln get-ddr-local get-ddr-manual
 
 pip-download: pip-download-cmdln pip-download-local
 
-install-app: install-dependencies install-setuptools install-ddr-cmdln install-ddr-local install-configs install-daemon-configs
+install-app: install-dependencies install-setuptools install-ddr-cmdln install-ddr-local install-configs install-daemons-configs
 
 test-app: test-ddr-cmdln test-ddr-local
 
 coverage-app: coverage-ddr-cmdln
 
-uninstall-app: uninstall-ddr-cmdln uninstall-ddr-local uninstall-ddr-manual uninstall-configs uninstall-daemon-configs
+uninstall-app: uninstall-ddr-cmdln uninstall-ddr-local uninstall-ddr-manual uninstall-configs uninstall-daemons-configs
 
 clean-app: clean-ddr-cmdln clean-ddr-local clean-ddr-manual
 
@@ -608,9 +608,9 @@ uninstall-configs:
 	-rm $(CONF_PRODUCTION)
 
 
-install-daemon-configs:
+install-daemons-configs:
 	@echo ""
-	@echo "install-daemon-configs -------------------------------------------------"
+	@echo "install-daemons-configs ------------------------------------------------"
 # nginx settings
 	cp $(INSTALL_LOCAL)/conf/nginx.conf $(NGINX_CONF)
 	chown root.root $(NGINX_CONF)
@@ -630,7 +630,7 @@ install-daemon-configs:
 # cgitrc
 	cp $(INSTALL_LOCAL)/conf/cgitrc $(CGIT_CONF)
 
-uninstall-daemon-configs:
+uninstall-daemons-configs:
 	-rm $(NGINX_CONF)
 	-rm $(NGINX_CONF_LINK)
 	-rm $(SUPERVISOR_CELERY_CONF)
