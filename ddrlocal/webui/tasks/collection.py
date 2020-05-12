@@ -426,3 +426,51 @@ def csv_export_model( collection_path, model ):
         paths, model, csv_path, required_only=False
     )
     return csv_path
+
+
+# ----------------------------------------------------------------------
+
+TASK_COLLECTION_REINDEX = 'collection-reindex'
+
+def reindex(request, collection):
+    # start tasks
+    collection_path = collection.path
+    result = collection_reindex.apply_async(
+        (collection_path,),
+        countdown=2
+    )
+    # add celery task_id to session
+    celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
+    # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
+    celery_tasks[result.task_id] = {
+        'task_id': result.task_id,
+        'action': TASK_COLLECTION_REINDEX,
+        'collection_id': collection.id,
+        'collection_url': collection.absolute_url(),
+        'start': converters.datetime_to_text(datetime.now(settings.TZ)),}
+    request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
+
+class ReindexDebugTask(Task):
+    abstract = True
+    
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
+        pass
+    
+    def on_success(self, retval, task_id, args, kwargs):
+        pass
+    
+    def after_return(self, status, retval, task_id, args, kwargs, cinfo):
+        pass
+
+@task(base=ReindexDebugTask, name=TASK_COLLECTION_REINDEX)
+def collection_reindex(collection_path):
+    """Reindexes collection
+    
+    @param collection_path: Absolute path to collection repo.
+    @return collection_path: Absolute path to collection.
+    """
+    logger.debug('tasks.collection.reindex({})'.format(collection_path))
+    collection = Collection.from_identifier(Identifier(path=collection_path))
+    if settings.DOCSTORE_ENABLED:
+        collection.reindex()
+    return collection_path

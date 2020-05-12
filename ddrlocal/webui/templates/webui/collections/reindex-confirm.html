@@ -1,0 +1,57 @@
+{% extends "webui/collections/base.html" %}
+{% load thumbnail webui_tags%}
+
+{% block title %}Reindex | {{ collection.id }}{% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+{% breadcrumbs collection "Reindex" %}
+{% endblock breadcrumbs %}
+
+
+{% block content %}
+
+  <div class="row-fluid">
+    <div class="span12">
+
+<h1>
+{{ collection.id }}
+</h1>
+
+<div class="alert alert-danger" role="alert">
+
+<h2 style="margin-top:0px;">
+<span class="glyphicon glyphicon-warning-sign"></span>
+IMPORTANT
+</h2>
+<p>
+Reindexing collections requires network access and can sometimes take a long time.
+</p>
+
+<table>
+<form name="reindex-confirm" action="" method="post">{% csrf_token %}
+  <tr>
+    <td>
+{{ form.confirmed }}
+Yes, I do indeed want to reindex this collection.
+    </td>
+    <td>
+&nbsp;
+&nbsp;
+<button class="btn btn-danger btn-mini" type="submit" value="Reindex">Reindex</button>
+&nbsp;
+&nbsp;
+/
+&nbsp;
+&nbsp;
+<a href="{{ collection.absolute_url }}" class="btn btn-primary btn-mini">Cancel reindex</a>
+    </td>
+  </tr>
+</form>
+</table>
+
+</div><!-- .alert-danger -->
+ 
+    </div><!-- .span12 -->
+  </div><!-- .row -->
+
+{% endblock content %}

@@ -69,6 +69,7 @@ urlpatterns = [
     
     url(r'^collection/(?P<cid>[\w\d-]+)/edit/$', collections.edit, name='webui-collection-edit'),
     url(r'^collection/(?P<cid>[\w\d-]+)/sync/$', collections.sync, name='webui-collection-sync'),
+    url(r'^collection/(?P<cid>[\w\d-]+)/reindex/$', collections.reindex, name='webui-collection-reindex'),
     url(r'^collection/(?P<cid>[\w\d-]+)/check/$', collections.check, name='webui-collection-check'),
     url(r'^collection/(?P<cid>[\w\d-]+)/signatures/$', collections.signatures, name='webui-collection-signatures'),
     url(r'^collection/(?P<cid>[\w\d-]+)/unlock/(?P<task_id>[\w\d-]+)/$', collections.unlock, name='webui-collection-unlock'),

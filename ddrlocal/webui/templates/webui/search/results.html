@@ -204,7 +204,12 @@
 
   -->
   <div class="row">
+
     <div class="col-sm-12 col-md-12 text-muted text-right">
+      {% if object and object.reindex_url %}
+      <a href="{{ object.reindex_url }}">Reindex Collection {{ object.id }}</a>
+      &nbsp;&bull;&nbsp;
+      {% endif %}
       <small><a class="api" href="{{ api_url }}">API</a></small>
     </div>
 
