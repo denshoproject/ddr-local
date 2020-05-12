@@ -4,6 +4,7 @@ import re
 from urllib.parse import urlparse, urlunparse
 
 from django.conf import settings
+from django.contrib import messages
 from django.core.paginator import Paginator
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
@@ -11,6 +12,7 @@ from django.http.request import HttpRequest
 from django.shortcuts import render
 
 from elasticsearch.exceptions import ConnectionError, ConnectionTimeout
+from elasticsearch import TransportError
 
 from .. import api
 from ..forms import search as forms
@@ -98,6 +100,19 @@ def search_ui(request, obj=None):
         'filters': True,
         'api_url': api_url,
     }
+    
+    # nice UI if Elasticsearch is down
+    try:
+        search.DOCSTORE.status()
+    except TransportError:
+        messages.error(
+            request, "<b>TransportError</b>: Cannot connect to search engine."
+        )
+        form = forms.SearchForm(
+            data=request.GET.copy(),
+        )
+        context['search_form'] = forms.SearchForm()
+        return render(request, 'webui/search/results.html', context)
     
     if obj:
         if hasattr(obj, 'identifier') and obj.identifier.model == 'collection':

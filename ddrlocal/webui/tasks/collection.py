@@ -7,6 +7,7 @@ from celery import task
 from celery import Task
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
+from elasticsearch import TransportError
 
 from django.conf import settings
 from django.core.urlresolvers import reverse
@@ -21,6 +22,7 @@ from DDR import util
 from webui import gitstatus
 from webui.models import Collection
 from webui.identifier import Identifier
+from webui import search
 from webui.tasks import dvcs as dvcs_tasks
 
 
@@ -472,5 +474,14 @@ def collection_reindex(collection_path):
     logger.debug('tasks.collection.reindex({})'.format(collection_path))
     collection = Collection.from_identifier(Identifier(path=collection_path))
     if settings.DOCSTORE_ENABLED:
+        # nice UI if Elasticsearch is down
+        try:
+            search.DOCSTORE.status()
+        except TransportError:
+            raise Exception(
+                "<b>TransportError</b>: Cannot connect to search engine."
+            )
         collection.reindex()
+    else:
+        raise Exception('Search engine disabled (DOCSTORE_ENABLED=False)')
     return collection_path

@@ -12,6 +12,8 @@ from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import Http404, render
 
+from elasticsearch import TransportError
+
 from DDR import batch
 from DDR import commands
 from DDR import converters
@@ -29,6 +31,7 @@ from webui import gitolite
 from webui.gitstatus import repository, annex_info
 from webui.models import Collection
 from webui.identifier import Identifier
+from webui import search
 from webui.tasks import collection as collection_tasks
 from webui.views.decorators import login_required
 
@@ -623,6 +626,14 @@ def check(request, cid):
 @ddrview
 @login_required
 def reindex(request, cid):
+    # nice UI if Elasticsearch is down
+    try:
+        search.DOCSTORE.status()
+    except TransportError:
+        messages.error(
+            request, "<b>TransportError</b>: Cannot connect to search engine."
+        )
+
     try:
         collection = Collection.from_identifier(Identifier(cid))
     except:

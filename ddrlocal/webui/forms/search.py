@@ -18,10 +18,7 @@ from webui import search
 #     'facility-choices: [...],
 # }
 
-FORMS_CHOICES = docstore.Docstore().es.get(
-    index='forms',
-    id='forms-choices'
-)['_source']
+FORMS_CHOICES = {}
 
 # Pretty labels for multiple choice fields
 # (After initial search the choice lists come from search aggs lists
@@ -33,13 +30,23 @@ FORMS_CHOICES = docstore.Docstore().es.get(
 #     },
 #     'facility: {...},
 # }
+
 FORMS_CHOICE_LABELS = {}
-for key in FORMS_CHOICES.keys():
-    field = key.replace('-choices','')
-    FORMS_CHOICE_LABELS[field] = {
-        c[0].split('-')[1]: c[1]
-        for c in FORMS_CHOICES[key]
-    }
+
+def forms_choice_labels():
+    if not FORMS_CHOICE_LABELS:
+        FORMS_CHOICES = docstore.Docstore().es.get(
+            index='forms',
+            id='forms-choices'
+        )['_source']
+        FORMS_CHOICE_LABELS = {}
+        for key in FORMS_CHOICES.keys():
+            field = key.replace('-choices','')
+            FORMS_CHOICE_LABELS[field] = {
+                c[0].split('-')[1]: c[1]
+                for c in FORMS_CHOICES[key]
+            }
+    return FORMS_CHOICE_LABELS
 
 
 class SearchForm(forms.Form):
@@ -96,7 +103,7 @@ class SearchForm(forms.Form):
                 choices = []
                 for item in aggs:
                     try:
-                        label = FORMS_CHOICE_LABELS[fieldname][item['key']]
+                        label = forms_choice_labels()[fieldname][item['key']]
                     except:
                         label = item['key']
                     choice = (
