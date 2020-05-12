@@ -162,12 +162,53 @@ class VocabsView(TestCase):
         self.assertEqual(response.status_code, 200)
 
 
-#class SearchView(TestCase):
-# 
-#    def test_search(self):
-#        response = self.client.get(reverse('webui-search'))
-#        self.assertEqual(response.status_code, 200)
-
+class SearchView(TestCase):
+ 
+    def test_search_index(self):
+        response = self.client.get(reverse('webui-search'))
+        self.assertEqual(response.status_code, 200)
+    
+    def test_search_results(self):
+        url = reverse(
+            'webui-search'
+        ) + '?fulltext=seattle'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+    
+    def test_search_results_pagination(self):
+        url = reverse(
+            'webui-search'
+        ) + '?fulltext=seattle&page=2'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+    
+    def test_search_results_filter(self):
+        url = reverse(
+            'webui-search'
+        ) + '?fulltext=seattle&genre=photograph'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+ 
+    def test_collection_search_index(self):
+        url = reverse('webui-collection-search', args=['ddr-densho-10'])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+    
+    def test_collection_search_results(self):
+        url = reverse(
+            'webui-collection-search',
+            args=['ddr-densho-10'],
+        ) + '?fulltext=seattle'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+    
+    def test_collection_search_results_pagination(self):
+        url = reverse(
+            'webui-collection-search',
+            args=['ddr-densho-10'],
+        ) + '?fulltext=seattle&page=2'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
 
 class TaskView(TestCase):
 
