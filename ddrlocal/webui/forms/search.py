@@ -1,10 +1,52 @@
+from collections import OrderedDict
 import logging
 logger = logging.getLogger(__name__)
 
 from django import forms
+from django.conf import settings
+from django.core.cache import cache
 
+from webui import docstore
 from webui import search
-from webui.util import OrderedDict
+
+# sorted version of facility and topics tree as choice fields
+# {
+#     'topics-choices': [
+#         [u'topics-1', u'Immigration and citizenship'],
+#         ...
+#     ],
+#     'facility-choices: [...],
+# }
+
+FORMS_CHOICES = {}
+
+# Pretty labels for multiple choice fields
+# (After initial search the choice lists come from search aggs lists
+# which only include IDs and doc counts.)
+# {
+#     'topics': {
+#         '1': u'Immigration and citizenship',
+#         ...
+#     },
+#     'facility: {...},
+# }
+
+FORMS_CHOICE_LABELS = {}
+
+def forms_choice_labels():
+    if not FORMS_CHOICE_LABELS:
+        FORMS_CHOICES = docstore.Docstore().es.get(
+            index='forms',
+            id='forms-choices'
+        )['_source']
+        FORMS_CHOICE_LABELS = {}
+        for key in FORMS_CHOICES.keys():
+            field = key.replace('-choices','')
+            FORMS_CHOICE_LABELS[field] = {
+                c[0].split('-')[1]: c[1]
+                for c in FORMS_CHOICES[key]
+            }
+    return FORMS_CHOICE_LABELS
 
 
 class SearchForm(forms.Form):
@@ -57,14 +99,18 @@ class SearchForm(forms.Form):
         
         # fill in options and doc counts from aggregations
         if search_results and search_results.aggregations:
-            for fieldname in list(search_results.aggregations.keys()):
-                choices = [
-                    (
+            for fieldname,aggs in search_results.aggregations.items():
+                choices = []
+                for item in aggs:
+                    try:
+                        label = forms_choice_labels()[fieldname][item['key']]
+                    except:
+                        label = item['key']
+                    choice = (
                         item['key'],
-                        '%s (%s)' % (item['label'], item['doc_count'])
+                        '%s (%s)' % (label, item['doc_count'])
                     )
-                    for item in search_results.aggregations[fieldname]
-                ]
+                    choices.append(choice)
                 if choices:
                     fields.append((
                         fieldname,

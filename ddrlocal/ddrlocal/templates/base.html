@@ -268,6 +268,24 @@ Rendered at {{ time }} by PID {{ pid }} on {{ host }}<br/>
   });
 </script>
 {% endif %}
+<script>
+  /* Update UI state - see webui.decorators.ui_state */
+  $("ul.nav-tabs li.gallery a").click(function() {
+    $.ajax({
+      url: "{% url "api-state" %}?liststyle=gallery",
+    });
+  });
+  $("ul.nav-tabs li.list a").click(function() {
+    $.ajax({
+      url: "{% url "api-state" %}?liststyle=list",
+    });
+  });
+  $("a#searchfilters").click(function() {
+    $.ajax({
+      url: "{% url "api-state" %}?searchfilters={% if request.session.searchfilters == 'closed' %}open{% else %}closed{% endif %}",
+    });
+  });
+</script>
 
 {% block javascript %}{% endblock %}
 

@@ -34,6 +34,19 @@ from webui import COLLECTION_STATUS_TIMEOUT
 from webui import COLLECTION_ANNEX_STATUS_TIMEOUT
 from webui.identifier import Identifier, MODULES, VALID_COMPONENTS
 
+# TODO Hard-coded! Get this data from Elasticsearch or something
+MODEL_PLURALS = {
+    'file':         'files',
+    'segment':      'entities',
+    'entity':       'entities',
+    'collection':   'collections',
+    'organization': 'organizations',
+    'repository':   'Repositories',
+    'narrator':     'narrators',
+    'facet':        'facet',
+    'facetterm':    'facetterm',
+}
+
 
 def repo_models_valid(request):
     """Displays alerts if repo_models are absent or undefined
@@ -326,6 +339,7 @@ class Collection( DDRCollection ):
     def new_entity_url(self): return reverse('webui-entity-new', args=[self.id])
     def sync_url(self): return reverse('webui-collection-sync', args=[self.id])
     def signatures_url(self): return reverse('webui-collection-signatures', args=[self.id])
+    def search_url(self): return reverse('webui-collection-search', args=[self.id])
     
     def cgit_url( self ):
         """Returns cgit URL for collection.
@@ -903,3 +917,112 @@ class File( DDRFile ):
                 logger.error('Could not post to Elasticsearch.')
         
         return exit,status,updated_files
+
+
+def format_object_detail(document, request, listitem=False):
+    """Formats repository objects, adds list URLs,
+    """
+    if document.get('_source'):
+        oid = document['_id']
+        model = document['_index']
+        document = document['_source']
+    else:
+        oid = document.pop('id')
+        model = document.pop('model')
+    model = model.replace(docstore.INDEX_PREFIX, '')
+    
+    d = OrderedDict()
+    d['id'] = oid
+    d['model'] = model
+    if document.get('index'): d['index'] = document.pop('index')
+    
+    if not listitem:
+        d['collection_id'] = document.get('collection_id')
+    # links
+    d['links'] = OrderedDict()
+    d['links']['html'] = reverse(
+        'webui-detail', args=[document.pop('links_html')], request=request
+    )
+    d['links']['json'] = reverse(
+        'api-object', args=[document.pop('links_json')], request=request
+    )
+    if document.get('mimetype') and ('text' in document['mimetype']):
+        d['links']['download'] = '%s%s' % (
+            settings.MEDIA_URL, document.pop('links_img')
+        )
+    else:
+        d['links']['img'] = '%s%s' % (
+            settings.MEDIA_URL, document.pop('links_img')
+        )
+        d['links']['thumb'] = '%s%s' % (
+            settings.MEDIA_URL, document.pop('links_thumb')
+        )
+        if document.get('links_download'):
+            d['links']['download'] = '%s%s' % (
+                settings.MEDIA_URL, document.pop('links_download')
+            )
+    
+    if not listitem:
+        if document.get('parent_id'):
+            d['links']['parent'] = reverse(
+                'api-object',
+                args=[document.pop('links_parent')],
+                request=request
+            )
+        if CHILDREN[model]:
+            if model in ['entity', 'segment']:
+                d['links']['children-objects'] = reverse(
+                    'api-object-children',
+                    args=[document['links_children']],
+                    request=request
+                )
+                d['links']['children-files'] = reverse(
+                    'api-object-nodes',
+                    args=[document['links_children']],
+                    request=request
+                )
+                document.pop('links_children')
+            else:
+                d['links']['children'] = reverse(
+                    'api-object-children',
+                    args=[document['links_children']],
+                    request=request
+                )
+                document.pop('links_children')
+        d['parent_id'] = document.get('parent_id', '')
+        d['organization_id'] = document.get('organization_id', '')
+        # gfroh: every object must have signature_id
+        # gjost: except objects that don't have them
+        d['signature_id'] = document.get('signature_id', '')
+    # title, description
+    d['title'] = document['title']
+    d['description'] = document['description']
+    if not listitem:
+        if document.get('lineage'):
+            crumbs = [c for c in document.pop('lineage')[::-1]]
+            for c in crumbs:
+                c['api_url'] = reverse(
+                    'api-object', args=[c['id']], request=request
+                )
+                c['url'] = reverse(
+                    'webui-detail', args=[c['id']], request=request
+                )
+            d['breadcrumbs'] = crumbs
+    # everything else
+    HIDDEN_FIELDS = [
+        'repo','org','cid','eid','sid','sha1'
+         # don't hide role, used in file list-object
+    ]
+    for key in document.keys():
+        if key not in HIDDEN_FIELDS:
+            d[key] = document[key]
+    return d
+
+FORMATTERS = {
+    'ddrrepository': format_object_detail,
+    'ddrorganization': format_object_detail,
+    'ddrcollection': format_object_detail,
+    'ddrentity': format_object_detail,
+    'ddrsegment': format_object_detail,
+    'ddrfile': format_object_detail,
+}

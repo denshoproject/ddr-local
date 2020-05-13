@@ -7,6 +7,7 @@ from celery import task
 from celery import Task
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
+from elasticsearch import TransportError
 
 from django.conf import settings
 from django.core.urlresolvers import reverse
@@ -21,6 +22,7 @@ from DDR import util
 from webui import gitstatus
 from webui.models import Collection
 from webui.identifier import Identifier
+from webui import search
 from webui.tasks import dvcs as dvcs_tasks
 
 
@@ -426,3 +428,60 @@ def csv_export_model( collection_path, model ):
         paths, model, csv_path, required_only=False
     )
     return csv_path
+
+
+# ----------------------------------------------------------------------
+
+TASK_COLLECTION_REINDEX = 'collection-reindex'
+
+def reindex(request, collection):
+    # start tasks
+    collection_path = collection.path
+    result = collection_reindex.apply_async(
+        (collection_path,),
+        countdown=2
+    )
+    # add celery task_id to session
+    celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
+    # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
+    celery_tasks[result.task_id] = {
+        'task_id': result.task_id,
+        'action': TASK_COLLECTION_REINDEX,
+        'collection_id': collection.id,
+        'collection_url': collection.absolute_url(),
+        'start': converters.datetime_to_text(datetime.now(settings.TZ)),}
+    request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
+
+class ReindexDebugTask(Task):
+    abstract = True
+    
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
+        pass
+    
+    def on_success(self, retval, task_id, args, kwargs):
+        pass
+    
+    def after_return(self, status, retval, task_id, args, kwargs, cinfo):
+        pass
+
+@task(base=ReindexDebugTask, name=TASK_COLLECTION_REINDEX)
+def collection_reindex(collection_path):
+    """Reindexes collection
+    
+    @param collection_path: Absolute path to collection repo.
+    @return collection_path: Absolute path to collection.
+    """
+    logger.debug('tasks.collection.reindex({})'.format(collection_path))
+    collection = Collection.from_identifier(Identifier(path=collection_path))
+    if settings.DOCSTORE_ENABLED:
+        # nice UI if Elasticsearch is down
+        try:
+            search.DOCSTORE.status()
+        except TransportError:
+            raise Exception(
+                "<b>TransportError</b>: Cannot connect to search engine."
+            )
+        collection.reindex()
+    else:
+        raise Exception('Search engine disabled (DOCSTORE_ENABLED=False)')
+    return collection_path

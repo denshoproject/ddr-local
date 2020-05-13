@@ -55,3 +55,25 @@ class APIObjectViewsFS(TestCase):
         oid = 'ddr-densho-10-1-mezzanine-c85f8d0f91'
         response = self.client.get(reverse('api-fs-detail', args=[oid]))
         self.assertEqual(response.status_code, 200)
+
+
+class APISearchView(TestCase):
+
+    def test_search_index(self):
+        response = self.client.get(reverse('api-search'))
+        self.assertEqual(response.status_code, 200)
+    
+    def test_search_results(self):
+        url = reverse('api-search') + '?fulltext=seattle'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+    
+    def test_search_results_pagination(self):
+        url = reverse('api-search') + '?fulltext=seattle&offset=25'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+    
+    def test_search_results_filter(self):
+        url = reverse('api-search') + '?fulltext=seattle&genre=photograph'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
