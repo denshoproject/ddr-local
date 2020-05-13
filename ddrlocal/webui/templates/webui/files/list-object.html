@@ -2,20 +2,24 @@
 <!-- {{ object.id }} -->
 <div class="media {{ object.model }}">
 {% thumbnail object.access_url "64x64" as img %}
-  <a class="pull-left" href="{{ object.absolute_url }}">
+  <a class="pull-left" href="{% if object.absolute_url %}{{ object.absolute_url }}{% else %}{{ object.links.html }}{% endif %}">
     <img class="media-object" src="{{ img.url }}" class="img-responsive">
   </a>
 {% endthumbnail %}
   <div class="media-body">
     <h4 class="media-heading">
       <span class="badge badge-info">{{ object.model | capfirst }}</span>
-      <a href="{{ object.absolute_url }}">{{ object.id }} - {{ object.label }}</a>
+      <a href="{% if object.absolute_url %}{{ object.absolute_url }}{% else %}{{ object.links.html }}{% endif %}">
+        {{ object.id }} - {{ object.label }}
+      </a>
     </h4>
     <div class="source muted">
       {{ object.basename_orig }}
     </div>
     <div class="url">
-      <a href="{{ object.absolute_url }}">{{ object.absolute_url }}</a>
+      <a href="{% if object.absolute_url %}{{ object.absolute_url }}{% else %}{{ object.links.html }}{% endif %}">
+        {% if object.absolute_url %}{{ object.absolute_url }}{% else %}{{ object.links.html }}{% endif %}
+      </a>
     </div>
   </div><!-- .media-body -->
 </div><!-- .media -->

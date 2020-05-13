@@ -4,6 +4,8 @@ from elasticsearch import Elasticsearch
 
 from DDR import docstore
 
+INDEX_PREFIX = 'ddr'
+
 
 class Docstore(docstore.Docstore):
 

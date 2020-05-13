@@ -24,3 +24,8 @@ class SignaturesConfirmForm(forms.Form):
 
 class UploadFileForm(forms.Form):
     file = forms.FileField()
+
+class ReindexConfirmForm(forms.Form):
+    confirmed = forms.BooleanField(
+        help_text='Yes, I want to re-index this collection.'
+    )

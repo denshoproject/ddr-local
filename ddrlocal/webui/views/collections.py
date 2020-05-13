@@ -12,6 +12,8 @@ from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import Http404, render
 
+from elasticsearch import TransportError
+
 from DDR import batch
 from DDR import commands
 from DDR import converters
@@ -24,10 +26,12 @@ from webui.decorators import ddrview
 from webui.forms import DDRForm
 from webui.forms.collections import NewCollectionForm, UploadFileForm
 from webui.forms.collections import SyncConfirmForm, SignaturesConfirmForm
+from webui.forms.collections import ReindexConfirmForm
 from webui import gitolite
 from webui.gitstatus import repository, annex_info
 from webui.models import Collection
 from webui.identifier import Identifier
+from webui import search
 from webui.tasks import collection as collection_tasks
 from webui.views.decorators import login_required
 
@@ -618,3 +622,38 @@ def check(request, cid):
     celery_tasks[result.task_id] = task
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
     return HttpResponseRedirect(ci.urlpath('editor'))
+
+@ddrview
+@login_required
+def reindex(request, cid):
+    # nice UI if Elasticsearch is down
+    try:
+        search.DOCSTORE.status()
+    except TransportError:
+        messages.error(
+            request, "<b>TransportError</b>: Cannot connect to search engine."
+        )
+
+    try:
+        collection = Collection.from_identifier(Identifier(cid))
+    except:
+        raise Http404
+    alert_if_conflicted(request, collection)
+    if request.method == 'POST':
+        form = ReindexConfirmForm(request.POST)
+        form_is_valid = form.is_valid()
+        if form.is_valid() and form.cleaned_data['confirmed']:
+            # update search index
+            collection_tasks.reindex(
+                request,
+                collection,
+            )
+            return HttpResponseRedirect(collection.absolute_url())
+        #else:
+        #    assert False
+    else:
+        form = ReindexConfirmForm()
+    return render(request, 'webui/collections/reindex-confirm.html', {
+        'collection': collection,
+        'form': form,
+    })

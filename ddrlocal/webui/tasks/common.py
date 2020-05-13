@@ -83,11 +83,11 @@ TASK_STATUS_MESSAGES = {
         #'REVOKED': '',
     },
 
-    'search-reindex': {
+    'collection-reindex': {
         #'STARTED': '',
-        'PENDING': 'Recreating search index <b>{index}</b>.',
-        'SUCCESS': 'Reindexing <b>{index}</b> completed.',
-        'FAILURE': 'Reindexing <b>{index}</b> failed!',
+        'PENDING': 'Reindexing collection <b><a href="{collection_url}">{collection_id}</a></b>.',
+        'SUCCESS': 'Reindexing <b><a href="{collection_url}">{collection_id}</a></b> completed.',
+        'FAILURE': 'Reindexing <b><a href="{collection_url}">{collection_id}</a></b> failed!',
         #'RETRY': '',
         #'REVOKED': '',
     },
