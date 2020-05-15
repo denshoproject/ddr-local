@@ -15,7 +15,7 @@ django-redis-sessions  # BSD
 
 celery>=4.4.0,<5.0.0          # BSD
 
-djangorestframework>=3.7.0,<3.8 # BSD
+djangorestframework>=3.8.0,<3.9 # BSD
 coreapi                # BSD
 coreapi-cli            # BSD
 
