@@ -16,6 +16,8 @@ django-redis-sessions  # BSD
 celery>=4.4.0,<5.0.0          # BSD
 
 djangorestframework>=3.10.0,<3.11 # BSD
+pyyaml
+uritemplate
 
 envoy                  # MIT
 gunicorn              # MIT

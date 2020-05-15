@@ -1,6 +1,8 @@
 from django.urls import path
 from django.views.generic import TemplateView
 
+from rest_framework.schemas import get_schema_view
+
 from webui import api
 from webui.views import LoginOffline, login, logout
 from webui.views import task_status, task_dismiss, task_list
@@ -29,6 +31,15 @@ urlpatterns = [
     #path('supervisord/restart/', supervisord.restart, name='webui-supervisord-restart'),
 
     # REST API
+    
+    # Use the `get_schema_view()` helper to add a `SchemaView` to project URLs.
+    #   * `title` and `description` parameters are passed to `SchemaGenerator`.
+    #   * Provide view name for use with `reverse()`.
+    path('openapi/', get_schema_view(
+        title='Densho Digital Repository Editor API',
+        description='DESCRIPTION GOES HERE',
+        version='1.0',
+    ), name='openapi-schema'),
     
     path('api/1.0/ui-state/', api.ui_state, name='api-state'),
     
