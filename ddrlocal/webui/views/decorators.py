@@ -2,8 +2,8 @@ from functools import wraps
 import logging
 logger = logging.getLogger(__name__)
 
-from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
+from django.urls import reverse
 from django.utils.decorators import available_attrs
 
 def login_required(func):

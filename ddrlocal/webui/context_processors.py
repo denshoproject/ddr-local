@@ -4,7 +4,7 @@ logger = logging.getLogger(__name__)
 import os
 
 from django.conf import settings
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 from webui.models import repo_models_valid
 from webui.tasks import common as tasks_common
