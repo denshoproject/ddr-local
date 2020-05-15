@@ -7,7 +7,6 @@ from django.conf import settings
 from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.urls import reverse
-from django.utils.decorators import available_attrs
 
 from webui import models
 
@@ -33,7 +32,7 @@ def storage_required(func):
     
     TODO This function will report unreadable if no collections for repo/org!
     """
-    @wraps(func, assigned=available_attrs(func))
+    @wraps(func)
     def inner(request, *args, **kwargs):
         readable = False
         # if we can get list of collections, storage must be readable
