@@ -37,18 +37,18 @@ SRC_REPO_VOCAB=https://github.com/densho/densho-vocab.git
 SRC_REPO_MANUAL=https://github.com/densho/ddr-manual.git
 
 INSTALL_BASE=/opt
-INSTALLDIR=$(INSTALL_BASE)/ddr-cmdln
+INSTALLDIR=/opt/ddr-cmdln
 REQUIREMENTS=$(INSTALLDIR)/requirements.txt
 PIP_CACHE_DIR=$(INSTALL_BASE)/pip-cache
 
 CWD := $(shell pwd)
-INSTALL_LOCAL=$(CWD)
-INSTALL_STATIC=$(INSTALL_LOCAL)/static
-INSTALL_CMDLN=$(INSTALL_LOCAL)/ddr-cmdln
-INSTALL_CMDLN_ASSETS=$(INSTALL_CMDLN)/ddr-cmdln-assets
-INSTALL_DEFS=$(INSTALL_LOCAL)/ddr-defs
-INSTALL_VOCAB=$(INSTALL_LOCAL)/densho-vocab
-INSTALL_MANUAL=$(INSTALL_LOCAL)/ddr-manual
+INSTALL_LOCAL=/opt/ddr-local
+INSTALL_STATIC=/opt/ddr-local/static
+INSTALL_CMDLN=/opt/ddr-cmdln
+INSTALL_CMDLN_ASSETS=/opt/ddr-cmdln/ddr-cmdln-assets
+INSTALL_DEFS=/opt/ddr-defs
+INSTALL_VOCAB=/opt/densho-vocab
+INSTALL_MANUAL=/opt/ddr-manual
 
 COMMIT_LOCAL := $(shell git -C $(INSTALL_LOCAL) log --decorate --abbrev-commit --pretty=oneline -1)
 COMMIT_CMDLN := $(shell git -C $(INSTALL_CMDLN) log --decorate --abbrev-commit --pretty=oneline -1)
@@ -375,7 +375,7 @@ get-ddr-cmdln:
 	git status | grep "On branch"
 	if test -d $(INSTALL_CMDLN); \
 	then cd $(INSTALL_CMDLN) && git pull; \
-	else git clone $(SRC_REPO_CMDLN); \
+	else git clone $(SRC_REPO_CMDLN) $(INSTALL_CMDLN); \
 	fi
 
 get-ddr-cmdln-assets:
@@ -383,7 +383,7 @@ get-ddr-cmdln-assets:
 	@echo "get-ddr-cmdln-assets ---------------------------------------------------"
 	if test -d $(INSTALL_CMDLN_ASSETS); \
 	then cd $(INSTALL_CMDLN_ASSETS) && git pull; \
-	else git clone $(SRC_REPO_CMDLN_ASSETS); \
+	else git clone $(SRC_REPO_CMDLN_ASSETS) $(INSTALL_CMDLN_ASSETS); \
 	fi
 
 setup-ddr-cmdln:
@@ -652,7 +652,7 @@ get-ddr-manual:
 	git status | grep "On branch"
 	if test -d $(INSTALL_MANUAL); \
 	then cd $(INSTALL_MANUAL) && git pull; \
-	else git clone $(SRC_REPO_MANUAL); \
+	else git clone $(SRC_REPO_MANUAL) $(INSTALL_MANUAL); \
 	fi
 
 install-ddr-manual: install-setuptools
