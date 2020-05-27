@@ -9,17 +9,6 @@ from django.core.cache import cache
 from webui import docstore
 from webui import search
 
-# sorted version of facility and topics tree as choice fields
-# {
-#     'topics-choices': [
-#         [u'topics-1', u'Immigration and citizenship'],
-#         ...
-#     ],
-#     'facility-choices: [...],
-# }
-
-FORMS_CHOICES = {}
-
 # Pretty labels for multiple choice fields
 # (After initial search the choice lists come from search aggs lists
 # which only include IDs and doc counts.)
@@ -30,21 +19,22 @@ FORMS_CHOICES = {}
 #     },
 #     'facility: {...},
 # }
-
 FORMS_CHOICE_LABELS = {}
 
 def forms_choice_labels():
+    """Lazy-load and keep human-readable labels for form choices
+    """
+    global FORMS_CHOICE_LABELS
     if not FORMS_CHOICE_LABELS:
-        FORMS_CHOICES = docstore.Docstore().es.get(
+        forms_choices = docstore.Docstore().es.get(
             index='forms',
             id='forms-choices'
         )['_source']
-        FORMS_CHOICE_LABELS = {}
-        for key in FORMS_CHOICES.keys():
+        for key in forms_choices.keys():
             field = key.replace('-choices','')
             FORMS_CHOICE_LABELS[field] = {
                 c[0].split('-')[1]: c[1]
-                for c in FORMS_CHOICES[key]
+                for c in forms_choices[key]
             }
     return FORMS_CHOICE_LABELS
 
@@ -99,13 +89,11 @@ class SearchForm(forms.Form):
         
         # fill in options and doc counts from aggregations
         if search_results and search_results.aggregations:
+            choice_labels = forms_choice_labels()
             for fieldname,aggs in search_results.aggregations.items():
                 choices = []
                 for item in aggs:
-                    try:
-                        label = forms_choice_labels()[fieldname][item['key']]
-                    except:
-                        label = item['key']
+                    label = choice_labels[fieldname][item['key']]
                     choice = (
                         item['key'],
                         '%s (%s)' % (label, item['doc_count'])
