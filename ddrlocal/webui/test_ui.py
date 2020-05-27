@@ -162,6 +162,25 @@ class VocabsView(TestCase):
         self.assertEqual(response.status_code, 200)
 
 
+# Check the search_form in response context.
+# Look for certain topics filter choices, ignoring counts
+# NOTE: The actual topics labels are long, so look for fragments
+def find_filter_choice(response, field, choice_key, label_fragment):
+    choices = response.context['search_form'].fields[field].choices
+    for key,label in choices:
+        if (key == choice_key) and (label_fragment in label):
+            return True
+    return False
+
+def find_filter_choices(response, field_choices):
+    for field,term_id,label in field_choices:
+        assert find_filter_choice(response, 'topics', term_id, label)
+
+SEARCH_FILTER_CHOICES = [
+    ('topics', '167', 'Legal cases/coram nobis cases'),
+    ('topics', '97', 'Supreme Court cases -- Gordon Hirabayashi'),
+]
+
 class SearchView(TestCase):
  
     def test_search_index(self):
@@ -174,6 +193,7 @@ class SearchView(TestCase):
         ) + '?fulltext=seattle'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
+        find_filter_choices(response, SEARCH_FILTER_CHOICES)
     
     def test_search_results_pagination(self):
         url = reverse(
@@ -181,6 +201,7 @@ class SearchView(TestCase):
         ) + '?fulltext=seattle&page=2'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
+        find_filter_choices(response, SEARCH_FILTER_CHOICES)
     
     def test_search_results_filter(self):
         url = reverse(
@@ -188,6 +209,7 @@ class SearchView(TestCase):
         ) + '?fulltext=seattle&genre=photograph'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
+        find_filter_choices(response, SEARCH_FILTER_CHOICES)
  
     def test_collection_search_index(self):
         url = reverse('webui-collection-search', args=['ddr-densho-10'])
@@ -201,6 +223,7 @@ class SearchView(TestCase):
         ) + '?fulltext=seattle'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
+        find_filter_choices(response, SEARCH_FILTER_CHOICES)
     
     def test_collection_search_results_pagination(self):
         url = reverse(
@@ -209,6 +232,7 @@ class SearchView(TestCase):
         ) + '?fulltext=seattle&page=2'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
+        find_filter_choices(response, SEARCH_FILTER_CHOICES)
 
 class TaskView(TestCase):
 
