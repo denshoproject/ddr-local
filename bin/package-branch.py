@@ -23,7 +23,7 @@ def app_version():
 def git_branch():
     return subprocess.check_output([
         'git','rev-parse','--abbrev-ref','HEAD'
-    ]).strip()
+    ]).decode("utf-8").strip()
 
 def decide(version, branch):
     if '-rc' in version:
