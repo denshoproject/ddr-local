@@ -74,4 +74,4 @@ virtualenv-relocate /opt/ddr-local/venv/ddrlocal/
 # memory and cache limits put in place to protect against DDoS attacks
 # but these are not an issue in our local install.
 echo "Installing custom Imagemagick policy.xml"
-cp /opt/ddr-local/ddr-cmdln/conf/imagemagick-policy.xml /etc/ImageMagick-6/policy.xml
+cp /opt/ddr-cmdln/conf/imagemagick-policy.xml /etc/ImageMagick-6/policy.xml
