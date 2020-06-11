@@ -7,7 +7,7 @@ from celery.utils.encoding import safe_repr
 from celery.utils import get_full_cls_name
 
 from django.conf import settings
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 from webui import identifier
 

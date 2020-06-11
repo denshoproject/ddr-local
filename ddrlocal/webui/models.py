@@ -8,7 +8,7 @@ from elasticsearch.exceptions import ConnectionError
 from django.conf import settings
 from django.contrib import messages
 from django.core.cache import cache
-from django.core.urlresolvers import reverse, NoReverseMatch
+from django.urls import reverse, NoReverseMatch
 
 from rest_framework.reverse import reverse
 

@@ -10,7 +10,7 @@ logger = get_task_logger(__name__)
 from elasticsearch import TransportError
 
 from django.conf import settings
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 from DDR import batch
 from DDR import commands

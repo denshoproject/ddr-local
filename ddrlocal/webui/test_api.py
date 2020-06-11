@@ -2,6 +2,13 @@ from django.test import TestCase
 from django.urls import reverse
 
 
+class OpenAPISchemaView(TestCase):
+
+    def test_schema(self):
+        response = self.client.get(reverse('openapi-schema'))
+        self.assertEqual(response.status_code, 200)
+
+
 class APIIndexView(TestCase):
 
     def test_index(self):

@@ -3,9 +3,9 @@ logger = logging.getLogger(__name__)
 import os
 
 from django.contrib import messages
-from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
+from django.urls import reverse
 
 from DDR import commands
 from DDR import dvcs
