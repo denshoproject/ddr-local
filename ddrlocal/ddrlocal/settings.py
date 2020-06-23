@@ -393,3 +393,16 @@ TEST_RUNNER = 'django.test.runner.DiscoverRunner'
 ROOT_URLCONF = 'ddrlocal.urls'
 
 WSGI_APPLICATION = 'ddrlocal.wsgi.application'
+
+# Ensure that app can write files where it needs to
+WRITABLE_FILES = [
+    MEDIA_BASE, LOG_FILE
+]
+if ('sqlite3' in DATABASES.get('default').get('ENGINE')):
+    WRITABLE_FILES.append(DATABASES['default']['NAME'])
+for path in WRITABLE_FILES:
+    if not os.access(path, os.R_OK and os.W_OK):
+        print('ERROR: Cannot write to {}'.format(path))
+        print('- Check file permissions.')
+        print('- Are you running Django as the "ddr" user?')
+        sys.exit(1)
