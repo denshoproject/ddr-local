@@ -2,8 +2,8 @@ from copy import deepcopy
 import os
 
 from django.conf import settings
-from django.core.urlresolvers import reverse
 from django.http import HttpRequest
+from django.urls import reverse
 
 from DDR.identifier import Identifier as DDRIdentifier
 from DDR.identifier import CHILDREN_ALL, MODULES, VALID_COMPONENTS

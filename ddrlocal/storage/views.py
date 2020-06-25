@@ -3,9 +3,9 @@ logger = logging.getLogger(__name__)
 
 from django.conf import settings
 from django.contrib import messages
-from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import Http404, render, redirect
+from django.urls import reverse
 
 import storage
 from storage.forms import StorageForm

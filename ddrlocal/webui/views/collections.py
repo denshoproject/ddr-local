@@ -8,9 +8,9 @@ import random
 from django.conf import settings
 from django.contrib import messages
 from django.core.paginator import Paginator
-from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import Http404, render
+from django.urls import reverse
 
 from elasticsearch import TransportError
 

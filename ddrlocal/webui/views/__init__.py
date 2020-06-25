@@ -5,9 +5,9 @@ import os
 
 from django.conf import settings
 from django.contrib import messages
-from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
+from django.urls import reverse
 from django.views import View
 
 from DDR import converters
