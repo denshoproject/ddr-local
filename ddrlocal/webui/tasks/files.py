@@ -107,7 +107,7 @@ def add_access(request, form_data, entity, file_, git_name, git_mail):
     src_path = form_data['path']
     # start tasks
     result = file_add_access.apply_async(
-        (entity.path, file_, src_path, git_name, git_mail),
+        (entity.path, file_.dict(), src_path, git_name, git_mail),
         countdown=2
     )
     log = addfile_logger(entity.identifier)
@@ -241,16 +241,17 @@ def file_add_external(entity_path, data, git_name, git_mail):
     }
 
 @task(base=FileAddDebugTask, name=TASK_FILE_ADD_ACCESS_NAME)
-def file_add_access(entity_path, file_, src_path, git_name, git_mail):
+def file_add_access(entity_path, file_data, src_path, git_name, git_mail):
     """
     @param entity_path: str
-    @param file_: File
+    @param file_data: dict
     @param src_path: Absolute path to an uploadable file.
     @param git_name: Username of git committer.
     @param git_mail: Email of git committer.
     """
     gitstatus.lock(settings.MEDIA_BASE, 'file-add-*')
     entity = Entity.from_identifier(Identifier(path=entity_path))
+    file_ = File.from_identifier(Identifier(id=file_data['id']))
     file_,repo,log,op = entity.add_access(
         file_, file_.path_abs,
         git_name, git_mail, agent=settings.AGENT
