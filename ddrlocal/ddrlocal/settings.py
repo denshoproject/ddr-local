@@ -140,7 +140,7 @@ GITSTATUS_LOCK_PATH = os.path.join(MEDIA_BASE, '.gitstatus-stop')
 #     gitstatus_use_global_lock=0
 GITSTATUS_USE_GLOBAL_LOCK = True
 if CONFIG.has_option('local', 'gitstatus_use_global_lock'):
-    GITSTATUS_USE_GLOBAL_LOCK = CONFIG.get('local', 'gitstatus_use_global_lock')
+    GITSTATUS_USE_GLOBAL_LOCK = CONFIG.getboolean('local', 'gitstatus_use_global_lock')
 # Minimum interval between git-status updates per collection repository.
 GITSTATUS_INTERVAL = 60*60*1
 GITSTATUS_BACKOFF = 30
