@@ -6,7 +6,7 @@
 
                               # LICENSE
 
-django>=1.11.0,<2.0           # MIT
+django>=3.0.0,<3.1           # MIT
 django-bootstrap-pagination==1.6.4 # MIT
 
 redis                 # MIT
@@ -15,9 +15,9 @@ django-redis-sessions  # BSD
 
 celery>=4.4.0,<5.0.0          # BSD
 
-djangorestframework>=3.6.0,<3.7 # BSD
-coreapi                # BSD
-coreapi-cli            # BSD
+djangorestframework>=3.11.0,<3.12 # BSD
+pyyaml
+uritemplate
 
 envoy                  # MIT
 gunicorn              # MIT
