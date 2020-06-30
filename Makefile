@@ -86,6 +86,14 @@ ifeq ($(DEBIAN_CODENAME), buster)
 	OPENJDK_PKG=openjdk-11-jre
 endif
 
+IMAGEMAGICK_CONF=
+ifeq ($(DEBIAN_CODENAME), stretch)
+	IMAGEMAGICK_CONF=imagemagick-policy.xml.deb9
+endif
+ifeq ($(DEBIAN_CODENAME), buster)
+	IMAGEMAGICK_CONF=imagemagick-policy.xml.deb10
+endif
+
 ELASTICSEARCH=elasticsearch-7.3.1-amd64.deb
 MODERNIZR=modernizr-2.6.2.js
 JQUERY=jquery-1.11.0.min.js
@@ -405,7 +413,7 @@ install-ddr-cmdln: install-setuptools
 	source $(VIRTUALENV)/bin/activate; \
 	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) -r $(INSTALL_CMDLN)/requirements.txt
 	-mkdir -p /etc/ImageMagick-6/
-	cp $(INSTALL_CMDLN)/conf/imagemagick-policy.xml /etc/ImageMagick-6/policy.xml
+	cp $(INSTALL_CMDLN)/conf/$(IMAGEMAGICK_CONF) /etc/ImageMagick-6/policy.xml
 
 mkdir-ddr-cmdln:
 	@echo ""
