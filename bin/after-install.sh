@@ -76,11 +76,11 @@ virtualenv-relocate /opt/ddr-local/venv/ddrlocal/
 echo "Installing custom Imagemagick policy.xml"
 # Release name e.g. jessie
 DEBIAN_CODENAME=$(lsb_release -sc)
-if [ $DEBIAN_CODENAME == 'stretch' ]
+if [ $DEBIAN_CODENAME = 'stretch' ]
 then
     cp /opt/ddr-cmdln/conf/imagemagick-policy.xml.deb9 /etc/ImageMagick-6/policy.xml
 fi
-if [ $DEBIAN_CODENAME == 'buster' ]
+if [ $DEBIAN_CODENAME = 'buster' ]
 then
     cp /opt/ddr-cmdln/conf/imagemagick-policy.xml.deb10 /etc/ImageMagick-6/policy.xml
 fi
