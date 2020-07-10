@@ -1,3 +1,4 @@
+import csv
 from datetime import datetime
 import json
 import logging
@@ -9,19 +10,18 @@ from django.conf import settings
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.http import HttpResponse, HttpResponseRedirect
+from django.http import StreamingHttpResponse
 from django.shortcuts import Http404, render
 from django.urls import reverse
 
 from elasticsearch import TransportError
 
-from DDR import batch
-from DDR import commands
 from DDR import converters
 from DDR import dvcs
-from DDR import fileio
 
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
+from webui import csvio
 from webui.decorators import ddrview
 from webui.forms import DDRForm
 from webui.forms.collections import NewCollectionForm, UploadFileForm
@@ -390,192 +390,103 @@ def signatures( request, cid ):
  
 @login_required
 @storage_required
-def csv_export( request, cid, model=None ):
-    """
-    """
-    if (not model) or (not (model in ['entity','file'])):
+def csv_export(request, cid, model):
+    try:
+        collection = Collection.from_identifier(Identifier(cid))
+    except:
         raise Http404
-    collection = Collection.from_identifier(Identifier(cid))
-    things = {'entity':'objects', 'file':'files'}
-    csv_path = settings.CSV_EXPORT_PATH[model] % collection.id
-    csv_filename = os.path.basename(csv_path)
-    if model == 'entity':
-        file_url = reverse('webui-collection-csv-entities', args=[collection.id])
-    elif model == 'file':
-        file_url = reverse('webui-collection-csv-files', args=[collection.id])
-    # do it
+    if not model in list(csvio.CSV_MODELS.keys()):
+        raise Http404
     result = collection_tasks.csv_export_model.apply_async(
-        (collection.path,model),
+        (collection.path, model),
         countdown=2
     )
     # add celery task_id to session
     celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
     # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
-    task = {'task_id': result.task_id,
-            'action': 'csv-export-model',
-            'collection_id': collection.id,
-            'collection_url': collection.absolute_url(),
-            'things': things[model],
-            'file_name': csv_filename,
-            'file_url': file_url,
-            'start': converters.datetime_to_text(datetime.now(settings.TZ)),}
+    task = {
+        'task_id': result.task_id,
+        'action': 'csv-export-model',
+        'collection_id': collection.id,
+        'collection_url': collection.absolute_url(),
+        'things': csvio.models(model),
+        'file_name': csvio.csv_filename(collection, model),
+        'file_url': csvio.csv_url(collection, model),
+        'start': converters.datetime_to_text(datetime.now(settings.TZ)),
+    }
     celery_tasks[result.task_id] = task
     request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
     return HttpResponseRedirect(collection.absolute_url())
 
 @storage_required
-def csv_download( request, cid, model=None ):
+def csv_download(request, cid, model):
     """Offers CSV file in settings.CSV_TMPDIR for download.
     
     File must actually exist in settings.CSV_EXPORT_PATH and be readable.
     File must be readable by Python csv module.
     If all that is true then it must be a legal CSV file.
     """
-    collection = Collection.from_identifier(Identifier(cid))
-    path = settings.CSV_EXPORT_PATH[model] % collection.id
-    filename = os.path.basename(path)
-    if not os.path.exists(path):
+    try:
+        collection = Collection.from_identifier(Identifier(cid))
+    except:
         raise Http404
-    import csv
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="%s"' % filename
-    writer = csv.writer(
-        response,
-        delimiter=fileio.CSV_DELIMITER,
-        quotechar=fileio.CSV_QUOTECHAR,
-        quoting=fileio.CSV_QUOTING
+    if not model in list(csvio.CSV_MODELS.keys()):
+        raise Http404
+    path = csvio.csv_path(collection, model)
+    if not path.exists():
+        raise Http404
+    
+    class Echo:
+        """Object that implements write method of file-like interface."""
+        def write(self, value):
+            """Write value by returning it instead of storing in a buffer"""
+            return value
+    
+    rows = csvio.csv_rows(path)
+    pseudo_buffer = Echo()
+    writer = csv.writer(pseudo_buffer)
+    response = StreamingHttpResponse(
+        (writer.writerow(row) for row in rows),
+        content_type="text/csv"
     )
-    with open(path, 'rb') as f:
-        reader = csv.reader(
-            f,
-            delimiter=fileio.CSV_DELIMITER,
-            quotechar=fileio.CSV_QUOTECHAR,
-            quoting=fileio.CSV_QUOTING
-        )
-        for row in reader:
-            writer.writerow(row)
+    response['Content-Disposition'] = 'attachment; filename="%s"' % path.name
     return response
 
-CSV_IMPORT_FILE = '/tmp/import-{cid}-{model}.csv'
-
-def handle_uploaded_file(cid, model, f):
-    path = CSV_IMPORT_FILE.format(cid=cid, model=model)
-    with open(path, 'wb+') as destination:
-        for chunk in f.chunks():
-            destination.write(chunk)
- 
 @login_required
 @storage_required
-def csv_import( request, cid, model=None ):
-    """Accepts a CSV file for batch.Import
+def csv_import(request, cid, model):
+    """Accepts a CSV file for batch import
+    
+    TODO fix broken files import
     """
-    if (not model) or (not (model in ['entity','file'])):
+    try:
+        collection = Collection.from_identifier(Identifier(cid))
+    except:
         raise Http404
-    collection = Collection.from_identifier(Identifier(cid))
-    repo = dvcs.repository(collection.identifier.path_abs())
+    if not model in list(csvio.CSV_MODELS.keys()):
+        raise Http404
     if request.method == 'POST':
         form = UploadFileForm(request.POST, request.FILES)
         if form.is_valid():
-            
-            git_name = request.session['git_name']
-            git_mail = request.session['git_mail']
-            
-            csv_path = CSV_IMPORT_FILE.format(
-                cid=collection.identifier.id,
-                model=collection.identifier.model
-            )
-            handle_uploaded_file(
-                collection.identifier.id,
-                collection.identifier.model,
-                request.FILES['file']
-            )
-            if os.path.exists(csv_path):
+            # write uploaded file to tmp/
+            handle_uploaded_file(cid, model, request.FILES['file'])
+            csv_path = csvio.csv_import_path(cid, model)
+            if csv_path.exists():
                 messages.success(request, 'CSV file upload success!.')
             else:
                 messages.error(request, 'CSV file upload failed!')
                 return HttpResponseRedirect(collection.absolute_url())
-
-            if model == 'entity':
-                
-                imported = batch.Importer.import_entities(
-                    csv_path=csv_path,
-                    cidentifier=collection.identifier,
-                    vocabs_url=settings.VOCABS_URL,
-                    git_name=git_name,
-                    git_mail=git_mail,
-                    agent='ddrlocal-csv-import-entity',
-                    dryrun=False,
-                )
-                imported_rel = [
-                    o.identifier.path_rel()
-                    for o in imported
-                ]
-                changelogs = list(set([
-                    os.path.join(
-                        os.path.dirname(path_rel),
-                        'changelog'
-                    )
-                    for path_rel in imported_rel
-                    if 'entity.json' in path_rel
-                ]))
-                imported_all = imported_rel + changelogs
-                result = commands.commit_files(
-                    repo=repo,
-                    message='Imported by ddr-local from file "%s"' % csv_path,
-                    git_files=imported_all,
-                    annex_files=[]
-                )
-                msg = 'Successfully imported {} objects from {}.'.format(
-                    str(len(imported)),
-                    request.FILES['file'].name,
-                )
-                messages.success(request, msg)
-
-            elif model == 'file':
-                
-                imported = batch.Importer.import_files(
-                    csv_path=csv_path,
-                    cidentifier=collection.identifier,
-                    vocabs_url=settings.VOCABS_URL,
-                    git_name=git_name,
-                    git_mail=git_mail,
-                    agent='ddrlocal-csv-import-file',
-                    row_start=0,
-                    row_end=9999999,
-                    dryrun=False
-                )
-                # flatten: import_files returns a list of file,entity lists
-                imported_flat = [i for imprtd in imported for i in imprtd]
-                # import_files returns absolute paths but we need relative
-                imported_rel = [
-                    os.path.relpath(
-                        file_path_abs,
-                        collection.identifier.path_abs()
-                    )
-                    for file_path_abs in imported_flat
-                ]
-                # Add changelog for each entity
-                changelogs = list(set([
-                    os.path.join(
-                        os.path.dirname(path_rel),
-                        'changelog'
-                    )
-                    for path_rel in imported_rel
-                    if 'entity.json' in path_rel
-                ]))
-                imported_all = imported_rel + changelogs
-                result = commands.commit_files(
-                    repo=repo,
-                    message='Imported by ddr-local from file "%s"' % csv_path,
-                    git_files=imported_all,
-                    annex_files=[],
-                )
-                msg = 'Successfully imported {} files from {}.'.format(
-                    str(len(imported)),
-                    request.FILES['file'].name,
-                )
-                messages.success(request, msg)
-
+            # process the contents
+            result,imported = csvio.import_from_csv(
+                csv_path, collection, model,
+                request.session['git_name'],
+                request.session['git_mail'],
+            )
+            msg = 'Successfully imported {} objects from {}.'.format(
+                str(len(imported)),
+                request.FILES['file'].name,
+            )
+            messages.success(request, msg)
             return HttpResponseRedirect(collection.absolute_url())
     else:
         form = UploadFileForm()
@@ -583,6 +494,14 @@ def csv_import( request, cid, model=None ):
         'collection': collection,
         'form': form,
     })
+
+def handle_uploaded_file(cid, model, f):
+    """Write uploaded file to /tmp/
+    """
+    path = csvio.csv_import_path(cid, model)
+    with path.open('wb+') as destination:
+        for chunk in f.chunks():
+            destination.write(chunk)
 
 @ddrview
 @login_required

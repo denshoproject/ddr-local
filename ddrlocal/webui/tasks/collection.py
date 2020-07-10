@@ -12,13 +12,13 @@ from elasticsearch import TransportError
 from django.conf import settings
 from django.urls import reverse
 
-from DDR import batch
 from DDR import commands
 from DDR import converters
 from DDR import idservice
 from DDR import signatures
 from DDR import util
 
+from webui import csvio
 from webui import gitstatus
 from webui.models import Collection
 from webui.identifier import Identifier
@@ -416,18 +416,11 @@ def csv_export_model( collection_path, model ):
     @return collection_path: Absolute path to collection.
     @return model: 'entity' or 'file'.
     """
-    collection = Collection.from_identifier(Identifier(path=collection_path))
-    csv_path = settings.CSV_EXPORT_PATH[model] % collection.id
-    
-    logger.info('All paths in %s' % collection_path)
-    paths = util.find_meta_files(
-        basedir=collection_path, model=model, recursive=1, force_read=1
+    return csvio.export_to_csv(
+        Collection.from_identifier(Identifier(path=collection_path)),
+        model,
+        logger
     )
-    logger.info('Exporting %s paths' % len(paths))
-    batch.Exporter.export(
-        paths, model, csv_path, required_only=False
-    )
-    return csv_path
 
 
 # ----------------------------------------------------------------------
