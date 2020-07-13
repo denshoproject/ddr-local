@@ -258,7 +258,7 @@ def file_add_access(entity_path, file_data, src_path, git_name, git_mail):
     )
     if op and (op == 'pass'):
         log.ok('Things are okay as they are.  Leaving them alone.')
-        return file_.__dict__
+        return file_.dict(json_safe=True)
     file_,repo,log = entity.add_file_commit(
         file_, repo, log,
         git_name, git_mail, agent=settings.AGENT
