@@ -1,5 +1,28 @@
+from elasticsearch.connection.base import TransportError
+import pytest
+import requests
+
+from django.conf import settings
 from django.test import TestCase
 from django.urls import reverse
+
+HOST_CHECK_URL = 'http://{}'.format(settings.DOCSTORE_HOST)
+
+NO_ELASTICSEARCH_ERR = "Elasticsearch cluster not available."
+def no_elasticsearch():
+    """Returns True if cannot contact cluster; use to skip tests
+    """
+    try:
+        r = requests.get(HOST_CHECK_URL, timeout=1)
+        if r.status_code == 200:
+            return False
+    except ConnectionError:
+        print('ConnectionError')
+        return True
+    except TransportError:
+        print('TransportError')
+        return True
+    return True
 
 
 class AuthView(TestCase):
@@ -187,6 +210,7 @@ class SearchView(TestCase):
         response = self.client.get(reverse('webui-search'))
         self.assertEqual(response.status_code, 200)
     
+    @pytest.mark.skipif(no_elasticsearch(), reason=NO_ELASTICSEARCH_ERR)
     def test_search_results(self):
         url = reverse(
             'webui-search'
@@ -195,6 +219,7 @@ class SearchView(TestCase):
         self.assertEqual(response.status_code, 200)
         find_filter_choices(response, SEARCH_FILTER_CHOICES)
     
+    @pytest.mark.skipif(no_elasticsearch(), reason=NO_ELASTICSEARCH_ERR)
     def test_search_results_pagination(self):
         url = reverse(
             'webui-search'
@@ -203,6 +228,7 @@ class SearchView(TestCase):
         self.assertEqual(response.status_code, 200)
         find_filter_choices(response, SEARCH_FILTER_CHOICES)
     
+    @pytest.mark.skipif(no_elasticsearch(), reason=NO_ELASTICSEARCH_ERR)
     def test_search_results_filter(self):
         url = reverse(
             'webui-search'
@@ -216,6 +242,7 @@ class SearchView(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
     
+    @pytest.mark.skipif(no_elasticsearch(), reason=NO_ELASTICSEARCH_ERR)
     def test_collection_search_results(self):
         url = reverse(
             'webui-collection-search',
@@ -225,6 +252,7 @@ class SearchView(TestCase):
         self.assertEqual(response.status_code, 200)
         find_filter_choices(response, SEARCH_FILTER_CHOICES)
     
+    @pytest.mark.skipif(no_elasticsearch(), reason=NO_ELASTICSEARCH_ERR)
     def test_collection_search_results_pagination(self):
         url = reverse(
             'webui-collection-search',
