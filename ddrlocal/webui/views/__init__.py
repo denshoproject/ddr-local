@@ -59,28 +59,29 @@ def login( request ):
                 form.cleaned_data['username'],
                 form.cleaned_data['password'],
             )
-            status2,reason2,userinfo = ic.user_info()
-            
             if status1 != 200:
                 messages.warning(
                     request,
-                    'Login failed: %s %s (%s) [1]' % (
+                    'Login failed: %s %s (%s) [login]' % (
                         status1,reason1,settings.IDSERVICE_API_BASE
                     )
                 )
                 return HttpResponseRedirect(redirect_uri)
+            status2,reason2,userinfo = ic.user_info()
             if status2 != 200:
                 messages.warning(
                     request,
-                    'Login failed: %s %s (%s) [2]' % (
-                        status2,reason2, settings.IDSERVICE_API_BASE
+                    'Login failed: %s %s (%s) [user_info]' % (
+                        status2,reason2,settings.IDSERVICE_API_BASE
                     )
                 )
                 return HttpResponseRedirect(redirect_uri)
-            if not (userinfo['email'] and userinfo['first_name'] and userinfo['last_name']):
+            if not (userinfo['email'] \
+                    and userinfo['first_name'] and userinfo['last_name']):
                 messages.warning(
                     request,
-                    'Login failed: ID service missing required user info (email, first_name, last_name). (%s) [3]' % (
+                    'Login failed: ID service missing required user info '
+                    '(email, first_name, last_name). (%s) [3]' % (
                         settings.IDSERVICE_API_BASE
                     )
                 )
