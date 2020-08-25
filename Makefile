@@ -80,10 +80,10 @@ endif
 
 OPENJDK_PKG=
 ifeq ($(DEBIAN_CODENAME), stretch)
-	OPENJDK_PKG=openjdk-8-jre
+	OPENJDK_PKG=openjdk-8-jre-headless
 endif
 ifeq ($(DEBIAN_CODENAME), buster)
-	OPENJDK_PKG=openjdk-11-jre
+	OPENJDK_PKG=openjdk-11-jre-headless
 endif
 
 IMAGEMAGICK_CONF=
