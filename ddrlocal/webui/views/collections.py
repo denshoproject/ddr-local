@@ -397,25 +397,7 @@ def csv_export(request, cid, model):
         raise Http404
     if not model in list(csvio.CSV_MODELS.keys()):
         raise Http404
-    result = collection_tasks.csv_export_model.apply_async(
-        (collection.path, model),
-        countdown=2
-    )
-    # add celery task_id to session
-    celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
-    # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
-    task = {
-        'task_id': result.task_id,
-        'action': 'csv-export-model',
-        'collection_id': collection.id,
-        'collection_url': collection.absolute_url(),
-        'things': csvio.models(model),
-        'file_name': csvio.csv_filename(collection, model),
-        'file_url': csvio.csv_url(collection, model),
-        'start': converters.datetime_to_text(datetime.now(settings.TZ)),
-    }
-    celery_tasks[result.task_id] = task
-    request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
+    collection_tasks.csv_export(request, collection, model)
     return HttpResponseRedirect(collection.absolute_url())
 
 @storage_required
