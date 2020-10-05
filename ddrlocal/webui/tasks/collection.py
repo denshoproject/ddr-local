@@ -416,11 +416,11 @@ def csv_export_model( collection_path, model ):
     @return collection_path: Absolute path to collection.
     @return model: 'entity' or 'file'.
     """
-    return csvio.export_to_csv(
+    return str(csvio.export_to_csv(
         Collection.from_identifier(Identifier(path=collection_path)),
         model,
         logger
-    )
+    ))
 
 
 # ----------------------------------------------------------------------
