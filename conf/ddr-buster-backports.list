@@ -1,0 +1,2 @@
+# DDR: So Debian Buster installs can have same git-annex as Ubuntu 20.04 installs.
+deb http://deb.debian.org/debian buster-backports main
