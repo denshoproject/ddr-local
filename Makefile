@@ -837,7 +837,7 @@ deb-buster:
 	--depends "redis-server"   \
 	--depends "supervisor"   \
 	--depends "udisks2"   \
-	--after-install "bin/after-install.sh"   \
+	--after-install "bin/fpm-after-install.sh"   \
 	--chdir $(INSTALL_LOCAL)   \
 	conf/ddrlocal.cfg=etc/ddr/ddrlocal.cfg   \
 	conf/celeryd.conf=etc/supervisor/conf.d/celeryd.conf   \
