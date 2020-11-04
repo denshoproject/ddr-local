@@ -229,6 +229,12 @@ ddr-user:
 	-addgroup ddr vboxsf
 	printf "\n\n# ddrlocal: Activate virtualnv on login\nsource $(VIRTUALENV)/bin/activate\n" >> /home/ddr/.bashrc; \
 
+apt-backports:
+ifeq "$(DEBIAN_CODENAME)" "buster"
+	cp $(INSTALL_LOCAL)/conf/ddr-buster-backports.list /etc/apt/sources.list.d/
+	apt-get update
+endif
+
 install-core:
 	apt-get --assume-yes install bzip2 curl gdebi-core git-core logrotate ntp p7zip-full wget
 
@@ -352,13 +358,17 @@ install-setuptools: install-virtualenv
 	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) setuptools
 
 
-install-dependencies: install-core install-misc-tools install-daemons
+install-dependencies: apt-backports install-core install-misc-tools install-daemons
 	@echo ""
 	@echo "install-dependencies ---------------------------------------------------"
 	apt-get --assume-yes install python3-dev python3-pip python3-venv
-	apt-get --assume-yes install git-core git-annex libxml2-dev libxslt1-dev libz-dev pmount udisks2
+	apt-get --assume-yes install libxml2-dev libxslt1-dev libz-dev pmount udisks2
 	apt-get --assume-yes install imagemagick libssl-dev libxml2 libxml2-dev libxslt1-dev
 	apt-get --assume-yes install $(LIBEXEMPI3_PKG)
+	apt-get -t buster-backports --assume-yes install git-annex git-core
+
+install-git: apt-backports
+	apt-get -t buster-backports --assume-yes install git-annex git-core
 
 mkdirs: mkdir-ddr-cmdln mkdir-ddr-local
 
@@ -837,7 +847,7 @@ deb-buster:
 	--depends "redis-server"   \
 	--depends "supervisor"   \
 	--depends "udisks2"   \
-	--after-install "bin/after-install.sh"   \
+	--after-install "bin/fpm-after-install.sh"   \
 	--chdir $(INSTALL_LOCAL)   \
 	conf/ddrlocal.cfg=etc/ddr/ddrlocal.cfg   \
 	conf/celeryd.conf=etc/supervisor/conf.d/celeryd.conf   \
