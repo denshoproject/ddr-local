@@ -231,7 +231,7 @@ ddr-user:
 
 apt-backports:
 ifeq "$(DEBIAN_CODENAME)" "buster"
-	cp $(INSTALLDIR)/conf/ddr-buster-backports.list /etc/apt/sources.list.d/
+	cp $(INSTALL_LOCAL)/conf/ddr-buster-backports.list /etc/apt/sources.list.d/
 	apt-get update
 endif
 
@@ -365,6 +365,9 @@ install-dependencies: apt-backports install-core install-misc-tools install-daem
 	apt-get --assume-yes install libxml2-dev libxslt1-dev libz-dev pmount udisks2
 	apt-get --assume-yes install imagemagick libssl-dev libxml2 libxml2-dev libxslt1-dev
 	apt-get --assume-yes install $(LIBEXEMPI3_PKG)
+	apt-get -t buster-backports --assume-yes install git-annex git-core
+
+install-git: apt-backports
 	apt-get -t buster-backports --assume-yes install git-annex git-core
 
 mkdirs: mkdir-ddr-cmdln mkdir-ddr-local
@@ -844,7 +847,7 @@ deb-buster:
 	--depends "redis-server"   \
 	--depends "supervisor"   \
 	--depends "udisks2"   \
-	--after-install "bin/after-install.sh"   \
+	--after-install "bin/fpm-after-install.sh"   \
 	--chdir $(INSTALL_LOCAL)   \
 	conf/ddrlocal.cfg=etc/ddr/ddrlocal.cfg   \
 	conf/celeryd.conf=etc/supervisor/conf.d/celeryd.conf   \
