@@ -13,6 +13,7 @@ from django.views import View
 from DDR import converters
 from DDR import idservice
 
+from webui import cache
 from webui import WEBUI_MESSAGES
 from webui import gitstatus
 from webui.decorators import ddrview
@@ -180,6 +181,7 @@ def logout( request ):
                 logout_status,logout_reason,settings.IDSERVICE_API_BASE
             )
         )
+    cache.redis_flush_all()
     return HttpResponseRedirect(redirect_uri)
 
 
