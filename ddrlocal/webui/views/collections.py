@@ -67,7 +67,8 @@ def collections( request ):
                 identifier = Identifier(path=collection_path)
                 collection = Collection.from_identifier(identifier)
                 colls.append(collection)
-                gitstatus = collection.gitstatus()
+                #gitstatus = collection.gitstatus()
+                gitstatus = {}
                 if gitstatus and gitstatus.get('sync_status'):
                     collection.sync_status = gitstatus['sync_status']
                 else:
