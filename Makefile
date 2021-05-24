@@ -422,8 +422,6 @@ install-ddr-cmdln: install-setuptools
 	cd $(INSTALL_CMDLN)/ddr; python setup.py install
 	source $(VIRTUALENV)/bin/activate; \
 	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) -r $(INSTALL_CMDLN)/requirements.txt
-	-mkdir -p /etc/ImageMagick-6/
-	cp $(INSTALL_CMDLN)/conf/$(IMAGEMAGICK_CONF) /etc/ImageMagick-6/policy.xml
 
 mkdir-ddr-cmdln:
 	@echo ""
@@ -622,6 +620,8 @@ install-configs:
 	touch $(CONF_LOCAL)
 	chown ddr.ddr $(CONF_LOCAL)
 	chmod 640 $(CONF_LOCAL)
+	-mkdir -p /etc/ImageMagick-6/
+	cp $(INSTALL_CMDLN)/conf/$(IMAGEMAGICK_CONF) /etc/ImageMagick-6/policy.xml
 
 uninstall-configs:
 	-rm $(CONF_PRODUCTION)
