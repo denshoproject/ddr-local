@@ -62,6 +62,7 @@ def merge( request, repo, org, cid ):
     unmerged = dvcs.list_conflicted(repository)
     staged = dvcs.list_staged(repository)
     if request.method == 'POST':
+        assert False
         form = MergeCommitForm(request.POST)
         if form.is_valid():
             which = form.cleaned_data['which']
@@ -139,12 +140,14 @@ def edit_raw( request, repo, org, cid ):
     repository = dvcs.repository(collection.path)
     filename = ''
     if request.method == 'POST':
+        assert False
         filename = request.POST.get('filename', None)
     elif request.method == 'GET':
         filename = request.GET.get('filename', None)
     filepath = os.path.join(collection.path, filename)
     
     if request.method == 'POST':
+        assert False
         form = MergeRawForm(request.POST)
         if form.is_valid():
             text = form.cleaned_data['text']
@@ -174,6 +177,7 @@ def edit_json( request, repo, org, cid ):
     
     filename = ''
     if request.method == 'POST':
+        assert False
         filename = request.POST.get('filename', None)
     elif request.method == 'GET':
         filename = request.GET.get('filename', None)
@@ -186,6 +190,7 @@ def edit_json( request, repo, org, cid ):
         fields = dvcs.conflicting_fields(txt)
     
     if request.method == 'POST':
+        assert False
         #form = MergeJSONForm(request.POST)
         #if form.is_valid():
         #    text = form.cleaned_data['text']
