@@ -87,6 +87,10 @@ def entity_edit(collection_path, entity_id, form_data, git_name, git_mail, agent
     except RequestError as err:
         logger.error("RequestError: {0}".format(err))
         exit = 1; status = {'error': err}
+    except FileNotFoundError as err:
+        # don't crash if file absent from Internet Archive
+        logger.error("FileNotFoundError: {0}".format(err))
+        exit = 1; status = {'error': str(err)}
     
     dvcs_tasks.gitstatus_update.apply_async(
         (collection.path,),
