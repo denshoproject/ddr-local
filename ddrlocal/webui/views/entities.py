@@ -332,16 +332,6 @@ def _create_entity(request, eidentifier, collection, git_name, git_mail):
         logger.error(status)
         messages.error(request, WEBUI_MESSAGES['ERROR'].format(status))
     else:
-        # update search index
-        try:
-            entity.post_json()
-        except ConnectionError as err:
-            logger.error("ConnectionError: {0}".format(err))
-        except RequestError as err:
-            logger.error("RequestError: {0}".format(err))
-        except FileNotFoundError as err:
-            # don't crash if file absent from Internet Archive
-            pass
         dvcs_tasks.gitstatus_update.apply_async(
             (collection.path,),
             countdown=2
