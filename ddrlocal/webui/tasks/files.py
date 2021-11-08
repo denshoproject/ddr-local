@@ -202,6 +202,10 @@ def file_add_local(entity_path, src_path, role, data, git_name, git_mail):
             log.not_ok("ConnectionError: {0}".format(err))
         except RequestError as err:
             log.not_ok("RequestError: {0}".format(err))
+        except FileNotFoundError as err:
+            # don't crash if file absent from Internet Archive
+            logger.error("FileNotFoundError: {0}".format(err))
+            exit = 1; status = {'error': str(err)}
     return {
         'id': file_.id,
         'status': 'ok'
@@ -235,6 +239,10 @@ def file_add_external(entity_path, data, git_name, git_mail):
             log.not_ok("ConnectionError: {0}".format(err))
         except RequestError as err:
             log.not_ok("RequestError: {0}".format(err))
+        except FileNotFoundError as err:
+            # don't crash if file absent from Internet Archive
+            logger.error("FileNotFoundError: {0}".format(err))
+            exit = 1; status = {'error': str(err)}
     return {
         'id': file_.id,
         'status': 'ok'
@@ -272,6 +280,10 @@ def file_add_access(entity_path, file_data, src_path, git_name, git_mail):
             log.not_ok("ConnectionError: {0}".format(err))
         except RequestError as err:
             log.not_ok("RequestError: {0}".format(err))
+        except FileNotFoundError as err:
+            # don't crash if file absent from Internet Archive
+            logger.error("FileNotFoundError: {0}".format(err))
+            exit = 1; status = {'error': str(err)}
     return {
         'id': file_.id,
         'status': 'ok'
@@ -335,6 +347,10 @@ def file_edit(collection_path, file_id, form_data, git_name, git_mail):
     except RequestError as err:
         logger.error("RequestError: {0}".format(err))
         exit = 1; status = {'error': err}
+    except FileNotFoundError as err:
+        # don't crash if file absent from Internet Archive
+        logger.error("FileNotFoundError: {0}".format(err))
+        exit = 1; status = {'error': str(err)}
     
     dvcs_tasks.gitstatus_update.apply_async(
         (collection_path,),
@@ -412,6 +428,10 @@ def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, 
             logger.error("ConnectionError: {0}".format(err))
         except RequestError as err:
             logger.error("RequestError: {0}".format(err))
+        except FileNotFoundError as err:
+            # don't crash if file absent from Internet Archive
+            logger.error("FileNotFoundError: {0}".format(err))
+            exit = 1; status = {'error': str(err)}
     
     return exit,status,collection_path,file_basename
 
@@ -478,10 +498,15 @@ def set_signature(parent_id, file_id, git_name, git_mail):
     collection_path = file_.collection_path
     parent.signature_id = file_id
     gitstatus.lock(settings.MEDIA_BASE, 'set_signature')
-    exit,status,updated_files = parent.save(
-        git_name, git_mail,
-        {}
-    )
+    try:
+        exit,status,updated_files = parent.save(
+            git_name, git_mail,
+            {}
+        )
+    except FileNotFoundError as err:
+        # don't crash if file absent from Internet Archive
+        logger.error("FileNotFoundError: {0}".format(err))
+        exit = 1; status = {'error': str(err)}
     dvcs_tasks.gitstatus_update.apply_async(
         (collection_path,),
         countdown=2
