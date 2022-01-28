@@ -7,7 +7,7 @@ import traceback
 
 from django import forms
 from django.conf import settings
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 
 from DDR import modules
 from webui.identifier import Identifier, INHERITABLE_FIELDS
@@ -187,7 +187,7 @@ class DDRForm(forms.Form):
                         start = getattr(err, 'start', None)
                         end = getattr(err, 'end', None)
                         if start is not None and end is not None:
-                            unicode_hint = force_text(
+                            unicode_hint = force_str(
                                 err.object[max(start - 5, 0):min(end + 5, len(err.object))],
                                 'ascii', errors='replace'
                             )

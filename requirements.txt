@@ -6,7 +6,7 @@
 
                               # LICENSE
 
-django>=3.0.0,<3.1           # MIT
+django>=4.0.0,<4.1            # MIT
 django-bootstrap-pagination==1.6.4 # MIT
 
 redis                 # MIT

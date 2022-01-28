@@ -18,8 +18,6 @@ from datetime import timedelta
 import logging
 import sys
 
-import pytz
-
 # import all settings from ddr-cmdln DDR/config.py
 # including the ConfigParser object CONFIG
 from DDR.config import *
