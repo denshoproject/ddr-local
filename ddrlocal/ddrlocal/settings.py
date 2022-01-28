@@ -210,24 +210,15 @@ REDIS_DB_SORL = 3
 
 CACHES = {
     "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://{}:{}/{}".format(
-            REDIS_HOST, str(REDIS_PORT), str(REDIS_DB_CACHE)
-        ),
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-        }
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB_CACHE}",
     }
 }
 
 # celery
 CELERY_TASKS_SESSION_KEY = 'celery-tasks'
-CELERY_RESULT_BACKEND = 'redis://{}:{}/{}'.format(
-    REDIS_HOST, str(REDIS_PORT), str(REDIS_DB_CELERY_RESULT)
-)
-CELERY_BROKER_URL     = 'redis://{}:{}/{}'.format(
-    REDIS_HOST, str(REDIS_PORT), str(REDIS_DB_CELERY_BROKER)
-)
+CELERY_RESULT_BACKEND = f'redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB_CELERY_RESULT}'
+CELERY_BROKER_URL     = f'redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB_CELERY_BROKER}'
 BROKER_TRANSPORT_OPTIONS = {'visibility_timeout': 60 * 60}  # 1 hour
 CELERYD_HIJACK_ROOT_LOGGER = False
 CELERY_ACCEPT_CONTENT = ['pickle', 'json', 'msgpack', 'yaml']
@@ -263,7 +254,7 @@ THUMBNAIL_DUMMY_SOURCE = 'http://dummyimage.com/%(width)sx%(height)s'
 # Sets source image ratio for dummy images w only width or height
 THUMBNAIL_DUMMY_RATIO = 1.5
 
-SESSION_ENGINE = 'redis_sessions.session'
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
 
 MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 
