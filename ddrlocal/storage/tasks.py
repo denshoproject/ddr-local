@@ -1,11 +1,10 @@
-from celery import states
-from celery import task
+from celery import shared_task
 from celery import Task
 from celery.result import AsyncResult
 from celery.utils import get_full_cls_name
-from celery.utils.encoding import safe_repr
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
+from kombu.utils.encoding import safe_repr
 
 from django.conf import settings
 from django.contrib import messages
@@ -29,7 +28,7 @@ class StorageTask(Task):
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
         logger.debug('after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
 
-@task(base=StorageTask, name='storage.tasks.mount')
+@shared_task(base=StorageTask, name='storage.tasks.mount')
 def mount_in_bkgnd(devicetype, devicefile):
     device = None
     for d in storage.devices():
