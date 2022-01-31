@@ -441,7 +441,8 @@ mkdir-ddr-cmdln:
 	@echo "mkdir-ddr-cmdln --------------------------------------------------------"
 	-mkdir $(LOG_BASE)
 	chown -R ddr.ddr $(LOG_BASE)
-	chmod -R 775 $(LOG_BASE)
+	find $(LOG_BASE) -type d -exec chmod 755 {} \;
+	find $(LOG_BASE) -type f -exec chmod 644 {} \;
 	-mkdir -p $(MEDIA_ROOT)
 	chown -R ddr.ddr $(MEDIA_ROOT)
 	chmod -R 775 $(MEDIA_ROOT)
@@ -493,7 +494,8 @@ mkdir-ddr-local:
 # logs dir
 	-mkdir $(LOG_BASE)
 	chown -R ddr.ddr $(LOG_BASE)
-	chmod -R 775 $(LOG_BASE)
+	find $(LOG_BASE) -type d -exec chmod 755 {} \;
+	find $(LOG_BASE) -type f -exec chmod 644 {} \;
 # sqlite db dir
 	-mkdir $(SQLITE_BASE)
 	chown -R ddr.ddr $(SQLITE_BASE)
@@ -561,7 +563,8 @@ migrate:
 	chown -R ddr.ddr $(SQLITE_BASE)
 	chmod -R 770 $(SQLITE_BASE)
 	chown -R ddr.ddr $(LOG_BASE)
-	chmod -R 775 $(LOG_BASE)
+	find $(LOG_BASE) -type d -exec chmod 755 {} \;
+	find $(LOG_BASE) -type f -exec chmod 644 {} \;
 
 branch:
 	cd $(INSTALL_LOCAL)/ddrlocal; python $(INSTALL_LOCAL)/bin/git-checkout-branch.py $(BRANCH)
