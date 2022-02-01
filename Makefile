@@ -221,7 +221,7 @@ uninstall: uninstall-app uninstall-configs
 clean: clean-app
 
 
-install-prep: ddr-user install-core git-config install-misc-tools
+install-prep: ddr-user mkdirs install-configs install-core git-config install-misc-tools
 
 ddr-user:
 	-addgroup --gid=1001 ddr
@@ -481,7 +481,7 @@ pip-download-local:
 	source $(VIRTUALENV)/bin/activate; \
 	pip download --no-binary=:all: --destination-directory=$(INSTALL_LOCAL)/vendor -r $(INSTALL_LOCAL)/requirements.txt
 
-install-ddr-local: install-setuptools mkdir-ddr-local
+install-ddr-local: mkdirs install-configs install-setuptools
 	@echo ""
 	@echo "install-ddr-local ------------------------------------------------------"
 	git status | grep "On branch"
