@@ -3,7 +3,7 @@ import os
 
 from elasticsearch.exceptions import ConnectionError, RequestError
 
-from celery import task
+from celery import shared_task
 from celery import Task
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
@@ -171,7 +171,7 @@ class FileAddDebugTask(Task):
         gitstatus.update(settings.MEDIA_BASE, collection.path)
         gitstatus.unlock(settings.MEDIA_BASE, 'file-add-*')
 
-@task(base=FileAddDebugTask, name=TASK_FILE_ADD_LOCAL_NAME)
+@shared_task(base=FileAddDebugTask, name=TASK_FILE_ADD_LOCAL_NAME)
 def file_add_local(entity_path, src_path, role, data, git_name, git_mail):
     """
     @param entity_path: str
@@ -211,7 +211,7 @@ def file_add_local(entity_path, src_path, role, data, git_name, git_mail):
         'status': 'ok'
     }
 
-@task(base=FileAddDebugTask, name=TASK_FILE_ADD_EXTERNAL_NAME)
+@shared_task(base=FileAddDebugTask, name=TASK_FILE_ADD_EXTERNAL_NAME)
 def file_add_external(entity_path, data, git_name, git_mail):
     """
     @param entity_path: str
@@ -248,7 +248,7 @@ def file_add_external(entity_path, data, git_name, git_mail):
         'status': 'ok'
     }
 
-@task(base=FileAddDebugTask, name=TASK_FILE_ADD_ACCESS_NAME)
+@shared_task(base=FileAddDebugTask, name=TASK_FILE_ADD_ACCESS_NAME)
 def file_add_access(entity_path, file_data, src_path, git_name, git_mail):
     """
     @param entity_path: str
@@ -322,7 +322,7 @@ class FileEditTask(Task):
         gitstatus.update(settings.MEDIA_BASE, collection_path)
         gitstatus.unlock(settings.MEDIA_BASE, 'file_edit')
 
-@task(base=FileEditTask, name='file-edit')
+@shared_task(base=FileEditTask, name='file-edit')
 def file_edit(collection_path, file_id, form_data, git_name, git_mail):
     """The time-consuming parts of file-edit.
     
@@ -399,7 +399,7 @@ class DeleteFileTask(Task):
         gitstatus.update(settings.MEDIA_BASE, collection_path)
         gitstatus.unlock(settings.MEDIA_BASE, 'delete_file')
 
-@task(base=DeleteFileTask, name='file-delete')
+@shared_task(base=DeleteFileTask, name='file-delete')
 def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, agent='' ):
     """
     @param collection_path: string
@@ -481,7 +481,7 @@ class FileSignatureTask(Task):
         gitstatus.update(settings.MEDIA_BASE, collection_path)
         gitstatus.unlock(settings.MEDIA_BASE, 'set_signature')
 
-@task(base=FileSignatureTask, name='set-signature')
+@shared_task(base=FileSignatureTask, name='set-signature')
 def set_signature(parent_id, file_id, git_name, git_mail):
     """Set file_id as signature of specified parent.
     
