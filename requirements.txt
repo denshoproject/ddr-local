@@ -11,7 +11,7 @@ django-bootstrap-pagination==1.6.4 # MIT
 
 redis                         # MIT
 
-celery>=5.2.0,<5.3.0          # BSD
+celery>=5.2.2,<5.3.0          # BSD
 kombu>=5.2.0,<5.3.0           # New BSD
 
 djangorestframework>=3.11.0,<3.12 # BSD
