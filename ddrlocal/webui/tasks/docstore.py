@@ -1,7 +1,7 @@
 from datetime import datetime
 import os
 
-from celery import task
+from celery import shared_task
 from celery import Task
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
@@ -25,7 +25,7 @@ class ElasticsearchTask(Task):
         gitstatus.unlock(settings.MEDIA_BASE, 'reindex')
         logger.debug('ElasticsearchTask.after_return(%s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs))
 
-@task(base=ElasticsearchTask, name='search-reindex')
+@shared_task(base=ElasticsearchTask, name='search-reindex')
 def reindex( index ):
     """
     @param index: Name of index to create or update

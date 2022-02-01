@@ -19,6 +19,9 @@ endif
 ifeq ($(DEBIAN_CODENAME), buster)
 	PYTHON_VERSION=3.7
 endif
+ifeq ($(DEBIAN_CODENAME), bullseye)
+	PYTHON_VERSION=3.9
+endif
 
 # current branch name minus dashes or underscores
 PACKAGE_BRANCH := $(shell git rev-parse --abbrev-ref HEAD | tr -d _ | tr -d -)
@@ -70,28 +73,23 @@ MEDIA_BASE=/var/www
 MEDIA_ROOT=$(MEDIA_BASE)/media
 STATIC_ROOT=$(MEDIA_BASE)/static
 
+IMAGEMAGICK_CONF=
 LIBEXEMPI3_PKG=
-ifeq ($(DEBIAN_CODENAME), stretch)
-	LIBEXEMPI3_PKG=libexempi3
-endif
-ifeq ($(DEBIAN_CODENAME), buster)
-	LIBEXEMPI3_PKG=libexempi8
-endif
-
 OPENJDK_PKG=
 ifeq ($(DEBIAN_CODENAME), stretch)
+	IMAGEMAGICK_CONF=imagemagick-policy.xml.deb9
+	LIBEXEMPI3_PKG=libexempi3
 	OPENJDK_PKG=openjdk-8-jre-headless
 endif
 ifeq ($(DEBIAN_CODENAME), buster)
+	IMAGEMAGICK_CONF=imagemagick-policy.xml.deb10
+	LIBEXEMPI3_PKG=libexempi8
 	OPENJDK_PKG=openjdk-11-jre-headless
 endif
-
-IMAGEMAGICK_CONF=
-ifeq ($(DEBIAN_CODENAME), stretch)
-	IMAGEMAGICK_CONF=imagemagick-policy.xml.deb9
-endif
-ifeq ($(DEBIAN_CODENAME), buster)
-	IMAGEMAGICK_CONF=imagemagick-policy.xml.deb10
+ifeq ($(DEBIAN_CODENAME), bullseye)
+	IMAGEMAGICK_CONF=imagemagick-policy.xml.deb11
+	LIBEXEMPI3_PKG=libexempi8
+	OPENJDK_PKG=openjdk-17-jre-headless
 endif
 
 ELASTICSEARCH=elasticsearch-7.3.1-amd64.deb
@@ -132,14 +130,17 @@ DEB_ARCH=amd64
 DEB_NAME_JESSIE=$(APP)-$(DEB_BRANCH)
 DEB_NAME_STRETCH=$(APP)-$(DEB_BRANCH)
 DEB_NAME_BUSTER=$(APP)-$(DEB_BRANCH)
+DEB_NAME_BULLSEYE=$(APP)-$(DEB_BRANCH)
 # Application version, separator (~), Debian release tag e.g. deb8
 # Release tag used because sortable and follows Debian project usage.
 DEB_VERSION_JESSIE=$(APP_VERSION)~deb8
 DEB_VERSION_STRETCH=$(APP_VERSION)~deb9
 DEB_VERSION_BUSTER=$(APP_VERSION)~deb10
+DEB_VERSION_BULLSEYE=$(APP_VERSION)~deb11
 DEB_FILE_JESSIE=$(DEB_NAME_JESSIE)_$(DEB_VERSION_JESSIE)_$(DEB_ARCH).deb
 DEB_FILE_STRETCH=$(DEB_NAME_STRETCH)_$(DEB_VERSION_STRETCH)_$(DEB_ARCH).deb
 DEB_FILE_BUSTER=$(DEB_NAME_BUSTER)_$(DEB_VERSION_BUSTER)_$(DEB_ARCH).deb
+DEB_FILE_BULLSEYE=$(DEB_NAME_BULLSEYE)_$(DEB_VERSION_BULLSEYE)_$(DEB_ARCH).deb
 DEB_VENDOR=Densho.org
 DEB_MAINTAINER=<geoffrey.jost@densho.org>
 DEB_DESCRIPTION=Densho Digital Repository editor
@@ -220,7 +221,7 @@ uninstall: uninstall-app uninstall-configs
 clean: clean-app
 
 
-install-prep: ddr-user install-core git-config install-misc-tools
+install-prep: ddr-user mkdirs install-configs install-core git-config install-misc-tools
 
 ddr-user:
 	-addgroup --gid=1001 ddr
@@ -365,10 +366,20 @@ install-dependencies: apt-backports install-core install-misc-tools install-daem
 	apt-get --assume-yes install libxml2-dev libxslt1-dev libz-dev pmount udisks2
 	apt-get --assume-yes install imagemagick libssl-dev libxml2 libxml2-dev libxslt1-dev
 	apt-get --assume-yes install $(LIBEXEMPI3_PKG)
+ifeq ($(DEBIAN_CODENAME), buster)
 	apt-get -t buster-backports --assume-yes install git-annex git-core
+endif
+ifeq ($(DEBIAN_CODENAME), bullseye)
+	apt-get --assume-yes install git-annex git-core
+endif
 
 install-git: apt-backports
+ifeq ($(DEBIAN_CODENAME), buster)
 	apt-get -t buster-backports --assume-yes install git-annex git-core
+endif
+ifeq ($(DEBIAN_CODENAME), bullseye)
+	apt-get --assume-yes install git-annex git-core
+endif
 
 mkdirs: mkdir-ddr-cmdln mkdir-ddr-local
 
@@ -430,7 +441,8 @@ mkdir-ddr-cmdln:
 	@echo "mkdir-ddr-cmdln --------------------------------------------------------"
 	-mkdir $(LOG_BASE)
 	chown -R ddr.ddr $(LOG_BASE)
-	chmod -R 775 $(LOG_BASE)
+	find $(LOG_BASE) -type d -exec chmod 755 {} \;
+	find $(LOG_BASE) -type f -exec chmod 644 {} \;
 	-mkdir -p $(MEDIA_ROOT)
 	chown -R ddr.ddr $(MEDIA_ROOT)
 	chmod -R 775 $(MEDIA_ROOT)
@@ -469,7 +481,7 @@ pip-download-local:
 	source $(VIRTUALENV)/bin/activate; \
 	pip download --no-binary=:all: --destination-directory=$(INSTALL_LOCAL)/vendor -r $(INSTALL_LOCAL)/requirements.txt
 
-install-ddr-local: install-setuptools mkdir-ddr-local
+install-ddr-local: mkdirs install-configs install-setuptools
 	@echo ""
 	@echo "install-ddr-local ------------------------------------------------------"
 	git status | grep "On branch"
@@ -482,7 +494,8 @@ mkdir-ddr-local:
 # logs dir
 	-mkdir $(LOG_BASE)
 	chown -R ddr.ddr $(LOG_BASE)
-	chmod -R 775 $(LOG_BASE)
+	find $(LOG_BASE) -type d -exec chmod 755 {} \;
+	find $(LOG_BASE) -type f -exec chmod 644 {} \;
 # sqlite db dir
 	-mkdir $(SQLITE_BASE)
 	chown -R ddr.ddr $(SQLITE_BASE)
@@ -512,7 +525,7 @@ runserver:
 
 runworker:
 	source $(VIRTUALENV)/bin/activate; cd $(INSTALL_LOCAL)/ddrlocal; \
-	celery -A ddrlocal worker --pool=threads -l INFO -f /var/log/ddr/worker.log
+	celery -A ddrlocal worker --pool=threads -l INFO -f /var/log/ddr/ddrlocal-celery.log
 
 uninstall-ddr-local: install-setuptools
 	@echo ""
@@ -550,7 +563,8 @@ migrate:
 	chown -R ddr.ddr $(SQLITE_BASE)
 	chmod -R 770 $(SQLITE_BASE)
 	chown -R ddr.ddr $(LOG_BASE)
-	chmod -R 775 $(LOG_BASE)
+	find $(LOG_BASE) -type d -exec chmod 755 {} \;
+	find $(LOG_BASE) -type f -exec chmod 644 {} \;
 
 branch:
 	cd $(INSTALL_LOCAL)/ddrlocal; python $(INSTALL_LOCAL)/bin/git-checkout-branch.py $(BRANCH)
@@ -739,7 +753,7 @@ install-fpm:
 
 # https://stackoverflow.com/questions/32094205/set-a-custom-install-directory-when-making-a-deb-package-with-fpm
 # https://brejoc.com/tag/fpm/
-deb: deb-buster
+deb: deb-bullseye
 
 deb-stretch:
 	@echo ""
@@ -826,6 +840,76 @@ deb-buster:
 	--name $(DEB_NAME_BUSTER)   \
 	--version $(DEB_VERSION_BUSTER)   \
 	--package $(DEB_FILE_BUSTER)   \
+	--url "$(GIT_SOURCE_URL)"   \
+	--vendor "$(DEB_VENDOR)"   \
+	--maintainer "$(DEB_MAINTAINER)"   \
+	--description "$(DEB_DESCRIPTION)"   \
+	--depends "cgit"   \
+	--depends "fcgiwrap"   \
+	--depends "git-annex"   \
+	--depends "git-core"   \
+	--depends "imagemagick"   \
+	--depends "libexempi8"   \
+	--depends "libssl-dev"   \
+	--depends "libxml2"   \
+	--depends "libxml2-dev"   \
+	--depends "libxslt1-dev"   \
+	--depends "libz-dev"   \
+	--depends "nginx-light"   \
+	--depends "pmount"   \
+	--depends "python3-dev"   \
+	--depends "python3-pip"   \
+	--depends "python3-venv"   \
+	--depends "redis-server"   \
+	--depends "supervisor"   \
+	--depends "udisks2"   \
+	--after-install "bin/fpm-after-install.sh"   \
+	--chdir $(INSTALL_LOCAL)   \
+	conf/ddrlocal.cfg=etc/ddr/ddrlocal.cfg   \
+	conf/celeryd.conf=etc/supervisor/conf.d/celeryd.conf   \
+	conf/supervisor.conf=etc/supervisor/conf.d/ddrlocal.conf   \
+	conf/nginx.conf=etc/nginx/sites-available/ddrlocal.conf   \
+	conf/logrotate=etc/logrotate.d/ddr   \
+	conf/README-logs=$(LOG_BASE)/README  \
+	conf/README-sqlite=$(SQLITE_BASE)/README  \
+	conf/README-media=$(MEDIA_ROOT)/README  \
+	conf/README-static=$(STATIC_ROOT)/README  \
+	static=var/www   \
+	bin=$(DEB_BASE)   \
+	conf=$(DEB_BASE)   \
+	COPYRIGHT=$(DEB_BASE)   \
+	../ddr-cmdln=opt   \
+	../ddr-defs=opt   \
+	ddrlocal=$(DEB_BASE)   \
+	../densho-vocab=opt   \
+	.git=$(DEB_BASE)   \
+	.gitignore=$(DEB_BASE)   \
+	INSTALL.rst=$(DEB_BASE)   \
+	LICENSE=$(DEB_BASE)   \
+	Makefile=$(DEB_BASE)   \
+	README.rst=$(DEB_BASE)   \
+	requirements.txt=$(DEB_BASE)   \
+	setup-workstation.sh=$(DEB_BASE)   \
+	static=$(DEB_BASE)   \
+	venv=$(DEB_BASE)   \
+	VERSION=$(DEB_BASE)
+# Put worktree pointer file back in place
+	python bin/deb-prep-post.py after
+
+deb-bullseye:
+	@echo ""
+	@echo "FPM packaging (bullseye) -----------------------------------------------"
+	-rm -Rf $(DEB_FILE_BULLSEYE)
+# Copy .git/ dir from master worktree
+	python bin/deb-prep-post.py before
+# Make package
+	fpm   \
+	--verbose   \
+	--input-type dir   \
+	--output-type deb   \
+	--name $(DEB_NAME_BULLSEYE)   \
+	--version $(DEB_VERSION_BULLSEYE)   \
+	--package $(DEB_FILE_BULLSEYE)   \
 	--url "$(GIT_SOURCE_URL)"   \
 	--vendor "$(DEB_VENDOR)"   \
 	--maintainer "$(DEB_MAINTAINER)"   \

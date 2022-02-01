@@ -3,7 +3,7 @@ import os
 
 from elasticsearch.exceptions import ConnectionError, RequestError
 
-from celery import task
+from celery import shared_task
 from celery import Task
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
@@ -41,7 +41,7 @@ class CollectionCheckTask(Task):
         logger.debug('CollectionCheckTask.after_return(%s, %s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs, einfo))
         gitstatus.log('CollectionCheckTask.after_return(%s, %s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs, einfo))
 
-@task(base=CollectionCheckTask, name='webui.tasks.collection_check')
+@shared_task(base=CollectionCheckTask, name='webui.tasks.collection_check')
 def check( collection_path ):
     if not os.path.exists(settings.MEDIA_BASE):
         raise Exception('base_dir does not exist: %s' % settings.MEDIA_BASE)
@@ -123,7 +123,7 @@ class CollectionNewTask(Task):
         # locking uses common name
         gitstatus.unlock(settings.MEDIA_BASE, TASK_COLLECTION_NEW_NAME)
 
-@task(base=CollectionNewTask, name=TASK_COLLECTION_NEW_MANUAL_NAME)
+@shared_task(base=CollectionNewTask, name=TASK_COLLECTION_NEW_MANUAL_NAME)
 def collection_new_manual(collection_path, git_name, git_mail):
     """The time-consuming parts of collection-new-manual.
     
@@ -161,7 +161,7 @@ def collection_new_manual(collection_path, git_name, git_mail):
     )
     return status,collection_path
 
-@task(base=CollectionNewTask, name=TASK_COLLECTION_NEW_IDSERVICE_NAME)
+@shared_task(base=CollectionNewTask, name=TASK_COLLECTION_NEW_IDSERVICE_NAME)
 def collection_new_idservice(organization_id, idservice_token, git_name, git_mail):
     """The time-consuming parts of collection-new-idservice.
     
@@ -262,7 +262,7 @@ class CollectionEditTask(Task):
         gitstatus.update(settings.MEDIA_BASE, collection.path)
         gitstatus.unlock(settings.MEDIA_BASE, 'collection_edit')
 
-@task(base=CollectionEditTask, name='collection-edit')
+@shared_task(base=CollectionEditTask, name='collection-edit')
 def save(collection_path, cleaned_data, git_name, git_mail):
     """The time-consuming parts of collection-edit.
     
@@ -317,7 +317,7 @@ class CollectionSyncDebugTask(Task):
         gitstatus.update(settings.MEDIA_BASE, collection_path)
         gitstatus.unlock(settings.MEDIA_BASE, 'collection_sync')
 
-@task(base=CollectionSyncDebugTask, name='collection-sync')
+@shared_task(base=CollectionSyncDebugTask, name='collection-sync')
 def sync( git_name, git_mail, collection_path ):
     """Synchronizes collection repo with workbench server.
     
@@ -366,7 +366,7 @@ class CollectionSignaturesDebugTask(Task):
         gitstatus.update(settings.MEDIA_BASE, collection_path)
         gitstatus.unlock(settings.MEDIA_BASE, 'collection_signatures')
 
-@task(base=CollectionSignaturesDebugTask, name='collection-signatures')
+@shared_task(base=CollectionSignaturesDebugTask, name='collection-signatures')
 def signatures(collection_path, git_name, git_mail):
     """Identifies signature files for collection and entities.
     
@@ -430,7 +430,7 @@ class CSVExportDebugTask(Task):
     def after_return(self, status, retval, task_id, args, kwargs, cinfo):
         pass
 
-@task(base=CSVExportDebugTask, name='webui-csv-export-model')
+@shared_task(base=CSVExportDebugTask, name='webui-csv-export-model')
 def csv_export_model(collection_path, model):
     """Export collection {model} metadata to CSV file.
     
@@ -478,7 +478,7 @@ class ReindexDebugTask(Task):
     def after_return(self, status, retval, task_id, args, kwargs, cinfo):
         pass
 
-@task(base=ReindexDebugTask, name=TASK_COLLECTION_REINDEX)
+@shared_task(base=ReindexDebugTask, name=TASK_COLLECTION_REINDEX)
 def collection_reindex(collection_path):
     """Reindexes collection
     

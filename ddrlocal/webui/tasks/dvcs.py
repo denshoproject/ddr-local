@@ -1,6 +1,6 @@
 import os
 
-from celery import task
+from celery import shared_task
 from celery import Task
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
@@ -17,7 +17,7 @@ class DebugTask(Task):
 
 # ----------------------------------------------------------------------
 
-@task(base=DebugTask, name='webui.tasks.gitolite_info_refresh')
+@shared_task(base=DebugTask, name='webui.tasks.gitolite_info_refresh')
 def gitolite_info_refresh():
     """
     Check the cached value of DDR.dvcs.gitolite_info().
@@ -42,7 +42,7 @@ class GitStatusTask(Task):
         logger.debug('GitStatusTask.after_return(%s, %s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs, einfo))
         gitstatus.log('GitStatusTask.after_return(%s, %s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs, einfo))
 
-@task(base=GitStatusTask, name='webui.tasks.gitstatus_update')
+@shared_task(base=GitStatusTask, name='webui.tasks.gitstatus_update')
 def gitstatus_update( collection_path ):
     if not os.path.exists(settings.MEDIA_BASE):
         raise Exception('base_dir does not exist. No Store mounted?: %s' % settings.MEDIA_BASE)
@@ -54,7 +54,7 @@ def gitstatus_update( collection_path ):
         gitstatus.queue_write(settings.MEDIA_BASE, queue)
     return gitstatus.update(settings.MEDIA_BASE, collection_path)
 
-@task(base=GitStatusTask, name='webui.tasks.gitstatus_update_store')
+@shared_task(base=GitStatusTask, name='webui.tasks.gitstatus_update_store')
 def gitstatus_update_store():
     if not os.path.exists(settings.MEDIA_BASE):
         raise Exception('base_dir does not exist. No Store mounted?: %s' % settings.MEDIA_BASE)

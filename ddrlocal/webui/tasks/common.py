@@ -1,10 +1,11 @@
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
+from celery import shared_task
 from celery import states
 from celery.result import AsyncResult
-from celery.utils.encoding import safe_repr
 from celery.utils import get_full_cls_name
+from kombu.utils.encoding import safe_repr
 
 from django.conf import settings
 from django.urls import reverse
@@ -181,7 +182,7 @@ def session_tasks( request ):
     @return tasks: a dict with task_id for key
     """
     # basic tasks info from session:
-    # task_id, action ('name' argument of @task), start time, args
+    # task_id, action ('name' argument of @shared_task), start time, args
     tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
     # add entity URLs
     for task_id in list(tasks.keys()):

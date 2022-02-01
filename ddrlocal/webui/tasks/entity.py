@@ -2,7 +2,7 @@ from datetime import datetime
 
 from elasticsearch.exceptions import ConnectionError, RequestError
 
-from celery import task
+from celery import shared_task
 from celery import Task
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
@@ -60,7 +60,7 @@ class EntityEditTask(Task):
         gitstatus.update(settings.MEDIA_BASE, collection_path)
         gitstatus.unlock(settings.MEDIA_BASE, 'entity_edit')
 
-@task(base=EntityEditTask, name='entity-edit')
+@shared_task(base=EntityEditTask, name='entity-edit')
 def entity_edit(collection_path, entity_id, form_data, git_name, git_mail, agent=''):
     """The time-consuming parts of entity-edit.
     
@@ -144,7 +144,7 @@ class DeleteEntityTask(Task):
         gitstatus.update(settings.MEDIA_BASE, collection_path)
         gitstatus.unlock(settings.MEDIA_BASE, 'entity_delete')
 
-@task(base=DeleteEntityTask, name='entity-delete')
+@shared_task(base=DeleteEntityTask, name='entity-delete')
 def entity_delete(collection_path, entity_id, git_name, git_mail, agent):
     """The time-consuming parts of entity-delete.
     
@@ -228,7 +228,7 @@ class EntityReloadTask(Task):
         gitstatus.update(settings.MEDIA_BASE, collection_path)
         gitstatus.unlock(settings.MEDIA_BASE, 'reload_files')
 
-@task(base=EntityReloadTask, name='entity-reload-files')
+@shared_task(base=EntityReloadTask, name='entity-reload-files')
 def reload_files(collection_path, entity_id, git_name, git_mail, agent=''):
     """Regenerate entity.json's list of child files.
     
