@@ -906,7 +906,7 @@ deb-bullseye:
 	@echo "FPM packaging (bullseye) -----------------------------------------------"
 	-rm -Rf $(DEB_FILE_BULLSEYE)
 # Copy .git/ dir from master worktree
-	python bin/deb-prep-post.py before
+	python3 bin/deb-prep-post.py before
 # Make package
 	fpm   \
 	--verbose   \
@@ -969,4 +969,4 @@ deb-bullseye:
 	venv=$(DEB_BASE)   \
 	VERSION=$(DEB_BASE)
 # Put worktree pointer file back in place
-	python bin/deb-prep-post.py after
+	python3 bin/deb-prep-post.py after
