@@ -84,3 +84,7 @@ if [ $DEBIAN_CODENAME = 'buster' ]
 then
     cp /opt/ddr-cmdln/conf/imagemagick-policy.xml.deb10 /etc/ImageMagick-6/policy.xml
 fi
+if [ $DEBIAN_CODENAME = 'bullseye' ]
+then
+    cp /opt/ddr-cmdln/conf/imagemagick-policy.xml.deb11 /etc/ImageMagick-6/policy.xml
+fi
