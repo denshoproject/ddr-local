@@ -2,8 +2,6 @@ import logging
 logger = logging.getLogger(__name__)
 import re
 
-from elasticsearch.exceptions import ConnectionError, RequestError
-
 from django.conf import settings
 from django.contrib import messages
 from django.core.cache import cache
@@ -18,6 +16,7 @@ from DDR.identifier import CHILDREN, NODES
 from DDR import idservice
 from DDR import vocab
 
+from elastictools.docstore import ConnectionError, RequestError
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
 from webui.decorators import ddrview

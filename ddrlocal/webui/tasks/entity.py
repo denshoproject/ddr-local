@@ -1,7 +1,5 @@
 from datetime import datetime
 
-from elasticsearch.exceptions import ConnectionError, RequestError
-
 from celery import shared_task
 from celery import Task
 from celery.utils.log import get_task_logger
@@ -11,9 +9,9 @@ from django.conf import settings
 
 from DDR import converters
 
-from webui import docstore
+from elastictools.docstore import ConnectionError, RequestError
 from webui import gitstatus
-from webui.models import Collection, Entity
+from webui.models import Collection, Entity, DOCSTORE
 from webui.identifier import Identifier
 from webui.tasks import dvcs as dvcs_tasks
 
@@ -179,9 +177,8 @@ def entity_delete(collection_path, entity_id, git_name, git_mail, agent):
     
     logger.debug('Updating Elasticsearch')
     if settings.DOCSTORE_ENABLED:
-        ds = docstore.Docstore()
         try:
-            ds.delete(entity.id)
+            DOCSTORE.delete(entity.id)
         except ConnectionError:
             logger.error('Could not delete document from Elasticsearch.')
     return status,message,collection.path_abs,entity.id

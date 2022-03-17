@@ -11,14 +11,12 @@ from django.http.request import HttpRequest
 from django.shortcuts import render
 from django.urls import reverse
 
-from elasticsearch.exceptions import ConnectionError, ConnectionTimeout
-from elasticsearch import TransportError
-
+from elastictools.docstore import ConnectionError, ConnectionTimeout, TransportError
+from elastictools import search
 from .. import api
 from ..forms import search as forms
 from .. import identifier
 from .. import models
-from .. import search
 from ..decorators import ui_state
 
 
@@ -103,7 +101,7 @@ def search_ui(request, obj=None):
     
     # nice UI if Elasticsearch is down
     try:
-        search.DOCSTORE.status()
+        models.DOCSTORE.status()
     except TransportError:
         messages.error(
             request, "<b>TransportError</b>: Cannot connect to search engine."
@@ -127,7 +125,7 @@ def search_ui(request, obj=None):
         elif obj.model == 'narrator':
             context['template_extends'] = "ui/narrators/base.html"
     
-    searcher = search.Searcher()
+    searcher = search.Searcher(models.DOCSTORE)
     if request.GET.get('fulltext'):
         # Redirect if fulltext is a DDR ID
         if is_ddr_id(request.GET.get('fulltext')):
@@ -155,15 +153,16 @@ def search_ui(request, obj=None):
                 search_models = ['ddrentity', 'ddrsegment']
                 obj.title = obj.display_name
         else:
-            search_models = search.SEARCH_MODELS
+            search_models = models.SEARCH_MODELS
         
         searcher.prepare(
             params=params,
-            params_whitelist=search.SEARCH_PARAM_WHITELIST,
+            params_whitelist=models.SEARCH_PARAM_WHITELIST,
             search_models=search_models,
-            fields=search.SEARCH_INCLUDE_FIELDS,
-            fields_nested=search.SEARCH_NESTED_FIELDS,
-            fields_agg=search.SEARCH_AGG_FIELDS,
+            sort=[],
+            fields=models.SEARCH_INCLUDE_FIELDS,
+            fields_nested=models.SEARCH_NESTED_FIELDS,
+            fields_agg=models.SEARCH_AGG_FIELDS,
         )
         context['searching'] = True
     

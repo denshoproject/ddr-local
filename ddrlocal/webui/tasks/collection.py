@@ -1,13 +1,10 @@
 from datetime import datetime
 import os
 
-from elasticsearch.exceptions import ConnectionError, RequestError
-
 from celery import shared_task
 from celery import Task
 from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
-from elasticsearch import TransportError
 
 from django.conf import settings
 from django.urls import reverse
@@ -18,11 +15,12 @@ from DDR import idservice
 from DDR import signatures
 from DDR import util
 
+from elastictools import search
+from elastictools.docstore import ConnectionError, RequestError, TransportError
 from webui import csvio
 from webui import gitstatus
-from webui.models import Collection
+from webui.models import Collection, DOCSTORE
 from webui.identifier import Identifier
-from webui import search
 from webui.tasks import dvcs as dvcs_tasks
 
 
@@ -490,7 +488,7 @@ def collection_reindex(collection_path):
     if settings.DOCSTORE_ENABLED:
         # nice UI if Elasticsearch is down
         try:
-            search.DOCSTORE.status()
+            DOCSTORE.status()
         except TransportError:
             raise Exception(
                 "<b>TransportError</b>: Cannot connect to search engine."
