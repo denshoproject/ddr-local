@@ -6,7 +6,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.core.cache import cache
 
-from webui import docstore
+from webui import models
 from DDR import storage as ddrstorage
 
 
@@ -98,7 +98,7 @@ def _mount_common(request, device):
     logger.debug('caching base_path')
     bp = base_path(request)
     # update elasticsearch alias
-    docstore.Docstore().set_alias(device['label'])
+    models.DOCSTORE.set_alias(device['label'])
     # remove disk space data from cache
     cache.delete(DISK_SPACE_CACHE_KEY)
 
