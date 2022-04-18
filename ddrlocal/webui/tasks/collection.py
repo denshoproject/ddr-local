@@ -19,7 +19,7 @@ from elastictools import search
 from elastictools.docstore import ConnectionError, RequestError, TransportError
 from webui import csvio
 from webui import gitstatus
-from webui.models import Collection, DOCSTORE
+from webui.models import Collection
 from webui.identifier import Identifier
 from webui.tasks import dvcs as dvcs_tasks
 

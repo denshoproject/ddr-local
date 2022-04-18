@@ -11,7 +11,7 @@ from DDR import converters
 
 from elastictools.docstore import ConnectionError, RequestError
 from webui import gitstatus
-from webui.models import Collection, Entity, DOCSTORE
+from webui.models import Collection, Entity
 from webui.identifier import Identifier
 from webui.tasks import dvcs as dvcs_tasks
 

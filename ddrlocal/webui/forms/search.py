@@ -7,6 +7,8 @@ from django.conf import settings
 from django.core.cache import cache
 
 from webui import models
+from webui.models import docstore
+
 
 # Pretty labels for multiple choice fields
 # (After initial search the choice lists come from search aggs lists
@@ -25,7 +27,10 @@ def forms_choice_labels():
     """
     global FORMS_CHOICE_LABELS
     if not FORMS_CHOICE_LABELS:
-        forms_choices = models.DOCSTORE.es.get(
+        ds = docstore.DocstoreManager(
+            models.INDEX_PREFIX, settings.DOCSTORE_HOST, settings
+        )
+        forms_choices = ds.es.get(
             index='forms',
             id='forms-choices'
         )['_source']

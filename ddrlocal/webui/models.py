@@ -36,10 +36,7 @@ from webui.identifier import Identifier, MODULES, VALID_COMPONENTS
 INDEX_PREFIX = 'ddr'
 
 # see if cluster is available, quit with nice message if not
-docstore.Docstore(INDEX_PREFIX, settings.DOCSTORE_HOST, settings).start_test()
-
-# set default hosts and index
-DOCSTORE = docstore.Docstore('ddr', settings.DOCSTORE_HOST, settings)
+docstore.DocstoreManager(INDEX_PREFIX, settings.DOCSTORE_HOST, settings).start_test()
 
 # whitelist of params recognized in URL query
 # TODO move to ddr-defs/repo_models/elastic.py?

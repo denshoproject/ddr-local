@@ -13,7 +13,7 @@ from DDR.ingest import addfile_logger
 
 from elastictools.docstore import ConnectionError, RequestError
 from webui import gitstatus
-from webui.models import Collection, Entity, File, DOCSTORE
+from webui.models import Collection, Entity, File
 from webui.identifier import Identifier
 from webui.tasks import dvcs as dvcs_tasks
 
