@@ -1,10 +1,11 @@
-from elasticsearch.connection.base import TransportError
 import pytest
 import requests
 
 from django.conf import settings
 from django.test import TestCase
 from django.urls import reverse
+
+from elastictools.docstore import TransportError
 
 HOST_CHECK_URL = 'http://{}'.format(settings.DOCSTORE_HOST)
 

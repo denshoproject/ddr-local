@@ -1,8 +1,6 @@
 from datetime import datetime
 import os
 
-from elasticsearch.exceptions import ConnectionError, RequestError
-
 from celery import shared_task
 from celery import Task
 from celery.utils.log import get_task_logger
@@ -13,7 +11,7 @@ from django.conf import settings
 from DDR import converters
 from DDR.ingest import addfile_logger
 
-from webui import docstore
+from elastictools.docstore import ConnectionError, RequestError
 from webui import gitstatus
 from webui.models import Collection, Entity, File
 from webui.identifier import Identifier
@@ -421,9 +419,8 @@ def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, 
     )
     logger.debug('delete from search index')
     if settings.DOCSTORE_ENABLED:
-        ds = docstore.Docstore()
         try:
-            ds.delete(file_.id)
+            DOCSTORE.delete(file_.id)
         except ConnectionError as err:
             logger.error("ConnectionError: {0}".format(err))
         except RequestError as err:

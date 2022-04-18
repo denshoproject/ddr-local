@@ -13,16 +13,13 @@ from rest_framework.views import APIView
 from django.conf import settings
 from django.http import HttpResponse
 
-import elasticsearch_dsl
-
+from elastictools.docstore import elasticsearch_dsl
+from elastictools import search
 from webui import decorators
-from webui import docstore
 from webui import identifier
 from webui import models
-from webui import search
+from webui.models import docstore
 
-
-DOCSTORE = docstore.Docstore()
 
 Repository = identifier.ELASTICSEARCH_CLASSES_BY_MODEL['repository']
 Organization = identifier.ELASTICSEARCH_CLASSES_BY_MODEL['organization']
@@ -124,9 +121,9 @@ def es_children(request, oid, limit=None, offset=None):
     except:
         collection_id = None
         child_models = oi.child_models(stubs=True)
-    
+    ds = docstore.DocstoreManager(models.INDEX_PREFIX, settings.DOCSTORE_HOST, settings)
     s = elasticsearch_dsl.Search(
-        using=DOCSTORE.es, index=DOCSTORE.indexname
+        using=ds.es, index=ds.indexname
     )
     s = s.query("match", parent_id=oi.id)
     s = s.sort('sort', 'repo', 'org', 'cid', 'eid', 'role', 'sha1')
@@ -266,15 +263,16 @@ class Search(APIView):
         else:
             limit = settings.RESULTS_PER_PAGE
             offset = 0
-        
-        searcher = search.Searcher()
+        ds = docstore.DocstoreManager(models.INDEX_PREFIX, settings.DOCSTORE_HOST, settings)
+        searcher = search.Searcher(ds)
         searcher.prepare(
             params=request.query_params.dict(),
-            params_whitelist=search.SEARCH_PARAM_WHITELIST,
-            search_models=search.SEARCH_MODELS,
-            fields=search.SEARCH_INCLUDE_FIELDS,
-            fields_nested=search.SEARCH_NESTED_FIELDS,
-            fields_agg=search.SEARCH_AGG_FIELDS,
+            params_whitelist=models.SEARCH_PARAM_WHITELIST,
+            search_models=models.SEARCH_MODELS,
+            sort=[],
+            fields=models.SEARCH_INCLUDE_FIELDS,
+            fields_nested=models.SEARCH_NESTED_FIELDS,
+            fields_agg=models.SEARCH_AGG_FIELDS,
         )
         results = searcher.execute(limit, offset)
         results_dict = results.ordered_dict(
@@ -298,11 +296,12 @@ def object_children(request, object_id):
     p - page (offset)
     """
     # TODO just get doc_type
-    document = DOCSTORE.es.get(
-        index=DOCSTORE.index_name(identifier.Identifier(object_id).model),
+    ds = docstore.DocstoreManager(models.INDEX_PREFIX, settings.DOCSTORE_HOST, settings)
+    document = ds.es.get(
+        index=ds.index_name(identifier.Identifier(object_id).model),
         id=object_id
     )
-    model = document['_index'].replace(docstore.INDEX_PREFIX, '')
+    model = document['_index'].replace(docstore.models.INDEX_PREFIX, '')
     if   model == 'repository': return organizations(request._request, object_id)
     elif model == 'organization': return collections(request._request, object_id)
     elif model == 'collection': return entities(request._request, object_id)
@@ -316,11 +315,12 @@ def object_detail(request, object_id):
     """OBJECT DETAIL DOCS
     """
     # TODO just get doc_type
-    document = DOCSTORE.es.get(
-        index=DOCSTORE.index_name(identifier.Identifier(object_id).model),
+    ds = docstore.DocstoreManager(models.INDEX_PREFIX, settings.DOCSTORE_HOST, settings)
+    document = ds.es.get(
+        index=ds.index_name(identifier.Identifier(object_id).model),
         id=object_id
     )
-    model = document['_index'].replace(docstore.INDEX_PREFIX, '')
+    model = document['_index'].replace(docstore.models.INDEX_PREFIX, '')
     if   model == 'repository': return repository(request._request, object_id)
     elif model == 'organization': return organization(request._request, object_id)
     elif model == 'collection': return collection(request._request, object_id)

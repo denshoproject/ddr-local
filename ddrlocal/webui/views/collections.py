@@ -14,11 +14,12 @@ from django.http import StreamingHttpResponse
 from django.shortcuts import Http404, render
 from django.urls import reverse
 
-from elasticsearch import TransportError
-
 from DDR import converters
+from DDR import docstore
 from DDR import dvcs
 
+from elastictools.docstore import TransportError
+from elastictools import search
 from storage.decorators import storage_required
 from webui import WEBUI_MESSAGES
 from webui import csvio
@@ -31,7 +32,6 @@ from webui import gitolite
 from webui.gitstatus import repository, annex_info
 from webui.models import Collection
 from webui.identifier import Identifier
-from webui import search
 from webui.tasks import collection as collection_tasks
 from webui.views.decorators import login_required
 
@@ -530,7 +530,7 @@ def check(request, cid):
 def reindex(request, cid):
     # nice UI if Elasticsearch is down
     try:
-        search.DOCSTORE.status()
+        docstore.DocstoreManager(INDEX_PREFIX, settings.DOCSTORE_HOST, settings).status()
     except TransportError:
         messages.error(
             request, "<b>TransportError</b>: Cannot connect to search engine."

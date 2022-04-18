@@ -15,6 +15,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 # ----------------------------------------------------------------------
 
 from datetime import timedelta
+import json
 import logging
 import sys
 
@@ -86,10 +87,29 @@ GIT_ANNEX_WHEREIS = CONFIG.getboolean('local','git_annex_whereis')
 # ElasticSearch
 DOCSTORE_ENABLED     = CONFIG.getboolean('local','docstore_enabled')
 DOCSTORE_HOST = CONFIG.get('local','docstore_host')
+DOCSTORE_SSL_CERTFILE = CONFIG.get('public', 'docstore_ssl_certfile')
+DOCSTORE_USERNAME = 'elastic'
+DOCSTORE_PASSWORD = CONFIG.get('public', 'docstore_password')
 DOCSTORE_TIMEOUT     = int(CONFIG.get('local', 'docstore_timeout'))
 RESULTS_PER_PAGE = 25
 ELASTICSEARCH_MAX_SIZE = 10000
 ELASTICSEARCH_DEFAULT_LIMIT = RESULTS_PER_PAGE
+def _cluster(config, ipaddr_port):
+    """In config: {"green":["192.168.0.19"],"blue":["192.168.0.20"], ...}"""
+    unknown = '¯\_(ツ)_/¯'
+    try:
+        _clusters_by_ip = {}
+        for cluster,ips in json.loads(
+                config.get('public', 'docstore_clusters')
+        ).items():
+            for ip in ips:
+                _clusters_by_ip[ip] = cluster
+        return _clusters_by_ip.get(ipaddr_port.split(':')[0], unknown)
+    except configparser.NoOptionError:
+        return unknown
+    except json.decoder.JSONDecodeError:
+        return unknown
+DOCSTORE_CLUSTER = _cluster(CONFIG, DOCSTORE_HOST)
 
 GITOLITE_INFO_CACHE_TIMEOUT = int(CONFIG.get('local', 'gitolite_info_cache_timeout'))
 GITOLITE_INFO_CACHE_CUTOFF  = int(CONFIG.get('local', 'gitolite_info_cache_cutoff'))
