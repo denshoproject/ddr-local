@@ -15,6 +15,7 @@ from django.shortcuts import Http404, render
 from django.urls import reverse
 
 from DDR import converters
+from DDR import docstore
 from DDR import dvcs
 
 from elastictools.docstore import TransportError
@@ -29,7 +30,7 @@ from webui.forms.collections import SyncConfirmForm, SignaturesConfirmForm
 from webui.forms.collections import ReindexConfirmForm
 from webui import gitolite
 from webui.gitstatus import repository, annex_info
-from webui.models import DOCSTORE, Collection
+from webui.models import Collection
 from webui.identifier import Identifier
 from webui.tasks import collection as collection_tasks
 from webui.views.decorators import login_required
@@ -529,7 +530,7 @@ def check(request, cid):
 def reindex(request, cid):
     # nice UI if Elasticsearch is down
     try:
-        DOCSTORE.status()
+        docstore.DocstoreManager(INDEX_PREFIX, settings.DOCSTORE_HOST, settings).status()
     except TransportError:
         messages.error(
             request, "<b>TransportError</b>: Cannot connect to search engine."

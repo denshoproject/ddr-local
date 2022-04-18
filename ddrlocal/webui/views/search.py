@@ -18,6 +18,7 @@ from ..forms import search as forms
 from .. import identifier
 from .. import models
 from ..decorators import ui_state
+from ..models import docstore
 
 
 def _mkurl(request, path, query=None):
@@ -101,7 +102,10 @@ def search_ui(request, obj=None):
     
     # nice UI if Elasticsearch is down
     try:
-        models.DOCSTORE.status()
+        ds = docstore.DocstoreManager(
+            models.INDEX_PREFIX, settings.DOCSTORE_HOST, settings
+        )
+        ds.status()
     except TransportError:
         messages.error(
             request, "<b>TransportError</b>: Cannot connect to search engine."
@@ -124,8 +128,10 @@ def search_ui(request, obj=None):
         # search narrator
         elif obj.model == 'narrator':
             context['template_extends'] = "ui/narrators/base.html"
-    
-    searcher = search.Searcher(models.DOCSTORE)
+    ds = docstore.DocstoreManager(
+        models.INDEX_PREFIX, settings.DOCSTORE_HOST, settings
+    )
+    searcher = search.Searcher(ds)
     if request.GET.get('fulltext'):
         # Redirect if fulltext is a DDR ID
         if is_ddr_id(request.GET.get('fulltext')):
