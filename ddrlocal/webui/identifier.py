@@ -8,7 +8,7 @@ from django.urls import reverse
 from DDR.identifier import Identifier as DDRIdentifier
 from DDR.identifier import CHILDREN_ALL, MODULES, VALID_COMPONENTS
 from DDR.identifier import MODEL_CLASSES as DDR_MODEL_CLASSES
-from DDR.identifier import IdentifierFormatException
+from DDR.identifier import IdentifierFormatException, InvalidIdentifierException
 from DDR.identifier import ELASTICSEARCH_CLASSES
 from DDR.identifier import ELASTICSEARCH_CLASSES_BY_MODEL
 from DDR.identifier import ELASTICSEARCH_LIST_FIELDS

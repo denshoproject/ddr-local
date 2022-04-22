@@ -31,7 +31,7 @@ from webui.forms.collections import ReindexConfirmForm
 from webui import gitolite
 from webui.gitstatus import repository, annex_info
 from webui.models import Collection
-from webui.identifier import Identifier
+from webui.identifier import Identifier, InvalidIdentifierException
 from webui.tasks import collection as collection_tasks
 from webui.views.decorators import login_required
 
@@ -57,7 +57,11 @@ def collections( request ):
     collections = []
     collection_status_urls = []
     for object_id in gitolite.get_repos_orgs():
-        identifier = Identifier(object_id)
+        try:
+            identifier = Identifier(object_id)
+        except InvalidIdentifierException as err:
+            messages.error(request, f'{err}')
+            break
         # TODO Identifier: Organization object instead of repo and org
         repo,org = list(identifier.parts.values())
         collection_paths = Collection.collection_paths(settings.MEDIA_BASE, repo, org)
