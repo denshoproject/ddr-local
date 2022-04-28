@@ -9,7 +9,7 @@ Vagrant.configure("2") do |config|
   config.vm.box = "generic/debian11"
   config.vm.disk :disk, size: "8GB", primary: true
   config.vm.network "private_network", ip: "192.168.56.101"
-  config.vm.synced_folder "~/vbox/shared/", "/media/sf_ddrshared", automount: true
+  #config.vm.synced_folder "~/vbox/shared/", "/media/sf_ddrshared", automount: true
   config.vm.provider "virtualbox" do |vb|
     vb.gui = true
     vb.memory = "2048"
