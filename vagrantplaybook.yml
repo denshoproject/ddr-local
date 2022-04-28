@@ -1,0 +1,181 @@
+- name: Configure ddr-local
+  hosts: all
+  become: True
+
+  vars:
+    server_name: localhost
+    package_server: https://packages.densho.org/debian
+
+  vars_files:
+    - secrets.yml
+    # ddrlocal_root_password
+    # ddrlocal_densho_password
+    # ddrlocal_ansible_password
+
+  tasks:
+
+    # Install Debian on the VM
+
+    - name: set-hostname
+      ansible.builtin.hostname:
+        name: ddrlocal
+
+    # network domain
+
+    - name: set-root-password
+      user:
+        name: root
+        update_password: always
+        password: "{{ ddrlocal_root_password }}"
+
+    - name: ddr-group
+      group:
+        name: ddr
+        gid: 1001
+        state: present
+
+    - name: ddr-user
+      user:
+        name: ddr
+        group: ddr
+        uid: 1001
+        shell: /bin/bash
+        state: present
+
+    - name: densho-group
+      group:
+        name: densho
+        state: present
+
+    - name: densho-user
+      user:
+        comment: Densho Partner
+        name: densho
+        group: densho
+        groups: sudo
+        home: /home/densho
+        shell: /bin/bash
+        createhome: yes
+        state: present
+        password: "{{ ddrlocal_densho_password }}"
+
+    - name: ansible-group
+      group:
+        name: ansible
+        system: true
+        state: present
+
+    - name: ansible-user
+      user:
+        name: ansible
+        group: ansible
+        groups: sudo
+        system: true
+        shell: /bin/bash
+        state: present
+        password: "{{ ddrlocal_ansible_password }}"
+
+    - name: set-timezone
+      community.general.timezone:
+        name: America/Los_Angeles
+
+    # Security Hardening
+
+    - name: apt-install-packages
+      apt:
+        name:  "{{ packages }}"
+        state: present
+        update_cache:  yes
+      vars:
+        packages:
+          - fail2ban
+          - openssh-server
+          - ufw
+
+    - name: ufw-allow
+      become: True
+      ufw: rule=allow port={{ item }} proto=tcp
+      with_items:
+        - 22
+        - 80
+        - 443
+        - 9001
+
+    - name: ufw-enable
+      become: True
+      ufw:
+        state: enabled
+        policy: allow
+
+    - name: ssh-config
+      lineinfile:
+        dest: /etc/ssh/sshd_config
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        state: present
+        validate: 'sshd -t -f %s'
+      with_items:
+        - regexp: "^PermitRootLogin"
+          line: "PermitRootLogin no"
+
+#    - name: rm-user-vagrant
+#      ansible.builtin.user:
+#        name: vagrant
+#        state: absent
+#        remove: yes
+
+    # Useful Tools
+
+    - name: apt-install-packages
+      apt:
+        name:  "{{ packages }}"
+        state: present
+        update_cache:  yes
+      vars:
+        packages:
+          - sudo
+          - byobu
+          - htop
+          - nfs-common
+
+    # Install VirtualBox Guest Additions
+
+    # DDR Applications and Dependencies
+
+    - name: apt-key-adv
+      ansible.builtin.apt_key:
+        keyserver: keys.openpgp.org
+        id: FADA72018ADAC6F2
+
+    - name: apt-densho-repository
+      tags:
+        - initialize
+        - upgrade
+      apt_repository:
+        repo="deb {{ package_server }} {{ ansible_distribution_release }} main"
+        state=present
+
+    - name: apt-update
+      apt:
+        update_cache: yes
+
+    - name: apt-install-packages-densho
+      become: True
+      apt:
+        pkg={{ item }}
+        state=latest
+        update_cache=yes
+        cache_valid_time=60
+        allow_unauthenticated=yes
+      with_items:
+        - ddrlocal-master
+      tags:
+        - upgrade
+
+    # Git-annex version
+
+    - name: make-install-git
+      make:
+        chdir: /opt/ddr-local
+        target: install-git
+      become: yes
