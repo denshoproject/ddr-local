@@ -15,17 +15,10 @@ Vagrant.configure("2") do |config|
     vb.memory = "2048"
   end
 
-  #config.vm.provision "ansible" do |ansible|
-  #  ansible.config_file = "ansible.cfg"
-  #  ansible.compatibility_mode = "2.0"
-  #  ansible.playbook = "ddrlocal.yml"
-  #  ansible.become = true
-  #  ansible.verbose = true
-  #end
-
-  # 
+  # Create shared folder so VM can access playbook and secrets
   config.vm.synced_folder ".", "/vagrant"
-  
+
+  # Ansible playbook for setting up VM and installing ddr-local
   config.vm.provision "ansible_local" do |ansible|
     ansible.playbook = "playbook.yml"
     ansible.install = true
