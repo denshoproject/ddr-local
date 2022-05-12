@@ -622,7 +622,9 @@ class Collection( DDRCollection ):
         #collection.cache_delete()
         if settings.DOCSTORE_ENABLED:
             try:
-                docstore.DOCSTORE.post(collection)
+                docstore.DocstoreManager(
+                    INDEX_PREFIX, settings.DOCSTORE_HOST, settings
+                ).post(collection)
             except ConnectionError:
                 logger.error('Could not post to Elasticsearch.')
         
@@ -651,7 +653,9 @@ class Collection( DDRCollection ):
         self.cache_delete()
         if settings.DOCSTORE_ENABLED:
             try:
-                docstore.DOCSTORE.post(self)
+                docstore.DocstoreManager(
+                    INDEX_PREFIX, settings.DOCSTORE_HOST, settings
+                ).post(self)
             except ConnectionError:
                 logger.error('Could not post to Elasticsearch.')
         
@@ -882,7 +886,9 @@ class Entity( DDREntity ):
         collection.cache_delete()
         if settings.DOCSTORE_ENABLED:
             try:
-                docstore.DOCSTORE.post(entity)
+                docstore.DocstoreManager(
+                    INDEX_PREFIX, settings.DOCSTORE_HOST, settings
+                ).post(entity)
             except ConnectionError:
                 logger.error('Could not post to Elasticsearch.')
         
@@ -915,7 +921,9 @@ class Entity( DDREntity ):
         collection.cache_delete()
         if settings.DOCSTORE_ENABLED:
             try:
-                docstore.DOCSTORE.post(self)
+                docstore.DocstoreManager(
+                    INDEX_PREFIX, settings.DOCSTORE_HOST, settings
+                ).post(self)
             except ConnectionError:
                 logger.error('Could not post to Elasticsearch.')
         
@@ -1057,7 +1065,9 @@ class File( DDRFile ):
         collection.cache_delete()
         if settings.DOCSTORE_ENABLED:
             try:
-                docstore.DOCSTORE.post(self)
+                docstore.DocstoreManager(
+                    INDEX_PREFIX, settings.DOCSTORE_HOST, settings
+                ).post(self)
             except ConnectionError:
                 logger.error('Could not post to Elasticsearch.')
         
