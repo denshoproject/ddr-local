@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from json.decoder import JSONDecodeError
 import logging
 logger = logging.getLogger(__name__)
 import os
@@ -573,7 +574,11 @@ class Collection( DDRCollection ):
         """Get collection's repo state from git-status if available
         """
         if not self._states:
-            gs = gitstatus.read(settings.MEDIA_BASE, self.path)
+            try:
+                gs = gitstatus.read(settings.MEDIA_BASE, self.path)
+            except JSONDecodeError as err:
+                path = gitstatus.path(settings.MEDIA_BASE, self.path)
+                raise Exception(f'{err} in {path}')
             if gs and gs.get('status',None):
                 self._states = dvcs.repo_states(gs['status'])
             else:
