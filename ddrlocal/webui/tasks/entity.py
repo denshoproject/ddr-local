@@ -163,6 +163,7 @@ def entity_delete(collection_path, entity_id, git_name, git_mail, agent):
         status,message = entity.delete(
             git_name, git_mail, agent, commit=True
         )
+        collection.children(flush=True)
     except ConnectionError as err:
         logger.error("ConnectionError: {0}".format(err))
         exit = 1; status = {'error': err}
