@@ -30,7 +30,7 @@ from webui.forms.collections import SyncConfirmForm, SignaturesConfirmForm
 from webui.forms.collections import ReindexConfirmForm
 from webui import gitolite
 from webui.gitstatus import repository, annex_info
-from webui.models import Collection
+from webui.models import Collection, INDEX_PREFIX
 from webui.identifier import Identifier
 from webui.tasks import collection as collection_tasks
 from webui.views.decorators import login_required

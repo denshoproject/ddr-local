@@ -11,15 +11,17 @@ from django.urls import reverse
 
 from DDR import commands
 from DDR import converters
+from DDR import docstore
 from DDR import idservice
 from DDR import signatures
 from DDR import util
 
 from elastictools import search
+from elastictools.docstore import DocstoreManager
 from elastictools.docstore import ConnectionError, RequestError, TransportError
 from webui import csvio
 from webui import gitstatus
-from webui.models import Collection
+from webui.models import Collection, INDEX_PREFIX
 from webui.identifier import Identifier
 from webui.tasks import dvcs as dvcs_tasks
 
@@ -488,7 +490,9 @@ def collection_reindex(collection_path):
     if settings.DOCSTORE_ENABLED:
         # nice UI if Elasticsearch is down
         try:
-            DOCSTORE.status()
+            DocstoreManager(
+                INDEX_PREFIX, settings.DOCSTORE_HOST, settings
+            ).status()
         except TransportError:
             raise Exception(
                 "<b>TransportError</b>: Cannot connect to search engine."

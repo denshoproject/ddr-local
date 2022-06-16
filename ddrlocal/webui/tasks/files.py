@@ -11,9 +11,9 @@ from django.conf import settings
 from DDR import converters
 from DDR.ingest import addfile_logger
 
-from elastictools.docstore import ConnectionError, RequestError
+from elastictools.docstore import DocstoreManager, ConnectionError, RequestError
 from webui import gitstatus
-from webui.models import Collection, Entity, File
+from webui.models import Collection, Entity, File, INDEX_PREFIX
 from webui.identifier import Identifier
 from webui.tasks import dvcs as dvcs_tasks
 
@@ -420,7 +420,9 @@ def delete_file( git_name, git_mail, collection_path, entity_id, file_basename, 
     logger.debug('delete from search index')
     if settings.DOCSTORE_ENABLED:
         try:
-            DOCSTORE.delete(file_.id)
+            DocstoreManager(
+                INDEX_PREFIX, settings.DOCSTORE_HOST, settings
+            ).delete(file_.id)
         except ConnectionError as err:
             logger.error("ConnectionError: {0}".format(err))
         except RequestError as err:
