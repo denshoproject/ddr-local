@@ -9,9 +9,9 @@ from django.conf import settings
 
 from DDR import converters
 
-from elastictools.docstore import ConnectionError, RequestError
+from elastictools.docstore import DocstoreManager, ConnectionError, RequestError
 from webui import gitstatus
-from webui.models import Collection, Entity
+from webui.models import Collection, Entity, INDEX_PREFIX
 from webui.identifier import Identifier
 from webui.tasks import dvcs as dvcs_tasks
 
@@ -178,7 +178,9 @@ def entity_delete(collection_path, entity_id, git_name, git_mail, agent):
     logger.debug('Updating Elasticsearch')
     if settings.DOCSTORE_ENABLED:
         try:
-            DOCSTORE.delete(entity.id)
+            DocstoreManager(
+                INDEX_PREFIX, settings.DOCSTORE_HOST, settings
+            ).delete(entity.id)
         except ConnectionError:
             logger.error('Could not delete document from Elasticsearch.')
     return status,message,collection.path_abs,entity.id
