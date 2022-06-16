@@ -436,13 +436,13 @@ class Collection( DDRCollection ):
     def parent(self):
         return None
     
-    def children(self, quick=True):
+    def children(self, quick=True, flush=True):
         """Returns list of the Collection's Entity objects.
         """
         key = COLLECTION_CHILDREN_CACHE_KEY % self.id
         timeout = 60*15  # 1 hour
         cached = cache.get(key)
-        if cached:
+        if cached and not flush:
             return cached
         else:
             # note: these are AttrDicts
