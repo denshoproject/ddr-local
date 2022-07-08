@@ -11,11 +11,18 @@ from django.utils.encoding import force_str
 
 from DDR.converters import text_to_rolepeople
 from DDR import modules
+from repo_models.collection import FIELDS as COLLECTION_FIELDS
+from repo_models.entity import FIELDS as ENTITY_FIELDS
 from webui.identifier import Identifier, INHERITABLE_FIELDS
 from webui.util import OrderedDict
 
 INTERVIEW_SIG_PATTERN = r'^denshovh-[a-z_0-9]{1,}-[0-9]{2,2}$'
 INTERVIEW_SIG_REGEX = re.compile(INTERVIEW_SIG_PATTERN)
+
+MODEL_FORM_FIELDS = {
+    'collection': COLLECTION_FIELDS,
+    'entity': ENTITY_FIELDS,
+}
 
 
 class LoginForm(forms.Form):
@@ -150,9 +157,22 @@ class DDRForm(forms.Form):
 
     def clean_creators(self):
         text = self.cleaned_data['creators']
+        # complain if we can't parse the data
         data = text_to_rolepeople(text)
         if text and not data:
             raise forms.ValidationError('Creators field could not be parsed.')
+        # complain if fieldnames not in definitions
+        creators_fieldnames = _rolepeople_keys(
+            Identifier(self.cleaned_data['id']).model
+        )
+        lines = text.split('\n')
+        for n,record in enumerate(data):
+            for key in record.keys():
+                if key not in creators_fieldnames:
+                    raise forms.ValidationError(
+                        f'Record "{lines[n].strip()}" contains bad key: "{key}".'
+                    )
+        # looks good
         return text
 
     def clean_persons(self):
@@ -277,3 +297,15 @@ def construct_form(model_fields):
                 fields.append(('%s_inherit' % fkwargs['name'], fobject))
     fields = OrderedDict(fields)
     return fields
+
+def _rolepeople_keys(model):
+    field_def = None
+    for f in MODEL_FORM_FIELDS[model]:
+        if f['name'] == 'creators':
+            field_def = f
+            break
+    if field_def:
+        return list(
+            field_def['elasticsearch']['properties']['properties'].keys()
+        )
+    return []
