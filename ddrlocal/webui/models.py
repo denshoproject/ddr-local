@@ -665,6 +665,14 @@ class Collection( DDRCollection ):
                 logger.error('Could not post to Elasticsearch.')
         
         return exit,status,updated_files
+    
+    def form_prep(self) -> dict:
+        """Further reformat Collection form data before display
+        """
+        # override DDR.models.common.form_prep
+        data = super(Collection, self).form_prep()
+        data['creators'] = form_prep_creators(data['creators'])
+        return data
 
 
 class Entity( DDREntity ):
@@ -933,6 +941,15 @@ class Entity( DDREntity ):
                 logger.error('Could not post to Elasticsearch.')
         
         return exit,status,updated_files
+    
+    def form_prep(self) -> dict:
+        """Further reformat Entity form data before display
+        """
+        # override DDR.models.common.form_prep
+        data = super(Entity, self).form_prep()
+        data['creators'] = form_prep_creators(data['creators'])
+        data['persons'] = form_prep_persons(data['persons'])
+        return data
 
 
 class File( DDRFile ):
@@ -1078,6 +1095,32 @@ class File( DDRFile ):
         
         return exit,status,updated_files
 
+
+def form_prep_creators(text):
+    # One record per line
+    text = text.replace('; ', ';').replace(';', ';\n')
+    ## Format fields in columns (would work if monospaced...)
+    ## split into rows of key/val pairs
+    #rows = [
+    #    [keyval.strip() for keyval in line.split('|')]
+    #    for line in text.split('\n')
+    #]
+    ## calculate column widths (lengths)
+    #padding = 3
+    #lens = [
+    #    max([len(v) for v in col]) + padding
+    #    for col in zip(*rows)
+    #]
+    ## format rows
+    #lines = [
+    #    '{:<{lens[0]}}| {:<{lens[1]}}| {:<{lens[2]}}'.format(*row, lens=lens)
+    #    for row in rows
+    #]
+    #text = '\n'.join(lines)
+    return text
+
+def form_prep_persons(text):
+    return text
 
 def format_object_detail(document, request, listitem=False):
     """Formats repository objects, adds list URLs,
