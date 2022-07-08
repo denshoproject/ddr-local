@@ -9,6 +9,7 @@ from django import forms
 from django.conf import settings
 from django.utils.encoding import force_str
 
+from DDR.converters import text_to_rolepeople
 from DDR import modules
 from webui.identifier import Identifier, INHERITABLE_FIELDS
 from webui.util import OrderedDict
@@ -146,6 +147,18 @@ class DDRForm(forms.Form):
             MODEL_FIELDS = []
         super(DDRForm, self).__init__(*args, **kwargs)
         self.fields = construct_form(deepcopy(MODEL_FIELDS))
+
+    def clean_creators(self):
+        text = self.cleaned_data['creators']
+        data = text_to_rolepeople(text)
+        if text and not data:
+            raise forms.ValidationError('Creators field could not be parsed.')
+        return text
+
+    def clean_persons(self):
+        text = self.cleaned_data['persons']
+        # persons uses no special formatting at present
+        return text
 
     def clean(self):
         """Run form_post on each field and report errors.
