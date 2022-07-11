@@ -322,7 +322,7 @@ def edit( request, cid ):
             )
             return HttpResponseRedirect(collection.absolute_url())
     if request.method == 'POST':
-        form = DDRForm(request.POST, fields=module.FIELDS)
+        form = DDRForm(data=request.POST, fields=module.FIELDS)
         if form.is_valid():
             
             collection.form_post(form.cleaned_data)
@@ -340,7 +340,7 @@ def edit( request, cid ):
             return HttpResponseRedirect(collection.absolute_url())
         
     else:
-        form = DDRForm(collection.form_prep(), fields=module.FIELDS)
+        form = DDRForm(data=collection.form_prep(), fields=module.FIELDS)
     return render(request, 'webui/collections/edit-json.html', {
         'collection': collection,
         'form': form,
