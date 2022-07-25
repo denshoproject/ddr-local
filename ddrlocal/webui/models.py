@@ -7,6 +7,7 @@ import os
 from django.conf import settings
 from django.contrib import messages
 from django.core.cache import cache
+from django.template import Template, Context
 from django.urls import reverse, NoReverseMatch
 
 from rest_framework.reverse import reverse
@@ -192,6 +193,11 @@ MODEL_PLURALS = {
     'facet':        'facet',
     'facetterm':    'facetterm',
 }
+
+CREATORS_TEMPLATE = """
+{% for creator in creators %}
+<a href="{% url "namespub-person" creator.naan creator.noid %}">{{ creator.namepart }} ({{ creator.role }})</a>{% endfor %}
+"""
 
 
 def repo_models_valid(request):
@@ -666,6 +672,19 @@ class Collection( DDRCollection ):
         
         return exit,status,updated_files
     
+    def labels_values(self):
+        """Override ddr-defs formatting of creators field
+        """
+        data = super(Collection, self).labels_values()
+        for lv in data:
+            # creators: link to namesdb_public
+            if lv['label'] == 'Creator':
+                for c in self.creators:
+                    c['naan'],c['noid'] = c['nr_id'].split('/')  # split nr_id
+                lv['value'] = Template(CREATORS_TEMPLATE).render(
+                    Context({'creators': self.creators})).strip()
+        return data
+    
     def form_prep(self) -> dict:
         """Further reformat Collection form data before display
         """
@@ -941,6 +960,19 @@ class Entity( DDREntity ):
                 logger.error('Could not post to Elasticsearch.')
         
         return exit,status,updated_files
+    
+    def labels_values(self):
+        """Override ddr-defs formatting of creators field
+        """
+        data = super(Entity, self).labels_values()
+        for lv in data:
+            # creators: link to namesdb_public
+            if lv['label'] == 'Creator':
+                for c in self.creators:
+                    c['naan'],c['noid'] = c['nr_id'].split('/')  # split nr_id
+                lv['value'] = Template(CREATORS_TEMPLATE).render(
+                    Context({'creators': self.creators})).strip()
+        return data
     
     def form_prep(self) -> dict:
         """Further reformat Entity form data before display
