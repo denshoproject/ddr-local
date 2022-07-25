@@ -205,6 +205,7 @@ INSTALLED_APPS = (
     'ddrlocal',
     'storage',
     'webui',
+    'namesdb_public',
 )
 
 REST_FRAMEWORK = {
