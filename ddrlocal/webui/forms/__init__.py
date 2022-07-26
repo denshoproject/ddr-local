@@ -269,10 +269,21 @@ class DDRForm(forms.Form):
                         self.add_error(fieldname, 'Only files can be used as signatures.')
 
 
+#namespub_url = reverse('namespub-persons')
+namespub_url = '/names/persons/'
+CREATORS_HELPTEXT_ADDITION = f"""
+<a href="javascript:window.open('{namespub_url}','namesdb','width=1500,height=500')" target="popup">NAMESDB_PUBLIC</a>
+"""
+
 def construct_form(model_fields):
     fields = []
     for fkwargs in model_fields: # don't modify fields data
         if fkwargs.get('form', None) and fkwargs.get('form_type', None):
+            # creators: Add link to namesdb_public
+            if fkwargs.get('name') and fkwargs['name'] == 'creators':
+                help_text = fkwargs['form']['help_text']
+                help_text = help_text + ' ' + CREATORS_HELPTEXT_ADDITION
+                fkwargs['form']['help_text'] = help_text
             # replace widget name with widget object
             if fkwargs['form'].get('widget', None):
                 widget_name = fkwargs['form']['widget']
