@@ -3,6 +3,8 @@ APP=ddrlocal
 USER=ddr
 SHELL = /bin/bash
 
+RUNSERVER_PORT=8000
+
 APP_VERSION := $(shell cat VERSION)
 GIT_SOURCE_URL=https://github.com/densho/ddr-local
 
@@ -525,7 +527,7 @@ shell:
 
 runserver:
 	source $(VIRTUALENV)/bin/activate; \
-	python ddrlocal/manage.py runserver 0.0.0.0:8000
+	python ddrlocal/manage.py runserver 0.0.0.0:$(RUNSERVER_PORT)
 
 runworker:
 	source $(VIRTUALENV)/bin/activate; cd $(INSTALL_LOCAL)/ddrlocal; \
