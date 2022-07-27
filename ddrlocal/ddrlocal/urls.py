@@ -21,6 +21,7 @@ urlpatterns = [
     path('500/', TemplateView.as_view(template_name="ddrlocal/500.html")),
     path('debug/', debug, name='debug'),
     path('storage/', include('storage.urls')),
+    path('names/', include('namesdb_public.urls')),
     path('ui/', include('webui.urls')),
     path('', TemplateView.as_view(template_name="webui/index.html"), name='index'),
 ]

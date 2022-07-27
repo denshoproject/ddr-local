@@ -10,7 +10,8 @@ https://docs.djangoproject.com/en/1.6/ref/settings/
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+from pathlib import Path
+BASE_DIR = Path(__file__).absolute().parent.parent
 
 # ----------------------------------------------------------------------
 
@@ -204,6 +205,7 @@ INSTALLED_APPS = (
     'ddrlocal',
     'storage',
     'webui',
+    'namesdb_public',
 )
 
 REST_FRAMEWORK = {
@@ -373,9 +375,9 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [
-            os.path.join(BASE_DIR, 'ddrlocal/templates'),
-            os.path.join(BASE_DIR, 'storage/templates'),
-            os.path.join(BASE_DIR, 'webui/templates'),
+            BASE_DIR / 'templates/ui',
+            BASE_DIR / 'storage/templates/storage',
+            BASE_DIR / 'ui/templates/ui',
         ],
         'APP_DIRS': True,
         'OPTIONS': {
