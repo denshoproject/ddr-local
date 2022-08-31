@@ -31,7 +31,7 @@ def forms_choice_labels():
             models.INDEX_PREFIX, settings.DOCSTORE_HOST, settings
         )
         forms_choices = ds.es.get(
-            index='forms',
+            index='ddrforms',
             id='forms-choices'
         )['_source']
         for key in forms_choices.keys():
