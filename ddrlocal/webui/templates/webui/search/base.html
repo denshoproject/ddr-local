@@ -3,7 +3,3 @@
 {% block breadcrumbs %}{{ block.super }}
 <li><a href="{% url "webui-search" %}">Search</a></li>
 {% endblock breadcrumbs %}
-
-{% block footer %}
-<span class="muted">{{ docstore_index }} -> {{ target_index }}</span>
-{% endblock footer %}
