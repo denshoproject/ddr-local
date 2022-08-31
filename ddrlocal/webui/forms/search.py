@@ -24,6 +24,8 @@ FORMS_CHOICE_LABELS = {}
 
 def forms_choice_labels():
     """Lazy-load and keep human-readable labels for form choices
+    
+    TODO Would be better to generate dicts from ES data than densho-vocabs
     """
     global FORMS_CHOICE_LABELS
     if not FORMS_CHOICE_LABELS:
@@ -97,12 +99,13 @@ class SearchForm(forms.Form):
             for fieldname,aggs in search_results.aggregations.items():
                 choices = []
                 for item in aggs:
-                    label = choice_labels[fieldname][item['key']]
-                    choice = (
-                        item['key'],
-                        '%s (%s)' % (label, item['doc_count'])
-                    )
-                    choices.append(choice)
+                    if hasattr(item, 'key') and item['key']:
+                        label = choice_labels[fieldname][item['key']]
+                        choice = (
+                            item['key'],
+                            '%s (%s)' % (label, item['doc_count'])
+                        )
+                        choices.append(choice)
                 if choices:
                     fields.append((
                         fieldname,

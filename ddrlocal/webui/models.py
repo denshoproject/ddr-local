@@ -89,7 +89,7 @@ SEARCH_AGG_FIELDS = {
     'format': 'format',
     'genre': 'genre',
     #'geography': 'geography.term',
-    #'language': 'language',
+    'language': 'language',
     #'location': 'location',
     #'mimetype': 'mimetype',
     #'persons': 'persons',

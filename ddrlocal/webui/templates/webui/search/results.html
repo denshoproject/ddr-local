@@ -111,6 +111,12 @@
                               <b>Genre</b><br />{{ search_form.genre }}
                             </div>
                           {% endif %}
+                          {% if search_form.language %}
+                            <div class="col-sm-2 col-md-2">
+                              <b>Language</b><br />
+                              {{ search_form.language }}
+                            </div>
+                          {% endif %}
                           </div>
                           <p>
                             <button class="btn btn-sm btn-primary"><i class="fa fa-filter"></i> Apply filters</button> <span class="muted small" style="padding-left:20px;">Use &lt;Ctrl&gt; or (⌘) keys to select multiple terms</span>
