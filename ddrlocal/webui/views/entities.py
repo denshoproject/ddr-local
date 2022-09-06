@@ -477,7 +477,7 @@ def edit( request, eid ):
     entity.model_def_commits()
     entity.model_def_fields()
     if request.method == 'POST':
-        form = DDRForm(request.POST, fields=module.FIELDS)
+        form = DDRForm(data=request.POST, fields=module.FIELDS)
         if form.is_valid():
             
             # clean up after TagManager
@@ -504,7 +504,8 @@ def edit( request, eid ):
             
             return HttpResponseRedirect(entity.absolute_url())
     else:
-        form = DDRForm(entity.form_prep(), fields=module.FIELDS)
+        
+        form = DDRForm(data=entity.form_prep(), fields=module.FIELDS)
 
     # coerce term:id dicts into old-style "term [id]" strings
     entity_topics = [

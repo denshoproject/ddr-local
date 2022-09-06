@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from json.decoder import JSONDecodeError
 import logging
 logger = logging.getLogger(__name__)
 import os
@@ -6,6 +7,7 @@ import os
 from django.conf import settings
 from django.contrib import messages
 from django.core.cache import cache
+from django.template import Template, Context
 from django.urls import reverse, NoReverseMatch
 
 from rest_framework.reverse import reverse
@@ -87,7 +89,7 @@ SEARCH_AGG_FIELDS = {
     'format': 'format',
     'genre': 'genre',
     #'geography': 'geography.term',
-    #'language': 'language',
+    'language': 'language',
     #'location': 'location',
     #'mimetype': 'mimetype',
     #'persons': 'persons',
@@ -191,6 +193,11 @@ MODEL_PLURALS = {
     'facet':        'facet',
     'facetterm':    'facetterm',
 }
+
+CREATORS_TEMPLATE = """
+{% for creator in creators %}
+  {% if creator.naan and creator.noid %} <a href="{% url "namespub-person" creator.naan creator.noid %}">{{ creator.namepart }} ({{ creator.role }})</a> {% else %} {{ creator.namepart }} ({{ creator.role }}) {% endif %}{% endfor %}
+"""
 
 
 def repo_models_valid(request):
@@ -573,7 +580,11 @@ class Collection( DDRCollection ):
         """Get collection's repo state from git-status if available
         """
         if not self._states:
-            gs = gitstatus.read(settings.MEDIA_BASE, self.path)
+            try:
+                gs = gitstatus.read(settings.MEDIA_BASE, self.path)
+            except JSONDecodeError as err:
+                path = gitstatus.path(settings.MEDIA_BASE, self.path)
+                raise Exception(f'{err} in {path}')
             if gs and gs.get('status',None):
                 self._states = dvcs.repo_states(gs['status'])
             else:
@@ -660,6 +671,28 @@ class Collection( DDRCollection ):
                 logger.error('Could not post to Elasticsearch.')
         
         return exit,status,updated_files
+    
+    def labels_values(self):
+        """Override ddr-defs formatting of creators field
+        """
+        data = super(Collection, self).labels_values()
+        for lv in data:
+            # creators: link to namesdb_public
+            if lv['label'] == 'Creator':
+                for c in self.creators:
+                    if c.get('nr_id'):
+                        c['naan'],c['noid'] = c['nr_id'].split('/')  # split nr_id
+                lv['value'] = Template(CREATORS_TEMPLATE).render(
+                    Context({'creators': self.creators})).strip()
+        return data
+    
+    def form_prep(self) -> dict:
+        """Further reformat Collection form data before display
+        """
+        # override DDR.models.common.form_prep
+        data = super(Collection, self).form_prep()
+        data['creators'] = form_prep_creators(data['creators'])
+        return data
 
 
 class Entity( DDREntity ):
@@ -928,6 +961,29 @@ class Entity( DDREntity ):
                 logger.error('Could not post to Elasticsearch.')
         
         return exit,status,updated_files
+    
+    def labels_values(self):
+        """Override ddr-defs formatting of creators field
+        """
+        data = super(Entity, self).labels_values()
+        for lv in data:
+            # creators: link to namesdb_public
+            if lv['label'] == 'Creator':
+                for c in self.creators:
+                    if c.get('nr_id'):
+                        c['naan'],c['noid'] = c['nr_id'].split('/')  # split nr_id
+                lv['value'] = Template(CREATORS_TEMPLATE).render(
+                    Context({'creators': self.creators})).strip()
+        return data
+    
+    def form_prep(self) -> dict:
+        """Further reformat Entity form data before display
+        """
+        # override DDR.models.common.form_prep
+        data = super(Entity, self).form_prep()
+        data['creators'] = form_prep_creators(data['creators'])
+        data['persons'] = form_prep_persons(data['persons'])
+        return data
 
 
 class File( DDRFile ):
@@ -1073,6 +1129,32 @@ class File( DDRFile ):
         
         return exit,status,updated_files
 
+
+def form_prep_creators(text):
+    # One record per line
+    text = text.replace('; ', ';').replace(';', ';\n')
+    ## Format fields in columns (would work if monospaced...)
+    ## split into rows of key/val pairs
+    #rows = [
+    #    [keyval.strip() for keyval in line.split('|')]
+    #    for line in text.split('\n')
+    #]
+    ## calculate column widths (lengths)
+    #padding = 3
+    #lens = [
+    #    max([len(v) for v in col]) + padding
+    #    for col in zip(*rows)
+    #]
+    ## format rows
+    #lines = [
+    #    '{:<{lens[0]}}| {:<{lens[1]}}| {:<{lens[2]}}'.format(*row, lens=lens)
+    #    for row in rows
+    #]
+    #text = '\n'.join(lines)
+    return text
+
+def form_prep_persons(text):
+    return text
 
 def format_object_detail(document, request, listitem=False):
     """Formats repository objects, adds list URLs,

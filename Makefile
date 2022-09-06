@@ -3,6 +3,8 @@ APP=ddrlocal
 USER=ddr
 SHELL = /bin/bash
 
+RUNSERVER_PORT=8000
+
 APP_VERSION := $(shell cat VERSION)
 GIT_SOURCE_URL=https://github.com/densho/ddr-local
 
@@ -37,6 +39,7 @@ SRC_REPO_CMDLN_ASSETS=https://github.com/densho/ddr-cmdln-assets.git
 SRC_REPO_LOCAL=https://github.com/densho/ddr-local.git
 SRC_REPO_DEFS=https://github.com/densho/ddr-defs.git
 SRC_REPO_VOCAB=https://github.com/densho/densho-vocab.git
+SRC_REPO_NAMESDB=https://github.com/denshoproject/namesdb-public.git
 SRC_REPO_MANUAL=https://github.com/densho/ddr-manual.git
 
 INSTALL_BASE=/opt
@@ -51,6 +54,7 @@ INSTALL_CMDLN=/opt/ddr-cmdln
 INSTALL_CMDLN_ASSETS=/opt/ddr-cmdln/ddr-cmdln-assets
 INSTALL_DEFS=/opt/ddr-defs
 INSTALL_VOCAB=/opt/densho-vocab
+INSTALL_NAMESDB=/opt/namesdb-public
 INSTALL_MANUAL=/opt/ddr-manual
 
 COMMIT_LOCAL := $(shell git -C $(INSTALL_LOCAL) log --decorate --abbrev-commit --pretty=oneline -1)
@@ -120,6 +124,7 @@ TGZ_CMDLN=$(TGZ_DIR)/ddr-cmdln
 TGZ_CMDLN_ASSETS=$(TGZ_DIR)/ddr-cmdln/ddr-cmdln-assets
 TGZ_DEFS=$(TGZ_DIR)/ddr-defs
 TGZ_VOCAB=$(TGZ_DIR)/densho-vocab
+TGZ_NAMESDB=$(TGZ_DIR)/namesdb-public
 TGZ_MANUAL=$(TGZ_DIR)/ddr-manual
 TGZ_STATIC=$(TGZ_DIR)/ddr-local/static
 
@@ -152,6 +157,7 @@ debug:
 	@echo "ddr-cmdln: $(COMMIT_CMDLN)"
 	@echo "ddr-defs:  $(COMMIT_DEFS)"
 	@echo "densho-vocab: $(COMMIT_VOCAB)"
+	@echo "namesdb-public: $(COMMIT_NAMESDB)"
 
 
 .PHONY: help
@@ -521,7 +527,7 @@ shell:
 
 runserver:
 	source $(VIRTUALENV)/bin/activate; \
-	python ddrlocal/manage.py runserver 0.0.0.0:8000
+	python ddrlocal/manage.py runserver 0.0.0.0:$(RUNSERVER_PORT)
 
 runworker:
 	source $(VIRTUALENV)/bin/activate; cd $(INSTALL_LOCAL)/ddrlocal; \
@@ -555,6 +561,40 @@ get-densho-vocab:
 	then cd $(INSTALL_VOCAB) && git pull; \
 	else git clone $(SRC_REPO_VOCAB) $(INSTALL_VOCAB); \
 	fi
+
+
+get-namesdb:
+	@echo ""
+	@echo "get-namesdb -----------------------------------------------------------"
+	git status | grep "On branch"
+	if test -d $(INSTALL_NAMESDB); \
+	then cd $(INSTALL_NAMESDB) && git pull; \
+	else cd $(INSTALL_BASE) && git clone $(SRC_REPO_NAMESDB); \
+	fi
+
+setup-namesdb:
+	git status | grep "On branch"
+	source $(VIRTUALENV)/bin/activate; \
+	cd $(INSTALL_NAMESDB) && python setup.py install
+
+install-namesdb: install-virtualenv
+	@echo ""
+	@echo "install-namesdb --------------------------------------------------------"
+	-rm -Rf $(INSTALL_LOCAL)/namesdb_public
+	-ln -s $(INSTALL_NAMESDB)/namessite/namesdb_public $(INSTALL_LOCAL)/ddrlocal/namesdb_public
+	source $(VIRTUALENV)/bin/activate; \
+	cd $(INSTALL_NAMESDB) && pip3 install --cache-dir=$(PIP_CACHE_DIR) -U -r requirements.txt
+
+uninstall-namesdb: install-virtualenv
+	@echo ""
+	@echo "uninstall-namesdb ------------------------------------------------------"
+	source $(VIRTUALENV)/bin/activate; \
+	cd $(INSTALL_NAMESDB) && pip3 uninstall -y -r requirements.txt
+
+clean-namesdb:
+	-rm -Rf $(INSTALL_NAMESDB)/build
+	-rm -Rf $(INSTALL_NAMESDB)/namesdb.egg-info
+	-rm -Rf $(INSTALL_NAMESDB)/dist
 
 
 migrate:
@@ -714,12 +754,14 @@ tgz-local:
 	git clone $(INSTALL_CMDLN_ASSETS) $(TGZ_CMDLN_ASSETS)
 	git clone $(INSTALL_DEFS) $(TGZ_DEFS)
 	git clone $(INSTALL_VOCAB) $(TGZ_VOCAB)
+	git clone $(INSTALL_NAMESDB) $(TGZ_NAMESDB)
 	git clone $(INSTALL_MANUAL) $(TGZ_MANUAL)
 	cd $(TGZ_LOCAL); git checkout develop; git checkout master
 	cd $(TGZ_CMDLN); git checkout develop; git checkout master
 	cd $(TGZ_CMDLN_ASSETS); git checkout develop; git checkout master
 	cd $(TGZ_DEFS); git checkout develop; git checkout master
 	cd $(TGZ_VOCAB); git checkout develop; git checkout master
+	cd $(TGZ_NAMESDB); git checkout develop; git checkout main
 	cd $(TGZ_MANUAL); git checkout develop; git checkout master
 	cp -R $(INSTALL_STATIC) $(TGZ_STATIC)
 	tar czf $(TGZ_FILE).tgz $(TGZ_FILE)
@@ -733,12 +775,14 @@ tgz:
 	git clone $(SRC_REPO_CMDLN_ASSETS) $(TGZ_CMDLN_ASSETS)
 	git clone $(SRC_REPO_DEFS) $(TGZ_DEFS)
 	git clone $(SRC_REPO_VOCAB) $(TGZ_VOCAB)
+	git clone $(SRC_REPO_NAMESDB) $(TGZ_NAMESDB)
 	git clone $(SRC_REPO_MANUAL) $(TGZ_MANUAL)
 	cd $(TGZ_LOCAL); git checkout develop; git checkout master
 	cd $(TGZ_CMDLN); git checkout develop; git checkout master
 	cd $(TGZ_CMDLN_ASSETS); git checkout develop; git checkout master
 	cd $(TGZ_DEFS); git checkout develop; git checkout master
 	cd $(TGZ_VOCAB); git checkout develop; git checkout master
+	cd $(TGZ_NAMESDB); git checkout develop; git checkout main
 	cd $(TGZ_MANUAL); git checkout develop; git checkout master
 	cp -R $(INSTALL_STATIC) $(TGZ_STATIC)
 	tar czf $(TGZ_FILE).tgz $(TGZ_FILE)
@@ -822,6 +866,7 @@ deb-stretch:
 	INSTALL.rst=$(DEB_BASE)   \
 	LICENSE=$(DEB_BASE)   \
 	Makefile=$(DEB_BASE)   \
+	../namesdb-public=opt   \
 	README.rst=$(DEB_BASE)   \
 	requirements.txt=$(DEB_BASE)   \
 	setup-workstation.sh=$(DEB_BASE)   \
@@ -892,6 +937,7 @@ deb-buster:
 	INSTALL.rst=$(DEB_BASE)   \
 	LICENSE=$(DEB_BASE)   \
 	Makefile=$(DEB_BASE)   \
+	../namesdb-public=opt   \
 	README.rst=$(DEB_BASE)   \
 	requirements.txt=$(DEB_BASE)   \
 	setup-workstation.sh=$(DEB_BASE)   \
@@ -962,6 +1008,7 @@ deb-bullseye:
 	INSTALL.rst=$(DEB_BASE)   \
 	LICENSE=$(DEB_BASE)   \
 	Makefile=$(DEB_BASE)   \
+	../namesdb-public=opt   \
 	README.rst=$(DEB_BASE)   \
 	requirements.txt=$(DEB_BASE)   \
 	setup-workstation.sh=$(DEB_BASE)   \
