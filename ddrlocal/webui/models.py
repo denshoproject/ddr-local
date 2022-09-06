@@ -196,7 +196,7 @@ MODEL_PLURALS = {
 
 CREATORS_TEMPLATE = """
 {% for creator in creators %}
-<a href="{% url "namespub-person" creator.naan creator.noid %}">{{ creator.namepart }} ({{ creator.role }})</a>{% endfor %}
+  {% if creator.naan and creator.noid %} <a href="{% url "namespub-person" creator.naan creator.noid %}">{{ creator.namepart }} ({{ creator.role }})</a> {% else %} {{ creator.namepart }} ({{ creator.role }}) {% endif %}{% endfor %}
 """
 
 
@@ -680,7 +680,8 @@ class Collection( DDRCollection ):
             # creators: link to namesdb_public
             if lv['label'] == 'Creator':
                 for c in self.creators:
-                    c['naan'],c['noid'] = c['nr_id'].split('/')  # split nr_id
+                    if c.get('nr_id'):
+                        c['naan'],c['noid'] = c['nr_id'].split('/')  # split nr_id
                 lv['value'] = Template(CREATORS_TEMPLATE).render(
                     Context({'creators': self.creators})).strip()
         return data
@@ -969,7 +970,8 @@ class Entity( DDREntity ):
             # creators: link to namesdb_public
             if lv['label'] == 'Creator':
                 for c in self.creators:
-                    c['naan'],c['noid'] = c['nr_id'].split('/')  # split nr_id
+                    if c.get('nr_id'):
+                        c['naan'],c['noid'] = c['nr_id'].split('/')  # split nr_id
                 lv['value'] = Template(CREATORS_TEMPLATE).render(
                     Context({'creators': self.creators})).strip()
         return data

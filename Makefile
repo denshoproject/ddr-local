@@ -761,7 +761,7 @@ tgz-local:
 	cd $(TGZ_CMDLN_ASSETS); git checkout develop; git checkout master
 	cd $(TGZ_DEFS); git checkout develop; git checkout master
 	cd $(TGZ_VOCAB); git checkout develop; git checkout master
-	cd $(TGZ_NAMESDB); git checkout develop; git checkout master
+	cd $(TGZ_NAMESDB); git checkout develop; git checkout main
 	cd $(TGZ_MANUAL); git checkout develop; git checkout master
 	cp -R $(INSTALL_STATIC) $(TGZ_STATIC)
 	tar czf $(TGZ_FILE).tgz $(TGZ_FILE)
@@ -775,14 +775,14 @@ tgz:
 	git clone $(SRC_REPO_CMDLN_ASSETS) $(TGZ_CMDLN_ASSETS)
 	git clone $(SRC_REPO_DEFS) $(TGZ_DEFS)
 	git clone $(SRC_REPO_VOCAB) $(TGZ_VOCAB)
-	git clone $(INSTALL_NAMESDB) $(TGZ_NAMESDB)
+	git clone $(SRC_REPO_NAMESDB) $(TGZ_NAMESDB)
 	git clone $(SRC_REPO_MANUAL) $(TGZ_MANUAL)
 	cd $(TGZ_LOCAL); git checkout develop; git checkout master
 	cd $(TGZ_CMDLN); git checkout develop; git checkout master
 	cd $(TGZ_CMDLN_ASSETS); git checkout develop; git checkout master
 	cd $(TGZ_DEFS); git checkout develop; git checkout master
 	cd $(TGZ_VOCAB); git checkout develop; git checkout master
-	cd $(TGZ_NAMESDB); git checkout develop; git checkout master
+	cd $(TGZ_NAMESDB); git checkout develop; git checkout main
 	cd $(TGZ_MANUAL); git checkout develop; git checkout master
 	cp -R $(INSTALL_STATIC) $(TGZ_STATIC)
 	tar czf $(TGZ_FILE).tgz $(TGZ_FILE)
@@ -866,6 +866,7 @@ deb-stretch:
 	INSTALL.rst=$(DEB_BASE)   \
 	LICENSE=$(DEB_BASE)   \
 	Makefile=$(DEB_BASE)   \
+	../namesdb-public=opt   \
 	README.rst=$(DEB_BASE)   \
 	requirements.txt=$(DEB_BASE)   \
 	setup-workstation.sh=$(DEB_BASE)   \
@@ -936,6 +937,7 @@ deb-buster:
 	INSTALL.rst=$(DEB_BASE)   \
 	LICENSE=$(DEB_BASE)   \
 	Makefile=$(DEB_BASE)   \
+	../namesdb-public=opt   \
 	README.rst=$(DEB_BASE)   \
 	requirements.txt=$(DEB_BASE)   \
 	setup-workstation.sh=$(DEB_BASE)   \
@@ -1006,6 +1008,7 @@ deb-bullseye:
 	INSTALL.rst=$(DEB_BASE)   \
 	LICENSE=$(DEB_BASE)   \
 	Makefile=$(DEB_BASE)   \
+	../namesdb-public=opt   \
 	README.rst=$(DEB_BASE)   \
 	requirements.txt=$(DEB_BASE)   \
 	setup-workstation.sh=$(DEB_BASE)   \
