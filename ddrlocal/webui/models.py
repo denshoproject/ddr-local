@@ -64,6 +64,7 @@ SEARCH_PARAM_WHITELIST = [
     'mimetype',
     'persons',
     'rights',
+    'search_hidden',
 ]
 
 NAMESDB_SEARCH_PARAM_WHITELIST = [
@@ -137,6 +138,7 @@ SEARCH_INCLUDE_FIELDS = [
     'image_url',
     'display_name',
     'bio',
+    'search_hidden',
 ]
 
 # TODO move to ddr-defs/repo_models/elastic.py?
