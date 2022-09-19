@@ -1,3 +1,16 @@
+"""
+Loading Test Data
+
+ddrindex destroy --confirm
+ddrindex create
+ddrindex vocabs /opt/densho-vocab/api/0.2/
+ddrindex narrators /opt/densho-vocab/api/0.2/narrators.json
+ddrindex repo /var/www/media/ddr/ddr/repository.json
+ddrindex org /var/www/media/ddr/ddr-densho/organization.json
+ddrindex publish -r --force /var/www/media/ddr/ddr-densho-10
+ddrindex publish -r --force /var/www/media/ddr/ddr-csujad-30
+"""
+
 import pytest
 import requests
 
