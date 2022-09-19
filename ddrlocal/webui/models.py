@@ -64,6 +64,7 @@ SEARCH_PARAM_WHITELIST = [
     'mimetype',
     'persons',
     'rights',
+    'search_hidden',
 ]
 
 NAMESDB_SEARCH_PARAM_WHITELIST = [
@@ -137,6 +138,7 @@ SEARCH_INCLUDE_FIELDS = [
     'image_url',
     'display_name',
     'bio',
+    'search_hidden',
 ]
 
 # TODO move to ddr-defs/repo_models/elastic.py?
@@ -195,8 +197,11 @@ MODEL_PLURALS = {
 }
 
 CREATORS_TEMPLATE = """
-{% for creator in creators %}
-  {% if creator.naan and creator.noid %} <a href="{% url "namespub-person" creator.naan creator.noid %}">{{ creator.namepart }} ({{ creator.role }})</a> {% else %} {{ creator.namepart }} ({{ creator.role }}) {% endif %}{% endfor %}
+{{ creator.namepart }} ({{ creator.role }})
+&nbsp; <a href="{% url "webui-search" %}?fulltext={{ creator.namepart }}">Search</a>
+{% if creator.naan and creator.noid %}
+&nbsp; <a href="{% url "namespub-person" creator.naan creator.noid %}">NamesDB</a>
+{% endif %}
 """
 
 
@@ -677,13 +682,18 @@ class Collection( DDRCollection ):
         """
         data = super(Collection, self).labels_values()
         for lv in data:
-            # creators: link to namesdb_public
             if lv['label'] == 'Creator':
+                # creators: link to namesdb_public
+                # format with search and namesdb links
+                # remove newlines so they don't get turned into <br/> and </p>
+                creators_lines = []
                 for c in self.creators:
                     if c.get('nr_id'):
-                        c['naan'],c['noid'] = c['nr_id'].split('/')  # split nr_id
-                lv['value'] = Template(CREATORS_TEMPLATE).render(
-                    Context({'creators': self.creators})).strip()
+                        c['naan'],c['noid'] = c['nr_id'].split('/')
+                    line = Template(CREATORS_TEMPLATE).render(
+                        Context({'creator': c})).replace('\n', ' ').strip()
+                    creators_lines.append(line)
+                lv['value'] = '\n'.join(creators_lines)
         return data
     
     def form_prep(self) -> dict:
@@ -967,13 +977,18 @@ class Entity( DDREntity ):
         """
         data = super(Entity, self).labels_values()
         for lv in data:
-            # creators: link to namesdb_public
             if lv['label'] == 'Creator':
+                # creators: link to namesdb_public
+                # format with search and namesdb links
+                # remove newlines so they don't get turned into <br/> and </p>
+                creators_lines = []
                 for c in self.creators:
                     if c.get('nr_id'):
-                        c['naan'],c['noid'] = c['nr_id'].split('/')  # split nr_id
-                lv['value'] = Template(CREATORS_TEMPLATE).render(
-                    Context({'creators': self.creators})).strip()
+                        c['naan'],c['noid'] = c['nr_id'].split('/')
+                    line = Template(CREATORS_TEMPLATE).render(
+                        Context({'creator': c})).replace('\n', ' ').strip()
+                    creators_lines.append(line)
+                lv['value'] = '\n'.join(creators_lines)
         return data
     
     def form_prep(self) -> dict:
