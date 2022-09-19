@@ -205,6 +205,12 @@ SEARCH_FILTER_CHOICES = [
     ('topics', '97', 'Supreme Court cases -- Gordon Hirabayashi'),
 ]
 
+CREATORS_SEARCH_FILTER_CHOICES = [
+    ('topics', '195', 'World War II -- Concentration camps -- Social and recreational activities'),
+    ('topics', '67', 'World War II -- Concentration camps -- Living conditions'),
+    ('topics', '484', 'Geographic communities -- California -- Livingston'),
+]
+
 class SearchView(TestCase):
  
     def test_search_index(self):
@@ -262,6 +268,24 @@ class SearchView(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         find_filter_choices(response, SEARCH_FILTER_CHOICES)
+
+    @pytest.mark.skipif(no_elasticsearch(), reason=NO_ELASTICSEARCH_ERR)
+    def test_search_results_creators(self):
+        url = reverse(
+            'webui-search'
+        ) + '?fulltext=Katabami,%20Reiko'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        find_filter_choices(response, CREATORS_SEARCH_FILTER_CHOICES)
+
+    @pytest.mark.skipif(no_elasticsearch(), reason=NO_ELASTICSEARCH_ERR)
+    def test_search_results_creators_filters(self):
+        url = reverse(
+            'webui-search'
+        ) + '?fulltext=Katabami,%20Reiko&topics=484'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        find_filter_choices(response, CREATORS_SEARCH_FILTER_CHOICES)
 
 class TaskView(TestCase):
 
