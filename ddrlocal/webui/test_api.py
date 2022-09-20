@@ -5,7 +5,8 @@ from django.conf import settings
 from django.test import TestCase
 from django.urls import reverse
 
-from elastictools.docstore import TransportError
+from elastictools.docstore import DocstoreManager, TransportError
+from webui.models import INDEX_PREFIX
 
 HOST_CHECK_URL = 'http://{}'.format(settings.DOCSTORE_HOST)
 
@@ -13,16 +14,7 @@ NO_ELASTICSEARCH_ERR = "Elasticsearch cluster not available."
 def no_elasticsearch():
     """Returns True if cannot contact cluster; use to skip tests
     """
-    try:
-        r = requests.get(HOST_CHECK_URL, timeout=1)
-        if r.status_code == 200:
-            return False
-    except ConnectionError:
-        print('ConnectionError')
-        return True
-    except TransportError:
-        print('TransportError')
-        return True
+    DocstoreManager(INDEX_PREFIX, settings.DOCSTORE_HOST, settings).start_test()
     return True
 
 
