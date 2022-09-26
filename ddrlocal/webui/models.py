@@ -204,6 +204,10 @@ CREATORS_TEMPLATE = """
 {% endif %}
 """
 
+PERSONS_TEMPLATE = """
+{{ person }} &nbsp; <a href="{% url "webui-search" %}?fulltext={{ person }}">Search</a>
+"""
+
 
 def repo_models_valid(request):
     """Displays alerts if repo_models are absent or undefined
@@ -694,6 +698,14 @@ class Collection( DDRCollection ):
                         Context({'creator': c})).replace('\n', ' ').strip()
                     creators_lines.append(line)
                 lv['value'] = '\n'.join(creators_lines)
+            elif lv['label'] == 'Person/Organization':
+                # persons: add fulltext search links
+                persons_lines = [
+                    Template(PERSONS_TEMPLATE).render(
+                        Context({'person': p})).replace('\n', ' ').strip()
+                    for p in self.persons
+                ]
+                lv['value'] = '\n'.join(persons_lines)
         return data
     
     def form_prep(self) -> dict:
@@ -989,6 +1001,14 @@ class Entity( DDREntity ):
                         Context({'creator': c})).replace('\n', ' ').strip()
                     creators_lines.append(line)
                 lv['value'] = '\n'.join(creators_lines)
+            elif lv['label'] == 'Person/Organization':
+                # persons: add fulltext search links
+                persons_lines = [
+                    Template(PERSONS_TEMPLATE).render(
+                        Context({'person': p})).replace('\n', ' ').strip()
+                    for p in self.persons
+                ]
+                lv['value'] = '\n'.join(persons_lines)
         return data
     
     def form_prep(self) -> dict:

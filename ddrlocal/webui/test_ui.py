@@ -299,6 +299,14 @@ class SearchView(TestCase):
         self.assertEqual(response.status_code, 200)
         find_filter_choices(response, CREATORS_SEARCH_FILTER_CHOICES)
 
+    @pytest.mark.skipif(no_elasticsearch(), reason=NO_ELASTICSEARCH_ERR)
+    def test_search_results_persons(self):
+        url = reverse(
+            'webui-search'
+        ) + '?fulltext=Yasui,%20Sachi'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
 class TaskView(TestCase):
 
     def test_tasks(self):
