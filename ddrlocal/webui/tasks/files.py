@@ -9,7 +9,7 @@ logger = get_task_logger(__name__)
 from django.conf import settings
 
 from DDR import converters
-from DDR.ingest import addfile_logger
+from DDR.util import FileLogger
 
 from elastictools.docstore import DocstoreManager, ConnectionError, RequestError
 from webui import gitstatus
@@ -31,17 +31,17 @@ def add_local(request, form_data, entity, role, src_path, git_name, git_mail):
         (entity.path, src_path, role, form_data, git_name, git_mail),
         countdown=2
     )
-    log = addfile_logger(entity.identifier)
-    log.ok('START %s' % TASK_FILE_ADD_LOCAL_NAME)
-    log.ok('task_id %s' % result.task_id)
-    log.ok('ddrlocal.webui.file.new')
-    log.ok('Locking %s' % collection.id)
+    log = FileLogger(identifier=entity.identifier)
+    log.debug('START %s' % TASK_FILE_ADD_LOCAL_NAME)
+    log.debug('task_id %s' % result.task_id)
+    log.debug('ddrlocal.webui.file.new')
+    log.debug('Locking %s' % collection.id)
     # lock collection
     lockstatus = collection.lock(result.task_id)
     if lockstatus == 'ok':
-        log.ok('locked')
+        log.debug('locked')
     else:
-        log.not_ok(lockstatus)
+        log.error(lockstatus)
     # add celery task_id to session
     celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
     # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
@@ -77,17 +77,17 @@ def add_external(request, form_data, entity, file_role, git_name, git_mail):
         (entity.path, data, git_name, git_mail),
         countdown=2
     )
-    log = addfile_logger(entity.identifier)
-    log.ok('START %s' % TASK_FILE_ADD_EXTERNAL_NAME)
-    log.ok('task_id %s' % result.task_id)
-    log.ok('ddrlocal.webui.file.external')
-    log.ok('Locking %s' % collection.id)
+    log = FileLogger(identifier=entity.identifier)
+    log.debug('START %s' % TASK_FILE_ADD_EXTERNAL_NAME)
+    log.debug('task_id %s' % result.task_id)
+    log.debug('ddrlocal.webui.file.external')
+    log.debug('Locking %s' % collection.id)
     # lock collection
     lockstatus = collection.lock(result.task_id)
     if lockstatus == 'ok':
-        log.ok('locked')
+        log.debug('locked')
     else:
-        log.not_ok(lockstatus)
+        log.error(lockstatus)
     # add celery task_id to session
     celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
     # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
@@ -108,17 +108,17 @@ def add_access(request, form_data, entity, file_, git_name, git_mail):
         (entity.path, file_.dict(), src_path, git_name, git_mail),
         countdown=2
     )
-    log = addfile_logger(entity.identifier)
-    log.ok('START %s' % TASK_FILE_ADD_LOCAL_NAME)
-    log.ok('task_id %s' % result.task_id)
-    log.ok('ddrlocal.webui.file.new_access')
-    log.ok('Locking %s' % collection.id)
+    log = FileLogger(identifier=entity.identifier)
+    log.debug('START %s' % TASK_FILE_ADD_LOCAL_NAME)
+    log.debug('task_id %s' % result.task_id)
+    log.debug('ddrlocal.webui.file.new_access')
+    log.debug('Locking %s' % collection.id)
     # lock collection
     lockstatus = collection.lock(result.task_id)
     if lockstatus == 'ok':
-        log.ok('locked')
+        log.debug('locked')
     else:
-        log.not_ok(lockstatus)
+        log.error(lockstatus)
     # add celery task_id to session
     celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
     # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
@@ -138,33 +138,33 @@ class FileAddDebugTask(Task):
     def on_failure(self, exc, task_id, args, kwargs, einfo):
         entity_path = args[0]
         eid = Identifier(path=entity_path)
-        log = addfile_logger(eid)
-        log.not_ok('DDRTask.ON_FAILURE')
-        log.not_ok('exc %s' % exc)
-        log.not_ok('einfo %s' % einfo)
+        log = FileLogger(identifier=eid)
+        log.error('DDRTask.ON_FAILURE')
+        log.error('exc %s' % exc)
+        log.error('einfo %s' % einfo)
     
     def on_success(self, retval, task_id, args, kwargs):
         entity_path = args[0]
         eid = Identifier(path=entity_path)
-        log = addfile_logger(eid)
-        log.ok('DDRTask.ON_SUCCESS')
-        log.ok('retval %s' % retval)
+        log = FileLogger(identifier=eid)
+        log.debug('DDRTask.ON_SUCCESS')
+        log.debug('retval %s' % retval)
     
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
         entity_path = args[0]
         entity = Entity.from_identifier(Identifier(path=entity_path))
         collection = entity.collection()
-        log = addfile_logger(entity.identifier)
-        log.ok('FileAddDebugTask.AFTER_RETURN')
-        log.ok('task_id: %s' % task_id)
-        log.ok('status: %s' % status)
-        log.ok('Unlocking %s' % collection.id)
+        log = FileLogger(identifier=entity.identifier)
+        log.debug('FileAddDebugTask.AFTER_RETURN')
+        log.debug('task_id: %s' % task_id)
+        log.debug('status: %s' % status)
+        log.debug('Unlocking %s' % collection.id)
         lockstatus = collection.unlock(task_id)
         if lockstatus == 'ok':
-            log.ok('unlocked')
+            log.debug('unlocked')
         else:
-            log.not_ok(lockstatus)
-        log.ok('END task_id %s\n' % task_id)
+            log.error(lockstatus)
+        log.debug('END task_id %s\n' % task_id)
         collection.cache_delete()
         gitstatus.update(settings.MEDIA_BASE, collection.path)
         gitstatus.unlock(settings.MEDIA_BASE, 'file-add-*')
@@ -190,16 +190,16 @@ def file_add_local(entity_path, src_path, role, data, git_name, git_mail):
         file_, repo, log,
         git_name, git_mail, agent=settings.AGENT
     )
-    log.ok('Updating Elasticsearch')
+    log.debug('Updating Elasticsearch')
     logger.debug('Updating Elasticsearch')
     if settings.DOCSTORE_ENABLED:
         try:
             result = file_.post_json()
-            log.ok('| %s' % result)
+            log.debug('| %s' % result)
         except ConnectionError as err:
-            log.not_ok("ConnectionError: {0}".format(err))
+            log.error("ConnectionError: {0}".format(err))
         except RequestError as err:
-            log.not_ok("RequestError: {0}".format(err))
+            log.error("RequestError: {0}".format(err))
         except FileNotFoundError as err:
             # don't crash if file absent from Internet Archive
             logger.error("FileNotFoundError: {0}".format(err))
@@ -227,16 +227,16 @@ def file_add_external(entity_path, data, git_name, git_mail):
         file_, repo, log,
         git_name, git_mail, agent=settings.AGENT
     )
-    log.ok('Updating Elasticsearch')
+    log.debug('Updating Elasticsearch')
     logger.debug('Updating Elasticsearch')
     if settings.DOCSTORE_ENABLED:
         try:
             result = file_.post_json()
-            log.ok('| %s' % result)
+            log.debug('| %s' % result)
         except ConnectionError as err:
-            log.not_ok("ConnectionError: {0}".format(err))
+            log.error("ConnectionError: {0}".format(err))
         except RequestError as err:
-            log.not_ok("RequestError: {0}".format(err))
+            log.error("RequestError: {0}".format(err))
         except FileNotFoundError as err:
             # don't crash if file absent from Internet Archive
             logger.error("FileNotFoundError: {0}".format(err))
@@ -263,21 +263,21 @@ def file_add_access(entity_path, file_data, src_path, git_name, git_mail):
         git_name, git_mail, agent=settings.AGENT
     )
     if op and (op == 'pass'):
-        log.ok('Things are okay as they are.  Leaving them alone.')
+        log.debug('Things are okay as they are.  Leaving them alone.')
         return file_.dict(json_safe=True)
     file_,repo,log = entity.add_file_commit(
         file_, repo, log,
         git_name, git_mail, agent=settings.AGENT
     )
-    log.ok('Updating Elasticsearch')
+    log.debug('Updating Elasticsearch')
     logger.debug('Updating Elasticsearch')
     if settings.DOCSTORE_ENABLED:
         try:
             file_.post_json()
         except ConnectionError as err:
-            log.not_ok("ConnectionError: {0}".format(err))
+            log.error("ConnectionError: {0}".format(err))
         except RequestError as err:
-            log.not_ok("RequestError: {0}".format(err))
+            log.error("RequestError: {0}".format(err))
         except FileNotFoundError as err:
             # don't crash if file absent from Internet Archive
             logger.error("FileNotFoundError: {0}".format(err))
