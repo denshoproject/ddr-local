@@ -9,6 +9,7 @@ from webui.views import task_status, task_dismiss, task_list
 from webui.views import gitstatus_queue, gitstatus_toggle
 from webui.views import repository, organization, collections, entities, files
 from webui.views import detail, merge, search
+from webui.views import batch
 
 
 urlpatterns = [
@@ -89,8 +90,11 @@ urlpatterns = [
     path('collection/<slug:cid>/export/files/', collections.csv_export, kwargs={'model':'file'}, name='webui-collection-export-files'),
     path('collection/<slug:cid>-objects.csv', collections.csv_download, kwargs={'model':'entity'}, name='webui-collection-csv-entities'),
     path('collection/<slug:cid>-files.csv', collections.csv_download, kwargs={'model':'file'}, name='webui-collection-csv-files'),
+
     path('collection/<slug:cid>/import/objects/', collections.csv_import, kwargs={'model':'entity'}, name='webui-collection-import-entities'),
-    path('collection/<slug:cid>/import/files/', collections.csv_import, kwargs={'model':'file'}, name='webui-collection-import-files'),
+
+    path('collection/<slug:cid>/import/files/confirm/', batch.ImportFiles.as_view(), name='webui-import-files-confirm'),
+    path('collection/<slug:cid>/import/files/', batch.import_files_browse, name='webui-import-files-browse'),
 
     path('collection/<slug:cid>/children/', collections.children, name='webui-collection-children'),
     path('collection/<slug:cid>/changelog/', collections.changelog, name='webui-collection-changelog'),
@@ -140,7 +144,7 @@ urlpatterns = [
     path('file/<slug:eid>-master/new/', files.new, kwargs={'role':'master'}, name='webui-file-new-master'),
     path('file/<slug:eid>-mezzanine/new/', files.new, kwargs={'role':'mezzanine'}, name='webui-file-new-mezzanine'),
     path('file/<slug:eid>/new/', files.new, name='webui-file-new'),
- 
+
     #
     path('<slug:oid>/', detail, name='webui-detail'),
     path('', TemplateView.as_view(template_name="webui/index.html"), name='webui-index'),

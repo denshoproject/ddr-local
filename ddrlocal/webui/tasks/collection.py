@@ -19,6 +19,7 @@ from DDR import util
 from elastictools import search
 from elastictools.docstore import DocstoreManager
 from elastictools.docstore import ConnectionError, RequestError, TransportError
+from webui import batch
 from webui import csvio
 from webui import gitstatus
 from webui.models import Collection, INDEX_PREFIX
@@ -40,7 +41,6 @@ class CollectionCheckTask(Task):
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
         logger.debug('CollectionCheckTask.after_return(%s, %s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs, einfo))
         gitstatus.log('CollectionCheckTask.after_return(%s, %s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs, einfo))
-
 @shared_task(base=CollectionCheckTask, name='webui.tasks.collection_check')
 def check( collection_path ):
     if not os.path.exists(settings.MEDIA_BASE):
@@ -442,6 +442,90 @@ def csv_export_model(collection_path, model):
         model,
         logger
     ))
+
+
+# ----------------------------------------------------------------------
+
+def csv_import(request, collection, model, csv_path):
+    log_path = batch.get_log_path(csv_path)
+    git_name = request.session.get('git_name')
+    git_mail = request.session.get('git_mail')
+    result = csv_import_model.apply_async(
+        (collection.path, model, str(csv_path), git_name, git_mail),
+        countdown=2
+    )
+    # add celery task_id to session
+    celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
+    # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
+    task = {
+        'task_id': result.task_id,
+        'action': f'csv-import-{model}',
+        'collection_id': collection.id,
+        'collection_url': collection.absolute_url(),
+        'model': model,
+        'csv_path': str(csv_path),
+        'log_path': str(log_path),
+        'start': converters.datetime_to_text(datetime.now(settings.TZ)),
+    }
+    celery_tasks[result.task_id] = task
+    request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
+
+class CSVImportTask(Task):
+    abstract = True
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
+        pass
+    def on_success(self, retval, task_id, args, kwargs):
+        pass
+    def after_return(self, status, retval, task_id, args, kwargs, cinfo):
+        logger.debug('CSVImportTask.after_return(%s, %s, %s, %s, %s)' % (
+            status, retval, task_id, args, kwargs)
+        )
+        collection_path = args[0]
+        model = args[1]
+        csv_path = args[2]
+        collection = Collection.from_identifier(Identifier(path=collection_path))
+        lockstatus = collection.unlock(task_id)
+        gitstatus.update(settings.MEDIA_BASE, collection.path)
+        gitstatus.unlock(settings.MEDIA_BASE, 'csv_import')
+
+@shared_task(base=CSVImportTask, name='webui-csv-import-model')
+def csv_import_model(collection_path, model, csv_path, git_name, git_mail):
+    """Import collection {model} metadata to CSV file.
+    
+    @return collection_path: Absolute path to collection.
+    @return model: 'entity' or 'file'.
+    """
+    log_path = batch.get_log_path(csv_path)
+    ci = Identifier(path=collection_path)
+    collection = Collection.from_identifier(ci)
+    
+    rowds,results = batch.load_csv_run_checks(collection, model, csv_path)
+    if results['csv_errs'] or results['id_errs'] \
+    or results['header_errs'] or results['rowds_errs'] or results['file_errs'] \
+    or results['staged'] or results['modified']:
+        raise Exception(
+            'File import cancelled due to CSV validation errors. ' \
+            'Please see import log.'
+        )
+    gitstatus.lock(settings.MEDIA_BASE, 'csv_import')
+    imported = batch.Importer.import_files(
+        csv_path=csv_path,
+        rowds=rowds,
+        cidentifier=ci,
+        vocabs_url=settings.VOCABS_URL,
+        git_name=git_name,
+        git_mail=git_mail,
+        agent='ddr-local',
+        log_path=log_path,
+    )
+
+    logger.debug('Updating Elasticsearch')
+    if settings.DOCSTORE_ENABLED:
+        try:
+            collection.reindex()
+        except ConnectionError:
+            logger.error('Could not update search index')
+    return collection_path,model,csv_path
 
 
 # ----------------------------------------------------------------------
