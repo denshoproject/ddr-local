@@ -17,18 +17,15 @@
 {{ collection.id }}
 </h1>
 
-<div class="alert alert-danger" role="alert">
+<div class="alert alert-warning" role="warning">
 
 <h2 style="margin-top:0px;">
 <span class="glyphicon glyphicon-warning-sign"></span>
 CSV Import
 </h2>
-<p>
-NOTE: CSV import cannot be used to import new files.
-</p>
 
 <table>
-  <form name="csv-upload" action="" method="post" enctype="multipart/form-data">{% csrf_token %}
+  <form name="csv-upload" action="" method="post">{% csrf_token %}
     {{ form.as_table }}
     <tr>
       <td colspan="2">
@@ -39,7 +36,7 @@ NOTE: CSV import cannot be used to import new files.
 </table>
 
 </div><!-- .alert-danger -->
- 
+
     </div><!-- .span12 -->
   </div><!-- .row -->
 

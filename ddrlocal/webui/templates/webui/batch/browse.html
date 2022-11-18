@@ -1,0 +1,51 @@
+{% extends "webui/collections/base.html" %}
+{% load webui_tags %}
+
+{% block title %}Import From CSV | {{ collection.title }}{% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+<li><a href="{{ collection.absolute_url }}">{{ collection.id }}</a></li>
+<li class="active">Import From CSV</li>
+{% endblock breadcrumbs %}
+
+
+{% block content %}
+
+  <div class="row-fluid">
+    <div class="span12">
+
+<h1>{{ collection.id }} &mdash; Import Files from CSV</h1>
+
+<table class="table table-striped table-hover table-condensed">
+{% if parent != None %}
+  <tr>
+    <td><a href="?path={{ parent }}"><span class="glyphicon glyphicon-chevron-up"></span></a></td>
+    <td><a href="?path={{ parent }}">..</a></td>
+    <td></td>
+    <td></td>
+  </tr>
+{% endif %}
+{% for x in listdir %}
+  <tr>
+    <td>{% if x.isdir %}<span class="glyphicon glyphicon-folder-close"></span>{% endif %}</td>
+    <td>
+      {% if x.isdir %}<a href="?path={{ x.rel }}">{{ x.basename }}</a>
+      {% elif x.iscsv %}<a href="?path={{ x.rel }}">{{ x.basename }}</a>
+      {% else %}{{ x.basename }}{% endif %}
+    </td>
+    <td>{{ x.mtime|date:"Y-m-d H:i:s" }}</td>
+    <td>{% if not x.isdir %}{{ x.size|filesizeformat }}{% endif %}</td>
+  </tr>
+{% endfor %}
+</table>
+
+{% if not listdir %}
+<p>
+No files present in shared folder ({{ shared_folder }}).
+</p>
+{% endif %}
+
+    </div><!-- .span12 -->
+  </div><!-- .row-fluid -->
+
+{% endblock content %}

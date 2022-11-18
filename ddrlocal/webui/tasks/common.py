@@ -84,6 +84,15 @@ TASK_STATUS_MESSAGES = {
         #'REVOKED': '',
     },
 
+    'csv-import-file': {
+        #'STARTED': '',
+        'PENDING': 'Importing files from <b>{csv_path}</b>.',
+        'SUCCESS': 'Imported files from <b>{csv_path}</b> to <a href="{collection_url}">{collection_id}</a>.',
+        'FAILURE': 'File import error. Please see <b>{log_path}</b>',
+        #'RETRY': '',
+        #'REVOKED': '',
+    },
+
     'collection-reindex': {
         #'STARTED': '',
         'PENDING': 'Reindexing collection <b><a href="{collection_url}">{collection_id}</a></b>.',
