@@ -10,8 +10,9 @@ from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views import View
 
+from DDR import util
 from storage.decorators import storage_required
-from webui.batch import load_csv_run_checks
+from webui import batch
 from webui.identifier import Identifier, InvalidIdentifierException
 from webui.models import Collection
 from webui.tasks import collection as collection_tasks
@@ -92,10 +93,15 @@ class ImportFiles(View):
                 reverse('webui-import-files-browse', args=[cid])
             )
         csv_path = get_csv_path(request)
+        log_path = batch.get_log_path(csv_path)
+        log = util.FileLogger(log_path=log_path)
         u = urlparse(request.META['HTTP_REFERER'])
         referer = f'{u.path}?{u.query}'
         #
-        rowds,results = load_csv_run_checks(collection, model, csv_path)
+        log.info(f'Running checks on {csv_path}')
+        rowds,results = batch.load_csv_run_checks(collection, model, csv_path)
+        log.blank()
+        log.blank()
         #
         if not results['csv_errs'] and not results['id_errs'] \
         and not results['header_errs'] and not results['rowds_errs'] \

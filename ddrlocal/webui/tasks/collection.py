@@ -481,10 +481,13 @@ class CSVImportTask(Task):
         git_name = args[3]
         git_mail = args[4]
         log_path = batch.get_log_path(csv_path)
+        log = util.FileLogger(log_path=log_path)
         dvcs.rollback(
             dvcs.repository(collection_path, git_name, git_mail),
             util.FileLogger(log_path=log_path),
         )
+        log.blank()
+        log.blank()
     
     def on_success(self, retval, task_id, args, kwargs):
         pass
@@ -511,6 +514,10 @@ def csv_import_model(collection_path, model, csv_path, git_name, git_mail):
     @return model: 'entity' or 'file'.
     """
     log_path = batch.get_log_path(csv_path)
+    log = util.FileLogger(log_path=log_path)
+    log.info(f'========================================================================')
+    log.info(f'BEGIN BATCH {model.upper()} IMPORT')
+    log.info(f'========================================================================')
     ci = Identifier(path=collection_path)
     collection = Collection.from_identifier(ci)
     
@@ -539,6 +546,8 @@ def csv_import_model(collection_path, model, csv_path, git_name, git_mail):
         agent='ddr-local',
         log=util.FileLogger(log_path=log_path),
     )
+    log.blank()
+    log.blank()
 
     logger.debug('Updating Elasticsearch')
     if settings.DOCSTORE_ENABLED:
