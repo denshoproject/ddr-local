@@ -12,6 +12,7 @@ from django.urls import reverse
 from DDR import commands
 from DDR import converters
 from DDR import docstore
+from DDR import dvcs
 from DDR import idservice
 from DDR import signatures
 from DDR import util
@@ -472,10 +473,22 @@ def csv_import(request, collection, model, csv_path):
 
 class CSVImportTask(Task):
     abstract = True
+    
     def on_failure(self, exc, task_id, args, kwargs, einfo):
-        pass
+        collection_path = args[0]
+        model = args[1]
+        csv_path = args[2]
+        git_name = args[3]
+        git_mail = args[4]
+        log_path = batch.get_log_path(csv_path)
+        dvcs.rollback(
+            dvcs.repository(collection_path, git_name, git_mail),
+            util.FileLogger(log_path=log_path),
+        )
+    
     def on_success(self, retval, task_id, args, kwargs):
         pass
+    
     def after_return(self, status, retval, task_id, args, kwargs, cinfo):
         logger.debug('CSVImportTask.after_return(%s, %s, %s, %s, %s)' % (
             status, retval, task_id, args, kwargs)
@@ -483,6 +496,8 @@ class CSVImportTask(Task):
         collection_path = args[0]
         model = args[1]
         csv_path = args[2]
+        git_name = args[3]
+        git_mail = args[4]
         collection = Collection.from_identifier(Identifier(path=collection_path))
         lockstatus = collection.unlock(task_id)
         gitstatus.update(settings.MEDIA_BASE, collection.path)
@@ -517,6 +532,12 @@ def csv_import_model(collection_path, model, csv_path, git_name, git_mail):
         git_mail=git_mail,
         agent='ddr-local',
         log_path=log_path,
+    )
+    commit = dvcs.commit(
+        repo=dvcs.repository(collection_path, git_name, git_mail),
+        msg=f'Batch file import\n\nCSV: {csv_path}',
+        agent='ddr-local',
+        log=util.FileLogger(log_path=log_path),
     )
 
     logger.debug('Updating Elasticsearch')
