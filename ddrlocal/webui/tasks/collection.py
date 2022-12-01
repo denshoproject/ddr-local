@@ -465,7 +465,9 @@ def csv_import(request, collection, model, csv_path):
         'collection_url': collection.absolute_url(),
         'model': model,
         'csv_path': str(csv_path),
+        'csv_file': str(csv_path.name),
         'log_path': str(log_path),
+        'log_link': str(log_path.relative_to(settings.VIRTUALBOX_SHARED_FOLDER)),
         'start': converters.datetime_to_text(datetime.now(settings.TZ)),
     }
     celery_tasks[result.task_id] = task
