@@ -12,6 +12,7 @@ from django.urls import reverse
 from DDR import commands
 from DDR import converters
 from DDR import docstore
+from DDR import dvcs
 from DDR import idservice
 from DDR import signatures
 from DDR import util
@@ -464,7 +465,9 @@ def csv_import(request, collection, model, csv_path):
         'collection_url': collection.absolute_url(),
         'model': model,
         'csv_path': str(csv_path),
+        'csv_file': str(csv_path.name),
         'log_path': str(log_path),
+        'log_link': str(log_path.relative_to(settings.VIRTUALBOX_SHARED_FOLDER)),
         'start': converters.datetime_to_text(datetime.now(settings.TZ)),
     }
     celery_tasks[result.task_id] = task
@@ -472,10 +475,25 @@ def csv_import(request, collection, model, csv_path):
 
 class CSVImportTask(Task):
     abstract = True
+    
     def on_failure(self, exc, task_id, args, kwargs, einfo):
-        pass
+        collection_path = args[0]
+        model = args[1]
+        csv_path = args[2]
+        git_name = args[3]
+        git_mail = args[4]
+        log_path = batch.get_log_path(csv_path)
+        log = util.FileLogger(log_path=log_path)
+        dvcs.rollback(
+            dvcs.repository(collection_path, git_name, git_mail),
+            util.FileLogger(log_path=log_path),
+        )
+        log.blank()
+        log.blank()
+    
     def on_success(self, retval, task_id, args, kwargs):
         pass
+    
     def after_return(self, status, retval, task_id, args, kwargs, cinfo):
         logger.debug('CSVImportTask.after_return(%s, %s, %s, %s, %s)' % (
             status, retval, task_id, args, kwargs)
@@ -483,6 +501,8 @@ class CSVImportTask(Task):
         collection_path = args[0]
         model = args[1]
         csv_path = args[2]
+        git_name = args[3]
+        git_mail = args[4]
         collection = Collection.from_identifier(Identifier(path=collection_path))
         lockstatus = collection.unlock(task_id)
         gitstatus.update(settings.MEDIA_BASE, collection.path)
@@ -496,6 +516,10 @@ def csv_import_model(collection_path, model, csv_path, git_name, git_mail):
     @return model: 'entity' or 'file'.
     """
     log_path = batch.get_log_path(csv_path)
+    log = util.FileLogger(log_path=log_path)
+    log.info(f'========================================================================')
+    log.info(f'BEGIN BATCH {model.upper()} IMPORT')
+    log.info(f'========================================================================')
     ci = Identifier(path=collection_path)
     collection = Collection.from_identifier(ci)
     
@@ -518,6 +542,14 @@ def csv_import_model(collection_path, model, csv_path, git_name, git_mail):
         agent='ddr-local',
         log_path=log_path,
     )
+    commit = dvcs.commit(
+        repo=dvcs.repository(collection_path, git_name, git_mail),
+        msg=f'Batch file import\n\nCSV: {csv_path}',
+        agent='ddr-local',
+        log=util.FileLogger(log_path=log_path),
+    )
+    log.blank()
+    log.blank()
 
     logger.debug('Updating Elasticsearch')
     if settings.DOCSTORE_ENABLED:

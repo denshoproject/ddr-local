@@ -86,9 +86,9 @@ TASK_STATUS_MESSAGES = {
 
     'csv-import-file': {
         #'STARTED': '',
-        'PENDING': 'Importing files from <b>{csv_path}</b>.',
-        'SUCCESS': 'Imported files from <b>{csv_path}</b> to <a href="{collection_url}">{collection_id}</a>.',
-        'FAILURE': 'File import error. Please see <b>{log_path}</b>',
+        'PENDING': 'Importing files from <b>{csv_file}</b>.',
+        'SUCCESS': 'Imported files from <b>{csv_file}</b> to <a href="{collection_url}">{collection_id}</a>. <b><a href="/ddrshared/{log_link}">Log</a></b>',
+        'FAILURE': 'File import error. Please see <b><a href="/ddrshared/{log_link}">Log</a></b>',
         #'RETRY': '',
         #'REVOKED': '',
     },
