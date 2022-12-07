@@ -484,10 +484,8 @@ class CSVImportTask(Task):
         git_mail = args[4]
         log_path = batch.get_log_path(csv_path)
         log = util.FileLogger(log_path=log_path)
-        dvcs.rollback(
-            dvcs.repository(collection_path, git_name, git_mail),
-            util.FileLogger(log_path=log_path),
-        )
+        log.error('Import failed -- rolling back')
+        dvcs.rollback(dvcs.repository(collection_path, git_name, git_mail), log)
         log.blank()
         log.blank()
     
