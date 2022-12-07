@@ -121,6 +121,7 @@ class ImportFiles(View):
             'file_errs': results['file_errs'],
             'staged': results['staged'],
             'modified': results['modified'],
+            'log_url': batch.get_log_url(log_path),
         })
     
     @method_decorator(login_required)

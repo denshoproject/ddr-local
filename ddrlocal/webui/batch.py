@@ -83,3 +83,7 @@ def get_log_path(csv_path):
     if isinstance(csv_path, str):
         csv_path = Path(csv_path)
     return csv_path.parent / f'log/{csv_path.stem}.log'
+
+def get_log_url(log_path):
+    path_rel = str(log_path.relative_to(settings.VIRTUALBOX_SHARED_FOLDER))
+    return f'/ddrshared/{path_rel}'
