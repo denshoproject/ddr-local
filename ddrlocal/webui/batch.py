@@ -17,42 +17,41 @@ def load_csv_run_checks(collection, model, csv_path, log_errors=False):
         headers,rowds,csv_errs = csvfile.make_rowds(fileio.read_csv(csv_path))
     except Exception as err:
         log.error(err)
-    # check csv
+    log = util.FileLogger(get_log_path(csv_path))
+    errors = []
+    # csv
     csv_errs,id_errs,validation_errs = Checker.check_csv(
-        model, csv_path, rowds, headers, csv_errs, collection.identifier,
-        settings.VOCABS_URL
+        model, csv_path, rowds, headers, csv_errs,
+        collection.identifier, settings.VOCABS_URL
     )
     header_errs,rowds_errs,file_errs = validation_errs
-    # check repository
+    for err in csv_errs: errors.append(f'CSV: {err}')
+    for err in id_errs: errors.append(f'Identifier: {err}')
+    for key,val in header_errs.items():
+        errors.append(f"CSV header: {key}: {','.join(val)}")
+    for err,items in rowds_errs.items():
+        for item in items:
+            errors.append(f'{err} {item}')
+    for err in file_errs:
+        for key,val in err.items():
+            errors.append(f"{key}: {val}")
+    # repository
     staged,modified = Checker.check_repository(collection.identifier)
-    # check eids
-    if (model == 'entity'): # and idservice_client:
-        raise Exception('TODO Checker.check_eids')
-        chkeids = Checker.check_eids(rowds, collection.identifier, idservice_client)
-        for err in chkeids:
-            logging.error(f'entity ID?: {err}')
-        if chkeids:
-            assert False
-    errors = {
-        'csv_errs': csv_errs,
-        'header_errs': header_errs,
-        'rowds_errs': rowds_errs,
-        'id_errs': id_errs,
-        'file_errs': file_errs,
-        'staged': staged,
-        'modified': modified,
-    }
-    # write errors to log
-    log = util.FileLogger(get_log_path(csv_path))
-    log.info(f'Checking CSV {csv_path}')
-    for title,errs in errors.items():
-        if isinstance(errs, list):
-            for err in errs:
-                log.error(err)
-        elif isinstance(errs, dict):
-            for key,err in errs.items():
-                log.error(f'{key} {err}')
-    log.info('ok')
+    for f in staged: errors.append(f'STAGED: {f}')
+    for f in modified: errors.append(f'MODIFIED: {f}')
+    # eids
+    entities,missing_entities = Importer._existing_bad_entities(
+        Importer._eidentifiers(
+            Importer._fid_parents(
+                Importer._fidentifiers(rowds, collection.identifier),
+                rowds,
+                collection.identifier)))
+    if missing_entities:
+        for e in missing_entities:
+            errors.append(f'Entity {e} missing')
+    #
+    for err in errors:
+        log.error(err)
     return rowds,errors
 
 #def report_errors(results, csv_path):
@@ -83,3 +82,7 @@ def get_log_path(csv_path):
     if isinstance(csv_path, str):
         csv_path = Path(csv_path)
     return csv_path.parent / f'log/{csv_path.stem}.log'
+
+def get_log_url(log_path):
+    path_rel = str(log_path.relative_to(settings.VIRTUALBOX_SHARED_FOLDER))
+    return f'/ddrshared/{path_rel}'

@@ -467,7 +467,7 @@ def csv_import(request, collection, model, csv_path):
         'csv_path': str(csv_path),
         'csv_file': str(csv_path.name),
         'log_path': str(log_path),
-        'log_link': str(log_path.relative_to(settings.VIRTUALBOX_SHARED_FOLDER)),
+        'log_url': batch.get_log_url(log_path),
         'start': converters.datetime_to_text(datetime.now(settings.TZ)),
     }
     celery_tasks[result.task_id] = task
@@ -484,10 +484,8 @@ class CSVImportTask(Task):
         git_mail = args[4]
         log_path = batch.get_log_path(csv_path)
         log = util.FileLogger(log_path=log_path)
-        dvcs.rollback(
-            dvcs.repository(collection_path, git_name, git_mail),
-            util.FileLogger(log_path=log_path),
-        )
+        log.error('Import failed -- rolling back')
+        dvcs.rollback(dvcs.repository(collection_path, git_name, git_mail), log)
         log.blank()
         log.blank()
     
@@ -523,10 +521,8 @@ def csv_import_model(collection_path, model, csv_path, git_name, git_mail):
     ci = Identifier(path=collection_path)
     collection = Collection.from_identifier(ci)
     
-    rowds,results = batch.load_csv_run_checks(collection, model, csv_path)
-    if results['csv_errs'] or results['id_errs'] \
-    or results['header_errs'] or results['rowds_errs'] or results['file_errs'] \
-    or results['staged'] or results['modified']:
+    rowds,errors = batch.load_csv_run_checks(collection, model, csv_path)
+    if errors:
         raise Exception(
             'File import cancelled due to CSV validation errors. ' \
             'Please see import log.'
