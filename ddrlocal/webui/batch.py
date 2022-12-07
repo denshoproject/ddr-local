@@ -5,6 +5,7 @@ from django.conf import settings
 from DDR.batch import Checker, Importer, InvalidCSVException
 from DDR import csvfile
 from DDR import fileio
+from DDR import signatures
 from DDR import util
 
 
@@ -86,3 +87,32 @@ def get_log_path(csv_path):
 def get_log_url(log_path):
     path_rel = str(log_path.relative_to(settings.VIRTUALBOX_SHARED_FOLDER))
     return f'/ddrshared/{path_rel}'
+
+def csv_update_signatures(collection, rowds, user, mail, agent, log):
+    """Choose signature File for each parent Entity in rowds
+    
+    This must be run *after* a CSV is imported and committed
+    """
+    log.info('Updating signatures')
+    eidentifiers = Importer._eidentifiers(
+        Importer._fid_parents(
+            Importer._fidentifiers(rowds, collection.identifier),
+            rowds,
+            collection.identifier
+        )
+    )
+    log.debug(f'{len(eidentifiers)} entities in {len(rowds)} rowds')
+    files_written = []
+    for ei in eidentifiers:
+        entity_paths = util.find_meta_files(ei.path_abs(), recursive=True)
+        updates = signatures.find_updates(signatures.choose(entity_paths))
+        written = signatures.write_updates(updates)
+        for path in written:
+            log.debug(f'| {path}')
+        files_written = files_written + written
+    log.debug(f'Committing {len(files_written)} modified files')
+    status,msg = signatures.commit_updates(
+        collection, files_written, user, mail, agent, commit=True
+    )
+    log.debug(f'{status=} {msg=}')
+    return status,msg

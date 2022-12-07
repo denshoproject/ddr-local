@@ -542,7 +542,10 @@ def csv_import_model(collection_path, model, csv_path, git_name, git_mail):
         repo=dvcs.repository(collection_path, git_name, git_mail),
         msg=f'Batch file import\n\nCSV: {csv_path}',
         agent='ddr-local',
-        log=util.FileLogger(log_path=log_path),
+        log=log,
+    )
+    status,msg = batch.csv_update_signatures(
+        collection, rowds, git_name, git_mail, agent='ddr-local', log=log
     )
     log.blank()
     log.blank()
