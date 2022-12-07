@@ -39,6 +39,16 @@ def load_csv_run_checks(collection, model, csv_path, log_errors=False):
     staged,modified = Checker.check_repository(collection.identifier)
     for f in staged: errors.append(f'STAGED: {f}')
     for f in modified: errors.append(f'MODIFIED: {f}')
+    # eids
+    entities,missing_entities = Importer._existing_bad_entities(
+        Importer._eidentifiers(
+            Importer._fid_parents(
+                Importer._fidentifiers(rowds, collection.identifier),
+                rowds,
+                collection.identifier)))
+    if missing_entities:
+        for e in missing_entities:
+            errors.append(f'Entity {e} missing')
     #
     for err in errors:
         log.error(err)
