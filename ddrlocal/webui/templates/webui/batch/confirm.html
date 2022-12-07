@@ -59,16 +59,11 @@
     CSV Validation Failed
   </h2>
   <ul>
-  {% for err in csv_errs %}<li>CSV: {{ err }}</li>{% endfor %}
-  {% for err in id_errs %}<li>Identifier: {{ err }}</li>{% endfor %}
-  {% for key,val in header_errs.items %}<li>CSV header: {{ key }}: {{ val }}</li>{% endfor %}
-  {% for err in rowds_errs %}<li>CSV row: {{ err }}</li>{% endfor %}
-  {% for err in file_errs %}
-    {% for key,val in err.items %}<li>{{ key }}: {{ val }}</li>{% endfor %}
-  {% endfor %}
-  {% for f in staged %}<li>staged: {{ f }}</li>{% endfor %}
-  {% for f in modified %}<li>modified: {{ f }}</li>{% endfor %}
+    {% for err in errors %}
+    <li>{{ err }}</li>
+    {% endfor %}
   </ul>
+  <br/>
   <p>
     <a href="{{ referer }}" class="btn btn-primary btn-mini">Back</a>
     &nbsp;

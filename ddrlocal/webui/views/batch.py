@@ -99,28 +99,18 @@ class ImportFiles(View):
         referer = f'{u.path}?{u.query}'
         #
         log.info(f'Running checks on {csv_path}')
-        rowds,results = batch.load_csv_run_checks(collection, model, csv_path)
+        rowds,errors = batch.load_csv_run_checks(collection, model, csv_path)
         log.blank()
         log.blank()
         #
-        if not results['csv_errs'] and not results['id_errs'] \
-        and not results['header_errs'] and not results['rowds_errs'] \
-        and not results['file_errs'] and not results['staged'] \
-        and not results['modified']:
+        clean = False
+        if not errors:
             clean = True
-        else:
-            clean = False
         return render(request, 'webui/batch/confirm.html', {
             'referer': referer,
             'collection': collection,
             'clean': clean,
-            'csv_errs': results['csv_errs'],
-            'id_errs': results['id_errs'],
-            'header_errs': results['header_errs'],
-            'rowds_errs': results['rowds_errs'],
-            'file_errs': results['file_errs'],
-            'staged': results['staged'],
-            'modified': results['modified'],
+            'errors': errors,
             'log_url': batch.get_log_url(log_path),
         })
     

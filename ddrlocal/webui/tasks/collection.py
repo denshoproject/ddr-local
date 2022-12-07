@@ -523,10 +523,8 @@ def csv_import_model(collection_path, model, csv_path, git_name, git_mail):
     ci = Identifier(path=collection_path)
     collection = Collection.from_identifier(ci)
     
-    rowds,results = batch.load_csv_run_checks(collection, model, csv_path)
-    if results['csv_errs'] or results['id_errs'] \
-    or results['header_errs'] or results['rowds_errs'] or results['file_errs'] \
-    or results['staged'] or results['modified']:
+    rowds,errors = batch.load_csv_run_checks(collection, model, csv_path)
+    if errors:
         raise Exception(
             'File import cancelled due to CSV validation errors. ' \
             'Please see import log.'
