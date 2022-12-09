@@ -12,6 +12,7 @@ from django.urls import reverse
 from DDR import commands
 from DDR import converters
 from DDR import docstore
+from DDR import dvcs
 from DDR import idservice
 from DDR import signatures
 from DDR import util
@@ -19,6 +20,7 @@ from DDR import util
 from elastictools import search
 from elastictools.docstore import DocstoreManager
 from elastictools.docstore import ConnectionError, RequestError, TransportError
+from webui import batch
 from webui import csvio
 from webui import gitstatus
 from webui.models import Collection, INDEX_PREFIX
@@ -40,7 +42,6 @@ class CollectionCheckTask(Task):
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
         logger.debug('CollectionCheckTask.after_return(%s, %s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs, einfo))
         gitstatus.log('CollectionCheckTask.after_return(%s, %s, %s, %s, %s, %s)' % (status, retval, task_id, args, kwargs, einfo))
-
 @shared_task(base=CollectionCheckTask, name='webui.tasks.collection_check')
 def check( collection_path ):
     if not os.path.exists(settings.MEDIA_BASE):
@@ -442,6 +443,120 @@ def csv_export_model(collection_path, model):
         model,
         logger
     ))
+
+
+# ----------------------------------------------------------------------
+
+def csv_import(request, collection, model, csv_path):
+    log_path = batch.get_log_path(csv_path)
+    git_name = request.session.get('git_name')
+    git_mail = request.session.get('git_mail')
+    result = csv_import_model.apply_async(
+        (collection.path, model, str(csv_path), git_name, git_mail),
+        countdown=2
+    )
+    # add celery task_id to session
+    celery_tasks = request.session.get(settings.CELERY_TASKS_SESSION_KEY, {})
+    # IMPORTANT: 'action' *must* match a message in webui.tasks.TASK_STATUS_MESSAGES.
+    task = {
+        'task_id': result.task_id,
+        'action': f'csv-import-{model}',
+        'collection_id': collection.id,
+        'collection_url': collection.absolute_url(),
+        'model': model,
+        'csv_path': str(csv_path),
+        'csv_file': str(csv_path.name),
+        'log_path': str(log_path),
+        'log_url': batch.get_log_url(log_path),
+        'start': converters.datetime_to_text(datetime.now(settings.TZ)),
+    }
+    celery_tasks[result.task_id] = task
+    request.session[settings.CELERY_TASKS_SESSION_KEY] = celery_tasks
+
+class CSVImportTask(Task):
+    abstract = True
+    
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
+        collection_path = args[0]
+        model = args[1]
+        csv_path = args[2]
+        git_name = args[3]
+        git_mail = args[4]
+        log_path = batch.get_log_path(csv_path)
+        log = util.FileLogger(log_path=log_path)
+        log.error('Import failed -- rolling back')
+        dvcs.rollback(dvcs.repository(collection_path, git_name, git_mail), log)
+        log.blank()
+        log.blank()
+    
+    def on_success(self, retval, task_id, args, kwargs):
+        pass
+    
+    def after_return(self, status, retval, task_id, args, kwargs, cinfo):
+        logger.debug('CSVImportTask.after_return(%s, %s, %s, %s, %s)' % (
+            status, retval, task_id, args, kwargs)
+        )
+        collection_path = args[0]
+        model = args[1]
+        csv_path = args[2]
+        git_name = args[3]
+        git_mail = args[4]
+        collection = Collection.from_identifier(Identifier(path=collection_path))
+        lockstatus = collection.unlock(task_id)
+        gitstatus.update(settings.MEDIA_BASE, collection.path)
+        gitstatus.unlock(settings.MEDIA_BASE, 'csv_import')
+
+@shared_task(base=CSVImportTask, name='webui-csv-import-model')
+def csv_import_model(collection_path, model, csv_path, git_name, git_mail):
+    """Import collection {model} metadata to CSV file.
+    
+    @return collection_path: Absolute path to collection.
+    @return model: 'entity' or 'file'.
+    """
+    log_path = batch.get_log_path(csv_path)
+    log = util.FileLogger(log_path=log_path)
+    log.info(f'========================================================================')
+    log.info(f'BEGIN BATCH {model.upper()} IMPORT')
+    log.info(f'========================================================================')
+    ci = Identifier(path=collection_path)
+    collection = Collection.from_identifier(ci)
+    
+    rowds,errors = batch.load_csv_run_checks(collection, model, csv_path)
+    if errors:
+        raise Exception(
+            'File import cancelled due to CSV validation errors. ' \
+            'Please see import log.'
+        )
+    gitstatus.lock(settings.MEDIA_BASE, 'csv_import')
+    imported = batch.Importer.import_files(
+        csv_path=csv_path,
+        rowds=rowds,
+        cidentifier=ci,
+        vocabs_url=settings.VOCABS_URL,
+        git_name=git_name,
+        git_mail=git_mail,
+        agent='ddr-local',
+        log_path=log_path,
+    )
+    commit = dvcs.commit(
+        repo=dvcs.repository(collection_path, git_name, git_mail),
+        msg=f'Batch file import\n\nCSV: {csv_path}',
+        agent='ddr-local',
+        log=log,
+    )
+    status,msg = batch.csv_update_signatures(
+        collection, rowds, git_name, git_mail, agent='ddr-local', log=log
+    )
+    log.blank()
+    log.blank()
+
+    logger.debug('Updating Elasticsearch')
+    if settings.DOCSTORE_ENABLED:
+        try:
+            collection.reindex()
+        except ConnectionError:
+            logger.error('Could not update search index')
+    return collection_path,model,csv_path
 
 
 # ----------------------------------------------------------------------

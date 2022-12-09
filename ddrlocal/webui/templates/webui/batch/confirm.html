@@ -1,0 +1,81 @@
+{% extends "webui/collections/base.html" %}
+{% load webui_tags %}
+
+{% block title %}Import From CSV | {{ collection.title }}{% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+<li><a href="{{ collection.absolute_url }}">{{ collection.id }}</a></li>
+<li><a href="{{ referer }}">Import From CSV</a></li>
+<li class="active">Confirm</li>
+{% endblock breadcrumbs %}
+
+
+{% block content %}
+
+  <div class="row-fluid">
+    <div class="span12">
+
+      <h1>{{ collection.id }} &mdash; Import Files from CSV</h1>
+
+{% if clean %}
+
+<div class="alert alert-warning" role="alert">
+  <h2 style="margin-top:0px;">
+    <span class="glyphicon glyphicon-warning-sign"></span>
+    CSV Validation Successful
+  </h2>
+  <p>
+    Importing files requires network access and can sometimes take a long time.
+  </p>
+  <p>
+    <strong>Interrupting a file import operation may result in loss of data!</strong>
+  </p>
+  <p>
+    Please do not initiate file import unless you are prepared to let it finish!
+  </p>
+  <table>
+    <form name="sync-confirm" action="" method="post">{% csrf_token %}
+      <tr>
+        <td>
+          {{ form.confirmed }}
+          Yes, I do indeed want to import this CSV.
+        </td>
+        <td>
+          &nbsp;&nbsp;
+          <button class="btn btn-danger btn-mini" type="submit" value="Import">Import</button>
+          &nbsp;&nbsp; / &nbsp;&nbsp;
+          <a href="{{ referer }}" class="btn btn-primary btn-mini">Cancel Import</a>
+        </td>
+      </tr>
+    </form>
+  </table>
+</div><!-- .alert-danger -->
+
+{% else %}{# if clean #}
+
+<div class="alert alert-danger" role="alert">
+  <h2 style="margin-top:0px;">
+    <span class="glyphicon glyphicon-warning-sign"></span>
+    CSV Validation Failed
+  </h2>
+  <ul>
+    {% for err in errors %}
+    <li>{{ err }}</li>
+    {% endfor %}
+  </ul>
+  <br/>
+  <p>
+    <a href="{{ referer }}" class="btn btn-primary btn-mini">Back</a>
+    &nbsp;
+    <a href="{{ log_url }}">Log</a>
+  </p>
+</div><!-- .alert-danger -->
+
+{% endif %}{# if clean #}
+
+
+
+    </div><!-- .span12 -->
+  </div><!-- .row-fluid -->
+
+{% endblock content %}

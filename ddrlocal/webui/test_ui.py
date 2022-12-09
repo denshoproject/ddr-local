@@ -1,3 +1,16 @@
+"""
+Loading Test Data
+
+ddrindex destroy --confirm
+ddrindex create
+ddrindex vocabs /opt/densho-vocab/api/0.2/
+ddrindex narrators /opt/densho-vocab/api/0.2/narrators.json
+ddrindex repo /var/www/media/ddr/ddr/repository.json
+ddrindex org /var/www/media/ddr/ddr-densho/organization.json
+ddrindex publish -r --force /var/www/media/ddr/ddr-densho-10
+ddrindex publish -r --force /var/www/media/ddr/ddr-csujad-30
+"""
+
 import pytest
 import requests
 
@@ -5,7 +18,8 @@ from django.conf import settings
 from django.test import TestCase
 from django.urls import reverse
 
-from elastictools.docstore import TransportError
+from elastictools.docstore import DocstoreManager, TransportError
+from webui.models import INDEX_PREFIX
 
 HOST_CHECK_URL = 'http://{}'.format(settings.DOCSTORE_HOST)
 
@@ -14,9 +28,7 @@ def no_elasticsearch():
     """Returns True if cannot contact cluster; use to skip tests
     """
     try:
-        r = requests.get(HOST_CHECK_URL, timeout=1)
-        if r.status_code == 200:
-            return False
+        DocstoreManager(INDEX_PREFIX, settings.DOCSTORE_HOST, settings).start_test()
     except ConnectionError:
         print('ConnectionError')
         return True
@@ -205,6 +217,12 @@ SEARCH_FILTER_CHOICES = [
     ('topics', '97', 'Supreme Court cases -- Gordon Hirabayashi'),
 ]
 
+CREATORS_SEARCH_FILTER_CHOICES = [
+    ('topics', '195', 'World War II -- Concentration camps -- Social and recreational activities'),
+    ('topics', '67', 'World War II -- Concentration camps -- Living conditions'),
+    ('topics', '484', 'Geographic communities -- California -- Livingston'),
+]
+
 class SearchView(TestCase):
  
     def test_search_index(self):
@@ -262,6 +280,32 @@ class SearchView(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         find_filter_choices(response, SEARCH_FILTER_CHOICES)
+
+    @pytest.mark.skipif(no_elasticsearch(), reason=NO_ELASTICSEARCH_ERR)
+    def test_search_results_creators(self):
+        url = reverse(
+            'webui-search'
+        ) + '?fulltext=Katabami,%20Reiko'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        find_filter_choices(response, CREATORS_SEARCH_FILTER_CHOICES)
+
+    @pytest.mark.skipif(no_elasticsearch(), reason=NO_ELASTICSEARCH_ERR)
+    def test_search_results_creators_filters(self):
+        url = reverse(
+            'webui-search'
+        ) + '?fulltext=Katabami,%20Reiko&topics=484'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        find_filter_choices(response, CREATORS_SEARCH_FILTER_CHOICES)
+
+    @pytest.mark.skipif(no_elasticsearch(), reason=NO_ELASTICSEARCH_ERR)
+    def test_search_results_persons(self):
+        url = reverse(
+            'webui-search'
+        ) + '?fulltext=Yasui,%20Sachi'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
 
 class TaskView(TestCase):
 
