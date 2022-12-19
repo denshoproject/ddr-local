@@ -93,7 +93,7 @@ SEARCH_AGG_FIELDS = {
     'language': 'language',
     #'location': 'location',
     #'mimetype': 'mimetype',
-    #'persons': 'persons',
+    #'persons': 'persons.namepart',
     'rights': 'rights',
     'topics': 'topics.id',
 }
@@ -155,7 +155,7 @@ SEARCH_FORM_LABELS = {
     'language': 'Language',
     'location': 'Location',
     'mimetype': 'Mimetype',
-    'persons': 'Persons',
+    'persons.namepart': 'Persons',
     'rights': 'Rights',
     'topics': 'Topics',
 }
@@ -196,16 +196,12 @@ MODEL_PLURALS = {
     'facetterm':    'facetterm',
 }
 
-CREATORS_TEMPLATE = """
-{{ creator.namepart }} ({{ creator.role }})
-&nbsp; <a href="{% url "webui-search" %}?fulltext={{ creator.namepart }}">Search</a>
-{% if creator.naan and creator.noid %}
-&nbsp; <a href="{% url "namespub-person" creator.naan creator.noid %}">NamesDB</a>
-{% endif %}
-"""
-
 PERSONS_TEMPLATE = """
-{{ person }} &nbsp; <a href="{% url "webui-search" %}?fulltext={{ person }}">Search</a>
+{{ person.namepart }} {% if person.role %}({{ person.role }}){% endif %}
+&nbsp; <a href="{% url "webui-search" %}?fulltext={{ person.namepart }}">Search</a>
+{% if person.naan and person.noid %}
+&nbsp; <a href="{% url "namespub-person" person.naan person.noid %}">NamesDB</a>
+{% endif %}
 """
 
 
@@ -690,22 +686,26 @@ class Collection( DDRCollection ):
                 # creators: link to namesdb_public
                 # format with search and namesdb links
                 # remove newlines so they don't get turned into <br/> and </p>
-                creators_lines = []
+                lines = []
                 for c in self.creators:
                     if c.get('nr_id'):
                         c['naan'],c['noid'] = c['nr_id'].split('/')
-                    line = Template(CREATORS_TEMPLATE).render(
-                        Context({'creator': c})).replace('\n', ' ').strip()
-                    creators_lines.append(line)
-                lv['value'] = '\n'.join(creators_lines)
+                    line = Template(PERSONS_TEMPLATE).render(
+                        Context({'person': c})).replace('\n', ' ').strip()
+                    lines.append(line)
+                lv['value'] = '\n'.join(lines)
             elif lv['label'] == 'Person/Organization':
-                # persons: add fulltext search links
-                persons_lines = [
-                    Template(PERSONS_TEMPLATE).render(
+                # persons: link to namesdb_public
+                # format with search and namesdb links
+                # remove newlines so they don't get turned into <br/> and </p>
+                lines = []
+                for p in self.persons:
+                    if p.get('nr_id'):
+                        p['naan'],p['noid'] = p['nr_id'].split('/')
+                    line = Template(PERSONS_TEMPLATE).render(
                         Context({'person': p})).replace('\n', ' ').strip()
-                    for p in self.persons
-                ]
-                lv['value'] = '\n'.join(persons_lines)
+                    lines.append(line)
+                lv['value'] = '\n'.join(lines)
         return data
     
     def form_prep(self) -> dict:
@@ -993,22 +993,26 @@ class Entity( DDREntity ):
                 # creators: link to namesdb_public
                 # format with search and namesdb links
                 # remove newlines so they don't get turned into <br/> and </p>
-                creators_lines = []
+                lines = []
                 for c in self.creators:
                     if c.get('nr_id'):
                         c['naan'],c['noid'] = c['nr_id'].split('/')
-                    line = Template(CREATORS_TEMPLATE).render(
-                        Context({'creator': c})).replace('\n', ' ').strip()
-                    creators_lines.append(line)
-                lv['value'] = '\n'.join(creators_lines)
+                    line = Template(PERSONS_TEMPLATE).render(
+                        Context({'person': c})).replace('\n', ' ').strip()
+                    lines.append(line)
+                lv['value'] = '\n'.join(lines)
             elif lv['label'] == 'Person/Organization':
-                # persons: add fulltext search links
-                persons_lines = [
-                    Template(PERSONS_TEMPLATE).render(
+                # persons: link to namesdb_public
+                # format with search and namesdb links
+                # remove newlines so they don't get turned into <br/> and </p>
+                lines = []
+                for p in self.persons:
+                    if p.get('nr_id'):
+                        p['naan'],p['noid'] = p['nr_id'].split('/')
+                    line = Template(PERSONS_TEMPLATE).render(
                         Context({'person': p})).replace('\n', ' ').strip()
-                    for p in self.persons
-                ]
-                lv['value'] = '\n'.join(persons_lines)
+                    lines.append(line)
+                lv['value'] = '\n'.join(lines)
         return data
     
     def form_prep(self) -> dict:
@@ -1189,6 +1193,8 @@ def form_prep_creators(text):
     return text
 
 def form_prep_persons(text):
+    # One record per line
+    text = text.replace('; ', ';').replace(';', ';\n')
     return text
 
 def format_object_detail(document, request, listitem=False):
