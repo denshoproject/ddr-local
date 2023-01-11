@@ -195,6 +195,7 @@ def new( request, rid ):
                 'id': entity.id,
                 'external': False,
                 'role': role,
+                'path_abs': form.cleaned_data['path'],
                 'basename_orig': form.cleaned_data['path'],
                 'public': form.cleaned_data['public'],
                 'sort': form.cleaned_data['sort'],
