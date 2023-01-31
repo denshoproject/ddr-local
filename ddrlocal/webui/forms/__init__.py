@@ -13,6 +13,7 @@ from DDR.converters import text_to_rolepeople
 from DDR import modules
 from repo_models.collection import FIELDS as COLLECTION_FIELDS
 from repo_models.entity import FIELDS as ENTITY_FIELDS
+from repo_models.entity import CREATORS_DEFAULT_DICT, PERSONS_DEFAULT_DICT
 from webui.identifier import Identifier, INHERITABLE_FIELDS
 from webui.util import OrderedDict
 
@@ -158,7 +159,7 @@ class DDRForm(forms.Form):
     def clean_creators(self):
         text = self.cleaned_data['creators']
         # complain if we can't parse the data
-        data = text_to_rolepeople(text)
+        data = text_to_rolepeople(text, CREATORS_DEFAULT_DICT)
         if text and not data:
             raise forms.ValidationError('Creators field could not be parsed.')
         # complain if fieldnames not in definitions
@@ -178,7 +179,7 @@ class DDRForm(forms.Form):
     def clean_persons(self):
         text = self.cleaned_data['persons']
         # complain if we can't parse the data
-        data = text_to_rolepeople(text)
+        data = text_to_rolepeople(text, PERSONS_DEFAULT_DICT)
         if text and not data:
             raise forms.ValidationError('Persons field could not be parsed.')
         # complain if fieldnames not in definitions
