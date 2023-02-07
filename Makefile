@@ -490,14 +490,18 @@ pip-download-local:
 	source $(VIRTUALENV)/bin/activate; \
 	pip download --no-binary=:all: --destination-directory=$(INSTALL_LOCAL)/vendor -r $(INSTALL_LOCAL)/requirements.txt
 
-install-ddr-local: mkdirs install-configs install-setuptools
+git-safe-dir:
+	@echo ""
+	@echo "git-safe-dir -----------------------------------------------------------"
+	sudo -u ddr git config --global --add safe.directory $(INSTALL_LOCAL)
+	sudo -u ddr git config --global --add safe.directory $(INSTALL_NAMESDB)
+
+install-ddr-local: mkdirs install-configs install-setuptools git-safe-dir
 	@echo ""
 	@echo "install-ddr-local ------------------------------------------------------"
 	git status | grep "On branch"
 	source $(VIRTUALENV)/bin/activate; \
 	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) -r $(INSTALL_LOCAL)/requirements.txt
-	sudo -u ddr git config --global --add safe.directory $(INSTALL_LOCAL)
-	sudo -u ddr git config --global --add safe.directory $(INSTALL_NAMESDB)
 
 mkdir-ddr-local:
 	@echo ""
