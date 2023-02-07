@@ -441,6 +441,9 @@ install-ddr-cmdln: install-setuptools
 	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) -r $(INSTALL_CMDLN)/requirements.txt
 	source $(VIRTUALENV)/bin/activate; \
 	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) internetarchive
+	sudo -u ddr git config --global --add safe.directory $(INSTALL_CMDLN)
+	sudo -u ddr git config --global --add safe.directory $(INSTALL_DEFS)
+	sudo -u ddr git config --global --add safe.directory $(INSTALL_VOCAB)
 
 mkdir-ddr-cmdln:
 	@echo ""
@@ -493,6 +496,8 @@ install-ddr-local: mkdirs install-configs install-setuptools
 	git status | grep "On branch"
 	source $(VIRTUALENV)/bin/activate; \
 	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) -r $(INSTALL_LOCAL)/requirements.txt
+	sudo -u ddr git config --global --add safe.directory $(INSTALL_LOCAL)
+	sudo -u ddr git config --global --add safe.directory $(INSTALL_NAMESDB)
 
 mkdir-ddr-local:
 	@echo ""
