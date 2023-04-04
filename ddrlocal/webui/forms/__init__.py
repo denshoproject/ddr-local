@@ -13,7 +13,6 @@ from DDR.converters import text_to_rolepeople
 from DDR import modules
 from repo_models.collection import FIELDS as COLLECTION_FIELDS
 from repo_models.entity import FIELDS as ENTITY_FIELDS
-from repo_models.entity import CREATORS_DEFAULT_DICT, PERSONS_DEFAULT_DICT
 from webui.identifier import Identifier, INHERITABLE_FIELDS
 from webui.util import OrderedDict
 
@@ -159,7 +158,7 @@ class DDRForm(forms.Form):
     def clean_creators(self):
         text = self.cleaned_data['creators']
         # complain if we can't parse the data
-        data = text_to_rolepeople(text, CREATORS_DEFAULT_DICT)
+        data = text_to_rolepeople(text)
         if text and not data:
             raise forms.ValidationError('Creators field could not be parsed.')
         # complain if fieldnames not in definitions
@@ -178,22 +177,7 @@ class DDRForm(forms.Form):
 
     def clean_persons(self):
         text = self.cleaned_data['persons']
-        # complain if we can't parse the data
-        data = text_to_rolepeople(text, PERSONS_DEFAULT_DICT)
-        if text and not data:
-            raise forms.ValidationError('Persons field could not be parsed.')
-        # complain if fieldnames not in definitions
-        persons_fieldnames = _rolepeople_keys(
-            Identifier(self.cleaned_data['id']).model
-        )
-        lines = text.split('\n')
-        for n,record in enumerate(data):
-            for key in record.keys():
-                if key not in persons_fieldnames:
-                    raise forms.ValidationError(
-                        f'Record "{lines[n].strip()}" contains bad key: "{key}".'
-                    )
-        # looks good
+        # persons uses no special formatting at present
         return text
 
     def clean(self):
@@ -287,7 +271,7 @@ class DDRForm(forms.Form):
 
 #namespub_url = reverse('namespub-persons')
 namespub_url = '/names/persons/'
-PERSONS_HELPTEXT_ADDITION = f"""
+CREATORS_HELPTEXT_ADDITION = f"""
 <a href="javascript:window.open('{namespub_url}','namesdb','width=1500,height=500')" target="popup">NAMESDB_PUBLIC</a>
 """
 
@@ -298,12 +282,7 @@ def construct_form(model_fields):
             # creators: Add link to namesdb_public
             if fkwargs.get('name') and fkwargs['name'] == 'creators':
                 help_text = fkwargs['form']['help_text']
-                help_text = help_text + ' ' + PERSONS_HELPTEXT_ADDITION
-                fkwargs['form']['help_text'] = help_text
-            # persons: Add link to namesdb_public
-            if fkwargs.get('name') and fkwargs['name'] == 'persons':
-                help_text = fkwargs['form']['help_text']
-                help_text = help_text + ' ' + PERSONS_HELPTEXT_ADDITION
+                help_text = help_text + ' ' + CREATORS_HELPTEXT_ADDITION
                 fkwargs['form']['help_text'] = help_text
             # replace widget name with widget object
             if fkwargs['form'].get('widget', None):
@@ -334,9 +313,6 @@ def _rolepeople_keys(model):
     field_def = None
     for f in MODEL_FORM_FIELDS[model]:
         if f['name'] == 'creators':
-            field_def = f
-            break
-        elif f['name'] == 'persons':
             field_def = f
             break
     if field_def:
