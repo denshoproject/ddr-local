@@ -169,6 +169,7 @@ def search_ui(request, obj=None):
             fields=models.SEARCH_INCLUDE_FIELDS,
             fields_nested=models.SEARCH_NESTED_FIELDS,
             fields_agg=models.SEARCH_AGG_FIELDS,
+            wildcards=False,
         )
         context['searching'] = True
     
