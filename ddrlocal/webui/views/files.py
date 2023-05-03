@@ -67,7 +67,9 @@ def check_file(file_):
     if not file_:
         raise Http404
 
-def check_parents(entity, collection, check_locks=True, fetch=True):
+def check_parents(entity, collection, request, check_locks=True, fetch=True):
+    """Check if parent entity,collection exists and whether they're locked
+    """
     if not entity:
         raise Exception('No parent object!')
     if not collection:
@@ -102,7 +104,7 @@ def detail( request, fid ):
     check_file(file_)
     entity = file_.parent()
     collection = file_.collection()
-    check_parents(entity, collection, check_locks=0, fetch=0)
+    check_parents(entity, collection, request, check_locks=0, fetch=0)
     file_.model_def_commits()
     file_.model_def_fields()
     formdata = {'path':file_.path_rel}
@@ -130,7 +132,7 @@ def browse( request, rid ):
     role = file_role.identifier.parts['role']
     entity = file_role.parent(stubs=True)
     collection = entity.collection()
-    check_parents(entity, collection, check_locks=0, fetch=0)
+    check_parents(entity, collection, request, check_locks=0, fetch=0)
     path = request.GET.get('path')
     home = None
     parent = None
@@ -176,7 +178,7 @@ def new( request, rid ):
     file_role = Stub.from_identifier(Identifier(rid))
     entity = file_role.parent(stubs=True)
     collection = entity.collection()
-    check_parents(entity, collection, fetch=0)
+    check_parents(entity, collection, request, fetch=0)
     role = file_role.identifier.parts['role']
     #child_models = CHILDREN_ALL[file_role.identifier.model]
     FILE_MODEL = 'file'
@@ -240,7 +242,7 @@ def new_external(request, rid):
     role = file_role.identifier.parts['role']
     entity = file_role.parent(stubs=True)
     collection = entity.collection()
-    check_parents(entity, collection, check_locks=0, fetch=0)
+    check_parents(entity, collection, request, check_locks=0, fetch=0)
     
     if request.method == 'POST':
         form = NewExternalFileForm(request.POST)
@@ -286,7 +288,7 @@ def new_access( request, fid ):
     check_file(file_)
     entity = file_.parent()
     collection = file_.collection()
-    check_parents(entity, collection)
+    check_parents(entity, collection, request)
     #
     if request.method == 'POST':
         form = NewAccessFileForm(request.POST)
@@ -309,7 +311,7 @@ def batch( request, rid ):
     file_role = Stub.from_identifier(Identifier(rid))
     entity = Entity.from_request(request)
     collection = entity.collection()
-    check_parents(entity, collection)
+    check_parents(entity, collection, request)
     return render(request, 'webui/files/new.html', {
         'collection': collection,
         'entity': entity,
@@ -324,7 +326,7 @@ def edit( request, fid ):
     check_file(file_)
     entity = file_.parent()
     collection = file_.collection()
-    check_parents(entity, collection)
+    check_parents(entity, collection, request)
     file_.model_def_commits()
     file_.model_def_fields()
     module = file_.identifier.fields_module()
@@ -368,7 +370,7 @@ def set_signature( request, fid ):
     check_file(file_)
     entity = file_.parent()
     collection = file_.collection()
-    check_parents(entity, collection)
+    check_parents(entity, collection, request)
     #
     if request.method == 'POST':
         parent_id = request.POST.get('object_id')
@@ -399,7 +401,7 @@ def delete( request, fid ):
     check_file(file_)
     entity = file_.parent()
     collection = file_.collection()
-    check_parents(entity, collection)
+    check_parents(entity, collection, request)
     #
     if request.method == 'POST':
         form = DeleteFileForm(request.POST)
