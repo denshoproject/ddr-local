@@ -98,10 +98,10 @@ class ImportFiles(View):
         u = urlparse(request.META['HTTP_REFERER'])
         referer = f'{u.path}?{u.query}'
         #
+        log.blank()
+        log.blank()
         log.info(f'Running checks on {csv_path}')
         rowds,errors = batch.load_csv_run_checks(collection, model, csv_path)
-        log.blank()
-        log.blank()
         #
         clean = False
         if not errors:

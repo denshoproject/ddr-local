@@ -488,8 +488,6 @@ class CSVImportTask(Task):
         log.error(einfo)
         log.error('Import failed -- rolling back')
         dvcs.rollback(dvcs.repository(collection_path, git_name, git_mail), log)
-        log.blank()
-        log.blank()
     
     def on_success(self, retval, task_id, args, kwargs):
         pass
@@ -519,6 +517,8 @@ def csv_import_model(collection_path, model, csv_path, git_name, git_mail):
     """
     log_path = batch.get_log_path(csv_path)
     log = util.FileLogger(log_path=log_path)
+    log.blank()
+    log.blank()
     log.info(f'========================================================================')
     log.info(f'BEGIN BATCH {model.upper()} IMPORT')
     log.info(f'========================================================================')
@@ -551,8 +551,6 @@ def csv_import_model(collection_path, model, csv_path, git_name, git_mail):
     status,msg = batch.csv_update_signatures(
         collection, rowds, git_name, git_mail, agent='ddr-local', log=log
     )
-    log.blank()
-    log.blank()
 
     logger.debug('Updating Elasticsearch')
     if settings.DOCSTORE_ENABLED:
