@@ -21,21 +21,24 @@ def load_csv_run_checks(collection, model, csv_path, log_errors=False):
     log = util.FileLogger(get_log_path(csv_path))
     errors = []
     # csv
-    csv_errs,id_errs,validation_errs = Checker.check_csv(
-        model, csv_path, rowds, headers, csv_errs,
-        collection.identifier, settings.VOCABS_URL
-    )
-    header_errs,rowds_errs,file_errs = validation_errs
-    for err in csv_errs: errors.append(f'CSV: {err}')
-    for err in id_errs: errors.append(f'Identifier: {err}')
+    header_errs = Checker.validate_csv_headers(model, headers, rowds)
+    rowds_errs = Checker.validate_csv_rowds(model, headers, rowds)
+    id_errs = Checker.validate_csv_identifiers(rowds)
+    if model == 'file':
+        file_errs = Checker.validate_csv_files(csv_path, rowds)
+    else:
+        file_errs = []
+    for err in csv_errs:
+        errors.append(f'CSV: {err}')
+    for err in id_errs:
+        errors.append(f'Identifier: {err}')
     for key,val in header_errs.items():
         errors.append(f"CSV header: {key}: {','.join(val)}")
     for err,items in rowds_errs.items():
         for item in items:
             errors.append(f'{err} {item}')
     for err in file_errs:
-        for key,val in err.items():
-            errors.append(f"{key}: {val}")
+        errors.append(err)
     # repository
     staged,modified = Checker.check_repository(collection.identifier)
     for f in staged: errors.append(f'STAGED: {f}')
