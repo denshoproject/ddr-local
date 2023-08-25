@@ -484,6 +484,8 @@ class CSVImportTask(Task):
         git_mail = args[4]
         log_path = batch.get_log_path(csv_path)
         log = util.FileLogger(log_path=log_path)
+        log.error(f"CSVImportTask.on_failure")
+        log.error(einfo)
         log.error('Import failed -- rolling back')
         dvcs.rollback(dvcs.repository(collection_path, git_name, git_mail), log)
         log.blank()
@@ -501,6 +503,8 @@ class CSVImportTask(Task):
         csv_path = args[2]
         git_name = args[3]
         git_mail = args[4]
+        log_path = batch.get_log_path(csv_path)
+        log = util.FileLogger(log_path=log_path)
         collection = Collection.from_identifier(Identifier(path=collection_path))
         lockstatus = collection.unlock(task_id)
         gitstatus.update(settings.MEDIA_BASE, collection.path)
