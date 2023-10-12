@@ -117,6 +117,8 @@ class CollectionNewTask(Task):
         logger.debug('CollectionNewTask.after_return(%s, %s, %s, %s, %s)' % (
             status, retval, task_id, args, kwargs
         ))
+        if isinstance(retval, Exception):
+            return
         collection_id = retval['collection_id']
         collection = Collection.from_identifier(Identifier(id=collection_id))
         lockstatus = collection.unlock(task_id)
