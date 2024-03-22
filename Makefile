@@ -346,14 +346,16 @@ install-virtualenv:
 	@echo ""
 	@echo "install-virtualenv -----------------------------------------------------"
 	apt-get --assume-yes install python3-pip python3-venv
-	python3 -m venv $(VIRTUALENV)
+	source $(VIRTUALENV)/bin/activate; \
+	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) pip uv
+	uv venv $(VIRTUALENV)
 
 install-setuptools: install-virtualenv
 	@echo ""
 	@echo "install-setuptools -----------------------------------------------------"
 	apt-get --assume-yes install python3-dev
 	source $(VIRTUALENV)/bin/activate; \
-	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) setuptools
+	uv pip install -U --cache-dir=$(PIP_CACHE_DIR) setuptools
 
 
 install-dependencies: apt-backports install-core install-misc-tools install-daemons
@@ -417,9 +419,9 @@ install-ddr-cmdln: install-setuptools
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_CMDLN)/ddr; python setup.py install
 	source $(VIRTUALENV)/bin/activate; \
-	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) -r $(INSTALL_CMDLN)/requirements.txt
+	uv pip install -U --cache-dir=$(PIP_CACHE_DIR) -r $(INSTALL_CMDLN)/requirements.txt
 	source $(VIRTUALENV)/bin/activate; \
-	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) internetarchive
+	uv pip install -U --cache-dir=$(PIP_CACHE_DIR) internetarchive
 	sudo -u ddr git config --global --add safe.directory $(INSTALL_CMDLN)
 	sudo -u ddr git config --global --add safe.directory $(INSTALL_DEFS)
 	sudo -u ddr git config --global --add safe.directory $(INSTALL_VOCAB)
@@ -480,7 +482,7 @@ install-ddr-local: mkdirs install-configs install-setuptools git-safe-dir
 	@echo "install-ddr-local ------------------------------------------------------"
 	git status | grep "On branch"
 	source $(VIRTUALENV)/bin/activate; \
-	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) -r $(INSTALL_LOCAL)/requirements.txt
+	uv pip install -U --cache-dir=$(PIP_CACHE_DIR) -r $(INSTALL_LOCAL)/requirements.txt
 
 mkdir-ddr-local:
 	@echo ""
@@ -571,7 +573,7 @@ install-namesdb: install-virtualenv
 	-rm -Rf $(INSTALL_LOCAL)/namesdb_public
 	-ln -s $(INSTALL_NAMESDB)/namessite/namesdb_public $(INSTALL_LOCAL)/ddrlocal/namesdb_public
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_NAMESDB) && pip3 install --cache-dir=$(PIP_CACHE_DIR) -U -r requirements.txt
+	cd $(INSTALL_NAMESDB) && uv pip install --cache-dir=$(PIP_CACHE_DIR) -U -r requirements.txt
 
 uninstall-namesdb: install-virtualenv
 	@echo ""
@@ -722,7 +724,7 @@ install-ddr-manual: install-setuptools
 	@echo ""
 	@echo "install-ddr-manual -----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
-	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) sphinx
+	uv pip install -U --cache-dir=$(PIP_CACHE_DIR) sphinx
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_MANUAL) && make html
 	rm -Rf $(MEDIA_ROOT)/manual
