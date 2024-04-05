@@ -71,7 +71,7 @@ urlpatterns = [
  
     # repository, organization
     path('repository/<slug:cid>/', repository, name='webui-repository'),
-    path('organizations/', organizations.list, name='ui-organizations-list'),
+    path('organizations/', organizations.list, name='webui-organizations'),
     path('organizations/<slug:oid>/', organizations.detail, name='webui-organization'),
     
     # collections
