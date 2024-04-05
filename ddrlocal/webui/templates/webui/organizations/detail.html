@@ -47,10 +47,12 @@
 {% endif %}
 
 <table class="table table-condensed">
-{% for collection in collections %}
+  {% for collection in collections %}
   <tr id="{{ collection.id }}" {% if collection.sync_status %}class="{{ collection.sync_status.color }}"{% endif %}>
     <td class="id-title">
-      <a href="{{ collection.absolute_url }}">{{ collection.id }}</a> {% if collection.title %}&mdash; <a href="{{ collection.absolute_url }}">{{ collection.title }}{% endif %}</a>
+      <a href="{% url "webui-collection" collection.id %}">{{ collection.id }}</a>
+      {% if collection.title %}&mdash;
+      <a href="{% url "webui-collection" collection.id %}">{{ collection.title }}{% endif %}</a>
     </td>
     <td class="status text-muted">
       {% if collection.sync_status %}
