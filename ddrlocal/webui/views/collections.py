@@ -89,10 +89,14 @@ def collections( request ):
 @storage_required
 def detail( request, cid ):
     collection = Collection.from_identifier(Identifier(cid))
+    organization = Organization.get(
+        collection.identifier.parent_id(stubs=True), settings.MEDIA_BASE
+    )
     collection.model_def_commits()
     collection.model_def_fields()
     alert_if_conflicted(request, collection)
     return render(request, 'webui/collections/detail.html', {
+        'organization': organization,
         'collection': collection,
         'collection_unlock_url': collection.unlock_url(),
         # cache this for later

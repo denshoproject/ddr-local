@@ -4,6 +4,7 @@
 {% block title %}{{ collection.id }}{% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
+<li><a href="{% url "webui-organization" organization.id %}">{{ organization.title }}</a></li>
 {% breadcrumbs collection %}
 {% endblock breadcrumbs %}
 

@@ -7,6 +7,7 @@
 {% endblock %}
 
 {% block breadcrumbs %}{{ block.super }}
+<li><a href="{% url "webui-organizations" %}">Organizations</a></li>
 <li>{{ organization.title }}</li>
 {% endblock breadcrumbs %}
 
