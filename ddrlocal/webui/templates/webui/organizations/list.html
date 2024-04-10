@@ -12,21 +12,21 @@
   <div class="row-fluid">
     <div class="span12">
 
-<h2>Partners</h2>
+<h2>{{ num_organizations }} Partner{{ num_organizations | pluralize }}</h2>
 {% for organization in organizations %}
-<div class="organization media">
-  <div class="media-left">
+<div class="organization media" style="padding-bottom:10px;">
+  <div class="pull-left">
     <a href="{% url "webui-detail" organization.id %}">
       <img src="{{ organization.img }}"
-           class="media-object" style="width:100px;"/>
+           class="media-object" style="width:85px;"/>
     </a>
   </div>
   <div class="media-body">
-    <h2 style="margin-bottom:0px;">
+    <h3 style="margin-top:0px; margin-bottom:0px;">
       <a href="{% url "webui-detail" organization.id %}">
         {{ organization.title }}
       </a>
-    </h2>
+    </h3>
     <p>
       {{ organization.description }}
     </p>
