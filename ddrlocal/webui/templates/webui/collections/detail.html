@@ -14,11 +14,7 @@
   <div class="row-fluid">
     <div class="span12">
 
-<h1>
-{{ collection.id }}
-{% if collection.title %}&mdash; {{ collection.title }}{% endif %}
-</h1>
-
+{% object_header collection %}
 
       <ul class="nav nav-tabs" id="tabs">
         <li class="active"><a href="#">Collection Metadata</a></li>

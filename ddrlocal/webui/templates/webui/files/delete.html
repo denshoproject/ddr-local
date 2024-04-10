@@ -14,9 +14,7 @@
   <div class="row-fluid">
     <div class="span12">
 
-<h1>
-{{ file.basename }}
-</h1>
+{% object_header file %}
 
 <table>
 <form name="delete-file" action="" method="post">{% csrf_token %}

@@ -14,9 +14,7 @@
   <div class="row-fluid">
     <div class="span12">
 
-<h1>
-{{ entity.id }}
-</h1>
+{% object_header entity %}
 
 <table>
 <form name="delete-entity" action="" method="post">{% csrf_token %}
