@@ -31,15 +31,9 @@ def detail(request, oid):
     org_path = Path(settings.MEDIA_BASE) / oid
     organization = Organization.get(oid, settings.MEDIA_BASE)
     organization['img'] = f"{settings.MEDIA_URL}ddr/{oid}/logo.png"
-    # collections
-    objects = Organization.children(org_path)
-    thispage = request.GET.get('page', 1)
-    paginator = Paginator(objects, settings.RESULTS_PER_PAGE)
-    page = paginator.page(thispage)
+    collections = Organization.children(org_path)
     return render(request, 'webui/organizations/detail.html', {
         'organization': organization,
-        'num_collections': len(objects),
-        'paginator': paginator,
-        'page': page,
-        'thispage': thispage,
+        'num_collections': len(collections),
+        'collections': collections,
     })

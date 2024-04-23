@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load bootstrap_pagination thumbnail webui_tags %}
+{% load thumbnail webui_tags %}
 
 {% block title %}{{ organization.title }}{% endblock %}
 {% block pagetitle %}
@@ -30,7 +30,7 @@
   </div>
 </div>
 
-<h3>{{ num_collections }} Collection{{ num_collections | pluralize }}</h3>
+<p><small>{{ num_collections }} Collection{{ num_collections | pluralize }}</small></p>
 
 {% if username and models_valid %}
 <p>
@@ -38,12 +38,8 @@
 </p>
 {% endif %}
 
-{% if paginator.num_pages > 1 %}
-{% bootstrap_paginate page range=10 show_first_last="true" %}
-{% endif %}
-
 <table class="table table-condensed">
-  {% for collection in page.object_list %}
+  {% for collection in collections %}
   <tr id="{{ collection.id }}" {% if collection.sync_status %}class="{{ collection.sync_status.color }}"{% endif %}>
     <td class="id-title">
       <a href="{% url "webui-collection" collection.id %}">{{ collection.id }}</a>
@@ -61,10 +57,6 @@
   </tr>
 {% endfor %}
 </table>
-
-{% if paginator.num_pages > 1 %}
-{% bootstrap_paginate page range=10 show_first_last="true" %}
-{% endif %}
 
     </div><!-- .span12 -->
   </div><!-- .row-fluid -->
