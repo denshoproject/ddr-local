@@ -8,23 +8,6 @@ RUNSERVER_PORT=8000
 APP_VERSION := $(shell cat VERSION)
 GIT_SOURCE_URL=https://github.com/densho/ddr-local
 
-# Release name e.g. jessie
-DEBIAN_CODENAME := $(shell lsb_release -sc)
-# Release numbers e.g. 8.10
-DEBIAN_RELEASE := $(shell lsb_release -sr)
-# Sortable major version tag e.g. deb8
-DEBIAN_RELEASE_TAG = deb$(shell lsb_release -sr | cut -c1)
-
-ifeq ($(DEBIAN_CODENAME), stretch)
-	PYTHON_VERSION=3.5
-endif
-ifeq ($(DEBIAN_CODENAME), buster)
-	PYTHON_VERSION=3.7
-endif
-ifeq ($(DEBIAN_CODENAME), bullseye)
-	PYTHON_VERSION=3.9
-endif
-
 # current branch name minus dashes or underscores
 PACKAGE_BRANCH := $(shell git rev-parse --abbrev-ref HEAD | tr -d _ | tr -d -)
 # current commit hash
@@ -77,21 +60,32 @@ MEDIA_BASE=/var/www
 MEDIA_ROOT=$(MEDIA_BASE)/media
 STATIC_ROOT=$(MEDIA_BASE)/static
 
+# Release name e.g. jessie
+DEBIAN_CODENAME := $(shell lsb_release -sc)
+# Release numbers e.g. 8.10
+DEBIAN_RELEASE := $(shell lsb_release -sr)
+# Sortable major version tag e.g. deb8
+DEBIAN_RELEASE_TAG = deb$(shell lsb_release -sr | cut -c1)
+
+PYTHON_VERSION=
 IMAGEMAGICK_CONF=
 LIBEXEMPI3_PKG=
 OPENJDK_PKG=
-ifeq ($(DEBIAN_CODENAME), stretch)
-	IMAGEMAGICK_CONF=imagemagick-policy.xml.deb9
-	LIBEXEMPI3_PKG=libexempi3
-	OPENJDK_PKG=openjdk-8-jre-headless
-endif
-ifeq ($(DEBIAN_CODENAME), buster)
-	IMAGEMAGICK_CONF=imagemagick-policy.xml.deb10
-	LIBEXEMPI3_PKG=libexempi8
-	OPENJDK_PKG=openjdk-11-jre-headless
-endif
 ifeq ($(DEBIAN_CODENAME), bullseye)
+	PYTHON_VERSION=3.9
 	IMAGEMAGICK_CONF=imagemagick-policy.xml.deb11
+	LIBEXEMPI3_PKG=libexempi8
+	OPENJDK_PKG=openjdk-17-jre-headless
+endif
+ifeq ($(DEBIAN_CODENAME), bookworm)
+	PYTHON_VERSION=3.11.2
+	IMAGEMAGICK_CONF=imagemagick-policy.xml.deb12
+	LIBEXEMPI3_PKG=libexempi8
+	OPENJDK_PKG=openjdk-17-jre-headless
+endif
+ifeq ($(DEBIAN_CODENAME), trixie)
+	PYTHON_VERSION=3.11.6
+	IMAGEMAGICK_CONF=imagemagick-policy.xml.deb13
 	LIBEXEMPI3_PKG=libexempi8
 	OPENJDK_PKG=openjdk-17-jre-headless
 endif
@@ -132,20 +126,17 @@ TGZ_STATIC=$(TGZ_DIR)/ddr-local/static
 # instead of "ddrlocal-BRANCH"
 DEB_BRANCH := $(shell python3 bin/package-branch.py)
 DEB_ARCH=amd64
-DEB_NAME_JESSIE=$(APP)-$(DEB_BRANCH)
-DEB_NAME_STRETCH=$(APP)-$(DEB_BRANCH)
-DEB_NAME_BUSTER=$(APP)-$(DEB_BRANCH)
 DEB_NAME_BULLSEYE=$(APP)-$(DEB_BRANCH)
+DEB_NAME_BOOKWORM=$(APP)-$(DEB_BRANCH)
+DEB_NAME_TRIXIE=$(APP)-$(DEB_BRANCH)
 # Application version, separator (~), Debian release tag e.g. deb8
 # Release tag used because sortable and follows Debian project usage.
-DEB_VERSION_JESSIE=$(APP_VERSION)~deb8
-DEB_VERSION_STRETCH=$(APP_VERSION)~deb9
-DEB_VERSION_BUSTER=$(APP_VERSION)~deb10
 DEB_VERSION_BULLSEYE=$(APP_VERSION)~deb11
-DEB_FILE_JESSIE=$(DEB_NAME_JESSIE)_$(DEB_VERSION_JESSIE)_$(DEB_ARCH).deb
-DEB_FILE_STRETCH=$(DEB_NAME_STRETCH)_$(DEB_VERSION_STRETCH)_$(DEB_ARCH).deb
-DEB_FILE_BUSTER=$(DEB_NAME_BUSTER)_$(DEB_VERSION_BUSTER)_$(DEB_ARCH).deb
+DEB_VERSION_BOOKWORM=$(APP_VERSION)~deb12
+DEB_VERSION_TRIXIE=$(APP_VERSION)~deb13
 DEB_FILE_BULLSEYE=$(DEB_NAME_BULLSEYE)_$(DEB_VERSION_BULLSEYE)_$(DEB_ARCH).deb
+DEB_FILE_BOOKWORM=$(DEB_NAME_BOOKWORM)_$(DEB_VERSION_BOOKWORM)_$(DEB_ARCH).deb
+DEB_FILE_TRIXIE=$(DEB_NAME_TRIXIE)_$(DEB_VERSION_TRIXIE)_$(DEB_ARCH).deb
 DEB_VENDOR=Densho.org
 DEB_MAINTAINER=<geoffrey.jost@densho.org>
 DEB_DESCRIPTION=Densho Digital Repository editor
@@ -355,14 +346,16 @@ install-virtualenv:
 	@echo ""
 	@echo "install-virtualenv -----------------------------------------------------"
 	apt-get --assume-yes install python3-pip python3-venv
-	python3 -m venv $(VIRTUALENV)
+	source $(VIRTUALENV)/bin/activate; \
+	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) pip uv
+	uv venv $(VIRTUALENV)
 
 install-setuptools: install-virtualenv
 	@echo ""
 	@echo "install-setuptools -----------------------------------------------------"
 	apt-get --assume-yes install python3-dev
 	source $(VIRTUALENV)/bin/activate; \
-	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) setuptools
+	uv pip install -U --cache-dir=$(PIP_CACHE_DIR) setuptools
 
 
 install-dependencies: apt-backports install-core install-misc-tools install-daemons
@@ -372,20 +365,8 @@ install-dependencies: apt-backports install-core install-misc-tools install-daem
 	apt-get --assume-yes install libxml2-dev libxslt1-dev libz-dev pmount udisks2
 	apt-get --assume-yes install imagemagick libssl-dev libxml2 libxml2-dev libxslt1-dev
 	apt-get --assume-yes install $(LIBEXEMPI3_PKG)
-ifeq ($(DEBIAN_CODENAME), buster)
-	apt-get -t buster-backports --assume-yes install git-annex git-core
-endif
-ifeq ($(DEBIAN_CODENAME), bullseye)
 	apt-get --assume-yes install git-annex git-core
-endif
 
-install-git: apt-backports
-ifeq ($(DEBIAN_CODENAME), buster)
-	apt-get -t buster-backports --assume-yes install git-annex git-core
-endif
-ifeq ($(DEBIAN_CODENAME), bullseye)
-	apt-get --assume-yes install git-annex git-core
-endif
 
 mkdirs: mkdir-ddr-cmdln mkdir-ddr-local
 
@@ -438,9 +419,9 @@ install-ddr-cmdln: install-setuptools
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_CMDLN)/ddr; python setup.py install
 	source $(VIRTUALENV)/bin/activate; \
-	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) -r $(INSTALL_CMDLN)/requirements.txt
+	uv pip install -U --cache-dir=$(PIP_CACHE_DIR) -r $(INSTALL_CMDLN)/requirements.txt
 	source $(VIRTUALENV)/bin/activate; \
-	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) internetarchive
+	uv pip install -U --cache-dir=$(PIP_CACHE_DIR) internetarchive
 	sudo -u ddr git config --global --add safe.directory $(INSTALL_CMDLN)
 	sudo -u ddr git config --global --add safe.directory $(INSTALL_DEFS)
 	sudo -u ddr git config --global --add safe.directory $(INSTALL_VOCAB)
@@ -501,7 +482,7 @@ install-ddr-local: mkdirs install-configs install-setuptools git-safe-dir
 	@echo "install-ddr-local ------------------------------------------------------"
 	git status | grep "On branch"
 	source $(VIRTUALENV)/bin/activate; \
-	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) -r $(INSTALL_LOCAL)/requirements.txt
+	uv pip install -U --cache-dir=$(PIP_CACHE_DIR) -r $(INSTALL_LOCAL)/requirements.txt
 
 mkdir-ddr-local:
 	@echo ""
@@ -592,7 +573,7 @@ install-namesdb: install-virtualenv
 	-rm -Rf $(INSTALL_LOCAL)/namesdb_public
 	-ln -s $(INSTALL_NAMESDB)/namessite/namesdb_public $(INSTALL_LOCAL)/ddrlocal/namesdb_public
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_NAMESDB) && pip3 install --cache-dir=$(PIP_CACHE_DIR) -U -r requirements.txt
+	cd $(INSTALL_NAMESDB) && uv pip install --cache-dir=$(PIP_CACHE_DIR) -U -r requirements.txt
 
 uninstall-namesdb: install-virtualenv
 	@echo ""
@@ -743,7 +724,7 @@ install-ddr-manual: install-setuptools
 	@echo ""
 	@echo "install-ddr-manual -----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
-	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) sphinx
+	uv pip install -U --cache-dir=$(PIP_CACHE_DIR) sphinx
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_MANUAL) && make html
 	rm -Rf $(MEDIA_ROOT)/manual
@@ -802,31 +783,26 @@ tgz:
 install-fpm:
 	@echo "install-fpm ------------------------------------------------------------"
 	apt-get install --assume-yes ruby ruby-dev rubygems build-essential
-ifeq ($(DEBIAN_CODENAME), buster)
-	gem install --no-ri --no-rdoc fpm
-endif
-ifeq ($(DEBIAN_CODENAME), bullseye)
 	gem install --no-document fpm
-endif
 
 # https://stackoverflow.com/questions/32094205/set-a-custom-install-directory-when-making-a-deb-package-with-fpm
 # https://brejoc.com/tag/fpm/
 deb: deb-bullseye
 
-deb-stretch:
+deb-bullseye:
 	@echo ""
-	@echo "FPM packaging (stretch) ------------------------------------------------"
-	-rm -Rf $(DEB_FILE_STRETCH)
+	@echo "FPM packaging (bullseye) -----------------------------------------------"
+	-rm -Rf $(DEB_FILE_BULLSEYE)
 # Copy .git/ dir from master worktree
-	python bin/deb-prep-post.py before
+	python3 bin/deb-prep-post.py before
 # Make package
 	fpm   \
 	--verbose   \
 	--input-type dir   \
 	--output-type deb   \
-	--name $(DEB_NAME_STRETCH)   \
-	--version $(DEB_VERSION_STRETCH)   \
-	--package $(DEB_FILE_STRETCH)   \
+	--name $(DEB_NAME_BULLSEYE)   \
+	--version $(DEB_VERSION_BULLSEYE)   \
+	--package $(DEB_FILE_BULLSEYE)   \
 	--url "$(GIT_SOURCE_URL)"   \
 	--vendor "$(DEB_VENDOR)"   \
 	--maintainer "$(DEB_MAINTAINER)"   \
@@ -836,7 +812,7 @@ deb-stretch:
 	--depends "git-annex"   \
 	--depends "git-core"   \
 	--depends "imagemagick"   \
-	--depends "libexempi3"   \
+	--depends "libexempi8"   \
 	--depends "libssl-dev"   \
 	--depends "libxml2"   \
 	--depends "libxml2-dev"   \
@@ -885,20 +861,20 @@ deb-stretch:
 # Put worktree pointer file back in place
 	python bin/deb-prep-post.py after
 
-deb-buster:
+deb-bookworm:
 	@echo ""
-	@echo "FPM packaging (buster) -------------------------------------------------"
-	-rm -Rf $(DEB_FILE_BUSTER)
+	@echo "FPM packaging (bookworm) -----------------------------------------------"
+	-rm -Rf $(DEB_FILE_BOOKWORM)
 # Copy .git/ dir from master worktree
-	python bin/deb-prep-post.py before
+	python3 bin/deb-prep-post.py before
 # Make package
 	fpm   \
 	--verbose   \
 	--input-type dir   \
 	--output-type deb   \
-	--name $(DEB_NAME_BUSTER)   \
-	--version $(DEB_VERSION_BUSTER)   \
-	--package $(DEB_FILE_BUSTER)   \
+	--name $(DEB_NAME_BOOKWORM)   \
+	--version $(DEB_VERSION_BOOKWORM)   \
+	--package $(DEB_FILE_BOOKWORM)   \
 	--url "$(GIT_SOURCE_URL)"   \
 	--vendor "$(DEB_VENDOR)"   \
 	--maintainer "$(DEB_MAINTAINER)"   \
@@ -954,12 +930,12 @@ deb-buster:
 	venv=$(DEB_BASE)   \
 	VERSION=$(DEB_BASE)
 # Put worktree pointer file back in place
-	python bin/deb-prep-post.py after
+	python3 bin/deb-prep-post.py after
 
-deb-bullseye:
+deb-trixie:
 	@echo ""
-	@echo "FPM packaging (bullseye) -----------------------------------------------"
-	-rm -Rf $(DEB_FILE_BULLSEYE)
+	@echo "FPM packaging (trixie) -----------------------------------------------"
+	-rm -Rf $(DEB_FILE_TRIXIE)
 # Copy .git/ dir from master worktree
 	python3 bin/deb-prep-post.py before
 # Make package
@@ -967,9 +943,9 @@ deb-bullseye:
 	--verbose   \
 	--input-type dir   \
 	--output-type deb   \
-	--name $(DEB_NAME_BULLSEYE)   \
-	--version $(DEB_VERSION_BULLSEYE)   \
-	--package $(DEB_FILE_BULLSEYE)   \
+	--name $(DEB_NAME_TRIXIE)   \
+	--version $(DEB_VERSION_TRIXIE)   \
+	--package $(DEB_FILE_TRIXIE)   \
 	--url "$(GIT_SOURCE_URL)"   \
 	--vendor "$(DEB_VENDOR)"   \
 	--maintainer "$(DEB_MAINTAINER)"   \

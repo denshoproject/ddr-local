@@ -30,7 +30,7 @@ from webui.forms.collections import SyncConfirmForm, SignaturesConfirmForm
 from webui.forms.collections import ReindexConfirmForm
 from webui import gitolite
 from webui.gitstatus import repository, annex_info
-from webui.models import Collection, INDEX_PREFIX
+from webui.models import Organization, Collection, INDEX_PREFIX
 from webui.identifier import Identifier, InvalidIdentifierException
 from webui.tasks import collection as collection_tasks
 from webui.views.decorators import login_required
@@ -54,44 +54,49 @@ def collections( request ):
     It takes too long to run git-status on every repo so, if repo statuses are not
     cached they will be updated by jQuery after page load has finished.
     """
-    collections = []
-    collection_status_urls = []
-    for object_id in gitolite.get_repos_orgs():
-        try:
-            identifier = Identifier(object_id)
-        except InvalidIdentifierException as err:
-            messages.error(request, f'{err}')
-            break
-        # TODO Identifier: Organization object instead of repo and org
-        repo,org = list(identifier.parts.values())
-        collection_paths = Collection.collection_paths(settings.MEDIA_BASE, repo, org)
-        colls = []
-        for collection_path in collection_paths:
-            if collection_path:
-                identifier = Identifier(path=collection_path)
-                collection = Collection.from_identifier(identifier)
-                colls.append(collection)
-                #gitstatus = collection.gitstatus()
-                gitstatus = {}
-                if gitstatus and gitstatus.get('sync_status'):
-                    collection.sync_status = gitstatus['sync_status']
-                else:
-                    collection_status_urls.append( "'%s'" % collection.sync_status_url())
-        collections.append( (object_id,colls) )
-    # load statuses in random order
-    random.shuffle(collection_status_urls)
-    return render(request, 'webui/collections/index.html', {
-        'collections': collections,
-        'collection_status_urls': ', '.join(collection_status_urls),
-    })
+    return HttpResponseRedirect(reverse('webui-organizations'))
+    #collections = []
+    #collection_status_urls = []
+    #for object_id in gitolite.get_repos_orgs():
+    #    try:
+    #        identifier = Identifier(object_id)
+    #    except InvalidIdentifierException as err:
+    #        messages.error(request, f'{err}')
+    #        break
+    #    # TODO Identifier: Organization object instead of repo and org
+    #    repo,org = list(identifier.parts.values())
+    #    collection_paths = Collection.collection_paths(settings.MEDIA_BASE, repo, org)
+    #    colls = []
+    #    for collection_path in collection_paths:
+    #        if collection_path:
+    #            identifier = Identifier(path=collection_path)
+    #            collection = Collection.from_identifier(identifier)
+    #            colls.append(collection)
+    #            #gitstatus = collection.gitstatus()
+    #            gitstatus = {}
+    #            if gitstatus and gitstatus.get('sync_status'):
+    #                collection.sync_status = gitstatus['sync_status']
+    #            else:
+    #                collection_status_urls.append( "'%s'" % collection.sync_status_url())
+    #    collections.append( (object_id,colls) )
+    ## load statuses in random order
+    #random.shuffle(collection_status_urls)
+    #return render(request, 'webui/collections/index.html', {
+    #    'collections': collections,
+    #    'collection_status_urls': ', '.join(collection_status_urls),
+    #})
 
 @storage_required
 def detail( request, cid ):
     collection = Collection.from_identifier(Identifier(cid))
+    organization = Organization.get(
+        collection.identifier.parent_id(stubs=True), settings.MEDIA_BASE
+    )
     collection.model_def_commits()
     collection.model_def_fields()
     alert_if_conflicted(request, collection)
     return render(request, 'webui/collections/detail.html', {
+        'organization': organization,
         'collection': collection,
         'collection_unlock_url': collection.unlock_url(),
         # cache this for later

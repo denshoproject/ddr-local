@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load thumbnail webui_tags %}
+
+{% block title %}Organizations{% endblock %}
+{% block pagetitle %}Organizations{% endblock %}
+
+{% block breadcrumbs %}{{ block.super }}
+<li>Organizations</li>{% endblock breadcrumbs %}
+
+{% block content %}
+
+  <div class="row-fluid">
+    <div class="span12">
+
+<h2>{{ num_organizations }} Partner{{ num_organizations | pluralize }}</h2>
+{% for organization in organizations %}
+<div class="organization media" style="padding-bottom:10px;">
+  <div class="pull-left">
+    <a href="{% url "webui-detail" organization.id %}">
+      <img src="{{ organization.img }}"
+           class="media-object" style="width:85px;"/>
+    </a>
+  </div>
+  <div class="media-body">
+    <h3 style="margin-top:0px; margin-bottom:0px;">
+      <a href="{% url "webui-detail" organization.id %}">
+        {{ organization.title }}
+      </a>
+    </h3>
+    <p>
+      {{ organization.description }}
+    </p>
+  </div><!-- .media-left -->
+</div><!-- .media .organization -->
+{% endfor %}{# organizations #}
+
+
+    </div><!-- .span12 -->
+  </div><!-- .row-fluid -->
+
+{% endblock content %}
+
+{% block pagecss %}
+<style type="text/css">
+h2 { margin-bottom:10px; }
+h3 { margin-top:30px; margin-bottom:20px; }
+ul#org-list { padding-left:0px; }
+ul#org-list li { list-style-type:none; }
+ul#org-list li img { margin-right:10px; }
+</style>
+{% endblock pagecss %}

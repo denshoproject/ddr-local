@@ -14,12 +14,8 @@
   <div class="row-fluid">
     <div class="span12">
 
-<h2>
-{{ file.basename }}
-</h2>
-<h1>
-Edit
-</h1>
+{% object_header file %}
+<h2 style="margin-top:0px;">Edit</h2>
 
 <form name="edit" action="" method="POST">{% csrf_token %}
 <table>

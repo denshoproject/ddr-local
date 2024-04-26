@@ -20,6 +20,7 @@ from DDR import fileio
 from DDR import modules
 from DDR.models.common import from_json
 from DDR.models.common import Stub as DDRStub
+from DDR.models import Organization as DDROrganization
 from DDR.models import Collection as DDRCollection
 from DDR.models import Entity as DDREntity
 from DDR.models import File as DDRFile
@@ -408,11 +409,15 @@ def docstore_url(oidentifier):
 
 # functions relating to inheritance ------------------------------------
 
+class Organization(DDROrganization):
+    pass
+
 
 class Stub(DDRStub):
 
     def parent(self, stubs=False):
         return self.identifier.parent(stubs).object()
+
 
 class Collection( DDRCollection ):
     

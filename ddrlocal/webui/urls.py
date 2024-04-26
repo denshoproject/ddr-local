@@ -7,7 +7,7 @@ from webui import api
 from webui.views import LoginOffline, login, logout
 from webui.views import task_status, task_dismiss, task_list
 from webui.views import gitstatus_queue, gitstatus_toggle
-from webui.views import repository, organization, collections, entities, files
+from webui.views import repository, organizations, collections, entities, files
 from webui.views import detail, merge, search
 from webui.views import batch
 
@@ -71,7 +71,8 @@ urlpatterns = [
  
     # repository, organization
     path('repository/<slug:cid>/', repository, name='webui-repository'),
-    path('organization/<slug:cid>/', organization, name='webui-organization'),
+    path('organizations/', organizations.list, name='webui-organizations'),
+    path('organizations/<slug:oid>/', organizations.detail, name='webui-organization'),
     
     # collections
  

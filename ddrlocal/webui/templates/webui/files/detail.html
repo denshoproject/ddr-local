@@ -14,11 +14,7 @@
   <div class="row-fluid">
     <div class="span12">
 
-
-<h1>
-{{ file.basename }}
-</h1>
-
+{% object_header file %}
 
 {% if username and models_valid %}
 {% if entity.locked or collection.locked or collection.repo_behind or collection.repo_conflicted %}
