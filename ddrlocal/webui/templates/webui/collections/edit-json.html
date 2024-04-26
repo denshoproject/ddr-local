@@ -14,13 +14,8 @@
     <div class="span12">
 
 
-<h2>
-{{ collection.id }}
-{% if collection.title %}&mdash; {{ collection.title }}{% endif %}
-</h2>
-<h1>
-EDIT
-</h1>
+{% object_header collection %}
+<h2 style="margin-top:0px;">EDIT</h2>
 
 
 {% if form.errors %}

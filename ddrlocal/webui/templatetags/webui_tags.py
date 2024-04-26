@@ -1,4 +1,7 @@
+from collections import OrderedDict
+
 from django import template
+from django.conf import settings
 
 from webui.models import MODEL_PLURALS
 
@@ -65,9 +68,46 @@ def listitem( obj ):
     t = template.loader.get_template(template_path)
     return t.render({'object':obj})
 
+OBJECT_HEADER_TEMPLATE = """
+<div class="media" style="padding-bottom:10px;">
+  <div class="pull-left">
+    <a href="{% url "webui-detail" organization_id %}">
+      <img src="{{ img }}" class="img-responsive" style="width:100px;"/>
+    </a>
+  </div>
+  <div class="media-body">
+    <h1>
+      {{ obj.id }} {% if obj.title %}&mdash; {{ obj.title }}{% endif %}
+    </h1>
+  </div>
+</div>
+"""
+
+def object_header(obj):
+    """Returns <h1> header with object.title and organization logo"""
+    if isinstance(obj,dict) or isinstance(obj,OrderedDict) and obj.get('identifier'):
+        organization_id = obj['id']
+    elif getattr(obj,'identifier'):
+        organization_id = obj.identifier.organization_id()
+    else:
+        raise(
+            'ERROR: webui.templatetags.webui_tags.object_header only works ' \
+            'with objects that have an Identifier'
+        )
+    img = f"{settings.MEDIA_URL}ddr/{organization_id}/logo.png"
+    t = template.Template(OBJECT_HEADER_TEMPLATE)
+    c = template.Context({
+        'obj': obj,
+        'organization_id':organization_id,
+        'img':img,
+    })
+    html = t.render(c)
+    return html
+
 register.simple_tag(collection)
 register.simple_tag(entity)
 register.simple_tag(file)
 register.simple_tag(breadcrumbs)
 register.simple_tag(galleryitem)
 register.simple_tag(listitem)
+register.simple_tag(object_header)
