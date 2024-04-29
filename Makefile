@@ -826,7 +826,7 @@ deb-bullseye:
 	--depends "redis-server"   \
 	--depends "supervisor"   \
 	--depends "udisks2"   \
-	--after-install "bin/after-install.sh"   \
+	--after-install "bin/fpm-after-install.sh"   \
 	--chdir $(INSTALL_LOCAL)   \
 	conf/ddrlocal.cfg=etc/ddr/ddrlocal.cfg   \
 	conf/celeryd.conf=etc/supervisor/conf.d/celeryd.conf   \
@@ -842,7 +842,6 @@ deb-bullseye:
 	conf=$(DEB_BASE)   \
 	COPYRIGHT=$(DEB_BASE)   \
 	../ddr-cmdln=opt   \
-	ddr-cmdln-assets=$(DEB_BASE)   \
 	../ddr-defs=opt   \
 	ddrlocal=$(DEB_BASE)   \
 	../densho-vocab=opt   \
@@ -859,7 +858,7 @@ deb-bullseye:
 	venv=$(DEB_BASE)   \
 	VERSION=$(DEB_BASE)
 # Put worktree pointer file back in place
-	python bin/deb-prep-post.py after
+	python3 bin/deb-prep-post.py after
 
 deb-bookworm:
 	@echo ""
