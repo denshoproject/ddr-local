@@ -509,7 +509,7 @@ test-ddr-local:
 	@echo ""
 	@echo "test-ddr-local ---------------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_LOCAL); pytest --disable-warnings ddrlocal/
+	cd $(INSTALL_LOCAL); pytest --disable-warnings ddrlocal/webui
 
 shell:
 	source $(VIRTUALENV)/bin/activate; \
@@ -574,6 +574,12 @@ install-namesdb: install-virtualenv
 	-ln -s $(INSTALL_NAMESDB)/namessite/namesdb_public $(INSTALL_LOCAL)/ddrlocal/namesdb_public
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_NAMESDB) && uv pip install --cache-dir=$(PIP_CACHE_DIR) -U -r requirements.txt
+
+test-namesdb:
+	@echo ""
+	@echo "test-namesdb 00---------------------------------------------------------"
+	source $(VIRTUALENV)/bin/activate; \
+	cd $(INSTALL_LOCAL); pytest --disable-warnings ddrlocal/ --ignore=ddrlocal/webui/
 
 uninstall-namesdb: install-virtualenv
 	@echo ""
