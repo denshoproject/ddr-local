@@ -3,6 +3,8 @@
 *.db
 *.deb
 *.svg
+*.tgz
+*.cfg
 .ackrc
 ddr-cmdln
 ddr-cmdln/
@@ -11,6 +13,7 @@ ddr-defs
 ddr-defs/
 ddr-manual/
 densho-vocab/
+namesdb_public
 static/
 tmp/
 venv/
