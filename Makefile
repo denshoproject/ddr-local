@@ -58,7 +58,7 @@ DDR_REPO_BASE=/var/www/media/ddr
 
 MEDIA_BASE=/var/www
 MEDIA_ROOT=$(MEDIA_BASE)/media
-STATIC_ROOT=$(MEDIA_BASE)/static
+STATIC_ROOT=$(MEDIA_BASE)/ddrlocal/static
 
 # Release name e.g. jessie
 DEBIAN_CODENAME := $(shell lsb_release -sc)
@@ -845,7 +845,7 @@ deb-bullseye:
 	conf/README-sqlite=$(SQLITE_BASE)/README  \
 	conf/README-media=$(MEDIA_ROOT)/README  \
 	conf/README-static=$(STATIC_ROOT)/README  \
-	static=var/www   \
+	static=var/www/ddrlocal   \
 	bin=$(DEB_BASE)   \
 	conf=$(DEB_BASE)   \
 	COPYRIGHT=$(DEB_BASE)   \
@@ -916,7 +916,7 @@ deb-bookworm:
 	conf/README-sqlite=$(SQLITE_BASE)/README  \
 	conf/README-media=$(MEDIA_ROOT)/README  \
 	conf/README-static=$(STATIC_ROOT)/README  \
-	static=var/www   \
+	static=var/www/ddrlocal   \
 	bin=$(DEB_BASE)   \
 	conf=$(DEB_BASE)   \
 	COPYRIGHT=$(DEB_BASE)   \
@@ -987,7 +987,7 @@ deb-trixie:
 	conf/README-sqlite=$(SQLITE_BASE)/README  \
 	conf/README-media=$(MEDIA_ROOT)/README  \
 	conf/README-static=$(STATIC_ROOT)/README  \
-	static=var/www   \
+	static=var/www/ddrlocal   \
 	bin=$(DEB_BASE)   \
 	conf=$(DEB_BASE)   \
 	COPYRIGHT=$(DEB_BASE)   \
