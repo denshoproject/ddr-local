@@ -613,8 +613,8 @@ get-static: get-modernizr get-bootstrap get-jquery get-tagmanager get-typeahead
 get-modernizr:
 	@echo ""
 	@echo "Modernizr --------------------------------------------------------------"
-	mkdir -p $(INSTALL_STATIC)/js/
-	wget -nc -P $(INSTALL_STATIC)/js http://$(PACKAGE_SERVER)/$(MODERNIZR)
+	mkdir -p $(INSTALL_STATIC)/
+	wget -nc -P $(INSTALL_STATIC) http://$(PACKAGE_SERVER)/$(MODERNIZR)
 
 get-bootstrap:
 	@echo ""
@@ -627,8 +627,8 @@ get-bootstrap:
 get-jquery:
 	@echo ""
 	@echo "jQuery -----------------------------------------------------------------"
-	mkdir -p $(INSTALL_STATIC)/js/
-	wget -nc -P $(INSTALL_STATIC)/js http://$(PACKAGE_SERVER)/$(JQUERY)
+	mkdir -p $(INSTALL_STATIC)/
+	wget -nc -P $(INSTALL_STATIC) http://$(PACKAGE_SERVER)/$(JQUERY)
 
 get-tagmanager:
 	@echo ""
@@ -652,11 +652,6 @@ install-static:
 	mkdir -p $(STATIC_ROOT)/
 	cp -R $(INSTALL_STATIC)/* $(STATIC_ROOT)/
 	chown -R root.root $(STATIC_ROOT)/
-	-ln -s $(STATIC_ROOT)/js/$(MODERNIZR) $(STATIC_ROOT)/js/modernizr.js
-	-ln -s $(STATIC_ROOT)/$(BOOTSTRAP) $(STATIC_ROOT)/bootstrap
-	-ln -s $(STATIC_ROOT)/js/$(JQUERY) $(STATIC_ROOT)/js/jquery.js
-	-ln -s $(STATIC_ROOT)/$(TAGMANAGER) $(STATIC_ROOT)/js/tagmanager
-	-ln -s $(STATIC_ROOT)/$(TYPEAHEAD) $(STATIC_ROOT)/js/typeahead
 
 clean-static:
 	-rm -Rf $(STATIC_ROOT)/
