@@ -298,6 +298,20 @@ STATICFILES_DIRS = (
     os.path.join(BASE_DIR, 'webui/static'),
 )
 
+# Get exact filenames of Javascript and CSS assets from Makefile
+STATICFILE_VERSIONS = {
+    'MODERNIZR':'', 'JQUERY':'', 'BOOTSTRAP':'', 'TAGMANAGER':'', 'TYPEAHEAD':'',
+}
+MAKEFILE_PATH = BASE_DIR / '..' / 'Makefile'
+with MAKEFILE_PATH.open('r') as f:
+    for line in f.readlines():
+        for key in STATICFILE_VERSIONS.keys():
+            if key in line:
+                STATICFILE_VERSIONS[key] = line.strip().split('=')[1]
+        # quit if got everything, no need to read whole file
+        if len([val for val in STATICFILE_VERSIONS.values() if val == '']) == 0:
+            break
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,

@@ -652,11 +652,6 @@ install-static:
 	mkdir -p $(STATIC_ROOT)/
 	cp -R $(INSTALL_STATIC)/* $(STATIC_ROOT)/
 	chown -R root.root $(STATIC_ROOT)/
-	-ln -s $(STATIC_ROOT)/js/$(MODERNIZR) $(STATIC_ROOT)/js/modernizr.js
-	-ln -s $(STATIC_ROOT)/$(BOOTSTRAP) $(STATIC_ROOT)/bootstrap
-	-ln -s $(STATIC_ROOT)/js/$(JQUERY) $(STATIC_ROOT)/js/jquery.js
-	-ln -s $(STATIC_ROOT)/$(TAGMANAGER) $(STATIC_ROOT)/js/tagmanager
-	-ln -s $(STATIC_ROOT)/$(TYPEAHEAD) $(STATIC_ROOT)/js/typeahead
 
 clean-static:
 	-rm -Rf $(STATIC_ROOT)/

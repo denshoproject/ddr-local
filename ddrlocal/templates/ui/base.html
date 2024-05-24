@@ -11,9 +11,7 @@
 <meta name="author" content="">
 {% block headmeta %}{% endblock headmeta %}
 
-<!--<link href="{{ STATIC_URL }}bootstrap/css/bootstrap.min.css" rel="stylesheet">-->
-
-<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+<link rel="stylesheet" href="{{ STATIC_URL }}/{{ BOOTSTRAP }}/css/bootstrap.min.css">
 
 <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
 <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -241,8 +239,8 @@ Rendered at {{ time }} by PID {{ pid }} on {{ host }}<br/>
 </div><!-- .container-fluid -->
 
 
-<script type="text/javascript" src="{{ STATIC_URL }}js/jquery.js"></script>
-<script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}js/{{ JQUERY }}"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}{{ BOOTSTRAP }}/js/bootstrap.min.js"></script>
 
 <script>
   /* navbar storage tooltips */
