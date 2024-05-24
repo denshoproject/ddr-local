@@ -613,8 +613,8 @@ get-static: get-modernizr get-bootstrap get-jquery get-tagmanager get-typeahead
 get-modernizr:
 	@echo ""
 	@echo "Modernizr --------------------------------------------------------------"
-	mkdir -p $(INSTALL_STATIC)/js/
-	wget -nc -P $(INSTALL_STATIC)/js http://$(PACKAGE_SERVER)/$(MODERNIZR)
+	mkdir -p $(INSTALL_STATIC)/
+	wget -nc -P $(INSTALL_STATIC) http://$(PACKAGE_SERVER)/$(MODERNIZR)
 
 get-bootstrap:
 	@echo ""
@@ -627,8 +627,8 @@ get-bootstrap:
 get-jquery:
 	@echo ""
 	@echo "jQuery -----------------------------------------------------------------"
-	mkdir -p $(INSTALL_STATIC)/js/
-	wget -nc -P $(INSTALL_STATIC)/js http://$(PACKAGE_SERVER)/$(JQUERY)
+	mkdir -p $(INSTALL_STATIC)/
+	wget -nc -P $(INSTALL_STATIC) http://$(PACKAGE_SERVER)/$(JQUERY)
 
 get-tagmanager:
 	@echo ""
