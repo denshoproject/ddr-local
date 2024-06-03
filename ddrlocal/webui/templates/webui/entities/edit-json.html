@@ -94,7 +94,7 @@
 
 {% block pagecss %}
 
-<link rel="stylesheet" href="{{ STATIC_URL }}js/tagmanager/tagmanager.css">
+<link rel="stylesheet" href="{{ STATIC_URL }}{{ TAGMANAGER }}/tagmanager.css">
 <style>
 .tt-dropdown-menu, .gist {
   text-align: left;
@@ -164,10 +164,8 @@
 
 
 {% block javascript %}
-<script type="text/javascript" src="{{ STATIC_URL }}js/typeahead/dist/typeahead.jquery.min.js"></script>
-<script type="text/javascript" src="{{ STATIC_URL }}js/tagmanager/tagmanager.js"></script>
-
-
+<script type="text/javascript" src="{{ STATIC_URL }}/{{ TYPEAHEAD }}/dist/typeahead.jquery.min.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}/{{ TAGMANAGER }}/tagmanager.js"></script>
 <script>
 
   var topics_terms = [{% for term in topics_terms %}
