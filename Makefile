@@ -377,7 +377,7 @@ get-app: get-ddr-cmdln get-ddr-local get-ddr-manual
 
 pip-download: pip-download-cmdln pip-download-local
 
-install-app: install-dependencies install-setuptools install-ddr-cmdln install-ddr-local install-namesdb install-configs install-daemons-configs
+install-app: install-dependencies install-setuptools install-namesdb install-ddr-cmdln install-ddr-local install-configs install-daemons-configs
 
 install-testing: install-ddr-cmdln-testing install-ddr-local-testing
 
@@ -416,7 +416,7 @@ pip-download-cmdln:
 	source $(VIRTUALENV)/bin/activate; \
 	pip download --no-binary=:all: --destination-directory=$(INSTALL_CMDLN)/vendor -r $(INSTALL_CMDLN)/requirements.txt
 
-install-ddr-cmdln: install-setuptools
+install-ddr-cmdln: install-setuptools git-safe-dir
 	@echo ""
 	@echo "install-ddr-cmdln ------------------------------------------------------"
 	git status | grep "On branch"
@@ -429,11 +429,11 @@ mkdir-ddr-cmdln:
 	@echo ""
 	@echo "mkdir-ddr-cmdln --------------------------------------------------------"
 	-mkdir $(LOG_BASE)
-	chown -R ddr.ddr $(LOG_BASE)
+	chown -R ddr:ddr $(LOG_BASE)
 	find $(LOG_BASE) -type d -exec chmod 755 {} \;
 	find $(LOG_BASE) -type f -exec chmod 644 {} \;
 	-mkdir -p $(MEDIA_ROOT)
-	chown -R ddr.ddr $(MEDIA_ROOT)
+	chown -R ddr:ddr $(MEDIA_ROOT)
 	chmod -R 775 $(MEDIA_ROOT)
 
 install-ddr-cmdln-testing: install-setuptools
@@ -486,7 +486,7 @@ git-safe-dir:
 	sudo -u ddr git config --global --add safe.directory $(INSTALL_LOCAL)
 	sudo -u ddr git config --global --add safe.directory $(INSTALL_NAMESDB)
 
-install-ddr-local: mkdirs install-configs install-setuptools git-safe-dir
+install-ddr-local: install-configs install-setuptools git-safe-dir
 	@echo ""
 	@echo "install-ddr-local ------------------------------------------------------"
 	git status | grep "On branch"
@@ -497,20 +497,20 @@ mkdir-ddr-local:
 	@echo "mkdir-ddr-local --------------------------------------------------------"
 # logs dir
 	-mkdir $(LOG_BASE)
-	chown -R ddr.ddr $(LOG_BASE)
+	chown -R ddr:ddr $(LOG_BASE)
 	find $(LOG_BASE) -type d -exec chmod 755 {} \;
 	find $(LOG_BASE) -type f -exec chmod 644 {} \;
 # sqlite db dir
 	-mkdir $(SQLITE_BASE)
-	chown -R ddr.ddr $(SQLITE_BASE)
+	chown -R ddr:ddr $(SQLITE_BASE)
 	chmod -R 775 $(SQLITE_BASE)
 # media dir
 	-mkdir -p $(MEDIA_ROOT)
-	chown -R ddr.ddr $(MEDIA_ROOT)
+	chown -R ddr:ddr $(MEDIA_ROOT)
 	chmod -R 775 $(MEDIA_ROOT)
 # static dir
 	-mkdir -p $(STATIC_ROOT)
-	chown -R ddr.ddr $(STATIC_ROOT)
+	chown -R ddr:ddr $(STATIC_ROOT)
 	chmod -R 775 $(STATIC_ROOT)
 
 install-ddr-local-testing: install-setuptools
@@ -522,6 +522,7 @@ install-ddr-local-testing: install-setuptools
 test-ddr-local:
 	@echo ""
 	@echo "test-ddr-local ---------------------------------------------------------"
+	@echo "NOTE: ddr user requires SSH key for git@mits.densho.org"
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_LOCAL); pytest --disable-warnings ddrlocal/webui
 
@@ -610,9 +611,9 @@ clean-namesdb:
 migrate:
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_LOCAL)/ddrlocal && $(INSTALL_LOCAL)/ddrlocal/manage.py migrate --noinput
-	chown -R ddr.ddr $(SQLITE_BASE)
+	chown -R ddr:ddr $(SQLITE_BASE)
 	chmod -R 770 $(SQLITE_BASE)
-	chown -R ddr.ddr $(LOG_BASE)
+	chown -R ddr:ddr $(LOG_BASE)
 	find $(LOG_BASE) -type d -exec chmod 755 {} \;
 	find $(LOG_BASE) -type f -exec chmod 644 {} \;
 
