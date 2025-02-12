@@ -510,6 +510,7 @@ mkdir-ddr-local:
 test-ddr-local:
 	@echo ""
 	@echo "test-ddr-local ---------------------------------------------------------"
+	@echo "NOTE: ddr user requires SSH key for git@mits.densho.org"
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_LOCAL); pytest --disable-warnings ddrlocal/webui
 
