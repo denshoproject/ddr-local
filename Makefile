@@ -348,9 +348,9 @@ install-virtualenv:
 	@echo ""
 	@echo "install-virtualenv -----------------------------------------------------"
 	apt-get --assume-yes install python3-pip python3-venv
+	python3 -m venv $(VIRTUALENV)
 	source $(VIRTUALENV)/bin/activate; \
-	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) pip uv
-	uv venv $(VIRTUALENV)
+	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) uv
 
 install-setuptools: install-virtualenv
 	@echo ""
@@ -378,6 +378,8 @@ get-app: get-ddr-cmdln get-ddr-local get-ddr-manual
 pip-download: pip-download-cmdln pip-download-local
 
 install-app: install-dependencies install-setuptools install-ddr-cmdln install-ddr-local install-namesdb install-configs install-daemons-configs
+
+install-testing: install-ddr-cmdln-testing install-ddr-local-testing
 
 test-app: test-ddr-cmdln test-ddr-local
 
@@ -408,7 +410,7 @@ get-ddr-cmdln-assets:
 setup-ddr-cmdln:
 	git status | grep "On branch"
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_CMDLN)/ddr; python setup.py install
+	cd $(INSTALL_CMDLN)/ddr; uv pip install --cache-dir=$(PIP_CACHE_DIR) .
 
 pip-download-cmdln:
 	source $(VIRTUALENV)/bin/activate; \
@@ -419,14 +421,9 @@ install-ddr-cmdln: install-setuptools
 	@echo "install-ddr-cmdln ------------------------------------------------------"
 	git status | grep "On branch"
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_CMDLN)/ddr; python setup.py install
-	source $(VIRTUALENV)/bin/activate; \
-	uv pip install -U --cache-dir=$(PIP_CACHE_DIR) -r $(INSTALL_CMDLN)/requirements.txt
+	cd $(INSTALL_CMDLN)/ddr; uv pip install --cache-dir=$(PIP_CACHE_DIR) .
 	source $(VIRTUALENV)/bin/activate; \
 	uv pip install -U --cache-dir=$(PIP_CACHE_DIR) internetarchive
-	sudo -u ddr git config --global --add safe.directory $(INSTALL_CMDLN)
-	sudo -u ddr git config --global --add safe.directory $(INSTALL_DEFS)
-	sudo -u ddr git config --global --add safe.directory $(INSTALL_VOCAB)
 
 mkdir-ddr-cmdln:
 	@echo ""
@@ -438,6 +435,13 @@ mkdir-ddr-cmdln:
 	-mkdir -p $(MEDIA_ROOT)
 	chown -R ddr.ddr $(MEDIA_ROOT)
 	chmod -R 775 $(MEDIA_ROOT)
+
+install-ddr-cmdln-testing: install-setuptools
+	@echo ""
+	@echo "install-testing --------------------------------------------------------"
+	git status | grep "On branch"
+	source $(VIRTUALENV)/bin/activate; \
+	cd $(INSTALL_CMDLN)/ddr; uv pip install --cache-dir=$(PIP_CACHE_DIR) .[testing]
 
 test-ddr-cmdln:
 	@echo ""
@@ -476,6 +480,9 @@ pip-download-local:
 git-safe-dir:
 	@echo ""
 	@echo "git-safe-dir -----------------------------------------------------------"
+	sudo -u ddr git config --global --add safe.directory $(INSTALL_CMDLN)
+	sudo -u ddr git config --global --add safe.directory $(INSTALL_DEFS)
+	sudo -u ddr git config --global --add safe.directory $(INSTALL_VOCAB)
 	sudo -u ddr git config --global --add safe.directory $(INSTALL_LOCAL)
 	sudo -u ddr git config --global --add safe.directory $(INSTALL_NAMESDB)
 
@@ -483,8 +490,7 @@ install-ddr-local: mkdirs install-configs install-setuptools git-safe-dir
 	@echo ""
 	@echo "install-ddr-local ------------------------------------------------------"
 	git status | grep "On branch"
-	source $(VIRTUALENV)/bin/activate; \
-	uv pip install -U --cache-dir=$(PIP_CACHE_DIR) -r $(INSTALL_LOCAL)/requirements.txt
+	source $(VIRTUALENV)/bin/activate; uv pip install --cache-dir=$(PIP_CACHE_DIR) .
 
 mkdir-ddr-local:
 	@echo ""
@@ -506,6 +512,12 @@ mkdir-ddr-local:
 	-mkdir -p $(STATIC_ROOT)
 	chown -R ddr.ddr $(STATIC_ROOT)
 	chmod -R 775 $(STATIC_ROOT)
+
+install-ddr-local-testing: install-setuptools
+	@echo ""
+	@echo "install-ddr-local-testing --------------------------------------------------------"
+	source $(VIRTUALENV)/bin/activate; \
+	uv pip install --cache-dir=$(PIP_CACHE_DIR) .[testing]
 
 test-ddr-local:
 	@echo ""
@@ -567,7 +579,7 @@ get-namesdb:
 setup-namesdb:
 	git status | grep "On branch"
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_NAMESDB) && python setup.py install
+	cd $(INSTALL_NAMESDB)/ddr; uv pip install --cache-dir=$(PIP_CACHE_DIR) .
 
 install-namesdb: install-virtualenv
 	@echo ""
