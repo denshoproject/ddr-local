@@ -377,7 +377,7 @@ get-app: get-ddr-cmdln get-ddr-local get-ddr-manual
 
 pip-download: pip-download-cmdln pip-download-local
 
-install-app: install-dependencies install-setuptools install-ddr-cmdln install-ddr-local install-namesdb install-configs install-daemons-configs
+install-app: install-dependencies install-setuptools install-namesdb install-ddr-cmdln install-ddr-local install-configs install-daemons-configs
 
 install-testing: install-ddr-cmdln-testing install-ddr-local-testing
 
