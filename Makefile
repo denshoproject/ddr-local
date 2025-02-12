@@ -486,7 +486,7 @@ git-safe-dir:
 	sudo -u ddr git config --global --add safe.directory $(INSTALL_LOCAL)
 	sudo -u ddr git config --global --add safe.directory $(INSTALL_NAMESDB)
 
-install-ddr-local: mkdirs install-configs install-setuptools git-safe-dir
+install-ddr-local: install-configs install-setuptools git-safe-dir
 	@echo ""
 	@echo "install-ddr-local ------------------------------------------------------"
 	git status | grep "On branch"
