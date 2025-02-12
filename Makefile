@@ -416,7 +416,7 @@ pip-download-cmdln:
 	source $(VIRTUALENV)/bin/activate; \
 	pip download --no-binary=:all: --destination-directory=$(INSTALL_CMDLN)/vendor -r $(INSTALL_CMDLN)/requirements.txt
 
-install-ddr-cmdln: install-setuptools
+install-ddr-cmdln: install-setuptools git-safe-dir
 	@echo ""
 	@echo "install-ddr-cmdln ------------------------------------------------------"
 	git status | grep "On branch"
