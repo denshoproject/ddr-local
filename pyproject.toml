@@ -34,7 +34,6 @@ dependencies = [
     'drf-yasg>=1.21.0,<1.22',             # BSD
     'pyyaml',
     'uritemplate',
-    'envoy',                              # MIT
     'gunicorn',                           # MIT
     'sorl-thumbnail',                     # BSD
 ]
