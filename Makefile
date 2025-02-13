@@ -171,7 +171,6 @@ help:
 	@echo "enable-bkgnd   - Enable background processes. (Run make reload on completion)"
 	@echo "disable-bkgnd  - Disablebackground processes. (Run make reload on completion)"
 	@echo "migrate        - Init/update Django app's database tables."
-	@echo "branch BRANCH=[branch] - Switches ddr-local and ddr-cmdln repos to [branch]."
 	@echo ""
 	@echo "tgz       - Makes a tarfile of ddr-local source code downloaded from Github."
 	@echo "deb       - Makes a DEB package install file."
@@ -616,9 +615,6 @@ migrate:
 	chown -R ddr:ddr $(LOG_BASE)
 	find $(LOG_BASE) -type d -exec chmod 755 {} \;
 	find $(LOG_BASE) -type f -exec chmod 644 {} \;
-
-branch:
-	cd $(INSTALL_LOCAL)/ddrlocal; python $(INSTALL_LOCAL)/bin/git-checkout-branch.py $(BRANCH)
 
 
 get-static: get-modernizr get-bootstrap get-jquery get-tagmanager get-typeahead
