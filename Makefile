@@ -327,7 +327,7 @@ install-elasticsearch: install-core
 	apt-get --assume-yes install $(OPENJDK_PKG)
 	-gdebi --non-interactive /tmp/downloads/$(ELASTICSEARCH)
 #cp $(INSTALL_LOCAL)/conf/elasticsearch.yml /etc/elasticsearch/
-#chown root.root /etc/elasticsearch/elasticsearch.yml
+#chown root:root /etc/elasticsearch/elasticsearch.yml
 #chmod 644 /etc/elasticsearch/elasticsearch.yml
 # 	@echo "${bldgrn}search engine (re)start${txtrst}"
 	-service elasticsearch stop
@@ -660,7 +660,7 @@ install-static:
 	@echo "install-static ---------------------------------------------------------"
 	mkdir -p $(STATIC_ROOT)/
 	cp -R $(INSTALL_STATIC)/* $(STATIC_ROOT)/
-	chown -R root.root $(STATIC_ROOT)/
+	chown -R root:root $(STATIC_ROOT)/
 
 clean-static:
 	-rm -Rf $(STATIC_ROOT)/
@@ -673,10 +673,10 @@ install-configs:
 # base settings file
 	-mkdir /etc/ddr
 	cp $(INSTALL_LOCAL)/conf/ddrlocal.cfg $(CONF_PRODUCTION)
-	chown root.root $(CONF_PRODUCTION)
+	chown root:root $(CONF_PRODUCTION)
 	chmod 644 $(CONF_PRODUCTION)
 	touch $(CONF_LOCAL)
-	chown ddr.ddr $(CONF_LOCAL)
+	chown ddr:ddr $(CONF_LOCAL)
 	chmod 640 $(CONF_LOCAL)
 	-mkdir -p /etc/ImageMagick-6/
 	cp $(INSTALL_CMDLN)/conf/$(IMAGEMAGICK_CONF) /etc/ImageMagick-6/policy.xml
@@ -690,7 +690,7 @@ install-daemons-configs:
 	@echo "install-daemons-configs ------------------------------------------------"
 # nginx settings
 	cp $(INSTALL_LOCAL)/conf/nginx.conf $(NGINX_CONF)
-	chown root.root $(NGINX_CONF)
+	chown root:root $(NGINX_CONF)
 	chmod 644 $(NGINX_CONF)
 	-ln -s $(NGINX_CONF) $(NGINX_CONF_LINK)
 	-rm /etc/nginx/sites-enabled/default
@@ -698,9 +698,9 @@ install-daemons-configs:
 	cp $(INSTALL_LOCAL)/conf/celeryd.conf $(SUPERVISOR_CELERY_CONF)
 	cp $(INSTALL_LOCAL)/conf/supervisor.conf $(SUPERVISOR_GUNICORN_CONF)
 	cp $(INSTALL_LOCAL)/conf/supervisord.conf $(SUPERVISOR_CONF)
-	chown root.root $(SUPERVISOR_CELERY_CONF)
-	chown root.root $(SUPERVISOR_GUNICORN_CONF)
-	chown root.root $(SUPERVISOR_CONF)
+	chown root:root $(SUPERVISOR_CELERY_CONF)
+	chown root:root $(SUPERVISOR_GUNICORN_CONF)
+	chown root:root $(SUPERVISOR_CONF)
 	chmod 644 $(SUPERVISOR_CELERY_CONF)
 	chmod 644 $(SUPERVISOR_GUNICORN_CONF)
 	chmod 644 $(SUPERVISOR_CONF)
@@ -716,7 +716,7 @@ uninstall-daemons-configs:
 
 enable-bkgnd:
 	cp $(INSTALL_LOCAL)/conf/celerybeat.conf $(SUPERVISOR_CELERYBEAT_CONF)
-	chown root.root $(SUPERVISOR_CELERYBEAT_CONF)
+	chown root:root $(SUPERVISOR_CELERYBEAT_CONF)
 	chmod 644 $(SUPERVISOR_CELERYBEAT_CONF)
 
 disable-bkgnd:
@@ -863,8 +863,8 @@ deb-bullseye:
 	LICENSE=$(DEB_BASE)   \
 	Makefile=$(DEB_BASE)   \
 	../namesdb-public=opt   \
+	pyproject.toml=$(DEB_BASE)   \
 	README.md=$(DEB_BASE)   \
-	requirements.txt=$(DEB_BASE)   \
 	setup-workstation.sh=$(DEB_BASE)   \
 	static=$(DEB_BASE)   \
 	venv=$(DEB_BASE)   \
@@ -934,8 +934,8 @@ deb-bookworm:
 	LICENSE=$(DEB_BASE)   \
 	Makefile=$(DEB_BASE)   \
 	../namesdb-public=opt   \
+	pyproject.toml=$(DEB_BASE)   \
 	README.md=$(DEB_BASE)   \
-	requirements.txt=$(DEB_BASE)   \
 	setup-workstation.sh=$(DEB_BASE)   \
 	static=$(DEB_BASE)   \
 	venv=$(DEB_BASE)   \
@@ -1005,8 +1005,8 @@ deb-trixie:
 	LICENSE=$(DEB_BASE)   \
 	Makefile=$(DEB_BASE)   \
 	../namesdb-public=opt   \
+	pyproject.toml=$(DEB_BASE)   \
 	README.md=$(DEB_BASE)   \
-	requirements.txt=$(DEB_BASE)   \
 	setup-workstation.sh=$(DEB_BASE)   \
 	static=$(DEB_BASE)   \
 	venv=$(DEB_BASE)   \
