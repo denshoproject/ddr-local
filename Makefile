@@ -863,8 +863,8 @@ deb-bullseye:
 	LICENSE=$(DEB_BASE)   \
 	Makefile=$(DEB_BASE)   \
 	../namesdb-public=opt   \
+	pyproject.toml=$(DEB_BASE)   \
 	README.md=$(DEB_BASE)   \
-	requirements.txt=$(DEB_BASE)   \
 	setup-workstation.sh=$(DEB_BASE)   \
 	static=$(DEB_BASE)   \
 	venv=$(DEB_BASE)   \
@@ -934,8 +934,8 @@ deb-bookworm:
 	LICENSE=$(DEB_BASE)   \
 	Makefile=$(DEB_BASE)   \
 	../namesdb-public=opt   \
+	pyproject.toml=$(DEB_BASE)   \
 	README.md=$(DEB_BASE)   \
-	requirements.txt=$(DEB_BASE)   \
 	setup-workstation.sh=$(DEB_BASE)   \
 	static=$(DEB_BASE)   \
 	venv=$(DEB_BASE)   \
@@ -1005,8 +1005,8 @@ deb-trixie:
 	LICENSE=$(DEB_BASE)   \
 	Makefile=$(DEB_BASE)   \
 	../namesdb-public=opt   \
+	pyproject.toml=$(DEB_BASE)   \
 	README.md=$(DEB_BASE)   \
-	requirements.txt=$(DEB_BASE)   \
 	setup-workstation.sh=$(DEB_BASE)   \
 	static=$(DEB_BASE)   \
 	venv=$(DEB_BASE)   \
