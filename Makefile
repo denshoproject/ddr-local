@@ -410,7 +410,7 @@ get-ddr-cmdln-assets:
 setup-ddr-cmdln:
 	git status | grep "On branch"
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_CMDLN)/ddr; uv pip install --cache-dir=$(PIP_CACHE_DIR) .
+	cd $(INSTALL_CMDLN); uv pip install --cache-dir=$(PIP_CACHE_DIR) .
 
 pip-download-cmdln:
 	source $(VIRTUALENV)/bin/activate; \
@@ -421,7 +421,7 @@ install-ddr-cmdln: install-setuptools
 	@echo "install-ddr-cmdln ------------------------------------------------------"
 	git status | grep "On branch"
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_CMDLN)/ddr; uv pip install --cache-dir=$(PIP_CACHE_DIR) .
+	cd $(INSTALL_CMDLN); uv pip install --cache-dir=$(PIP_CACHE_DIR) .
 	source $(VIRTUALENV)/bin/activate; \
 	uv pip install -U --cache-dir=$(PIP_CACHE_DIR) internetarchive
 
@@ -441,30 +441,30 @@ install-ddr-cmdln-testing: install-setuptools
 	@echo "install-testing --------------------------------------------------------"
 	git status | grep "On branch"
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_CMDLN)/ddr; uv pip install --cache-dir=$(PIP_CACHE_DIR) .[testing]
+	cd $(INSTALL_CMDLN); uv pip install --cache-dir=$(PIP_CACHE_DIR) .[testing]
 
 test-ddr-cmdln:
 	@echo ""
 	@echo "test-ddr-cmdln ---------------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_CMDLN)/; pytest --disable-warnings ddr/tests/
+	cd $(INSTALL_CMDLN)/; pytest --disable-warnings tests/
 
 coverage-ddr-cmdln:
 	@echo ""
 	@echo "coverage-ddr-cmdln -----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_CMDLN)/; pytest --cov-config=ddr-cmdln/.coveragerc --cov-report=html --cov=DDR ddr-cmdln/ddr/tests/
+	cd $(INSTALL_CMDLN)/; pytest --cov-config=ddr-cmdln/.coveragerc --cov-report=html --cov=DDR ddr-cmdln/tests/
 
 uninstall-ddr-cmdln: install-setuptools
 	@echo ""
 	@echo "uninstall-ddr-cmdln ----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_CMDLN)/ddr && pip3 uninstall -y -r requirements.txt
+	cd $(INSTALL_CMDLN) && pip3 uninstall -y -r requirements.txt
 
 clean-ddr-cmdln:
-	-rm -Rf $(INSTALL_CMDLN)/ddr/build
-	-rm -Rf $(INSTALL_CMDLN)/ddr/ddr_cmdln.egg-info
-	-rm -Rf $(INSTALL_CMDLN)/ddr/dist
+	-rm -Rf $(INSTALL_CMDLN)/build
+	-rm -Rf $(INSTALL_CMDLN)/ddr_cmdln.egg-info
+	-rm -Rf $(INSTALL_CMDLN)/dist
 
 
 get-ddr-local:
