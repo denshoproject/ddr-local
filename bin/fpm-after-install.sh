@@ -37,12 +37,6 @@ mkdir -p /var/www/media/cache
 chmod 755 /var/www/media/cache
 chown -R ddr:ddr /var/www/media/cache
 
-# Fix virtualenv path when making package from non-standard location
-# e.g. in /opt/ddr-local-develop (because git-worktree)
-pip install virtualenv-relocate
-echo "Adjusting virtualenv paths"
-virtualenv-relocate /opt/ddr-local/venv/ddrlocal/
-
 # Install customized ImageMagick-6/policy.xml.  This disables default
 # memory and cache limits put in place to protect against DDoS attacks
 # but these are not an issue in our local install.
