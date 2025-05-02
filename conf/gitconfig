@@ -1,0 +1,15 @@
+# .gitconfig file for `ddr` user
+# install at /home/ddr/.gitconfig
+
+[alias]
+        st = status
+        co = checkout
+        br = branch
+        ci = commit
+[safe]
+        directory = /opt/ddr-local
+        directory = /opt/ddr-cmdln
+        directory = /opt/ddr-defs
+        directory = /opt/densho-vocab
+        directory = /opt/densho-elastictools
+        directory = /opt/namesdb-public
