@@ -268,7 +268,7 @@ CELERYBEAT_SCHEDULE = {
     }
 }
 if GITSTATUS_BACKGROUND_ACTIVE:
-    CELERYBEAT_SCHEDULER = 'celery.beat.PersistentScheduler'
+    CELERY_BEAT_SCHEDULER = 'celery.beat.PersistentScheduler'
     CELERYBEAT_PIDFILE = '/tmp/celerybeat.pid'
     CELERYBEAT_SCHEDULE['webui-git-status-update-store'] = {
         'task': 'webui.tasks.gitstatus_update_store',
