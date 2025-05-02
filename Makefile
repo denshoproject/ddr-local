@@ -680,6 +680,7 @@ install-configs:
 	chmod 640 $(CONF_LOCAL)
 	-mkdir -p /etc/ImageMagick-6/
 	cp $(INSTALL_CMDLN)/conf/$(IMAGEMAGICK_CONF) /etc/ImageMagick-6/policy.xml
+	cp $(INSTALL_LOCAL)/conf/gitconfig /etc/gitconfig
 
 uninstall-configs:
 	-rm $(CONF_PRODUCTION)
@@ -840,6 +841,7 @@ deb-bullseye:
 	--depends "udisks2"   \
 	--after-install "bin/fpm-after-install.sh"   \
 	--chdir $(INSTALL_LOCAL)   \
+	conf/gitconfig=etc/gitconfig   \
 	conf/ddrlocal.cfg=etc/ddr/ddrlocal.cfg   \
 	conf/celeryd.conf=etc/supervisor/conf.d/celeryd.conf   \
 	conf/supervisor.conf=etc/supervisor/conf.d/ddrlocal.conf   \
@@ -911,6 +913,7 @@ deb-bookworm:
 	--depends "udisks2"   \
 	--after-install "bin/fpm-after-install.sh"   \
 	--chdir $(INSTALL_LOCAL)   \
+	conf/gitconfig=etc/gitconfig   \
 	conf/ddrlocal.cfg=etc/ddr/ddrlocal.cfg   \
 	conf/celeryd.conf=etc/supervisor/conf.d/celeryd.conf   \
 	conf/supervisor.conf=etc/supervisor/conf.d/ddrlocal.conf   \
@@ -982,6 +985,7 @@ deb-trixie:
 	--depends "udisks2"   \
 	--after-install "bin/fpm-after-install.sh"   \
 	--chdir $(INSTALL_LOCAL)   \
+	conf/gitconfig=etc/gitconfig   \
 	conf/ddrlocal.cfg=etc/ddr/ddrlocal.cfg   \
 	conf/celeryd.conf=etc/supervisor/conf.d/celeryd.conf   \
 	conf/supervisor.conf=etc/supervisor/conf.d/ddrlocal.conf   \
