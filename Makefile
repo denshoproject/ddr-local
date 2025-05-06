@@ -303,10 +303,10 @@ install-nginx:
 	@echo ""
 	@echo "Nginx ------------------------------------------------------------------"
 	apt-get --assume-yes remove apache2
-	apt-get --assume-yes install nginx-light
+	apt-get --assume-yes install nginx
 
 remove-nginx:
-	apt-get --assume-yes remove nginx-light
+	apt-get --assume-yes remove nginx
 
 install-redis:
 	@echo ""
@@ -831,7 +831,7 @@ deb-bullseye:
 	--depends "libxml2-dev"   \
 	--depends "libxslt1-dev"   \
 	--depends "libz-dev"   \
-	--depends "nginx-light"   \
+	--depends "nginx"   \
 	--depends "pmount"   \
 	--depends "python3-dev"   \
 	--depends "python3-pip"   \
@@ -903,7 +903,7 @@ deb-bookworm:
 	--depends "libxml2-dev"   \
 	--depends "libxslt1-dev"   \
 	--depends "libz-dev"   \
-	--depends "nginx-light"   \
+	--depends "nginx"   \
 	--depends "pmount"   \
 	--depends "python3-dev"   \
 	--depends "python3-pip"   \
@@ -975,7 +975,7 @@ deb-trixie:
 	--depends "libxml2-dev"   \
 	--depends "libxslt1-dev"   \
 	--depends "libz-dev"   \
-	--depends "nginx-light"   \
+	--depends "nginx"   \
 	--depends "pmount"   \
 	--depends "python3-dev"   \
 	--depends "python3-pip"   \
