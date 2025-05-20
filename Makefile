@@ -764,7 +764,7 @@ tgz-local:
 	cd $(TGZ_CMDLN_ASSETS); git checkout develop; git checkout master
 	cd $(TGZ_DEFS); git checkout develop; git checkout master
 	cd $(TGZ_VOCAB); git checkout develop; git checkout master
-	cd $(TGZ_NAMESDB); git checkout develop; git checkout main
+	cd $(TGZ_NAMESDB); git checkout develop; git checkout master
 	cd $(TGZ_MANUAL); git checkout develop; git checkout master
 	cp -R $(INSTALL_STATIC) $(TGZ_STATIC)
 	tar czf $(TGZ_FILE).tgz $(TGZ_FILE)
@@ -785,7 +785,7 @@ tgz:
 	cd $(TGZ_CMDLN_ASSETS); git checkout develop; git checkout master
 	cd $(TGZ_DEFS); git checkout develop; git checkout master
 	cd $(TGZ_VOCAB); git checkout develop; git checkout master
-	cd $(TGZ_NAMESDB); git checkout develop; git checkout main
+	cd $(TGZ_NAMESDB); git checkout develop; git checkout master
 	cd $(TGZ_MANUAL); git checkout develop; git checkout master
 	cp -R $(INSTALL_STATIC) $(TGZ_STATIC)
 	tar czf $(TGZ_FILE).tgz $(TGZ_FILE)
