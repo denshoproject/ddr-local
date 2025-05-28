@@ -28,8 +28,8 @@ dependencies = [
     'django>=4.1.0,<4.2',                 # MIT
     'django-bootstrap-pagination-forked', # MIT
     'redis',                              # MIT
-    'celery>=5.2.2,<5.3.0',               # BSD
-    'kombu>=5.2.0,<5.3.0',                # New BSD
+    'celery>=5.5.2,<5.6.0',               # BSD
+    'kombu>=5.5.2,<5.6.0',                # New BSD
     'djangorestframework>=3.13.0,<3.14',  # BSD      y
     'drf-yasg>=1.21.0,<1.22',             # BSD
     'pyyaml',
