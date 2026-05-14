@@ -235,7 +235,7 @@ ifeq "$(DEBIAN_CODENAME)" "buster"
 endif
 
 install-core:
-	apt-get --assume-yes install bzip2 curl gdebi-core git-core logrotate ntp p7zip-full wget
+	apt-get --assume-yes install bzip2 curl gdebi-core git-core logrotate ntpsec p7zip-full wget
 
 git-config:
 	git config --global alias.st status
@@ -362,7 +362,7 @@ install-setuptools: install-virtualenv
 install-dependencies: apt-backports install-core install-misc-tools install-daemons
 	@echo ""
 	@echo "install-dependencies ---------------------------------------------------"
-	apt-get --assume-yes install python3-dev python3-pip python3-venv ntp
+	apt-get --assume-yes install python3-dev python3-pip python3-venv ntpsec
 	apt-get --assume-yes install libxml2-dev libxslt1-dev libz-dev pmount udisks2
 	apt-get --assume-yes install imagemagick libssl-dev libxml2 libxml2-dev libxslt1-dev
 	apt-get --assume-yes install $(LIBEXEMPI3_PKG)
