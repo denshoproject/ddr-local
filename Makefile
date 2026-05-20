@@ -678,8 +678,9 @@ install-configs:
 	touch $(CONF_LOCAL)
 	chown ddr:ddr $(CONF_LOCAL)
 	chmod 640 $(CONF_LOCAL)
-	-mkdir -p /etc/ImageMagick-6/
-	cp $(INSTALL_CMDLN)/conf/$(IMAGEMAGICK_CONF) /etc/ImageMagick-6/policy.xml
+	-mkdir -p /etc/ImageMagick-7/
+	-cp /etc/ImageMagick-7/policy.xml /etc/ImageMagick-7/policy.xml.orig
+	cp $(INSTALL_CMDLN)/conf/$(IMAGEMAGICK_CONF) /etc/ImageMagick-7/policy.xml
 	cp $(INSTALL_LOCAL)/conf/gitconfig /etc/gitconfig
 
 uninstall-configs:
