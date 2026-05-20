@@ -17,14 +17,15 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.13",
     "Framework :: Django",
     "Framework :: Django :: 5.1",
 ]
 
 dynamic = ["version"]  # see tool.setuptools.dynamic
-requires-python = ">=3.11"
+requires-python = ">=3.13"
 dependencies = [
+    'bpython',
     'django>=4.1.0,<4.2',                 # MIT
     'django-bootstrap-pagination-forked', # MIT
     'redis',                              # MIT
@@ -50,7 +51,7 @@ testing = [
 Repository = "https://github.com/denshoproject/ddr-local"
 
 [build-system]
-requires = ["setuptools >= 61.0"]
+requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
