@@ -567,9 +567,9 @@ install-namesdb: install-virtualenv
 	@echo ""
 	@echo "install-namesdb --------------------------------------------------------"
 	-rm -Rf $(INSTALL_LOCAL)/namesdb_public
+	-rm -Rf $(INSTALL_LOCAL)/ddrlocal/namesdb_public
 	-ln -s $(INSTALL_NAMESDB)/namessite/namesdb_public $(INSTALL_LOCAL)/ddrlocal/namesdb_public
-	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_NAMESDB) && uv sync
+	source $(VIRTUALENV)/bin/activate; cd $(INSTALL_NAMESDB); uv pip install -U -r requirements.txt
 
 test-namesdb:
 	@echo ""
