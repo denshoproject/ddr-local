@@ -403,6 +403,7 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [
+            BASE_DIR / 'templates',
             BASE_DIR / 'templates/ui',
             BASE_DIR / 'storage/templates/storage',
             BASE_DIR / 'ui/templates/ui',
