@@ -26,8 +26,6 @@ SRC_REPO_NAMESDB=https://github.com/denshoproject/namesdb-public.git
 SRC_REPO_MANUAL=https://github.com/densho/ddr-manual.git
 
 INSTALL_BASE=/opt
-INSTALLDIR=/opt/ddr-cmdln
-REQUIREMENTS=$(INSTALLDIR)/requirements.txt
 PIP_CACHE_DIR=$(INSTALL_BASE)/pip-cache
 
 CWD := $(shell pwd)
@@ -458,10 +456,6 @@ get-ddr-local:
 	@echo "get-ddr-local ----------------------------------------------------------"
 	git status | grep "On branch"
 	git pull
-
-pip-download-local:
-	source $(VIRTUALENV)/bin/activate; \
-	pip download --no-binary=:all: --destination-directory=$(INSTALL_LOCAL)/vendor -r $(INSTALL_LOCAL)/requirements.txt
 
 git-safe-dir:
 	@echo ""
