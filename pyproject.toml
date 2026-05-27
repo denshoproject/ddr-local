@@ -8,7 +8,7 @@ maintainers = [
     {name = "Geoffrey Jost", email="geoffrey.jost@densho.us"},
 ]
 readme = "README.md"
-license = {file = "LICENSE"}
+#license = {file = "LICENSE"}
 keywords = ["Django", "archives"]
 classifiers = [
     "Development Status :: 4 - Beta",
