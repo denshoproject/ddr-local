@@ -369,7 +369,7 @@ get-app: get-ddr-cmdln get-ddr-local get-ddr-manual
 
 pip-download: pip-download-cmdln pip-download-local
 
-install-app: install-dependencies install-setuptools install-namesdb install-ddr-cmdln install-ddr-local install-configs install-daemons-configs
+install-app: install-dependencies install-virtualenv install-namesdb install-ddr-cmdln install-ddr-local install-configs install-daemons-configs
 
 install-testing: install-testing-ddr-cmdln install-testing
 
@@ -401,12 +401,12 @@ get-ddr-cmdln-assets:
 
 setup-ddr-cmdln:
 	git status | grep "On branch"
-	source $(VIRTUALENV)/bin/activate; cd $(INSTALL_CMDLN); uv sync
+	source $(VIRTUALENV)/bin/activate; cd $(INSTALL_CMDLN); uv sync --active --inexact
 
 install-pyproject-cmdln: install-virtualenv
 	@echo ""
 	@echo "install pyproject -------------------------------------------------"
-	source $(VIRTUALENV)/bin/activate; uv sync
+	source $(VIRTUALENV)/bin/activate; cd $(INSTALL_CMDLN); uv sync --active --inexact
 
 install-ddr-cmdln: install-pyproject-cmdln git-safe-dir
 	@echo ""
@@ -424,11 +424,11 @@ mkdir-ddr-cmdln:
 	chown -R ddr:ddr $(MEDIA_ROOT)
 	chmod -R 775 $(MEDIA_ROOT)
 
-install-testing-ddr-cmdln: install-setuptools
+install-testing-ddr-cmdln: install-virtualenv
 	@echo ""
 	@echo "install-testing --------------------------------------------------------"
 	git status | grep "On branch"
-	source $(VIRTUALENV)/bin/activate; uv pip install .[testing]
+	source $(VIRTUALENV)/bin/activate; uv sync --extra=testing --active --inexact
 
 test-ddr-cmdln:
 	@echo ""
@@ -442,7 +442,7 @@ coverage-ddr-cmdln:
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_CMDLN)/; pytest --cov-config=ddr-cmdln/.coveragerc --cov-report=html --cov=DDR ddr-cmdln/tests/
 
-uninstall-ddr-cmdln: install-setuptools
+uninstall-ddr-cmdln: install-virtualenv
 	@echo ""
 	@echo "uninstall-ddr-cmdln ----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; cd $(INSTALL_CMDLN); uv pip uninstall -y .
@@ -475,7 +475,7 @@ git-safe-dir:
 install-pyproject: install-virtualenv
 	@echo ""
 	@echo "install pyproject -------------------------------------------------"
-	source $(VIRTUALENV)/bin/activate; uv sync
+	source $(VIRTUALENV)/bin/activate; cd $(INSTALL_LOCAL); uv sync --active --inexact
 
 install-ddr-local: install-pyproject install-configs git-safe-dir
 	@echo ""
@@ -527,7 +527,7 @@ runworker:
 	source $(VIRTUALENV)/bin/activate; cd $(INSTALL_LOCAL)/ddrlocal; \
 	celery -A ddrlocal worker --pool=threads -l INFO -f /var/log/ddr/ddrlocal-celery.log
 
-uninstall-ddr-local: install-setuptools
+uninstall-ddr-local: install-virtualenv
 	@echo ""
 	@echo "uninstall-ddr-local ----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; uv pip uninstall -y .
@@ -567,7 +567,7 @@ get-namesdb:
 
 setup-namesdb:
 	git status | grep "On branch"
-	source $(VIRTUALENV)/bin/activate; cd $(INSTALL_NAMESDB); uv sync
+	source $(VIRTUALENV)/bin/activate; cd $(INSTALL_NAMESDB); uv sync --active --inexact
 
 install-namesdb: install-virtualenv
 	@echo ""
@@ -721,7 +721,7 @@ get-ddr-manual:
 	else git clone $(SRC_REPO_MANUAL) $(INSTALL_MANUAL); \
 	fi
 
-install-ddr-manual: install-setuptools
+install-ddr-manual: install-virtualenv
 	@echo ""
 	@echo "install-ddr-manual -----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
