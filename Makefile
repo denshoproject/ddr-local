@@ -271,9 +271,9 @@ vbox-guest:
 	-addgroup ddr vboxsf
 
 
-install-daemons: install-supervisor install-redis install-nginx install-cgit install-elasticsearch
+install-daemons: install-supervisor install-redis install-nginx
 
-remove-daemons: remove-supervisor remove-redis remove-nginx remove-cgit remove-elasticsearch
+remove-daemons: remove-supervisor remove-redis remove-nginx
 
 
 install-supervisor:
