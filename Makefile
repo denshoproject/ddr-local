@@ -26,8 +26,6 @@ SRC_REPO_NAMESDB=https://github.com/denshoproject/namesdb-public.git
 SRC_REPO_MANUAL=https://github.com/densho/ddr-manual.git
 
 INSTALL_BASE=/opt
-INSTALLDIR=/opt/ddr-cmdln
-REQUIREMENTS=$(INSTALLDIR)/requirements.txt
 PIP_CACHE_DIR=$(INSTALL_BASE)/pip-cache
 
 CWD := $(shell pwd)
@@ -45,7 +43,7 @@ COMMIT_CMDLN := $(shell git -C $(INSTALL_CMDLN) log --decorate --abbrev-commit -
 COMMIT_DEFS := $(shell git -C $(INSTALL_DEFS) log --decorate --abbrev-commit --pretty=oneline -1)
 COMMIT_VOCAB := $(shell git -C $(INSTALL_VOCAB) log --decorate --abbrev-commit --pretty=oneline -1)
 
-VIRTUALENV=$(INSTALL_LOCAL)/venv/ddrlocal
+VIRTUALENV=$(INSTALL_LOCAL)/.venv
 
 CONF_BASE=/etc/ddr
 CONF_PRODUCTION=$(CONF_BASE)/ddrlocal.cfg
@@ -235,7 +233,7 @@ ifeq "$(DEBIAN_CODENAME)" "buster"
 endif
 
 install-core:
-	apt-get --assume-yes install bzip2 curl gdebi-core git-core logrotate ntp p7zip-full wget
+	apt-get --assume-yes install bzip2 curl gdebi-core git-core logrotate ntpsec p7zip-full wget
 
 git-config:
 	git config --global alias.st status
@@ -271,9 +269,9 @@ vbox-guest:
 	-addgroup ddr vboxsf
 
 
-install-daemons: install-supervisor install-redis install-nginx install-cgit install-elasticsearch
+install-daemons: install-supervisor install-redis install-nginx
 
-remove-daemons: remove-supervisor remove-redis remove-nginx remove-cgit remove-elasticsearch
+remove-daemons: remove-supervisor remove-redis remove-nginx
 
 
 install-supervisor:
@@ -346,23 +344,16 @@ remove-elasticsearch:
 install-virtualenv:
 	@echo ""
 	@echo "install-virtualenv -----------------------------------------------------"
-	apt-get --assume-yes install python3-pip python3-venv
-	python3 -m venv $(VIRTUALENV)
-	source $(VIRTUALENV)/bin/activate; \
-	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) uv
-
-install-setuptools: install-virtualenv
-	@echo ""
-	@echo "install-setuptools -----------------------------------------------------"
-	apt-get --assume-yes install python3-dev
-	source $(VIRTUALENV)/bin/activate; \
-	uv pip install -U --cache-dir=$(PIP_CACHE_DIR) setuptools
+	apt-get install --assume-yes extrepo
+	extrepo enable uv
+	apt-get install --assume-yes uv
+	uv venv --relocatable --managed-python --allow-existing --python /usr/bin/python3
 
 
 install-dependencies: apt-backports install-core install-misc-tools install-daemons
 	@echo ""
 	@echo "install-dependencies ---------------------------------------------------"
-	apt-get --assume-yes install python3-dev python3-pip python3-venv ntp
+	apt-get --assume-yes install python3-dev python3-pip python3-venv ntpsec
 	apt-get --assume-yes install libxml2-dev libxslt1-dev libz-dev pmount udisks2
 	apt-get --assume-yes install imagemagick libssl-dev libxml2 libxml2-dev libxslt1-dev
 	apt-get --assume-yes install $(LIBEXEMPI3_PKG)
@@ -376,9 +367,9 @@ get-app: get-ddr-cmdln get-ddr-local get-ddr-manual
 
 pip-download: pip-download-cmdln pip-download-local
 
-install-app: install-dependencies install-setuptools install-namesdb install-ddr-cmdln install-ddr-local install-configs install-daemons-configs
+install-app: install-dependencies install-virtualenv install-namesdb install-ddr-cmdln install-ddr-local install-configs install-daemons-configs
 
-install-testing: install-ddr-cmdln-testing install-ddr-local-testing
+install-testing: install-testing-ddr-cmdln install-testing
 
 test-app: test-ddr-cmdln test-ddr-local
 
@@ -408,21 +399,17 @@ get-ddr-cmdln-assets:
 
 setup-ddr-cmdln:
 	git status | grep "On branch"
-	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_CMDLN); uv pip install --cache-dir=$(PIP_CACHE_DIR) .
+	source $(VIRTUALENV)/bin/activate; cd $(INSTALL_CMDLN); uv sync --active --inexact
 
-pip-download-cmdln:
-	source $(VIRTUALENV)/bin/activate; \
-	pip download --no-binary=:all: --destination-directory=$(INSTALL_CMDLN)/vendor -r $(INSTALL_CMDLN)/requirements.txt
+install-pyproject-cmdln: install-virtualenv
+	@echo ""
+	@echo "install pyproject -------------------------------------------------"
+	source $(VIRTUALENV)/bin/activate; cd $(INSTALL_CMDLN); uv sync --active --inexact
 
-install-ddr-cmdln: install-setuptools git-safe-dir
+install-ddr-cmdln: install-pyproject-cmdln git-safe-dir
 	@echo ""
 	@echo "install-ddr-cmdln ------------------------------------------------------"
 	git status | grep "On branch"
-	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_CMDLN); uv pip install --cache-dir=$(PIP_CACHE_DIR) .
-	source $(VIRTUALENV)/bin/activate; \
-	uv pip install -U --cache-dir=$(PIP_CACHE_DIR) internetarchive
 
 mkdir-ddr-cmdln:
 	@echo ""
@@ -435,12 +422,11 @@ mkdir-ddr-cmdln:
 	chown -R ddr:ddr $(MEDIA_ROOT)
 	chmod -R 775 $(MEDIA_ROOT)
 
-install-ddr-cmdln-testing: install-setuptools
+install-testing-ddr-cmdln: install-virtualenv
 	@echo ""
 	@echo "install-testing --------------------------------------------------------"
 	git status | grep "On branch"
-	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_CMDLN); uv pip install --cache-dir=$(PIP_CACHE_DIR) .[testing]
+	source $(VIRTUALENV)/bin/activate; uv sync --extra=testing --active --inexact
 
 test-ddr-cmdln:
 	@echo ""
@@ -454,11 +440,10 @@ coverage-ddr-cmdln:
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALL_CMDLN)/; pytest --cov-config=ddr-cmdln/.coveragerc --cov-report=html --cov=DDR ddr-cmdln/tests/
 
-uninstall-ddr-cmdln: install-setuptools
+uninstall-ddr-cmdln: install-virtualenv
 	@echo ""
 	@echo "uninstall-ddr-cmdln ----------------------------------------------------"
-	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_CMDLN) && pip3 uninstall -y -r requirements.txt
+	source $(VIRTUALENV)/bin/activate; cd $(INSTALL_CMDLN); uv pip uninstall -y .
 
 clean-ddr-cmdln:
 	-rm -Rf $(INSTALL_CMDLN)/build
@@ -472,10 +457,6 @@ get-ddr-local:
 	git status | grep "On branch"
 	git pull
 
-pip-download-local:
-	source $(VIRTUALENV)/bin/activate; \
-	pip download --no-binary=:all: --destination-directory=$(INSTALL_LOCAL)/vendor -r $(INSTALL_LOCAL)/requirements.txt
-
 git-safe-dir:
 	@echo ""
 	@echo "git-safe-dir -----------------------------------------------------------"
@@ -485,11 +466,15 @@ git-safe-dir:
 	sudo -u ddr git config --global --add safe.directory $(INSTALL_LOCAL)
 	sudo -u ddr git config --global --add safe.directory $(INSTALL_NAMESDB)
 
-install-ddr-local: install-configs install-setuptools git-safe-dir
+install-pyproject: install-virtualenv
+	@echo ""
+	@echo "install pyproject -------------------------------------------------"
+	source $(VIRTUALENV)/bin/activate; cd $(INSTALL_LOCAL); uv sync --active --inexact
+
+install-ddr-local: install-pyproject install-configs git-safe-dir
 	@echo ""
 	@echo "install-ddr-local ------------------------------------------------------"
 	git status | grep "On branch"
-	source $(VIRTUALENV)/bin/activate; uv pip install --cache-dir=$(PIP_CACHE_DIR) .
 
 mkdir-ddr-local:
 	@echo ""
@@ -512,11 +497,10 @@ mkdir-ddr-local:
 	chown -R ddr:ddr $(STATIC_ROOT)
 	chmod -R 775 $(STATIC_ROOT)
 
-install-ddr-local-testing: install-setuptools
+install-testing: install-pyproject
 	@echo ""
-	@echo "install-ddr-local-testing --------------------------------------------------------"
-	source $(VIRTUALENV)/bin/activate; \
-	uv pip install --cache-dir=$(PIP_CACHE_DIR) .[testing]
+	@echo "install-testing --------------------------------------------------------"
+	source $(VIRTUALENV)/bin/activate; uv pip install .[testing]
 
 test-ddr-local:
 	@echo ""
@@ -537,11 +521,10 @@ runworker:
 	source $(VIRTUALENV)/bin/activate; cd $(INSTALL_LOCAL)/ddrlocal; \
 	celery -A ddrlocal worker --pool=threads -l INFO -f /var/log/ddr/ddrlocal-celery.log
 
-uninstall-ddr-local: install-setuptools
+uninstall-ddr-local: install-virtualenv
 	@echo ""
 	@echo "uninstall-ddr-local ----------------------------------------------------"
-	source $(VIRTUALENV)/bin/activate; \
-	pip3 uninstall -y -r requirements.txt
+	source $(VIRTUALENV)/bin/activate; uv pip uninstall -y .
 
 clean-ddr-local:
 	-rm -Rf $(VIRTUALENV)
@@ -578,16 +561,15 @@ get-namesdb:
 
 setup-namesdb:
 	git status | grep "On branch"
-	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_NAMESDB)/ddr; uv pip install --cache-dir=$(PIP_CACHE_DIR) .
+	source $(VIRTUALENV)/bin/activate; cd $(INSTALL_NAMESDB); uv sync --active --inexact
 
 install-namesdb: install-virtualenv
 	@echo ""
 	@echo "install-namesdb --------------------------------------------------------"
 	-rm -Rf $(INSTALL_LOCAL)/namesdb_public
+	-rm -Rf $(INSTALL_LOCAL)/ddrlocal/namesdb_public
 	-ln -s $(INSTALL_NAMESDB)/namessite/namesdb_public $(INSTALL_LOCAL)/ddrlocal/namesdb_public
-	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_NAMESDB) && uv pip install --cache-dir=$(PIP_CACHE_DIR) -U -r requirements.txt
+	source $(VIRTUALENV)/bin/activate; cd $(INSTALL_NAMESDB); uv pip install -U -r requirements.txt
 
 test-namesdb:
 	@echo ""
@@ -598,8 +580,7 @@ test-namesdb:
 uninstall-namesdb: install-virtualenv
 	@echo ""
 	@echo "uninstall-namesdb ------------------------------------------------------"
-	source $(VIRTUALENV)/bin/activate; \
-	cd $(INSTALL_NAMESDB) && pip3 uninstall -y -r requirements.txt
+	source $(VIRTUALENV)/bin/activate; cd $(INSTALL_NAMESDB); uv pip uninstall -y .
 
 clean-namesdb:
 	-rm -Rf $(INSTALL_NAMESDB)/build
@@ -678,8 +659,9 @@ install-configs:
 	touch $(CONF_LOCAL)
 	chown ddr:ddr $(CONF_LOCAL)
 	chmod 640 $(CONF_LOCAL)
-	-mkdir -p /etc/ImageMagick-6/
-	cp $(INSTALL_CMDLN)/conf/$(IMAGEMAGICK_CONF) /etc/ImageMagick-6/policy.xml
+	-mkdir -p /etc/ImageMagick-7/
+	-cp /etc/ImageMagick-7/policy.xml /etc/ImageMagick-7/policy.xml.orig
+	cp $(INSTALL_CMDLN)/conf/$(IMAGEMAGICK_CONF) /etc/ImageMagick-7/policy.xml
 	cp $(INSTALL_LOCAL)/conf/gitconfig /etc/gitconfig
 
 uninstall-configs:
@@ -733,7 +715,7 @@ get-ddr-manual:
 	else git clone $(SRC_REPO_MANUAL) $(INSTALL_MANUAL); \
 	fi
 
-install-ddr-manual: install-setuptools
+install-ddr-manual: install-virtualenv
 	@echo ""
 	@echo "install-ddr-manual -----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
