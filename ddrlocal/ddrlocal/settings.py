@@ -95,7 +95,7 @@ if DOCSTORE_ENABLED:
     DOCSTORE_TIMEOUT     = int(CONFIG.get('local', 'docstore_timeout'))
     def _cluster(config, ipaddr_port):
         """In config: {"green":["192.168.0.19"],"blue":["192.168.0.20"], ...}"""
-        unknown = '¯\_(ツ)_/¯'
+        unknown = r"¯\_(ツ)_/¯"
         try:
             _clusters_by_ip = {}
             for cluster,ips in json.loads(
@@ -403,6 +403,7 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [
+            BASE_DIR / 'templates',
             BASE_DIR / 'templates/ui',
             BASE_DIR / 'storage/templates/storage',
             BASE_DIR / 'ui/templates/ui',

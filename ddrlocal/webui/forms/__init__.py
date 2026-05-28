@@ -288,7 +288,7 @@ class DDRForm(forms.Form):
 #namespub_url = reverse('namespub-persons')
 namespub_url = '/names/persons/'
 PERSONS_HELPTEXT_ADDITION = f"""
-<a href="javascript:window.open('{namespub_url}','namesdb','width=1500,height=500')" target="popup">NAMESDB_PUBLIC</a>
+<a href="{namespub_url}" target="popup">NAMESDB_PUBLIC</a>
 """
 
 def construct_form(model_fields):
