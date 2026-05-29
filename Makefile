@@ -782,9 +782,9 @@ install-fpm:
 
 # https://stackoverflow.com/questions/32094205/set-a-custom-install-directory-when-making-a-deb-package-with-fpm
 # https://brejoc.com/tag/fpm/
-deb: deb-bullseye
+deb: deb-trixie
 
-deb-bullseye:
+deb-bullseye: install-fpm
 	@echo ""
 	@echo "FPM packaging (bullseye) -----------------------------------------------"
 	-rm -Rf $(DEB_FILE_BULLSEYE)
@@ -851,12 +851,12 @@ deb-bullseye:
 	README.md=$(DEB_BASE)   \
 	setup-workstation.sh=$(DEB_BASE)   \
 	static=$(DEB_BASE)   \
-	venv=$(DEB_BASE)   \
+	.venv=$(DEB_BASE)   \
 	VERSION=$(DEB_BASE)
 # Put worktree pointer file back in place
 	python3 bin/deb-prep-post.py after
 
-deb-bookworm:
+deb-bookworm: install-fpm
 	@echo ""
 	@echo "FPM packaging (bookworm) -----------------------------------------------"
 	-rm -Rf $(DEB_FILE_BOOKWORM)
@@ -923,12 +923,12 @@ deb-bookworm:
 	README.md=$(DEB_BASE)   \
 	setup-workstation.sh=$(DEB_BASE)   \
 	static=$(DEB_BASE)   \
-	venv=$(DEB_BASE)   \
+	.venv=$(DEB_BASE)   \
 	VERSION=$(DEB_BASE)
 # Put worktree pointer file back in place
 	python3 bin/deb-prep-post.py after
 
-deb-trixie:
+deb-trixie: install-fpm
 	@echo ""
 	@echo "FPM packaging (trixie) -----------------------------------------------"
 	-rm -Rf $(DEB_FILE_TRIXIE)
@@ -995,7 +995,7 @@ deb-trixie:
 	README.md=$(DEB_BASE)   \
 	setup-workstation.sh=$(DEB_BASE)   \
 	static=$(DEB_BASE)   \
-	venv=$(DEB_BASE)   \
+	.venv=$(DEB_BASE)   \
 	VERSION=$(DEB_BASE)
 # Put worktree pointer file back in place
 	python3 bin/deb-prep-post.py after
