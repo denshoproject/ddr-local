@@ -353,7 +353,7 @@ install-virtualenv:
 install-dependencies: apt-backports install-core install-misc-tools install-daemons
 	@echo ""
 	@echo "install-dependencies ---------------------------------------------------"
-	apt-get --assume-yes install python3-dev python3-pip python3-venv ntpsec
+	apt-get --assume-yes install python3-dev ntpsec
 	apt-get --assume-yes install libxml2-dev libxslt1-dev libz-dev pmount udisks2
 	apt-get --assume-yes install imagemagick libssl-dev libxml2 libxml2-dev libxslt1-dev
 	apt-get --assume-yes install $(LIBEXEMPI3_PKG)
@@ -960,8 +960,6 @@ deb-trixie: install-fpm
 	--depends "nginx"   \
 	--depends "pmount"   \
 	--depends "python3-dev"   \
-	--depends "python3-pip"   \
-	--depends "python3-venv"   \
 	--depends "redis-server"   \
 	--depends "supervisor"   \
 	--depends "udisks2"   \
