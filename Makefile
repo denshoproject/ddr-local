@@ -69,18 +69,6 @@ PYTHON_VERSION=
 IMAGEMAGICK_CONF=
 LIBEXEMPI3_PKG=
 OPENJDK_PKG=
-ifeq ($(DEBIAN_CODENAME), bullseye)
-	PYTHON_VERSION=3.9
-	IMAGEMAGICK_CONF=imagemagick-policy.xml.deb11
-	LIBEXEMPI3_PKG=libexempi8
-	OPENJDK_PKG=openjdk-17-jre-headless
-endif
-ifeq ($(DEBIAN_CODENAME), bookworm)
-	PYTHON_VERSION=3.11.2
-	IMAGEMAGICK_CONF=imagemagick-policy.xml.deb12
-	LIBEXEMPI3_PKG=libexempi8
-	OPENJDK_PKG=openjdk-17-jre-headless
-endif
 ifeq ($(DEBIAN_CODENAME), trixie)
 	PYTHON_VERSION=3.11.6
 	IMAGEMAGICK_CONF=imagemagick-policy.xml.deb13
@@ -124,16 +112,10 @@ TGZ_STATIC=$(TGZ_DIR)/ddr-local/static
 # instead of "ddrlocal-BRANCH"
 DEB_BRANCH := $(shell python3 bin/package-branch.py)
 DEB_ARCH=amd64
-DEB_NAME_BULLSEYE=$(APP)-$(DEB_BRANCH)
-DEB_NAME_BOOKWORM=$(APP)-$(DEB_BRANCH)
 DEB_NAME_TRIXIE=$(APP)-$(DEB_BRANCH)
 # Application version, separator (~), Debian release tag e.g. deb8
 # Release tag used because sortable and follows Debian project usage.
-DEB_VERSION_BULLSEYE=$(APP_VERSION)~deb11
-DEB_VERSION_BOOKWORM=$(APP_VERSION)~deb12
 DEB_VERSION_TRIXIE=$(APP_VERSION)~deb13
-DEB_FILE_BULLSEYE=$(DEB_NAME_BULLSEYE)_$(DEB_VERSION_BULLSEYE)_$(DEB_ARCH).deb
-DEB_FILE_BOOKWORM=$(DEB_NAME_BOOKWORM)_$(DEB_VERSION_BOOKWORM)_$(DEB_ARCH).deb
 DEB_FILE_TRIXIE=$(DEB_NAME_TRIXIE)_$(DEB_VERSION_TRIXIE)_$(DEB_ARCH).deb
 DEB_VENDOR=Densho.org
 DEB_MAINTAINER=<geoffrey.jost@densho.org>
@@ -353,7 +335,7 @@ install-virtualenv:
 install-dependencies: apt-backports install-core install-misc-tools install-daemons
 	@echo ""
 	@echo "install-dependencies ---------------------------------------------------"
-	apt-get --assume-yes install python3-dev python3-pip python3-venv ntpsec
+	apt-get --assume-yes install python3-dev ntpsec
 	apt-get --assume-yes install libxml2-dev libxslt1-dev libz-dev pmount udisks2
 	apt-get --assume-yes install imagemagick libssl-dev libxml2 libxml2-dev libxslt1-dev
 	apt-get --assume-yes install $(LIBEXEMPI3_PKG)
@@ -782,153 +764,9 @@ install-fpm:
 
 # https://stackoverflow.com/questions/32094205/set-a-custom-install-directory-when-making-a-deb-package-with-fpm
 # https://brejoc.com/tag/fpm/
-deb: deb-bullseye
+deb: deb-trixie
 
-deb-bullseye:
-	@echo ""
-	@echo "FPM packaging (bullseye) -----------------------------------------------"
-	-rm -Rf $(DEB_FILE_BULLSEYE)
-# Copy .git/ dir from master worktree
-	python3 bin/deb-prep-post.py before
-# Make package
-	fpm   \
-	--verbose   \
-	--input-type dir   \
-	--output-type deb   \
-	--name $(DEB_NAME_BULLSEYE)   \
-	--version $(DEB_VERSION_BULLSEYE)   \
-	--package $(DEB_FILE_BULLSEYE)   \
-	--url "$(GIT_SOURCE_URL)"   \
-	--vendor "$(DEB_VENDOR)"   \
-	--maintainer "$(DEB_MAINTAINER)"   \
-	--description "$(DEB_DESCRIPTION)"   \
-	--depends "cgit"   \
-	--depends "fcgiwrap"   \
-	--depends "git-annex"   \
-	--depends "git-core"   \
-	--depends "imagemagick"   \
-	--depends "libexempi8"   \
-	--depends "libssl-dev"   \
-	--depends "libxml2"   \
-	--depends "libxml2-dev"   \
-	--depends "libxslt1-dev"   \
-	--depends "libz-dev"   \
-	--depends "nginx"   \
-	--depends "pmount"   \
-	--depends "python3-dev"   \
-	--depends "python3-pip"   \
-	--depends "python3-venv"   \
-	--depends "redis-server"   \
-	--depends "supervisor"   \
-	--depends "udisks2"   \
-	--after-install "bin/fpm-after-install.sh"   \
-	--chdir $(INSTALL_LOCAL)   \
-	conf/gitconfig=etc/gitconfig   \
-	conf/ddrlocal.cfg=etc/ddr/ddrlocal.cfg   \
-	conf/celeryd.conf=etc/supervisor/conf.d/celeryd.conf   \
-	conf/supervisor.conf=etc/supervisor/conf.d/ddrlocal.conf   \
-	conf/nginx.conf=etc/nginx/sites-available/ddrlocal.conf   \
-	conf/logrotate=etc/logrotate.d/ddr   \
-	conf/README-logs=$(LOG_BASE)/README  \
-	conf/README-sqlite=$(SQLITE_BASE)/README  \
-	conf/README-media=$(MEDIA_ROOT)/README  \
-	conf/README-static=$(STATIC_ROOT)/README  \
-	static=var/www/ddrlocal   \
-	bin=$(DEB_BASE)   \
-	conf=$(DEB_BASE)   \
-	COPYRIGHT=$(DEB_BASE)   \
-	../ddr-cmdln=opt   \
-	../ddr-defs=opt   \
-	ddrlocal=$(DEB_BASE)   \
-	../densho-vocab=opt   \
-	.git=$(DEB_BASE)   \
-	.gitignore=$(DEB_BASE)   \
-	INSTALL.md=$(DEB_BASE)   \
-	LICENSE=$(DEB_BASE)   \
-	Makefile=$(DEB_BASE)   \
-	../namesdb-public=opt   \
-	pyproject.toml=$(DEB_BASE)   \
-	README.md=$(DEB_BASE)   \
-	setup-workstation.sh=$(DEB_BASE)   \
-	static=$(DEB_BASE)   \
-	venv=$(DEB_BASE)   \
-	VERSION=$(DEB_BASE)
-# Put worktree pointer file back in place
-	python3 bin/deb-prep-post.py after
-
-deb-bookworm:
-	@echo ""
-	@echo "FPM packaging (bookworm) -----------------------------------------------"
-	-rm -Rf $(DEB_FILE_BOOKWORM)
-# Copy .git/ dir from master worktree
-	python3 bin/deb-prep-post.py before
-# Make package
-	fpm   \
-	--verbose   \
-	--input-type dir   \
-	--output-type deb   \
-	--name $(DEB_NAME_BOOKWORM)   \
-	--version $(DEB_VERSION_BOOKWORM)   \
-	--package $(DEB_FILE_BOOKWORM)   \
-	--url "$(GIT_SOURCE_URL)"   \
-	--vendor "$(DEB_VENDOR)"   \
-	--maintainer "$(DEB_MAINTAINER)"   \
-	--description "$(DEB_DESCRIPTION)"   \
-	--depends "cgit"   \
-	--depends "fcgiwrap"   \
-	--depends "git-annex"   \
-	--depends "git-core"   \
-	--depends "imagemagick"   \
-	--depends "libexempi8"   \
-	--depends "libssl-dev"   \
-	--depends "libxml2"   \
-	--depends "libxml2-dev"   \
-	--depends "libxslt1-dev"   \
-	--depends "libz-dev"   \
-	--depends "nginx"   \
-	--depends "pmount"   \
-	--depends "python3-dev"   \
-	--depends "python3-pip"   \
-	--depends "python3-venv"   \
-	--depends "redis-server"   \
-	--depends "supervisor"   \
-	--depends "udisks2"   \
-	--after-install "bin/fpm-after-install.sh"   \
-	--chdir $(INSTALL_LOCAL)   \
-	conf/gitconfig=etc/gitconfig   \
-	conf/ddrlocal.cfg=etc/ddr/ddrlocal.cfg   \
-	conf/celeryd.conf=etc/supervisor/conf.d/celeryd.conf   \
-	conf/supervisor.conf=etc/supervisor/conf.d/ddrlocal.conf   \
-	conf/nginx.conf=etc/nginx/sites-available/ddrlocal.conf   \
-	conf/logrotate=etc/logrotate.d/ddr   \
-	conf/README-logs=$(LOG_BASE)/README  \
-	conf/README-sqlite=$(SQLITE_BASE)/README  \
-	conf/README-media=$(MEDIA_ROOT)/README  \
-	conf/README-static=$(STATIC_ROOT)/README  \
-	static=var/www/ddrlocal   \
-	bin=$(DEB_BASE)   \
-	conf=$(DEB_BASE)   \
-	COPYRIGHT=$(DEB_BASE)   \
-	../ddr-cmdln=opt   \
-	../ddr-defs=opt   \
-	ddrlocal=$(DEB_BASE)   \
-	../densho-vocab=opt   \
-	.git=$(DEB_BASE)   \
-	.gitignore=$(DEB_BASE)   \
-	INSTALL.md=$(DEB_BASE)   \
-	LICENSE=$(DEB_BASE)   \
-	Makefile=$(DEB_BASE)   \
-	../namesdb-public=opt   \
-	pyproject.toml=$(DEB_BASE)   \
-	README.md=$(DEB_BASE)   \
-	setup-workstation.sh=$(DEB_BASE)   \
-	static=$(DEB_BASE)   \
-	venv=$(DEB_BASE)   \
-	VERSION=$(DEB_BASE)
-# Put worktree pointer file back in place
-	python3 bin/deb-prep-post.py after
-
-deb-trixie:
+deb-trixie: install-fpm
 	@echo ""
 	@echo "FPM packaging (trixie) -----------------------------------------------"
 	-rm -Rf $(DEB_FILE_TRIXIE)
@@ -960,8 +798,6 @@ deb-trixie:
 	--depends "nginx"   \
 	--depends "pmount"   \
 	--depends "python3-dev"   \
-	--depends "python3-pip"   \
-	--depends "python3-venv"   \
 	--depends "redis-server"   \
 	--depends "supervisor"   \
 	--depends "udisks2"   \
@@ -995,7 +831,7 @@ deb-trixie:
 	README.md=$(DEB_BASE)   \
 	setup-workstation.sh=$(DEB_BASE)   \
 	static=$(DEB_BASE)   \
-	venv=$(DEB_BASE)   \
+	.venv=$(DEB_BASE)   \
 	VERSION=$(DEB_BASE)
 # Put worktree pointer file back in place
 	python3 bin/deb-prep-post.py after
