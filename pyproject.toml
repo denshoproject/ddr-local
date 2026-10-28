@@ -31,7 +31,7 @@ dependencies = [
     'redis==7.4.0',                              # MIT
     'celery==5.5.3',               # BSD
     'kombu==5.5.4',                # New BSD
-    'djangorestframework==3.17.1',  # BSD      y
+    'djangorestframework==3.18.2',  # BSD      y
     'drf-yasg==1.21.15',             # BSD
     'pyyaml==6.0.3',
     'uritemplate==4.2.0',
