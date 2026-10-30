@@ -325,10 +325,7 @@ remove-elasticsearch:
 
 install-virtualenv:
 	@echo ""
-	@echo "install-virtualenv -----------------------------------------------------"
-	apt-get install --assume-yes extrepo
-	extrepo enable uv
-	apt-get install --assume-yes uv
+	@echo "install-venv (assumes uv is installed) ---------------------------------"
 	uv venv --relocatable --managed-python --allow-existing --python /usr/bin/python3
 
 
